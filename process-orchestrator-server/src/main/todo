@@ -7,3 +7,7 @@ anything better than         context.getProcessContext().setLastExecutedStepId(c
  ?
 //startedAt; // scheduled at
 1 module for all
+
+SA*** classes names
+Add licences / headers
+ajouter userId à l'exec pour savoir qui a lancé

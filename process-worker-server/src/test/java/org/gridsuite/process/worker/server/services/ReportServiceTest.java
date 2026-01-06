@@ -10,7 +10,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
+import org.gridsuite.process.worker.server.config.ProcessWorkerConfig;
+import org.gridsuite.process.worker.server.config.RestTemplateConfig;
 import org.gridsuite.process.worker.server.dto.ReportInfos;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,123 +21,65 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.web.client.match.MockRestRequestMatchers;
+import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Unit tests for ReportService
- *
- * Tests cover:
- * - Successful report sending
- * - HTTP communication with report server
- * - JSON serialization handling
- * - Exception scenarios (serialization errors, HTTP errors)
- * - URI construction and header validation
- *
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
- */
-@ExtendWith(MockitoExtension.class)
+@RestClientTest(ReportService.class)
+@ContextConfiguration(classes = {ProcessWorkerConfig.class, ReportService.class})
+@ActiveProfiles("default")
 class ReportServiceTest {
 
-    @Mock
-    private RestTemplate restTemplate;
+    private static final UUID REPORT_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
+    private static final UUID REPORT_ERROR_UUID = UUID.fromString("9928181c-7977-4592-ba19-88027e4254e4");
+    private static final String REPORT_JSON = "{\"version\":\"3.0\",\"dictionaries\":{\"default\":{\"test\":\"a test\"}},\"reportRoot\":{\"messageKey\":\"test\"}}";
 
-    @Mock
-    private RestTemplateBuilder restTemplateBuilder;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
-    private ReportNode reportNode;
-
-    @Captor
-    private ArgumentCaptor<String> urlCaptor;
-
-    @Captor
-    private ArgumentCaptor<HttpEntity<String>> httpEntityCaptor;
-
+    @Autowired
     private ReportService reportService;
 
-    private static final String REPORT_SERVER_BASE_URI = "http://report-server/";
+    @Autowired
+    private MockRestServiceServer server;
 
-    @BeforeEach
-    void setUp() {
-        when(restTemplateBuilder.build()).thenReturn(restTemplate);
-        reportService = new ReportService(objectMapper, REPORT_SERVER_BASE_URI, restTemplateBuilder);
+    @AfterEach
+    void tearDown() {
+        server.verify();
     }
 
     @Test
-    void sendReportShouldSendCorrectHttpRequestWhenReportIsValid() throws JsonProcessingException {
-        // Given
-        UUID reportUuid = UUID.randomUUID();
-        String reportJson = "{\"reportKey\":\"reportValue\"}";
-        ReportInfos reportInfos = new ReportInfos(reportUuid, reportNode);
-
-        when(objectMapper.writeValueAsString(reportNode)).thenReturn(reportJson);
-        when(restTemplate.exchange(
-            anyString(),
-            eq(HttpMethod.PUT),
-            any(HttpEntity.class),
-            eq(ReportNode.class)
-        )).thenReturn(new ResponseEntity<>(HttpStatus.OK));
-
-        // When
-        reportService.sendReport(reportInfos);
-
-        // Then
-        verify(objectMapper).writeValueAsString(reportNode);
-        verify(restTemplate).exchange(
-            urlCaptor.capture(),
-            eq(HttpMethod.PUT),
-            httpEntityCaptor.capture(),
-            eq(ReportNode.class)
-        );
-
-        // Verify URL construction
-        String expectedUrl = "http://report-server/v1/reports/" + reportUuid;
-        assertEquals(expectedUrl, urlCaptor.getValue());
-
-        // Verify HTTP entity
-        HttpEntity<String> httpEntity = httpEntityCaptor.getValue();
-        assertEquals(reportJson, httpEntity.getBody());
-        assertEquals("application/json", httpEntity.getHeaders().getContentType().toString());
+    void testSendReport() {
+        final ReportNode reportNode = ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build();
+        server.expect(MockRestRequestMatchers.method(HttpMethod.PUT))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_UUID))
+                .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockRestRequestMatchers.content().json(REPORT_JSON))
+                .andRespond(MockRestResponseCreators.withSuccess());
+        assertThatNoException().isThrownBy(() -> reportService.sendReport(new ReportInfos(REPORT_UUID, reportNode)));
     }
 
     @Test
-    void sendReportShouldThrowPowsyblExceptionWhenJsonProcessingFails() throws JsonProcessingException {
-        // Given
-        UUID reportUuid = UUID.randomUUID();
-        ReportInfos reportInfos = new ReportInfos(reportUuid, reportNode);
-
-        JsonProcessingException jsonException = mock(JsonProcessingException.class);
-        when(objectMapper.writeValueAsString(reportNode)).thenThrow(jsonException);
-
-        // When & Then
-        PowsyblException exception = assertThrows(
-            PowsyblException.class,
-            () -> reportService.sendReport(reportInfos)
-        );
-
-        assertEquals("Error sending report", exception.getMessage());
-        assertEquals(jsonException, exception.getCause());
-
-        // Verify that RestTemplate was never called
-        verify(restTemplate, never()).exchange(
-            anyString(),
-            any(HttpMethod.class),
-            any(HttpEntity.class),
-            eq(ReportNode.class)
-        );
-    }
-}
+    void testSendReportFailed() {
+        final ReportNode reportNode = ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build();
+        server.expect(MockRestRequestMatchers.method(HttpMethod.PUT))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_ERROR_UUID))
+                .andRespond(MockRestResponseCreators.withServerError());
+        assertThatThrownBy(() -> reportService.sendReport(new ReportInfos(REPORT_ERROR_UUID, reportNode))).isInstanceOf(RestClientException.class);
+    }}

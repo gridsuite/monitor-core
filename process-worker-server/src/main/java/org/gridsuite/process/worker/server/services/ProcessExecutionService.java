@@ -19,13 +19,15 @@ public class ProcessExecutionService {
 
     private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
     private final NotificationService notificationService;
-    @Value("${worker.execution-env-name:default-env}")
-    private String executionEnvName;
+    private final String executionEnvName;
 
-    public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList, NotificationService notificationService) {
+    public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
+                                   NotificationService notificationService,
+                                   @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));
         this.notificationService = notificationService;
+        this.executionEnvName = executionEnvName;
     }
 
     public void executeProcess(ProcessConfig config) {
@@ -43,7 +45,7 @@ public class ProcessExecutionService {
             updateExecutionStatus(context, ProcessStatus.COMPLETED);
         } catch (Exception e) {
             updateExecutionStatus(context, ProcessStatus.FAILED);
-            handleStepFailure(context.getConfig().processType(), e);
+            throw e;
         }
     }
 
@@ -59,9 +61,5 @@ public class ProcessExecutionService {
 
     private ProcessExecutionContext<ProcessConfig> createExecutionContext(ProcessConfig config, String executionEnvName) {
         return new ProcessExecutionContext<>(config, executionEnvName);
-    }
-
-    private void handleStepFailure(ProcessType processType, Exception e) {
-        //TODO
     }
 }

@@ -17,10 +17,6 @@ public class NotificationService {
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";
 
-    //TODO strong types instead of strings ?
-    public static final String MESSAGE_TYPE_EXECUTION_STATUS = "EXECUTION_STATUS_UPDATE";
-    public static final String MESSAGE_TYPE_STEP_STATUS = "STEP_STATUS_UPDATE";
-
     public NotificationService(StreamBridge updatePublisher) {
         this.updatePublisher = updatePublisher;
     }

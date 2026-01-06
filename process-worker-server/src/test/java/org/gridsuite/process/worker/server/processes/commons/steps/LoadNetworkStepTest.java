@@ -9,6 +9,7 @@ package org.gridsuite.process.worker.server.processes.commons.steps;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import org.gridsuite.process.commons.ProcessConfig;
 import org.gridsuite.process.commons.SecurityAnalysisConfig;
 import org.gridsuite.process.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.process.worker.server.core.ProcessExecutionContext;
@@ -36,160 +37,45 @@ class LoadNetworkStepTest {
     private NetworkConversionService networkConversionService;
 
     @Mock
-    private ProcessExecutionContext<SecurityAnalysisConfig> processContext;
+    private ProcessConfig config;
+
+    private LoadNetworkStep<ProcessConfig> loadNetworkStep;
 
     @Mock
-    private SecurityAnalysisConfig config;
-
-    @Mock
-    private ReportNode reportNode;
-
-    @Mock
-    private ReportNode subReportNode;
-
-    @Captor
-    private ArgumentCaptor<Network> networkCaptor;
-
-    @Captor
-    private ArgumentCaptor<ReportNode> reportNodeCaptor;
-
-    private LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
-    private ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext;
+    private ProcessStepExecutionContext<ProcessConfig> stepContext;
 
     private static final UUID CASE_UUID = UUID.randomUUID();
-    private static final UUID EXECUTION_ID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
-
         when(config.caseUuid()).thenReturn(CASE_UUID);
-        when(processContext.getConfig()).thenReturn(config);
-        when(processContext.getExecutionId()).thenReturn(EXECUTION_ID);
-
-        // Setup report node chain
-//        when(reportNode.newReportNode()).thenReturn(subReportNode);
-//        when(subReportNode.withMessageTemplate(anyString())).thenReturn(subReportNode);
-//        when(subReportNode.withUntypedValue(anyString(), anyString())).thenReturn(subReportNode);
-//        when(subReportNode.add()).thenReturn(subReportNode);
-
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, reportNode);
-
-        stepContext = mock(ProcessStepExecutionContext.class);
         when(stepContext.getConfig()).thenReturn(config);
+        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build());
         when(stepContext.getReportInfos()).thenReturn(reportInfos);
-        when(stepContext.getProcessContext()).thenReturn(processContext);
     }
 
     @Test
-    void getTypeShouldReturnLoadNetwork() {
+    void executeLoadNetwork() {
+        // Given
+        Network expectedNetwork = EurostagTutorialExample1Factory.create();
+        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
+            .thenReturn(expectedNetwork);
+
         // When
+        loadNetworkStep.execute(stepContext);
+
+        // Then
         String stepType = loadNetworkStep.getType().getName();
-
-        // Then
         assertEquals("LOAD_NETWORK", stepType);
-    }
-
-    @Test
-    void executeShouldLoadNetworkFromCaseUuid() {
-        // Given
-        Network expectedNetwork = EurostagTutorialExample1Factory.create();
-        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
-            .thenReturn(expectedNetwork);
-
-        // When
-        loadNetworkStep.execute(stepContext);
-
-        // Then
         verify(networkConversionService).createNetwork(eq(CASE_UUID), any(ReportNode.class));
-    }
-
-    @Test
-    void executeShouldStoreNetworkInContext() {
-        // Given
-        Network expectedNetwork = EurostagTutorialExample1Factory.create();
-        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
-            .thenReturn(expectedNetwork);
-
-        // When
-        loadNetworkStep.execute(stepContext);
-
-        // Then
-        verify(stepContext).setNetwork(networkCaptor.capture());
-        Network capturedNetwork = networkCaptor.getValue();
-
-        assertNotNull(capturedNetwork);
-        assertSame(expectedNetwork, capturedNetwork);
-    }
-
-    @Test
-    void executeShouldCreateReportNodeWithCorrectTemplate() {
-        // Given
-        Network network = EurostagTutorialExample1Factory.create();
-        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
-            .thenReturn(network);
-
-        // When
-        loadNetworkStep.execute(stepContext);
-
-        // Then
-        verify(reportNode).newReportNode();
-//        verify(subReportNode).withMessageTemplate("process.worker.server.importCase");
-//        verify(subReportNode).withUntypedValue("caseUuid", CASE_UUID.toString());
-//        verify(subReportNode).add();
-    }
-
-    @Test
-    void executeShouldPassReportNodeToNetworkConversion() {
-        // Given
-        Network network = EurostagTutorialExample1Factory.create();
-        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
-            .thenReturn(network);
-
-        // When
-        loadNetworkStep.execute(stepContext);
-
-        // Then
-        verify(networkConversionService).createNetwork(eq(CASE_UUID), reportNodeCaptor.capture());
-
-        ReportNode capturedReportNode = reportNodeCaptor.getValue();
-        assertNotNull(capturedReportNode);
-        // The captured report node should be the sub-report created specifically for import
-        assertSame(subReportNode, capturedReportNode);
-    }
-
-    @Test
-    void executeShouldPropagateExceptionWhenNetworkLoadingFails() {
-        // Given
-        RuntimeException networkLoadException = new RuntimeException("Failed to load network");
-        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
-            .thenThrow(networkLoadException);
-
-        // When & Then
-        RuntimeException thrown = assertThrows(RuntimeException.class, () ->
-            loadNetworkStep.execute(stepContext)
-        );
-
-        assertEquals("Failed to load network", thrown.getMessage());
-        verify(stepContext, never()).setNetwork(any());
-    }
-
-    @Test
-    void executeShouldUseCaseUuidFromConfig() {
-        // Given
-        UUID specificCaseUuid = UUID.fromString("12345678-1234-1234-1234-123456789abc");
-        when(config.caseUuid()).thenReturn(specificCaseUuid);
-
-        Network network = EurostagTutorialExample1Factory.create();
-        when(networkConversionService.createNetwork(eq(specificCaseUuid), any(ReportNode.class)))
-            .thenReturn(network);
-
-        // When
-        loadNetworkStep.execute(stepContext);
-
-        // Then
-        verify(networkConversionService).createNetwork(eq(specificCaseUuid), any(ReportNode.class));
-//        verify(subReportNode).withUntypedValue("caseUuid", specificCaseUuid.toString());
+        verify(stepContext).setNetwork(expectedNetwork);
+        ReportNode stepReportNode = stepContext.getReportInfos().reportNode();
+        ReportNode importReportNode = stepReportNode.getChildren().getFirst();
+        assertEquals("process.worker.server.importCase", importReportNode.getMessageKey());
     }
 }

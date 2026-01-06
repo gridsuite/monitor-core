@@ -6,75 +6,91 @@
  */
 package org.gridsuite.process.worker.server.services;
 
+import com.powsybl.cases.datasource.CaseDataSourceClient;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
+import com.powsybl.computation.ComputationManager;
+import com.powsybl.computation.local.LocalComputationManager;
+import com.powsybl.iidm.network.Importer;
+import com.powsybl.iidm.network.Network;
+import com.powsybl.iidm.network.NetworkFactory;
+import com.powsybl.iidm.network.VariantManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 
+import java.util.Properties;
 import java.util.UUID;
 
+import static com.powsybl.iidm.network.VariantManagerConstants.INITIAL_VARIANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for NetworkConversionService
- *
- * Tests cover:
- * - Network creation from case UUID
- * - RestTemplate configuration with base URI
- * - Integration with CaseDataSourceClient
- * - Exception handling (no importer found, import failures)
- * - URI template handler configuration
- *
- * Note: These tests focus on service configuration and error handling.
- * Full integration tests with actual PowSyBL importers should be done in integration tests.
- *
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
- */
 @ExtendWith(MockitoExtension.class)
 class NetworkConversionServiceTest {
+    @Mock
+    private RestTemplate restTemplate;
 
     @Mock
-    private RestTemplate caseServerRest;
+    private Importer importer;
+
+    @Mock
+    private Network network;
 
     @Mock
     private ReportNode reportNode;
 
-    private NetworkConversionService networkConversionService;
+    private NetworkConversionService service;
 
-    private static final String CASE_SERVER_BASE_URI = "http://case-server/";
+    private UUID caseUuid;
 
     @BeforeEach
     void setUp() {
-        networkConversionService = new NetworkConversionService(CASE_SERVER_BASE_URI, caseServerRest);
+        caseUuid = UUID.randomUUID();
+        service = new NetworkConversionService("http://case-server/", restTemplate);
+    }
+    @Test
+    void createNetworkShouldImportNetworkWhenImporterFound() {
+        try (MockedStatic<Importer> importerMock = mockStatic(Importer.class)) {
+            importerMock.when(() -> Importer.find(any(CaseDataSourceClient.class), any()))
+                    .thenReturn(importer);
+
+            when(importer.importData(
+                    any(CaseDataSourceClient.class),
+                    any(NetworkFactory.class),
+                    any(Properties.class),
+                    eq(reportNode)
+            )).thenReturn(network);
+
+            Network result = service.createNetwork(caseUuid, reportNode);
+
+            assertThat(result).isSameAs(network);
+
+            verify(importer).importData(
+                    any(CaseDataSourceClient.class),
+                    any(NetworkFactory.class),
+                    any(Properties.class),
+                    eq(reportNode)
+            );
+        }
     }
 
     @Test
-    void constructorShouldConfigureRestTemplateWithCorrectBaseUri() {
-        // Given - already created in setUp()
+    void createNetworkShouldThrowExceptionWhenNoImporterFound() {
+        try (MockedStatic<Importer> importerMock = mockStatic(Importer.class)) {
+            importerMock.when(() -> Importer.find(any(CaseDataSourceClient.class), any(ComputationManager.class))).thenReturn(null);
 
-        // Then - verify that setUriTemplateHandler was called with DefaultUriBuilderFactory
-        verify(caseServerRest).setUriTemplateHandler(any(DefaultUriBuilderFactory.class));
-    }
-
-    @Test
-    void createNetworkShouldThrowPowsyblExceptionWhenNoImporterFound() {
-        // Given
-        UUID caseUuid = UUID.randomUUID();
-
-        // When & Then
-        // When no valid importer is found for the data source, PowsyblException should be thrown
-        PowsyblException exception = assertThrows(
-            PowsyblException.class,
-            () -> networkConversionService.createNetwork(caseUuid, reportNode)
-        );
-
-        assertEquals("No importer found", exception.getMessage());
+            assertThatThrownBy(() -> service.createNetwork(caseUuid, reportNode))
+                    .isInstanceOf(PowsyblException.class)
+                    .hasMessage("No importer found");
+        }
     }
 }

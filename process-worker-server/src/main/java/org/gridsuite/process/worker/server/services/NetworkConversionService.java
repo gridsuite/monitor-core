@@ -28,8 +28,6 @@ import java.util.UUID;
 @Service
 public class NetworkConversionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
-    //TODO: application yaml
-    private static final Map<String, Object> IMPORT_PARAMETERS = Map.of("iidm.die.with-extensions", "apc,bbsp,bo,bs,cp,dm,gec,gs,gsc,hapc,hopr,io,isc,ld,m,sa,oa");
 
     private final RestTemplate caseServerRest;
 
@@ -44,13 +42,11 @@ public class NetworkConversionService {
 
         CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerRest, caseUuid);
 
-        Properties importProperties = new Properties();
-        importProperties.putAll(IMPORT_PARAMETERS);
         Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
         if (importer == null) {
             throw new PowsyblException("No importer found");
         } else {
-            return importer.importData(dataSource, NetworkFactory.findDefault(), importProperties, reporter);
+            return importer.importData(dataSource, NetworkFactory.findDefault(), new Properties(), reporter);
         }
     }
 }

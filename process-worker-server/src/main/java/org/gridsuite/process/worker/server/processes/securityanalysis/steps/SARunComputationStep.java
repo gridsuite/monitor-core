@@ -38,7 +38,8 @@ public class SARunComputationStep extends AbstractProcessStep<SecurityAnalysisCo
                 .setReportNode(context.getReportInfos().reportNode());
         SecurityAnalysisReport result = SecurityAnalysis.run(context.getNetwork(), contingencyList, runParameters);
 
-        context.setResultInfos(new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS));
-        securityAnalysisService.saveResult(context.getResultInfos(), result);
+        ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
+        securityAnalysisService.saveResult(resultInfos, result);
+        context.setResultInfos(resultInfos);
     }
 }

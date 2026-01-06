@@ -22,17 +22,6 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for ConsumerService
- *
- * Tests cover:
- * - Consumer bean creation
- * - Message consumption and delegation to ProcessExecutionService
- * - Message payload extraction
- * - Integration with Spring Cloud Stream
- *
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
- */
 @ExtendWith(MockitoExtension.class)
 class ConsumerServiceTest {
 
@@ -50,21 +39,8 @@ class ConsumerServiceTest {
     }
 
     @Test
-    void consumeRunShouldReturnConsumerWhenBeanIsCreated() {
-        // When
-        Consumer<Message<ProcessConfig>> consumer = consumerService.consumeRun();
-
-        // Then
-        assertNotNull(consumer);
-    }
-
-    @Test
-    void consumeRunShouldDelegateToExecutionServiceWhenMessageReceived() {
+    void consumeRun() {
         // Given
-        UUID executionId = UUID.randomUUID();
-        when(processConfig.executionId()).thenReturn(executionId);
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-
         Message<ProcessConfig> message = MessageBuilder.withPayload(processConfig).build();
         Consumer<Message<ProcessConfig>> consumer = consumerService.consumeRun();
 
@@ -74,26 +50,4 @@ class ConsumerServiceTest {
         // Then
         verify(processExecutionService).executeProcess(processConfig);
     }
-
-    @Test
-    void consumeRunShouldExtractPayloadFromMessage() {
-        // Given
-        UUID executionId = UUID.randomUUID();
-        when(processConfig.executionId()).thenReturn(executionId);
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-
-        Message<ProcessConfig> message = MessageBuilder
-            .withPayload(processConfig)
-            .setHeader("custom-header", "header-value")
-            .build();
-
-        Consumer<Message<ProcessConfig>> consumer = consumerService.consumeRun();
-
-        // When
-        consumer.accept(message);
-
-        // Then
-        verify(processExecutionService).executeProcess(processConfig);
-    }
-
 }

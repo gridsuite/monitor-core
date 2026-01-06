@@ -1,3 +1,4 @@
+
 /**
  * Copyright (c) 2025, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,53 +16,29 @@ import org.gridsuite.process.worker.server.core.ProcessExecutionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for ProcessExecutionService
- *
- * Tests cover:
- * - Process registration and lookup
- * - Successful process execution
- * - Process failure handling
- * - Execution status notifications (RUNNING, COMPLETED, FAILED)
- * - Execution context creation
- * - Exception propagation
- *
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
- */
 @ExtendWith(MockitoExtension.class)
 class ProcessExecutionServiceTest {
-
     @Mock
     private NotificationService notificationService;
 
     @Mock
-    private Process<ProcessConfig> process1;
-
-    @Mock
-    private Process<ProcessConfig> process2;
+    private Process<ProcessConfig> process;
 
     @Mock
     private ProcessConfig processConfig;
-
-    @Captor
-    private ArgumentCaptor<ProcessExecutionStatusUpdate> statusUpdateCaptor;
-
-    @Captor
-    private ArgumentCaptor<ProcessExecutionContext<ProcessConfig>> contextCaptor;
 
     private ProcessExecutionService processExecutionService;
 
@@ -69,12 +46,10 @@ class ProcessExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(process1.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(process2.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
 
-        List<Process<? extends ProcessConfig>> processList = List.of(process1, process2);
-        processExecutionService = new ProcessExecutionService(processList, notificationService);
-        ReflectionTestUtils.setField(processExecutionService, "executionEnvName", EXECUTION_ENV_NAME);
+        List<Process<? extends ProcessConfig>> processList = List.of(process);
+        processExecutionService = new ProcessExecutionService(processList, notificationService, EXECUTION_ENV_NAME);
     }
 
     @Test
@@ -84,33 +59,34 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(processConfig.executionId()).thenReturn(executionId);
 
-        doNothing().when(process1).execute(any(ProcessExecutionContext.class));
+        doNothing().when(process).execute(any(ProcessExecutionContext.class));
 
         // When
         processExecutionService.executeProcess(processConfig);
 
         // Then
-        verify(process1).execute(contextCaptor.capture());
-        ProcessExecutionContext<ProcessConfig> context = contextCaptor.getValue();
+        verify(process).execute(argThat(context ->
+                context.getExecutionId().equals(executionId) &&
+                        context.getConfig().equals(processConfig) &&
+                        context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
+        ));
 
-        assertEquals(executionId, context.getExecutionId());
-        assertEquals(processConfig, context.getConfig());
-        assertEquals(EXECUTION_ENV_NAME, context.getExecutionEnvName());
+        // Verify RUNNING status notification
+        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+                update.getStatus() == ProcessStatus.RUNNING &&
+                        update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
+                        update.getCompletedAt() == null
+        ));
 
-        // Verify status notifications: RUNNING and COMPLETED
-        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), statusUpdateCaptor.capture());
+        // Verify COMPLETED status notification
+        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+                update.getStatus() == ProcessStatus.COMPLETED &&
+                        update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
+                        update.getCompletedAt() != null
+        ));
 
-        List<ProcessExecutionStatusUpdate> updates = statusUpdateCaptor.getAllValues();
-
-        // First update: RUNNING
-        assertEquals(ProcessStatus.RUNNING, updates.get(0).getStatus());
-        assertEquals(EXECUTION_ENV_NAME, updates.get(0).getExecutionEnvName());
-        assertNull(updates.get(0).getCompletedAt());
-
-        // Second update: COMPLETED
-        assertEquals(ProcessStatus.COMPLETED, updates.get(1).getStatus());
-        assertEquals(EXECUTION_ENV_NAME, updates.get(1).getExecutionEnvName());
-        assertNotNull(updates.get(1).getCompletedAt());
+        // Verify exactly 2 calls to updateExecutionStatus
+        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
     }
 
     @Test
@@ -121,49 +97,43 @@ class ProcessExecutionServiceTest {
         when(processConfig.executionId()).thenReturn(executionId);
 
         RuntimeException processException = new RuntimeException("Process execution failed");
-        doThrow(processException).when(process1).execute(any(ProcessExecutionContext.class));
+        doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
 
         // When
-        processExecutionService.executeProcess(processConfig);
+        assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(processConfig));
 
         // Then
-        verify(process1).execute(any(ProcessExecutionContext.class));
+        verify(process).execute(any(ProcessExecutionContext.class));
 
-        // Verify status notifications: RUNNING and FAILED
-        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), statusUpdateCaptor.capture());
+        // Verify RUNNING status notification
+        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+                update.getStatus() == ProcessStatus.RUNNING
+        ));
 
-        List<ProcessExecutionStatusUpdate> updates = statusUpdateCaptor.getAllValues();
+        // Verify FAILED status notification
+        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+                update.getStatus() == ProcessStatus.FAILED &&
+                        update.getCompletedAt() != null
+        ));
 
-        // First update: RUNNING
-        assertEquals(ProcessStatus.RUNNING, updates.get(0).getStatus());
-
-        // Second update: FAILED
-        assertEquals(ProcessStatus.FAILED, updates.get(1).getStatus());
-        assertNotNull(updates.get(1).getCompletedAt());
+        // Verify exactly 2 calls to updateExecutionStatus
+        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
     }
 
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         // Given
-        UUID executionId = UUID.randomUUID();
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(processConfig.executionId()).thenReturn(executionId);
+        when(processConfig.processType()).thenReturn(null);
 
         // When & Then
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> processExecutionService.executeProcess(processConfig)
-        );
-
-        assertTrue(exception.getMessage().contains("No process found for type"));
-        assertTrue(exception.getMessage().contains("SENSITIVITY_ANALYSIS"));
+        assertThatThrownBy(() -> processExecutionService.executeProcess(processConfig))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No process found for type");
 
         // Verify no process was executed
-        verify(process1, never()).execute(any());
-        verify(process2, never()).execute(any());
+        verify(process, never()).execute(any());
 
         // Verify no notifications were sent
         verifyNoInteractions(notificationService);
     }
-
 }

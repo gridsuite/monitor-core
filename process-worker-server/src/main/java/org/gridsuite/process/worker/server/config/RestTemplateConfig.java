@@ -25,36 +25,6 @@ public class RestTemplateConfig {
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        final RestTemplate restTemplate = builder.build();
-
-        //find and replace Jackson message converter with our own
-        for (int i = 0; i < restTemplate.getMessageConverters().size(); i++) {
-            final HttpMessageConverter<?> httpMessageConverter = restTemplate.getMessageConverters().get(i);
-            if (httpMessageConverter instanceof MappingJackson2HttpMessageConverter) {
-                restTemplate.getMessageConverters().set(i, mappingJackson2HttpMessageConverter());
-            }
-        }
-
-        return restTemplate;
-    }
-
-    public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        converter.setObjectMapper(objectMapper());
-        return converter;
-    }
-
-    private ObjectMapper createObjectMapper() {
-        var objectMapper = Jackson2ObjectMapperBuilder.json()
-                .build();
-        objectMapper.registerModule(new SecurityAnalysisJsonModule());
-        objectMapper.registerModule(new ReportNodeJsonModule());
-        objectMapper.setInjectableValues(new InjectableValues.Std().addValue(ReportNodeDeserializer.DICTIONARY_VALUE_ID, null));
-        return objectMapper;
-    }
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        return createObjectMapper();
+        return builder.build();
     }
 }

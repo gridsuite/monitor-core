@@ -27,7 +27,6 @@ public class ProcessOrchestratorService {
     @Transactional
     public UUID executeProcess(ProcessConfig processConfig) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-            .id(UUID.randomUUID())
             .type(processConfig.processType().name())
             .caseUuid(processConfig.caseUuid())
             .status(ProcessStatus.SCHEDULED)

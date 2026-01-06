@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: process-worker-server
+  cloud:
+    function:
+      definition: consumeRun
+    stream:
+      bindings:
+        consumeRun-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}process.${worker.process}.run
+          group: process${worker.process}RunGroup
+        publishProcessUpdate-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}process.update
+
+worker:
+  execution-env-name: "default-env"
+  process: sa

@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: process-orchestrator-server
+  cloud:
+    stream:
+      bindings:
+        publishRunSa-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}process.sa.run
+        consumeProcessUpdate-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}process.update
+          group: processUpdateGroup
+
+powsybl-ws:
+  database:
+    queryBegin: '&'
+    customQuery: ${powsybl-ws.database.customQueryBegin}reWriteBatchedInserts=true
+    name: process

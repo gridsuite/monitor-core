@@ -1,0 +1,16 @@
+server:
+  port: 5042
+
+spring:
+  rabbitmq:
+    addresses: localhost
+
+powsybl:
+  services:
+    case-server:
+      base-uri: http://localhost:5000
+
+gridsuite:
+  services:
+    report-server:
+      base-uri: http://localhost:5028

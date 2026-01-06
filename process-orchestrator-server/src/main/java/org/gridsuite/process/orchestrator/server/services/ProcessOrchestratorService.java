@@ -27,6 +27,7 @@ public class ProcessOrchestratorService {
     @Transactional
     public UUID executeProcess(ProcessConfig processConfig) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(UUID.randomUUID())
             .type(processConfig.processType().name())
             .caseUuid(processConfig.caseUuid())
             .status(ProcessStatus.SCHEDULED)
@@ -54,9 +55,9 @@ public class ProcessOrchestratorService {
     }
 
     @Transactional
-    public void updateStepStatus(UUID executionId, ProcessExecutionStep stepDto) {
+    public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         executionRepository.findById(executionId).ifPresent(execution -> {
-            ProcessExecutionStepEntity stepEntity = toStepEntity(stepDto);
+            ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
             execution.getSteps().stream()
                 .filter(s -> s.getId().equals(stepEntity.getId()))
                 .findFirst()
@@ -76,17 +77,17 @@ public class ProcessOrchestratorService {
         });
     }
 
-    private ProcessExecutionStepEntity toStepEntity(ProcessExecutionStep dto) {
+    private ProcessExecutionStepEntity toStepEntity(ProcessExecutionStep processExecutionStep) {
         return ProcessExecutionStepEntity.builder()
-                .id(dto.getId())
-                .stepType(dto.getStepType())
-                .previousStepId(dto.getPreviousStepId())
-                .status(dto.getStatus())
-                .resultId(dto.getResultId())
-                .resultType(dto.getResultType())
-                .reportId(dto.getReportId())
-                .startedAt(dto.getStartedAt())
-                .completedAt(dto.getCompletedAt())
+                .id(processExecutionStep.getId())
+                .stepType(processExecutionStep.getStepType())
+                .previousStepId(processExecutionStep.getPreviousStepId())
+                .status(processExecutionStep.getStatus())
+                .resultId(processExecutionStep.getResultId())
+                .resultType(processExecutionStep.getResultType())
+                .reportId(processExecutionStep.getReportId())
+                .startedAt(processExecutionStep.getStartedAt())
+                .completedAt(processExecutionStep.getCompletedAt())
                 .build();
     }
 

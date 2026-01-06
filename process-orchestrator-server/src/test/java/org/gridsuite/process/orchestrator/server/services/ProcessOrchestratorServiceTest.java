@@ -56,10 +56,15 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void executeProcessShouldCreateExecutionAndSendNotification() {
+    void executeProcessCreateExecutionAndSendNotification() {
         // Arrange
+        UUID expectedExecutionId = UUID.randomUUID();
         when(executionRepository.save(any(ProcessExecutionEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    ProcessExecutionEntity entity = invocation.getArgument(0);
+                    entity.setId(expectedExecutionId); // mock id generation
+                    return entity;
+                });
 
         // Act
         UUID result = orchestratorService.executeProcess(securityAnalysisConfig);
@@ -67,26 +72,24 @@ class ProcessOrchestratorServiceTest {
         // Assert
         assertThat(result).isNotNull();
 
-        ArgumentCaptor<ProcessExecutionEntity> executionCaptor = ArgumentCaptor.forClass(ProcessExecutionEntity.class);
-        verify(executionRepository).save(executionCaptor.capture());
+        // Verify repository save was called with correct execution entity
+        verify(executionRepository).save(argThat(execution ->
+                        execution.getId() != null &&
+                        ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
+                        caseUuid.equals(execution.getCaseUuid()) &&
+                        ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
+                        execution.getScheduledAt() != null
+        ));
 
-        ProcessExecutionEntity savedExecution = executionCaptor.getValue();
-        assertThat(savedExecution.getId()).isNotNull();
-        assertThat(savedExecution.getType()).isEqualTo(ProcessType.SECURITY_ANALYSIS.name());
-        assertThat(savedExecution.getCaseUuid()).isEqualTo(caseUuid);
-        assertThat(savedExecution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
-        assertThat(savedExecution.getScheduledAt()).isNotNull();
-
-        ArgumentCaptor<ProcessConfig> configCaptor = ArgumentCaptor.forClass(ProcessConfig.class);
-        ArgumentCaptor<UUID> executionIdCaptor = ArgumentCaptor.forClass(UUID.class);
-        verify(notificationService).sendProcessRunMessage(configCaptor.capture(), executionIdCaptor.capture());
-
-        assertThat(configCaptor.getValue()).isEqualTo(securityAnalysisConfig);
-        assertThat(executionIdCaptor.getValue()).isEqualTo(savedExecution.getId());
+        // Verify notification service was called with correct parameters
+        verify(notificationService).sendProcessRunMessage(
+                eq(securityAnalysisConfig),
+                eq(result)
+        );
     }
 
     @Test
-    void updateexecutionstatusShouldUpdateStatusOnly() {
+    void updateExecutionStatusShouldUpdateStatusOnly() {
         // Arrange
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
@@ -110,7 +113,7 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void updateexecutionstatusShouldUpdateAllFields() {
+    void updateExecutionStatusShouldUpdateAllFields() {
         // Arrange
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
@@ -137,7 +140,7 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void updateexecutionstatusShouldHandleExecutionNotFound() {
+    void updateExecutionStatusShouldHandleExecutionNotFound() {
         // Arrange
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
@@ -150,7 +153,7 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void updatestepstatusShouldAddNewStep() {
+    void updateStepStatusShouldAddNewStep() {
         // Arrange
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
@@ -167,7 +170,7 @@ class ProcessOrchestratorServiceTest {
         UUID reportId = UUID.randomUUID();
         Instant startedAt = Instant.now();
 
-        ProcessExecutionStep stepDto = ProcessExecutionStep.builder()
+        ProcessExecutionStep processExecutionStep = ProcessExecutionStep.builder()
                 .id(stepId)
                 .stepType("LOAD_FLOW")
                 .status(StepStatus.RUNNING)
@@ -178,13 +181,13 @@ class ProcessOrchestratorServiceTest {
                 .build();
 
         // Act
-        orchestratorService.updateStepStatus(executionId, stepDto);
+        orchestratorService.updateStepStatus(executionId, processExecutionStep);
 
         // Assert
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
 
-        ProcessExecutionStepEntity addedStep = execution.getSteps().get(0);
+        ProcessExecutionStepEntity addedStep = execution.getSteps().getFirst();
         assertThat(addedStep.getId()).isEqualTo(stepId);
         assertThat(addedStep.getStepType()).isEqualTo("LOAD_FLOW");
         assertThat(addedStep.getStatus()).isEqualTo(StepStatus.RUNNING);
@@ -197,7 +200,7 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void updatestepstatusShouldUpdateExistingStep() {
+    void updateStepStatusShouldUpdateExistingStep() {
         // Arrange
         UUID stepId = UUID.randomUUID();
         UUID originalResultId = UUID.randomUUID();
@@ -255,7 +258,7 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void getreportsShouldReturnReportsWhenExecutionExists() {
+    void getReportsShouldReturnReports() {
         // Arrange
         UUID reportId1 = UUID.randomUUID();
         UUID reportId2 = UUID.randomUUID();
@@ -295,7 +298,7 @@ class ProcessOrchestratorServiceTest {
     }
 
     @Test
-    void getresultsShouldReturnResultsWhenExecutionExists() {
+    void getResultsShouldReturnResults() {
         // Arrange
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();

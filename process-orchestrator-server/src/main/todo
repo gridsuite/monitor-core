@@ -7,3 +7,5 @@ anything better than         context.getProcessContext().setLastExecutedStepId(c
  ?
 //startedAt; // scheduled at
 1 module for all
+
+// process config : without executionID, without process_type ?

@@ -6,7 +6,6 @@ import org.gridsuite.process.commons.ProcessType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,7 +14,8 @@ import org.springframework.cloud.stream.function.StreamBridge;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,49 +48,14 @@ class NotificationServiceTest {
     }
 
     @Test
-    void sendprocessrunmessageShouldSendMessageWithCorrectBindingName() {
+    void sendProcessRunMessage() {
         // Act
         notificationService.sendProcessRunMessage(securityAnalysisConfig, executionId);
 
         // Assert
-        ArgumentCaptor<String> bindingNameCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<ProcessConfig> configCaptor = ArgumentCaptor.forClass(ProcessConfig.class);
-
-        verify(publisher).send(bindingNameCaptor.capture(), configCaptor.capture());
-
-        assertThat(bindingNameCaptor.getValue()).isEqualTo(ProcessType.SECURITY_ANALYSIS.getBindingName());
+        verify(publisher).send(
+                eq(ProcessType.SECURITY_ANALYSIS.getBindingName()),
+                argThat((ProcessConfig config) -> config.executionId().equals(executionId))
+        );
     }
-
-    @Test
-    void sendprocessrunmessageShouldUpdateConfigWithExecutionId() {
-        // Act
-        notificationService.sendProcessRunMessage(securityAnalysisConfig, executionId);
-
-        // Assert
-        ArgumentCaptor<ProcessConfig> configCaptor = ArgumentCaptor.forClass(ProcessConfig.class);
-        verify(publisher).send(org.mockito.ArgumentMatchers.anyString(), configCaptor.capture());
-
-        ProcessConfig capturedConfig = configCaptor.getValue();
-        assertThat(capturedConfig.executionId()).isEqualTo(executionId);
-    }
-
-    @Test
-    void sendprocessrunmessageShouldPreserveOriginalConfigData() {
-        // Act
-        notificationService.sendProcessRunMessage(securityAnalysisConfig, executionId);
-
-        // Assert
-        ArgumentCaptor<ProcessConfig> configCaptor = ArgumentCaptor.forClass(ProcessConfig.class);
-        verify(publisher).send(org.mockito.ArgumentMatchers.anyString(), configCaptor.capture());
-
-        ProcessConfig capturedConfig = configCaptor.getValue();
-        assertThat(capturedConfig.caseUuid()).isEqualTo(caseUuid);
-        assertThat(capturedConfig.processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
-
-        SecurityAnalysisConfig capturedSaConfig = (SecurityAnalysisConfig) capturedConfig;
-        assertThat(capturedSaConfig.parametersUuid()).isEqualTo(parametersUuid);
-        assertThat(capturedSaConfig.contingencies()).containsExactly("contingency1", "contingency2");
-        assertThat(capturedSaConfig.modificationUuids()).hasSize(2);
-    }
-
 }

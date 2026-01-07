@@ -17,7 +17,6 @@ import java.util.UUID;
 @Table(name = "processExecutionStep")
 public class ProcessExecutionStepEntity {
 
-    //Id is generated in the worker
     @Id
     private UUID id;
 

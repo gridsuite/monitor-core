@@ -109,7 +109,7 @@ class ProcessOrchestratorIntegrationTest {
 
         Message<String> stepMessage1 = MessageBuilder
                 .withPayload(objectMapper.writeValueAsString(processExecutionStep))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, ConsumerService.MESSAGE_TYPE_STEP_STATUS)
+                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString())
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
 
@@ -132,7 +132,7 @@ class ProcessOrchestratorIntegrationTest {
 
         Message<String> stepMessage2 = MessageBuilder
                 .withPayload(objectMapper.writeValueAsString(stepDto2))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, ConsumerService.MESSAGE_TYPE_STEP_STATUS)
+                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString())
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
 
@@ -158,7 +158,7 @@ class ProcessOrchestratorIntegrationTest {
 
         Message<String> statusMessage = MessageBuilder
                 .withPayload(objectMapper.writeValueAsString(finalStatus))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, ConsumerService.MESSAGE_TYPE_EXECUTION_STATUS)
+                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString())
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
 

@@ -23,9 +23,6 @@ public class ConsumerService {
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";
 
-    public static final String MESSAGE_TYPE_EXECUTION_STATUS = "EXECUTION_STATUS_UPDATE";
-    public static final String MESSAGE_TYPE_STEP_STATUS = "STEP_STATUS_UPDATE";
-
     private final ProcessOrchestratorService orchestratorService;
     private final ObjectMapper objectMapper;
 

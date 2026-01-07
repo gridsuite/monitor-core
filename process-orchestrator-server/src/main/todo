@@ -13,3 +13,5 @@ anything better than         context.getProcessContext().setLastExecutedStepId(c
 SA*** classes names
 Add licences / headers
 ajouter userId à l'exec pour savoir qui a lancé
+//Id is generated in the worker for steps, is it ok?
+order vs previousstepId?

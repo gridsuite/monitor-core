@@ -52,7 +52,7 @@ class ConsumerServiceTest {
         String payload = objectMapper.writeValueAsString(statusUpdate);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, ConsumerService.MESSAGE_TYPE_EXECUTION_STATUS);
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
 
         Message<String> message = new GenericMessage<>(payload, headers);
@@ -79,7 +79,7 @@ class ConsumerServiceTest {
         String invalidPayload = "{invalid json}";
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, ConsumerService.MESSAGE_TYPE_EXECUTION_STATUS);
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
 
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
@@ -112,7 +112,7 @@ class ConsumerServiceTest {
         String payload = objectMapper.writeValueAsString(stepUpdate);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, ConsumerService.MESSAGE_TYPE_STEP_STATUS);
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
 
         Message<String> message = new GenericMessage<>(payload, headers);

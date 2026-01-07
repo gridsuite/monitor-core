@@ -15,11 +15,10 @@ import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.NetworkFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
 
 import java.util.Properties;
 import java.util.UUID;
@@ -29,8 +28,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@RestClientTest(NetworkConversionService.class)
 class NetworkConversionServiceTest {
+    @Autowired
+    private NetworkConversionService service;
+
     @Mock
     private Importer importer;
 
@@ -40,14 +42,11 @@ class NetworkConversionServiceTest {
     @Mock
     private ReportNode reportNode;
 
-    private NetworkConversionService service;
-
     private UUID caseUuid;
 
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
-        service = new NetworkConversionService("http://case-server/", new RestTemplateBuilder());
     }
 
     @Test

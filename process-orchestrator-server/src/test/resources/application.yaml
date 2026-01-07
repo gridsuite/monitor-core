@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: default
   jpa:
     database: H2
     properties:

@@ -29,17 +29,17 @@ import java.util.UUID;
 public class NetworkConversionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate caseServerRest;
 
     public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri,
                                     RestTemplateBuilder restTemplateBuilder) {
-        this.restTemplate = restTemplateBuilder.uriTemplateHandler(new DefaultUriBuilderFactory(caseServerBaseUri)).build();
+        this.caseServerRest = restTemplateBuilder.uriTemplateHandler(new DefaultUriBuilderFactory(caseServerBaseUri)).build();
     }
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
         LOGGER.info("Creating network");
 
-        CaseDataSourceClient dataSource = new CaseDataSourceClient(restTemplate, caseUuid);
+        CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerRest, caseUuid);
 
         Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
         if (importer == null) {

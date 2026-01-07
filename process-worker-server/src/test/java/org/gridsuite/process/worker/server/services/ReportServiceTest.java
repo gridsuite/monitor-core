@@ -48,7 +48,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void testSendReport() {
+    void sendReport() {
         final ReportNode reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
@@ -63,7 +63,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void testSendReportFailed() {
+    void sendReportFailed() {
         final ReportNode reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")

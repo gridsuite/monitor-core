@@ -33,7 +33,7 @@ public class NetworkConversionService {
 
     public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri,
                                     RestTemplateBuilder restTemplateBuilder) {
-        this.caseServerRest = restTemplateBuilder.uriTemplateHandler(new DefaultUriBuilderFactory(caseServerBaseUri)).build();
+        this.caseServerRest = restTemplateBuilder.rootUri(caseServerBaseUri).build();
     }
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {

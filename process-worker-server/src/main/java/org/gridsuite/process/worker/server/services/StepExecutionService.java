@@ -19,11 +19,10 @@ public class StepExecutionService<C extends ProcessConfig> {
     private final ReportService reportService;
 
     public void skipStep(ProcessStepExecutionContext<?> context, ProcessStep<?> step) {
-        context.getProcessContext().setLastExecutedStepId(context.getStepExecutionId());
         ProcessExecutionStep executionStep = new ProcessExecutionStep(
                 context.getStepExecutionId(),
                 step.getType().getName(),
-                step.getPreviousStepId(),
+                context.getPreviousStepExecutionId(),
                 StepStatus.SKIPPED,
                 null,
                 null,
@@ -35,12 +34,10 @@ public class StepExecutionService<C extends ProcessConfig> {
     }
 
     public void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        context.getProcessContext().setLastExecutedStepId(context.getStepExecutionId());
-
         ProcessExecutionStep executionStep = new ProcessExecutionStep(
             context.getStepExecutionId(),
             step.getType().getName(),
-            step.getPreviousStepId(),
+            context.getPreviousStepExecutionId(),
             StepStatus.RUNNING,
             null,
             null,
@@ -64,7 +61,7 @@ public class StepExecutionService<C extends ProcessConfig> {
         ProcessExecutionStep updated = new ProcessExecutionStep(
             context.getStepExecutionId(),
             step.getType().getName(),
-            step.getPreviousStepId(),
+            context.getPreviousStepExecutionId(),
             status,
             context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null,
             context.getResultInfos() != null ? context.getResultInfos().resultType() : null,

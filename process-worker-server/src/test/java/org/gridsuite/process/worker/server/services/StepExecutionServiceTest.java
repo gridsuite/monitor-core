@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,9 +46,6 @@ class StepExecutionServiceTest {
     private ProcessStepType processStepType;
 
     @Mock
-    private ProcessExecutionContext<ProcessConfig> processExecutionContext;
-
-    @Mock
     private ReportNode reportNode;
 
     private StepExecutionService<ProcessConfig> stepExecutionService;
@@ -64,11 +62,10 @@ class StepExecutionServiceTest {
         UUID previousStepId = UUID.randomUUID();
         UUID reportUuid = UUID.randomUUID();
 
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid);
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid, previousStepId);
 
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("TEST_STEP");
-        when(processStep.getPreviousStepId()).thenReturn(previousStepId);
         doNothing().when(processStep).execute(context);
 
         // When
@@ -84,15 +81,17 @@ class StepExecutionServiceTest {
         // Verify notifications were sent (RUNNING and COMPLETED)
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
 
+        InOrder inOrder = inOrder(notificationService);
+
         // Verify RUNNING step notification
-        verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "TEST_STEP".equals(step.getStepType()) &&
                         previousStepId.equals(step.getPreviousStepId())
         ));
 
         // Verify COMPLETED step notification
-        verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.COMPLETED &&
                         step.getCompletedAt() != null
         ));
@@ -104,11 +103,10 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         UUID reportUuid = UUID.randomUUID();
         UUID previousStepId = UUID.randomUUID();
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid);
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid, previousStepId);
 
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("FAILING_STEP");
-        when(processStep.getPreviousStepId()).thenReturn(previousStepId);
 
         RuntimeException stepException = new RuntimeException("Step execution failed");
         doThrow(stepException).when(processStep).execute(context);
@@ -124,15 +122,16 @@ class StepExecutionServiceTest {
         // Verify notifications were sent (RUNNING and COMPLETED)
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
 
+        InOrder inOrder = inOrder(notificationService);
         // Verify RUNNING step notification
-        verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "FAILING_STEP".equals(step.getStepType()) &&
                         previousStepId.equals(step.getPreviousStepId())
         ));
 
         // Verify FAILED step notification
-        verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
@@ -146,13 +145,11 @@ class StepExecutionServiceTest {
         // Given
         UUID executionId = UUID.randomUUID();
         UUID previousStepId = UUID.randomUUID();
-        UUID reportUuid = UUID.randomUUID();
 
-        ProcessStepExecutionContext<ProcessConfig> context = createSkippedStepExecutionContext(executionId, reportUuid);
+        ProcessStepExecutionContext<ProcessConfig> context = createSkippedStepExecutionContext(executionId, previousStepId);
 
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("SKIPPED_STEP");
-        when(processStep.getPreviousStepId()).thenReturn(previousStepId);
 
         // When
         stepExecutionService.skipStep(context, processStep);
@@ -172,25 +169,25 @@ class StepExecutionServiceTest {
         ));
     }
 
-    private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID reportUuid) {
+    private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID reportUuid, UUID previousStepId) {
         ReportInfos reportInfos = new ReportInfos(reportUuid, reportNode);
 
         ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
-        when(context.getProcessContext()).thenReturn(processExecutionContext);
         when(context.getProcessExecutionId()).thenReturn(executionId);
         when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
         when(context.getStartedAt()).thenReturn(java.time.Instant.now());
         when(context.getReportInfos()).thenReturn(reportInfos);
+        when(context.getPreviousStepExecutionId()).thenReturn(previousStepId);
 
         return context;
     }
 
-    private ProcessStepExecutionContext<ProcessConfig> createSkippedStepExecutionContext(UUID executionId, UUID reportUuid) {
+    private ProcessStepExecutionContext<ProcessConfig> createSkippedStepExecutionContext(UUID executionId, UUID previousStepId) {
         ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
-        when(context.getProcessContext()).thenReturn(processExecutionContext);
         when(context.getProcessExecutionId()).thenReturn(executionId);
         when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
         when(context.getStartedAt()).thenReturn(java.time.Instant.now());
+        when(context.getPreviousStepExecutionId()).thenReturn(previousStepId);
 
         return context;
     }

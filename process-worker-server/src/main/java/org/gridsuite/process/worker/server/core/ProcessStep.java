@@ -10,7 +10,4 @@ public interface ProcessStep<C extends ProcessConfig> {
 
     void execute(ProcessStepExecutionContext<C> context);
 
-    void setPreviousStepId(UUID previousStepId);
-
-    UUID getPreviousStepId();
 }

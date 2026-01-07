@@ -57,7 +57,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateStepStatus_shouldSendStepStatusUpdateMessage() {
+    void updateStepStatusShouldSendStepStatusUpdateMessage() {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStep payload = new ProcessExecutionStep();
 

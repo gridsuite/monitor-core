@@ -11,9 +11,6 @@ public abstract class AbstractProcessStep<C extends ProcessConfig> implements Pr
 
     private final ProcessStepType type;
 
-    @Setter
-    private UUID previousStepId;
-
     protected AbstractProcessStep(ProcessStepType type) {
         this.type = type;
     }

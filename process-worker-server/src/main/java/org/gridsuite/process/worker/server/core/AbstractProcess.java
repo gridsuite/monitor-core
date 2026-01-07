@@ -31,34 +31,27 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     public void execute(ProcessExecutionContext<C> context) {
         List<ProcessStep<C>> steps = defineSteps();
         boolean skipRemaining = false;
-        UUID lastStepId = null;
+        UUID previousStepId = null;
+
         for (ProcessStep<C> step : steps) {
-            step.setPreviousStepId(lastStepId);
+            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, previousStepId);
+            previousStepId = stepContext.getStepExecutionId();
+
             if (skipRemaining) {
-                skipStep(context, step);
-            } else {
-                try {
-                    executeStep(context, step);
-                } catch (Exception e) {
-                    handleStepFailure(context, step, e);
-                    skipRemaining = true;
-                }
+                stepExecutionService.skipStep(stepContext, step);
+                continue;
             }
-            lastStepId = context.getLastExecutedStepId();
+
+            try {
+                stepExecutionService.executeStep(stepContext, step);
+            } catch (Exception e) {
+                handleStepFailure(context, step, e);
+                skipRemaining = true;
+            }
         }
     }
 
     protected abstract List<ProcessStep<C>> defineSteps();
-
-    protected void executeStep(ProcessExecutionContext<C> context, ProcessStep<C> step) {
-        ProcessStepExecutionContext<C> stepContext = context.createStepContext(step);
-        stepExecutionService.executeStep(stepContext, step);
-    }
-
-    protected void skipStep(ProcessExecutionContext<C> context, ProcessStep<C> step) {
-        ProcessStepExecutionContext<C> stepContext = context.createStepContext(step);
-        stepExecutionService.skipStep(stepContext, step);
-    }
 
     protected void handleStepFailure(ProcessExecutionContext<C> context, ProcessStep<C> step, Exception e) {
         //TODO better error handling

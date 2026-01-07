@@ -15,6 +15,7 @@ import java.util.UUID;
 public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
     private final UUID stepExecutionId = UUID.randomUUID();
+    private final UUID previousStepExecutionId;
     private final ProcessExecutionContext<C> processContext;
     private final C config;
     @Setter
@@ -26,7 +27,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     @Getter
     private final ProcessStepType processStepType;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, C config, ProcessStepType processStepType) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, C config, ProcessStepType processStepType, UUID previousStepExecutionId) {
         this.processContext = processContext;
         this.config = config;
         this.processStepType = processStepType;
@@ -35,6 +36,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
                 .withMessageTemplate("process.worker.server.stepType")
                 .withUntypedValue("stepType", processStepType.getName())
                 .build());
+        this.previousStepExecutionId = previousStepExecutionId;
     }
 
     public UUID getProcessExecutionId() {

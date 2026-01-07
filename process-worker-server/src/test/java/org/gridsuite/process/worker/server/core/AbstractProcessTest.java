@@ -1,12 +1,5 @@
-/**
- * Copyright (c) 2025, RTE (http://www.rte-france.com)
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
 package org.gridsuite.process.worker.server.core;
 
-import org.gridsuite.process.commons.ProcessType;
 import org.gridsuite.process.commons.SecurityAnalysisConfig;
 import org.gridsuite.process.worker.server.processes.securityanalysis.DummySecurityAnalysisService;
 import org.gridsuite.process.worker.server.processes.securityanalysis.SecurityAnalysisProcess;
@@ -18,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,6 +20,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,36 +40,19 @@ class AbstractProcessTest {
     @Mock
     private ProcessExecutionContext<SecurityAnalysisConfig> processContext;
 
-    @Mock
-    private SecurityAnalysisConfig config;
-
     @Captor
-    private ArgumentCaptor<ProcessStep<SecurityAnalysisConfig>> stepCaptor;
+    private ArgumentCaptor<UUID> previousStepIdCaptor;
 
     private SecurityAnalysisProcess process;
-
-    private static final UUID EXECUTION_ID = UUID.randomUUID();
-    private static final UUID CASE_UUID = UUID.randomUUID();
-    private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
         process = new SecurityAnalysisProcess(
-            stepExecutionService,
-            notificationService,
-            networkConversionService,
-            securityAnalysisService
+                stepExecutionService,
+                notificationService,
+                networkConversionService,
+                securityAnalysisService
         );
-
-        when(config.executionId()).thenReturn(EXECUTION_ID);
-        when(config.caseUuid()).thenReturn(CASE_UUID);
-        when(config.parametersUuid()).thenReturn(PARAMS_UUID);
-        when(config.contingencies()).thenReturn(List.of("contingency1", "contingency2"));
-        when(config.modificationUuids()).thenReturn(List.of());
-
-        when(processContext.getConfig()).thenReturn(config);
-        when(processContext.getExecutionId()).thenReturn(EXECUTION_ID);
-        when(processContext.createStepContext(any())).thenCallRealMethod();
     }
 
     @Test
@@ -84,79 +62,80 @@ class AbstractProcessTest {
         UUID step2Id = UUID.randomUUID();
         UUID step3Id = UUID.randomUUID();
 
-        when(processContext.getLastExecutedStepId())
-            .thenReturn(null)     // Before step 1
-            .thenReturn(step1Id)  // After step 1
-            .thenReturn(step2Id)  // After step 2
-            .thenReturn(step3Id); // After step 3
+        ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext1 = mock(ProcessStepExecutionContext.class);
+        ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext2 = mock(ProcessStepExecutionContext.class);
+        ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext3 = mock(ProcessStepExecutionContext.class);
+
+        when(stepContext1.getStepExecutionId()).thenReturn(step1Id);
+        when(stepContext2.getStepExecutionId()).thenReturn(step2Id);
+        when(stepContext3.getStepExecutionId()).thenReturn(step3Id);
+
+        when(processContext.createStepContext(any(), any()))
+                .thenReturn(stepContext1)
+                .thenReturn(stepContext2)
+                .thenReturn(stepContext3);
 
         // When
         process.execute(processContext);
 
         // Then
         // Verify all 3 steps were executed
-        verify(stepExecutionService, times(3)).executeStep(any(), stepCaptor.capture());
-
-        List<ProcessStep<SecurityAnalysisConfig>> executedSteps = stepCaptor.getAllValues();
-        assertEquals(3, executedSteps.size());
+        verify(stepExecutionService, times(3)).executeStep(any(), any());
 
         // Verify no steps were skipped
         verify(stepExecutionService, never()).skipStep(any(), any());
-    }
 
-    @Test
-    void executeShouldLinkStepsWithPreviousStepId() {
-        // Given
-        UUID step1Id = UUID.randomUUID();
-        UUID step2Id = UUID.randomUUID();
+        verify(processContext, times(3)).createStepContext(any(), previousStepIdCaptor.capture());
 
-        when(processContext.getLastExecutedStepId())
-            .thenReturn(null)     // Before step 1
-            .thenReturn(step1Id)  // After step 1
-            .thenReturn(step2Id); // After step 2
-
-        // When
-        process.execute(processContext);
-
-        // Then
-        verify(stepExecutionService, times(3)).executeStep(any(), stepCaptor.capture());
-
-        List<ProcessStep<SecurityAnalysisConfig>> executedSteps = stepCaptor.getAllValues();
-
-        // First step should have no previous step
-        assertNull(executedSteps.get(0).getPreviousStepId());
-
-        // Second step should link to first step
-        assertEquals(step1Id, executedSteps.get(1).getPreviousStepId());
-
-        // Third step should link to second step
-        assertEquals(step2Id, executedSteps.get(2).getPreviousStepId());
+        InOrder inOrder = inOrder(processContext);
+        inOrder.verify(processContext).createStepContext(any(), eq(null));
+        inOrder.verify(processContext).createStepContext(any(), eq(step1Id));
+        inOrder.verify(processContext).createStepContext(any(), eq(step2Id));
     }
 
     @Test
     void executeShouldSkipAllRemainingStepsWhenFirstStepFails() {
-        // Given - Make the first step fail
+        // Given
+        UUID step1Id = UUID.randomUUID();
+        UUID step2Id = UUID.randomUUID();
+        UUID step3Id = UUID.randomUUID();
+
+        ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext1 = mock(ProcessStepExecutionContext.class);
+        ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext2 = mock(ProcessStepExecutionContext.class);
+        ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext3 = mock(ProcessStepExecutionContext.class);
+
+        when(stepContext1.getStepExecutionId()).thenReturn(step1Id);
+        when(stepContext2.getStepExecutionId()).thenReturn(step2Id);
+        when(stepContext3.getStepExecutionId()).thenReturn(step3Id);
+
+        when(processContext.createStepContext(any(), any()))
+                .thenReturn(stepContext1)
+                .thenReturn(stepContext2)
+                .thenReturn(stepContext3);
+
+        // Make the first step fail
         doThrow(new RuntimeException("Network loading failed"))
-            .when(stepExecutionService).executeStep(any(), argThat(step ->
-                "LOAD_NETWORK".equals(step.getType().getName())
-            ));
+                .when(stepExecutionService).executeStep(eq(stepContext1), any());
 
         // When
         process.execute(processContext);
 
         // Then
         // First step should be attempted
-        verify(stepExecutionService).executeStep(any(), argThat(step ->
-            "LOAD_NETWORK".equals(step.getType().getName())
-        ));
+        verify(stepExecutionService).executeStep(eq(stepContext1), any());
 
         // Steps 2 and 3 should be skipped
-        verify(stepExecutionService).skipStep(any(), argThat(step ->
-            "APPLY_MODIFICATIONS".equals(step.getType().getName())
-        ));
+        verify(stepExecutionService).skipStep(eq(stepContext2), any());
+        verify(stepExecutionService).skipStep(eq(stepContext3), any());
 
-        verify(stepExecutionService).skipStep(any(), argThat(step ->
-            "RUN_COMPUTATION".equals(step.getType().getName())
-        ));
+        // Only first step should be executed (not skipped)
+        verify(stepExecutionService, times(1)).executeStep(any(), any());
+        verify(stepExecutionService, times(2)).skipStep(any(), any());
+
+        verify(processContext, times(3)).createStepContext(any(), previousStepIdCaptor.capture());
+        InOrder inOrder = inOrder(processContext);
+        inOrder.verify(processContext).createStepContext(any(), eq(null));
+        inOrder.verify(processContext).createStepContext(any(), eq(step1Id));
+        inOrder.verify(processContext).createStepContext(any(), eq(step2Id));
     }
 }

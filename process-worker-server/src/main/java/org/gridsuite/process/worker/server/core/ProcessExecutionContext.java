@@ -15,8 +15,6 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
     @Setter
     private Network network;
     private final String executionEnvName;
-    @Setter
-    private UUID lastExecutedStepId;
 
     public ProcessExecutionContext(C config, String executionEnvName) {
         this.config = config;
@@ -24,7 +22,7 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
         this.executionEnvName = executionEnvName;
     }
 
-    public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step) {
-        return new ProcessStepExecutionContext<>(this, config, step.getType());
+    public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step, UUID previousStepId) {
+        return new ProcessStepExecutionContext<>(this, config, step.getType(), previousStepId);
     }
 }

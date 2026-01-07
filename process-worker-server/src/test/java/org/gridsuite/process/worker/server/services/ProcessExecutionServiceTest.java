@@ -16,6 +16,7 @@ import org.gridsuite.process.worker.server.core.ProcessExecutionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -71,15 +72,17 @@ class ProcessExecutionServiceTest {
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
         ));
 
+        InOrder inOrder = inOrder(notificationService);
+
         // Verify RUNNING status notification
-        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
                         update.getCompletedAt() == null
         ));
 
         // Verify COMPLETED status notification
-        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.COMPLETED &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
                         update.getCompletedAt() != null
@@ -105,13 +108,14 @@ class ProcessExecutionServiceTest {
         // Then
         verify(process).execute(any(ProcessExecutionContext.class));
 
+        InOrder inOrder = inOrder(notificationService);
         // Verify RUNNING status notification
-        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING
         ));
 
         // Verify FAILED status notification
-        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.FAILED &&
                         update.getCompletedAt() != null
         ));

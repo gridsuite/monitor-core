@@ -1,4 +1,3 @@
-
 /**
  * Copyright (c) 2025, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,9 +6,9 @@
  */
 package org.gridsuite.process.worker.server.services;
 
+import org.gridsuite.process.commons.ProcessConfig;
 import org.gridsuite.process.commons.ProcessExecutionStatusUpdate;
 import org.gridsuite.process.commons.ProcessStatus;
-import org.gridsuite.process.commons.ProcessConfig;
 import org.gridsuite.process.commons.ProcessType;
 import org.gridsuite.process.worker.server.core.Process;
 import org.gridsuite.process.worker.server.core.ProcessExecutionContext;
@@ -24,10 +23,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

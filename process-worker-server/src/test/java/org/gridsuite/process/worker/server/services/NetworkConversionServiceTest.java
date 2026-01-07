@@ -10,11 +10,9 @@ import com.powsybl.cases.datasource.CaseDataSourceClient;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.computation.ComputationManager;
-import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.NetworkFactory;
-import com.powsybl.iidm.network.VariantManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,15 +20,12 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import java.util.Properties;
 import java.util.UUID;
 
-import static com.powsybl.iidm.network.VariantManagerConstants.INITIAL_VARIANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -57,6 +52,7 @@ class NetworkConversionServiceTest {
         caseUuid = UUID.randomUUID();
         service = new NetworkConversionService("http://case-server/", restTemplate);
     }
+
     @Test
     void createNetworkShouldImportNetworkWhenImporterFound() {
         try (MockedStatic<Importer> importerMock = mockStatic(Importer.class)) {

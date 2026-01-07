@@ -10,25 +10,22 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import org.gridsuite.process.commons.ProcessConfig;
-import org.gridsuite.process.commons.SecurityAnalysisConfig;
 import org.gridsuite.process.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.process.worker.server.core.ProcessExecutionContext;
 import org.gridsuite.process.worker.server.dto.ReportInfos;
 import org.gridsuite.process.worker.server.services.NetworkConversionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LoadNetworkStepTest {

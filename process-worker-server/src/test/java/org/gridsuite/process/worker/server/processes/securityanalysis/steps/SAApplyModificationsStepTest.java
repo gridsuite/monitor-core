@@ -6,22 +6,12 @@
  */
 package org.gridsuite.process.worker.server.processes.securityanalysis.steps;
 
-import org.gridsuite.process.commons.SecurityAnalysisConfig;
-import org.gridsuite.process.worker.server.core.ProcessStepExecutionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class SAApplyModificationsStepTest {

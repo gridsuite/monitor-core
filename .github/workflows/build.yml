@@ -5,7 +5,7 @@ on:
     branches:
       - 'main'
   pull_request:
-//FIXME: build two docker images in same repo
+#FIXME: build two docker images in same repo
 jobs:
   build:
     uses: powsybl/github-ci/.github/workflows/build-backend-app-generic.yml@aaae75875296657028f2805e7a3fbdb1418b8b95

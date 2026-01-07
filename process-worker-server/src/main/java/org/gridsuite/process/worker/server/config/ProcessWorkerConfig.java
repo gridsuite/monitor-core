@@ -7,7 +7,6 @@ import com.powsybl.security.json.SecurityAnalysisJsonModule;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class ProcessWorkerConfig {

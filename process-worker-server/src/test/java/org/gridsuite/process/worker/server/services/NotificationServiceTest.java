@@ -6,24 +6,23 @@
  */
 package org.gridsuite.process.worker.server.services;
 
-import org.gridsuite.process.commons.*;
+import org.gridsuite.process.commons.MessageType;
+import org.gridsuite.process.commons.ProcessExecutionStatusUpdate;
+import org.gridsuite.process.commons.ProcessExecutionStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
@@ -39,7 +38,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateExecutionStatus_shouldSendExecutionStatusUpdateMessage() {
+    void updateExecutionStatusShouldSendExecutionStatusUpdateMessage() {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStatusUpdate payload = new ProcessExecutionStatusUpdate();
 

@@ -6,9 +6,8 @@
  */
 package org.gridsuite.process.worker.server.processes.securityanalysis;
 
-import org.gridsuite.process.commons.SecurityAnalysisConfig;
 import org.gridsuite.process.commons.ProcessType;
-import org.gridsuite.process.worker.server.core.ProcessExecutionContext;
+import org.gridsuite.process.commons.SecurityAnalysisConfig;
 import org.gridsuite.process.worker.server.core.ProcessStep;
 import org.gridsuite.process.worker.server.services.NetworkConversionService;
 import org.gridsuite.process.worker.server.services.NotificationService;
@@ -16,17 +15,13 @@ import org.gridsuite.process.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(MockitoExtension.class)
 class SecurityAnalysisProcessTest {

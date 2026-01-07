@@ -11,7 +11,6 @@ import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.security.SecurityAnalysisReport;
 import org.gridsuite.process.commons.ResultType;
-import org.gridsuite.process.commons.ResultInfos;
 import org.gridsuite.process.commons.SecurityAnalysisConfig;
 import org.gridsuite.process.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.process.worker.server.dto.ReportInfos;
@@ -19,18 +18,17 @@ import org.gridsuite.process.worker.server.processes.securityanalysis.DummySecur
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SARunComputationStepTest {

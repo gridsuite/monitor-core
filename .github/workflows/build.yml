@@ -12,7 +12,7 @@ jobs:
     with:
       dockerImage: docker.io/gridsuite/process-orchestrator-server
       dockerUsername: gridsuiteci
-      eventType: process_orchestrator_server_updated
+      eventType: process_updated
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

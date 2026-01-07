@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 
 import java.util.Properties;
 import java.util.UUID;
@@ -31,9 +31,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NetworkConversionServiceTest {
-    @Mock
-    private RestTemplate restTemplate;
-
     @Mock
     private Importer importer;
 
@@ -50,7 +47,7 @@ class NetworkConversionServiceTest {
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
-        service = new NetworkConversionService("http://case-server/", restTemplate);
+        service = new NetworkConversionService("http://case-server/", new RestTemplateBuilder());
     }
 
     @Test

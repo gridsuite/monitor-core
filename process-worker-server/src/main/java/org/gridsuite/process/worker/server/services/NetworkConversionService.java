@@ -17,6 +17,7 @@ import com.powsybl.iidm.network.NetworkFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
@@ -28,18 +29,17 @@ import java.util.UUID;
 public class NetworkConversionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
 
-    private final RestTemplate caseServerRest;
+    private final RestTemplate restTemplate;
 
     public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri,
-                                    RestTemplate caseServerRest) {
-        this.caseServerRest = caseServerRest;
-        this.caseServerRest.setUriTemplateHandler(new DefaultUriBuilderFactory(caseServerBaseUri));
+                                    RestTemplateBuilder restTemplateBuilder) {
+        this.restTemplate = restTemplateBuilder.uriTemplateHandler(new DefaultUriBuilderFactory(caseServerBaseUri)).build();
     }
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
         LOGGER.info("Creating network");
 
-        CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerRest, caseUuid);
+        CaseDataSourceClient dataSource = new CaseDataSourceClient(restTemplate, caseUuid);
 
         Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
         if (importer == null) {

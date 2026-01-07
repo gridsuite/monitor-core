@@ -57,10 +57,10 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(orchestratorService).updateExecutionStatus(
-                eq(executionId),
-                eq(ProcessStatus.RUNNING),
-                eq("env-1"),
-                eq(Instant.parse("2025-01-01T12:00:00Z"))
+                executionId,
+                ProcessStatus.RUNNING,
+                "env-1",
+                Instant.parse("2025-01-01T12:00:00Z")
         );
         verify(orchestratorService, never()).updateStepStatus(any(), any());
     }

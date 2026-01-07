@@ -70,6 +70,7 @@ class ReportServiceTest {
                 .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_ERROR_UUID))
                 .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> reportService.sendReport(new ReportInfos(REPORT_ERROR_UUID, reportNode))).isInstanceOf(RestClientException.class);
+        ReportInfos reportInfos = new ReportInfos(REPORT_ERROR_UUID, reportNode);
+        assertThatThrownBy(() -> reportService.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
     }
 }

@@ -75,8 +75,8 @@ class ProcessOrchestratorServiceTest {
                         execution.getScheduledAt() != null
         ));
         verify(notificationService).sendProcessRunMessage(
-                eq(securityAnalysisConfig),
-                eq(result)
+                securityAnalysisConfig,
+                result
         );
     }
 
@@ -209,7 +209,7 @@ class ProcessOrchestratorServiceTest {
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
-        ProcessExecutionStepEntity updatedStep = execution.getSteps().get(0);
+        ProcessExecutionStepEntity updatedStep = execution.getSteps().getFirst();
         assertThat(updatedStep.getId()).isEqualTo(stepId);
         assertThat(updatedStep.getStepType()).isEqualTo("LOAD_FLOW_UPDATED");
         assertThat(updatedStep.getStatus()).isEqualTo(StepStatus.COMPLETED);
@@ -244,8 +244,7 @@ class ProcessOrchestratorServiceTest {
 
         List<Report> result = orchestratorService.getReports(executionId);
 
-        assertThat(result).hasSize(2);
-        assertThat(result).containsExactly(report1, report2);
+        assertThat(result).hasSize(2).containsExactly(report1, report2);
         verify(executionRepository).findById(executionId);
         verify(reportService).getReport(reportId1);
         verify(reportService).getReport(reportId2);
@@ -279,8 +278,7 @@ class ProcessOrchestratorServiceTest {
 
         List<String> results = orchestratorService.getResults(executionId);
 
-        assertThat(results).hasSize(2);
-        assertThat(results).containsExactly(result1, result2);
+        assertThat(results).hasSize(2).containsExactly(result1, result2);
         verify(executionRepository).findById(executionId);
         verify(resultService, times(2)).getResult(any(ResultInfos.class));
     }

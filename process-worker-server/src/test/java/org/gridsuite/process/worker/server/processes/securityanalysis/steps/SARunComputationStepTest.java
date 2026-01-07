@@ -63,15 +63,12 @@ class SARunComputationStepTest {
 
     @Test
     void executeRunSecurityAnalysis() {
-        // Given
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
         when(config.contingencies()).thenReturn(List.of("NHV1_NHV2_1", "NHV1_NHV2_2"));
 
-        // When
         runComputationStep.execute(stepContext);
 
-        // Then
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
         verify(securityAnalysisService).saveResult(

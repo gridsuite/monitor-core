@@ -56,7 +56,6 @@ class ProcessOrchestratorServiceTest {
 
     @Test
     void executeProcessCreateExecutionAndSendNotification() {
-        // Arrange
         UUID expectedExecutionId = UUID.randomUUID();
         when(executionRepository.save(any(ProcessExecutionEntity.class)))
                 .thenAnswer(invocation -> {
@@ -65,13 +64,9 @@ class ProcessOrchestratorServiceTest {
                     return entity;
                 });
 
-        // Act
         UUID result = orchestratorService.executeProcess(securityAnalysisConfig);
 
-        // Assert
         assertThat(result).isNotNull();
-
-        // Verify repository save was called with correct execution entity
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
@@ -79,8 +74,6 @@ class ProcessOrchestratorServiceTest {
                         ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
                         execution.getScheduledAt() != null
         ));
-
-        // Verify notification service was called with correct parameters
         verify(notificationService).sendProcessRunMessage(
                 eq(securityAnalysisConfig),
                 eq(result)
@@ -89,7 +82,6 @@ class ProcessOrchestratorServiceTest {
 
     @Test
     void updateExecutionStatusShouldUpdateStatusOnly() {
-        // Arrange
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -97,13 +89,10 @@ class ProcessOrchestratorServiceTest {
                 .status(ProcessStatus.SCHEDULED)
                 .scheduledAt(Instant.now())
                 .build();
-
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        // Act
         orchestratorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null);
 
-        // Assert
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
         assertThat(execution.getExecutionEnvName()).isNull();
@@ -113,7 +102,6 @@ class ProcessOrchestratorServiceTest {
 
     @Test
     void updateExecutionStatusShouldUpdateAllFields() {
-        // Arrange
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -121,16 +109,12 @@ class ProcessOrchestratorServiceTest {
                 .status(ProcessStatus.RUNNING)
                 .scheduledAt(Instant.now())
                 .build();
-
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-
         String envName = "production-env";
         Instant completedAt = Instant.now();
 
-        // Act
         orchestratorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, completedAt);
 
-        // Assert
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
@@ -140,20 +124,16 @@ class ProcessOrchestratorServiceTest {
 
     @Test
     void updateExecutionStatusShouldHandleExecutionNotFound() {
-        // Arrange
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        // Act
         orchestratorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now());
 
-        // Assert
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());
     }
 
     @Test
     void updateStepStatusShouldAddNewStep() {
-        // Arrange
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -161,14 +141,11 @@ class ProcessOrchestratorServiceTest {
                 .status(ProcessStatus.RUNNING)
                 .steps(new ArrayList<>())
                 .build();
-
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-
         UUID stepId = UUID.randomUUID();
         UUID resultId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
         Instant startedAt = Instant.now();
-
         ProcessExecutionStep processExecutionStep = ProcessExecutionStep.builder()
                 .id(stepId)
                 .stepType("LOAD_FLOW")
@@ -179,13 +156,10 @@ class ProcessOrchestratorServiceTest {
                 .startedAt(startedAt)
                 .build();
 
-        // Act
         orchestratorService.updateStepStatus(executionId, processExecutionStep);
 
-        // Assert
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
-
         ProcessExecutionStepEntity addedStep = execution.getSteps().getFirst();
         assertThat(addedStep.getId()).isEqualTo(stepId);
         assertThat(addedStep.getStepType()).isEqualTo("LOAD_FLOW");
@@ -194,20 +168,17 @@ class ProcessOrchestratorServiceTest {
         assertThat(addedStep.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
         assertThat(addedStep.getReportId()).isEqualTo(reportId);
         assertThat(addedStep.getStartedAt()).isEqualTo(startedAt);
-
         verify(executionRepository).save(execution);
     }
 
     @Test
     void updateStepStatusShouldUpdateExistingStep() {
-        // Arrange
         UUID stepId = UUID.randomUUID();
         UUID originalResultId = UUID.randomUUID();
         UUID newResultId = UUID.randomUUID();
         UUID newReportId = UUID.randomUUID();
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
-
         ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
                 .id(stepId)
                 .stepType("LOAD_FLOW")
@@ -215,7 +186,6 @@ class ProcessOrchestratorServiceTest {
                 .resultId(originalResultId)
                 .startedAt(startedAt)
                 .build();
-
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -223,9 +193,7 @@ class ProcessOrchestratorServiceTest {
                 .status(ProcessStatus.RUNNING)
                 .steps(new ArrayList<>(List.of(existingStep)))
                 .build();
-
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-
         ProcessExecutionStep updateDto = ProcessExecutionStep.builder()
                 .id(stepId)
                 .stepType("LOAD_FLOW_UPDATED")
@@ -237,13 +205,10 @@ class ProcessOrchestratorServiceTest {
                 .completedAt(completedAt)
                 .build();
 
-        // Act
         orchestratorService.updateStepStatus(executionId, updateDto);
 
-        // Assert
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
-
         ProcessExecutionStepEntity updatedStep = execution.getSteps().get(0);
         assertThat(updatedStep.getId()).isEqualTo(stepId);
         assertThat(updatedStep.getStepType()).isEqualTo("LOAD_FLOW_UPDATED");
@@ -252,43 +217,33 @@ class ProcessOrchestratorServiceTest {
         assertThat(updatedStep.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
         assertThat(updatedStep.getReportId()).isEqualTo(newReportId);
         assertThat(updatedStep.getCompletedAt()).isEqualTo(completedAt);
-
         verify(executionRepository).save(execution);
     }
 
     @Test
     void getReportsShouldReturnReports() {
-        // Arrange
         UUID reportId1 = UUID.randomUUID();
         UUID reportId2 = UUID.randomUUID();
-
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
                 .reportId(reportId1)
                 .build();
-
         ProcessExecutionStepEntity step2 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
                 .reportId(reportId2)
                 .build();
-
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .steps(List.of(step1, step2))
                 .build();
-
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-
         Report report1 = new Report(reportId1, null, "Report 1", null, List.of());
         Report report2 = new Report(reportId2, null, "Report 2", null, List.of());
-
         when(reportService.getReport(reportId1)).thenReturn(report1);
         when(reportService.getReport(reportId2)).thenReturn(report2);
 
-        // Act
         List<Report> result = orchestratorService.getReports(executionId);
 
-        // Assert
         assertThat(result).hasSize(2);
         assertThat(result).containsExactly(report1, report2);
         verify(executionRepository).findById(executionId);
@@ -298,41 +253,32 @@ class ProcessOrchestratorServiceTest {
 
     @Test
     void getResultsShouldReturnResults() {
-        // Arrange
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
-
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
                 .resultId(resultId1)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .build();
-
         ProcessExecutionStepEntity step2 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
                 .resultId(resultId2)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .build();
-
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .steps(List.of(step1, step2))
                 .build();
-
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
-
         when(resultService.getResult(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS)))
                 .thenReturn(result1);
         when(resultService.getResult(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)))
                 .thenReturn(result2);
 
-        // Act
         List<String> results = orchestratorService.getResults(executionId);
 
-        // Assert
         assertThat(results).hasSize(2);
         assertThat(results).containsExactly(result1, result2);
         verify(executionRepository).findById(executionId);

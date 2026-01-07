@@ -58,7 +58,6 @@ class NetworkConversionServiceTest {
         try (MockedStatic<Importer> importerMock = mockStatic(Importer.class)) {
             importerMock.when(() -> Importer.find(any(CaseDataSourceClient.class), any()))
                     .thenReturn(importer);
-
             when(importer.importData(
                     any(CaseDataSourceClient.class),
                     any(NetworkFactory.class),
@@ -69,7 +68,6 @@ class NetworkConversionServiceTest {
             Network result = service.createNetwork(caseUuid, reportNode);
 
             assertThat(result).isSameAs(network);
-
             verify(importer).importData(
                     any(CaseDataSourceClient.class),
                     any(NetworkFactory.class),

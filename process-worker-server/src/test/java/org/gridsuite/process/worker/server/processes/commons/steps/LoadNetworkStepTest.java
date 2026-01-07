@@ -58,15 +58,12 @@ class LoadNetworkStepTest {
 
     @Test
     void executeLoadNetwork() {
-        // Given
         Network expectedNetwork = EurostagTutorialExample1Factory.create();
         when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
             .thenReturn(expectedNetwork);
 
-        // When
         loadNetworkStep.execute(stepContext);
 
-        // Then
         String stepType = loadNetworkStep.getType().getName();
         assertEquals("LOAD_NETWORK", stepType);
         verify(networkConversionService).createNetwork(eq(CASE_UUID), any(ReportNode.class));

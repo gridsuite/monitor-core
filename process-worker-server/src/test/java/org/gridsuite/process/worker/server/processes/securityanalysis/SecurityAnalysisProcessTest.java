@@ -52,14 +52,10 @@ class SecurityAnalysisProcessTest {
 
     @Test
     void defineStepsShouldReturnThreeStepsInCorrectOrder() {
-        // When
         List<ProcessStep<SecurityAnalysisConfig>> steps = process.defineSteps();
 
-        // Then
         assertNotNull(steps);
         assertEquals(3, steps.size());
-
-        // Verify step order: LOAD_NETWORK -> APPLY_MODIFICATIONS -> RUN_COMPUTATION
         assertEquals("LOAD_NETWORK", steps.get(0).getType().getName());
         assertEquals("APPLY_MODIFICATIONS", steps.get(1).getType().getName());
         assertEquals("RUN_SA_COMPUTATION", steps.get(2).getType().getName());

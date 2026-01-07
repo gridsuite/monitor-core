@@ -25,10 +25,8 @@ class SAApplyModificationsStepTest {
 
     @Test
     void getTypeShouldReturnApplyModifications() {
-        // When
         String stepType = applyModificationsStep.getType().getName();
 
-        // Then
         assertEquals("APPLY_MODIFICATIONS", stepType);
     }
 }

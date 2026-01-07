@@ -55,40 +55,25 @@ class StepExecutionServiceTest {
 
     @Test
     void executeStepShouldCompleteSuccessfullyWhenNoExceptionThrown() {
-        // Given
         UUID executionId = UUID.randomUUID();
         UUID previousStepId = UUID.randomUUID();
         UUID reportUuid = UUID.randomUUID();
-
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid, previousStepId);
-
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("TEST_STEP");
         doNothing().when(processStep).execute(context);
 
-        // When
         stepExecutionService.executeStep(context, processStep);
 
-        // Then
-        // Verify step execution
         verify(processStep).execute(context);
-
-        // Verify report was sent
         verify(reportService).sendReport(any(ReportInfos.class));
-
-        // Verify notifications were sent (RUNNING and COMPLETED)
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-
         InOrder inOrder = inOrder(notificationService);
-
-        // Verify RUNNING step notification
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "TEST_STEP".equals(step.getStepType()) &&
                         previousStepId.equals(step.getPreviousStepId())
         ));
-
-        // Verify COMPLETED step notification
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.COMPLETED &&
                         step.getCompletedAt() != null
@@ -97,69 +82,48 @@ class StepExecutionServiceTest {
 
     @Test
     void executeStepShouldSendFailedStatusWhenExceptionThrown() {
-        // Given
         UUID executionId = UUID.randomUUID();
         UUID reportUuid = UUID.randomUUID();
         UUID previousStepId = UUID.randomUUID();
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid, previousStepId);
-
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("FAILING_STEP");
-
         RuntimeException stepException = new RuntimeException("Step execution failed");
         doThrow(stepException).when(processStep).execute(context);
 
-        // When & Then
         RuntimeException thrownException = assertThrows(
             RuntimeException.class,
             () -> stepExecutionService.executeStep(context, processStep)
         );
-
         assertEquals("Step execution failed", thrownException.getMessage());
-
-        // Verify notifications were sent (RUNNING and COMPLETED)
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-
         InOrder inOrder = inOrder(notificationService);
-        // Verify RUNNING step notification
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "FAILING_STEP".equals(step.getStepType()) &&
                         previousStepId.equals(step.getPreviousStepId())
         ));
-
-        // Verify FAILED step notification
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
-
         // Verify report was NOT sent on failure
         verify(reportService, never()).sendReport(any(ReportInfos.class));
     }
 
     @Test
     void skipStepShouldSendSkippedStatusWithoutExecutingStep() {
-        // Given
         UUID executionId = UUID.randomUUID();
         UUID previousStepId = UUID.randomUUID();
-
         ProcessStepExecutionContext<ProcessConfig> context = createSkippedStepExecutionContext(executionId, previousStepId);
-
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("SKIPPED_STEP");
 
-        // When
         stepExecutionService.skipStep(context, processStep);
 
-        // Then
-        // Verify step was NOT executed
         verify(processStep, never()).execute(any());
-
-        // Verify report was NOT sent
+        // Verify report was NOT sent on skip
         verify(reportService, never()).sendReport(any(ReportInfos.class));
-
-        // Verify skipped notification was sent
         verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.SKIPPED &&
                         "SKIPPED_STEP".equals(step.getStepType()) &&

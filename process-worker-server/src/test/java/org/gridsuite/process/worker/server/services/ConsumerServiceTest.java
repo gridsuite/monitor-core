@@ -37,14 +37,11 @@ class ConsumerServiceTest {
 
     @Test
     void consumeRun() {
-        // Given
         Message<ProcessConfig> message = MessageBuilder.withPayload(processConfig).build();
         Consumer<Message<ProcessConfig>> consumer = consumerService.consumeRun();
 
-        // When
         consumer.accept(message);
 
-        // Then
         verify(processExecutionService).executeProcess(processConfig);
     }
 }

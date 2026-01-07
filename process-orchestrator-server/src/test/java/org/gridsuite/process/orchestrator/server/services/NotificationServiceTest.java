@@ -49,10 +49,8 @@ class NotificationServiceTest {
 
     @Test
     void sendProcessRunMessage() {
-        // Act
         notificationService.sendProcessRunMessage(securityAnalysisConfig, executionId);
 
-        // Assert
         verify(publisher).send(
                 eq(ProcessType.SECURITY_ANALYSIS.getBindingName()),
                 argThat((ProcessConfig config) -> config.executionId().equals(executionId))

@@ -52,89 +52,62 @@ class ProcessExecutionServiceTest {
 
     @Test
     void executeProcessShouldCompleteSuccessfullyWhenProcessExecutesWithoutError() {
-        // Given
         UUID executionId = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(processConfig.executionId()).thenReturn(executionId);
-
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
 
-        // When
         processExecutionService.executeProcess(processConfig);
 
-        // Then
         verify(process).execute(argThat(context ->
                 context.getExecutionId().equals(executionId) &&
                         context.getConfig().equals(processConfig) &&
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
         ));
-
+        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
-
-        // Verify RUNNING status notification
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
                         update.getCompletedAt() == null
         ));
-
-        // Verify COMPLETED status notification
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.COMPLETED &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
                         update.getCompletedAt() != null
         ));
-
-        // Verify exactly 2 calls to updateExecutionStatus
-        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
     }
 
     @Test
     void executeProcessShouldSendFailedStatusWhenProcessThrowsException() {
-        // Given
         UUID executionId = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(processConfig.executionId()).thenReturn(executionId);
-
         RuntimeException processException = new RuntimeException("Process execution failed");
         doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
 
-        // When
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(processConfig));
 
-        // Then
         verify(process).execute(any(ProcessExecutionContext.class));
-
+        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
-        // Verify RUNNING status notification
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING
         ));
-
-        // Verify FAILED status notification
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.FAILED &&
                         update.getCompletedAt() != null
         ));
-
-        // Verify exactly 2 calls to updateExecutionStatus
-        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
     }
 
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
-        // Given
         when(processConfig.processType()).thenReturn(null);
 
-        // When & Then
         assertThatThrownBy(() -> processExecutionService.executeProcess(processConfig))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No process found for type");
-
-        // Verify no process was executed
         verify(process, never()).execute(any());
-
-        // Verify no notifications were sent
         verifyNoInteractions(notificationService);
     }
 }

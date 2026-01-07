@@ -36,12 +36,10 @@ class ProcessOrchestratorControllerTest {
 
     @Test
     void executeSecurityAnalysisShouldReturnExecutionId() throws Exception {
-        // Arrange
         UUID caseUuid = UUID.randomUUID();
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
         UUID executionId = UUID.randomUUID();
-
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
                 caseUuid,
                 null,
@@ -53,7 +51,6 @@ class ProcessOrchestratorControllerTest {
         when(orchestratorService.executeProcess(any(SecurityAnalysisConfig.class)))
                 .thenReturn(executionId);
 
-        // Act & Assert
         mockMvc.perform(post("/v1/execute/security-analysis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(config)))
@@ -66,18 +63,14 @@ class ProcessOrchestratorControllerTest {
 
     @Test
     void getExecutionReportsShouldReturnListOfReports() throws Exception {
-        // Arrange
         UUID executionId = UUID.randomUUID();
         UUID reportId1 = UUID.randomUUID();
         UUID reportId2 = UUID.randomUUID();
-
         Report report1 = new Report(reportId1, null, "Report 1", Severity.INFO, List.of());
         Report report2 = new Report(reportId2, null, "Report 2", Severity.WARN, List.of());
-
         when(orchestratorService.getReports(executionId))
                 .thenReturn(List.of(report1, report2));
 
-        // Act & Assert
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -94,15 +87,12 @@ class ProcessOrchestratorControllerTest {
 
     @Test
     void getExecutionResultsShouldReturnListOfResults() throws Exception {
-        // Arrange
         UUID executionId = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
-
         when(orchestratorService.getResults(executionId))
                 .thenReturn(List.of(result1, result2));
 
-        // Act & Assert
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))

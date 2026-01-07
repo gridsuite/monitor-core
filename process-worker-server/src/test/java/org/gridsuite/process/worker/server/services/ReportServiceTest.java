@@ -58,6 +58,7 @@ class ReportServiceTest {
                 .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockRestRequestMatchers.content().json(REPORT_JSON))
                 .andRespond(MockRestResponseCreators.withSuccess());
+
         assertThatNoException().isThrownBy(() -> reportService.sendReport(new ReportInfos(REPORT_UUID, reportNode)));
     }
 
@@ -70,6 +71,7 @@ class ReportServiceTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.PUT))
                 .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_ERROR_UUID))
                 .andRespond(MockRestResponseCreators.withServerError());
+
         assertThatThrownBy(() -> reportService.sendReport(new ReportInfos(REPORT_ERROR_UUID, reportNode))).isInstanceOf(RestClientException.class);
     }
 }

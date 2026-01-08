@@ -13,9 +13,9 @@ import com.powsybl.commons.report.ReportResourceBundle;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @AutoService(ReportResourceBundle.class)
-public final class ProcessWorkerServerReportResourceBundle implements ReportResourceBundle {
+public final class MonitorWorkerServerReportResourceBundle implements ReportResourceBundle {
 
-    public static final String BASE_NAME = "org.gridsuite.process.worker.server.reports";
+    public static final String BASE_NAME = "org.gridsuite.monitor.worker.server.reports";
 
     public String getBaseName() {
         return BASE_NAME;

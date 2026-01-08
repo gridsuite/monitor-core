@@ -55,7 +55,7 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
         assertThat(stepContext.getReportInfos()).isNotNull();
-        assertThat(stepContext.getReportInfos().reportNode().getMessageKey()).isEqualTo("process.worker.server.stepType");
+        assertThat(stepContext.getReportInfos().reportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
         assertThat(stepContext.getNetwork()).isEqualTo(network);
     }

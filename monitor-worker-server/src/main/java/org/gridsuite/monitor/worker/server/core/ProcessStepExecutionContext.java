@@ -40,7 +40,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
         this.processStepType = processStepType;
         this.reportInfos = new ReportInfos(UUID.randomUUID(), ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()
-                .withMessageTemplate("process.worker.server.stepType")
+                .withMessageTemplate("monitor.worker.server.stepType")
                 .withUntypedValue("stepType", processStepType.getName())
                 .build());
         this.previousStepExecutionId = previousStepExecutionId;

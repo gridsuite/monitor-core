@@ -13,7 +13,7 @@
     <name>Process orchestrator server</name>
 
     <properties>
-        <liquibase-hibernate-package>org.gridsuite.process.orchestrator.server</liquibase-hibernate-package>
+        <liquibase-hibernate-package>org.gridsuite.monitor.server</liquibase-hibernate-package>
     </properties>
 
     <build>

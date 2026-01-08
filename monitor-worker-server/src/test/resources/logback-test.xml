@@ -38,6 +38,6 @@
     <!--
         our logs
     -->
-    <logger name="org.gridsuite.process.worker.server" level="trace"/>
+    <logger name="org.gridsuite.monitor.worker.server" level="trace"/>
 
 </configuration>

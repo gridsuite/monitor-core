@@ -14,10 +14,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 @SpringBootApplication
-public class ProcessWorkerServerApplication {
+public class MonitorWorkerServerApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ProcessWorkerServerApplication.class, args);
+        SpringApplication.run(MonitorWorkerServerApplication.class, args);
     }
 
 }

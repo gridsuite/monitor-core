@@ -36,7 +36,7 @@ public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessSte
 
     private Network loadNetworkFromCase(UUID caseUuid, ReportNode reportNode) {
         ReportNode reporter = reportNode.newReportNode()
-                    .withMessageTemplate("process.worker.server.importCase")
+                    .withMessageTemplate("monitor.worker.server.importCase")
                     .withUntypedValue("caseUuid", caseUuid.toString())
                     .add();
         return networkConversionService.createNetwork(caseUuid, reporter);

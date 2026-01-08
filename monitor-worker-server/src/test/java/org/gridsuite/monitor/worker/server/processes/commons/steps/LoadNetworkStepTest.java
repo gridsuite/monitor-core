@@ -73,6 +73,6 @@ class LoadNetworkStepTest {
         verify(stepContext).setNetwork(expectedNetwork);
         ReportNode stepReportNode = stepContext.getReportInfos().reportNode();
         ReportNode importReportNode = stepReportNode.getChildren().getFirst();
-        assertEquals("process.worker.server.importCase", importReportNode.getMessageKey());
+        assertEquals("monitor.worker.server.importCase", importReportNode.getMessageKey());
     }
 }

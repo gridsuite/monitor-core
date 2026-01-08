@@ -10,7 +10,6 @@ package org.gridsuite.process.commons;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public enum StepStatus {
-    PENDING,
     RUNNING,
     COMPLETED,
     FAILED,

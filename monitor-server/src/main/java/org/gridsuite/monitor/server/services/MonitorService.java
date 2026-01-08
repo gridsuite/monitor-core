@@ -27,7 +27,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
-public class ProcessOrchestratorService {
+public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;

@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.dto.Severity;
-import org.gridsuite.monitor.server.services.ProcessOrchestratorService;
+import org.gridsuite.monitor.server.services.MonitorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -32,8 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(ProcessOrchestratorController.class)
-class ProcessOrchestratorControllerTest {
+@WebMvcTest(MonitorController.class)
+class MonitorControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,7 +42,7 @@ class ProcessOrchestratorControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private ProcessOrchestratorService orchestratorService;
+    private MonitorService monitorService;
 
     @Test
     void executeSecurityAnalysisShouldReturnExecutionId() throws Exception {
@@ -58,7 +58,7 @@ class ProcessOrchestratorControllerTest {
                 List.of(modificationUuid)
         );
 
-        when(orchestratorService.executeProcess(any(SecurityAnalysisConfig.class)))
+        when(monitorService.executeProcess(any(SecurityAnalysisConfig.class)))
                 .thenReturn(executionId);
 
         mockMvc.perform(post("/v1/execute/security-analysis")
@@ -68,7 +68,7 @@ class ProcessOrchestratorControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(orchestratorService).executeProcess(any(SecurityAnalysisConfig.class));
+        verify(monitorService).executeProcess(any(SecurityAnalysisConfig.class));
     }
 
     @Test
@@ -78,7 +78,7 @@ class ProcessOrchestratorControllerTest {
         UUID reportId2 = UUID.randomUUID();
         Report report1 = new Report(reportId1, null, "Report 1", Severity.INFO, List.of());
         Report report2 = new Report(reportId2, null, "Report 2", Severity.WARN, List.of());
-        when(orchestratorService.getReports(executionId))
+        when(monitorService.getReports(executionId))
                 .thenReturn(List.of(report1, report2));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
@@ -92,7 +92,7 @@ class ProcessOrchestratorControllerTest {
                 .andExpect(jsonPath("$[1].message").value("Report 2"))
                 .andExpect(jsonPath("$[1].severity").value("WARN"));
 
-        verify(orchestratorService).getReports(executionId);
+        verify(monitorService).getReports(executionId);
     }
 
     @Test
@@ -100,7 +100,7 @@ class ProcessOrchestratorControllerTest {
         UUID executionId = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
-        when(orchestratorService.getResults(executionId))
+        when(monitorService.getResults(executionId))
                 .thenReturn(List.of(result1, result2));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
@@ -110,6 +110,6 @@ class ProcessOrchestratorControllerTest {
                 .andExpect(jsonPath("$[0]").value(result1))
                 .andExpect(jsonPath("$[1]").value(result2));
 
-        verify(orchestratorService).getResults(executionId);
+        verify(monitorService).getResults(executionId);
     }
 }

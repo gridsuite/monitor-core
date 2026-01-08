@@ -1,6 +1,6 @@
 spring:
   application:
-    name: process-orchestrator-server
+    name: monitor-server
   cloud:
     stream:
       bindings:

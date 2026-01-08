@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class ProcessOrchestratorServiceTest {
+class MonitorServiceTest {
 
     @Mock
     private ProcessExecutionRepository executionRepository;
@@ -47,7 +47,7 @@ class ProcessOrchestratorServiceTest {
     private ResultService resultService;
 
     @InjectMocks
-    private ProcessOrchestratorService orchestratorService;
+    private MonitorService monitorService;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;
@@ -76,7 +76,7 @@ class ProcessOrchestratorServiceTest {
                     return entity;
                 });
 
-        UUID result = orchestratorService.executeProcess(securityAnalysisConfig);
+        UUID result = monitorService.executeProcess(securityAnalysisConfig);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
@@ -103,7 +103,7 @@ class ProcessOrchestratorServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        orchestratorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null);
+        monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
@@ -125,7 +125,7 @@ class ProcessOrchestratorServiceTest {
         String envName = "production-env";
         Instant completedAt = Instant.now();
 
-        orchestratorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, completedAt);
+        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, completedAt);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
@@ -138,7 +138,7 @@ class ProcessOrchestratorServiceTest {
     void updateExecutionStatusShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        orchestratorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now());
+        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now());
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());
@@ -168,7 +168,7 @@ class ProcessOrchestratorServiceTest {
                 .startedAt(startedAt)
                 .build();
 
-        orchestratorService.updateStepStatus(executionId, processExecutionStep);
+        monitorService.updateStepStatus(executionId, processExecutionStep);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -217,7 +217,7 @@ class ProcessOrchestratorServiceTest {
                 .completedAt(completedAt)
                 .build();
 
-        orchestratorService.updateStepStatus(executionId, updateDto);
+        monitorService.updateStepStatus(executionId, updateDto);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -254,7 +254,7 @@ class ProcessOrchestratorServiceTest {
         when(reportService.getReport(reportId1)).thenReturn(report1);
         when(reportService.getReport(reportId2)).thenReturn(report2);
 
-        List<Report> result = orchestratorService.getReports(executionId);
+        List<Report> result = monitorService.getReports(executionId);
 
         assertThat(result).hasSize(2).containsExactly(report1, report2);
         verify(executionRepository).findById(executionId);
@@ -288,7 +288,7 @@ class ProcessOrchestratorServiceTest {
         when(resultService.getResult(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)))
                 .thenReturn(result2);
 
-        List<String> results = orchestratorService.getResults(executionId);
+        List<String> results = monitorService.getResults(executionId);
 
         assertThat(results).hasSize(2).containsExactly(result1, result2);
         verify(executionRepository).findById(executionId);

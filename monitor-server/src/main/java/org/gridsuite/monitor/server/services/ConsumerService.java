@@ -33,12 +33,12 @@ public class ConsumerService {
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";
 
-    private final ProcessOrchestratorService orchestratorService;
+    private final MonitorService monitorService;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public ConsumerService(ProcessOrchestratorService orchestratorService, ObjectMapper objectMapper) {
-        this.orchestratorService = orchestratorService;
+    public ConsumerService(MonitorService monitorService, ObjectMapper objectMapper) {
+        this.monitorService = monitorService;
         this.objectMapper = objectMapper;
     }
 
@@ -60,12 +60,12 @@ public class ConsumerService {
 
     private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
-        orchestratorService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getCompletedAt());
+        monitorService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getCompletedAt());
     }
 
     private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        orchestratorService.updateStepStatus(executionId, processExecutionStep);
+        monitorService.updateStepStatus(executionId, processExecutionStep);
     }
 
     private <T> T parsePayload(String payload, Class<T> clazz) {

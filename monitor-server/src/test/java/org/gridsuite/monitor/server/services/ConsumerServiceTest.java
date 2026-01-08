@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 class ConsumerServiceTest {
 
     @Mock
-    private ProcessOrchestratorService orchestratorService;
+    private MonitorService monitorService;
 
     private ObjectMapper objectMapper;
     private ConsumerService consumerService;
@@ -46,7 +46,7 @@ class ConsumerServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
-        consumerService = new ConsumerService(orchestratorService, objectMapper);
+        consumerService = new ConsumerService(monitorService, objectMapper);
     }
 
     @Test
@@ -66,13 +66,13 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(orchestratorService).updateExecutionStatus(
+        verify(monitorService).updateExecutionStatus(
                 executionId,
                 ProcessStatus.RUNNING,
                 "env-1",
                 Instant.parse("2025-01-01T12:00:00Z")
         );
-        verify(orchestratorService, never()).updateStepStatus(any(), any());
+        verify(monitorService, never()).updateStepStatus(any(), any());
     }
 
     @Test
@@ -89,8 +89,8 @@ class ConsumerServiceTest {
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
-        verify(orchestratorService, never()).updateExecutionStatus(any(), any(), any(), any());
-        verify(orchestratorService, never()).updateStepStatus(any(), any());
+        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any());
+        verify(monitorService, never()).updateStepStatus(any(), any());
     }
 
     @Test
@@ -112,7 +112,7 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(orchestratorService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-        verify(orchestratorService, never()).updateExecutionStatus(any(), any(), any(), any());
+        verify(monitorService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any());
     }
 }

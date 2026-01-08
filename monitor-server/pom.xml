@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>gridsuite-monitor-server</artifactId>
-    <name>Process orchestrator server</name>
+    <name>Monitor server</name>
 
     <properties>
         <liquibase-hibernate-package>org.gridsuite.monitor.server</liquibase-hibernate-package>

@@ -9,8 +9,8 @@ package org.gridsuite.monitor.server.controllers;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public final class ProcessOrchestratorApi {
-    private ProcessOrchestratorApi() {
+public final class MonitorApi {
+    private MonitorApi() {
     }
 
     public static final String API_VERSION = "v1";

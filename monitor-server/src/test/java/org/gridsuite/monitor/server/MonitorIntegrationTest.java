@@ -13,7 +13,7 @@ import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.services.ConsumerService;
 import org.gridsuite.monitor.server.services.DummyReportService;
-import org.gridsuite.monitor.server.services.ProcessOrchestratorService;
+import org.gridsuite.monitor.server.services.MonitorService;
 import org.gridsuite.monitor.server.services.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,13 +42,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@SpringBootTest(classes = {ProcessOrchestratorServerApplication.class, TestChannelBinderConfiguration.class})
+@SpringBootTest(classes = {MonitorServerApplication.class, TestChannelBinderConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @AutoConfigureMockMvc
-class ProcessOrchestratorIntegrationTest {
+class MonitorIntegrationTest {
 
     @Autowired
-    private ProcessOrchestratorService orchestratorService;
+    private MonitorService monitorService;
 
     @Autowired
     private ProcessExecutionRepository executionRepository;
@@ -89,7 +89,7 @@ class ProcessOrchestratorIntegrationTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = orchestratorService.executeProcess(securityAnalysisConfig);
+        UUID executionId = monitorService.executeProcess(securityAnalysisConfig);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);

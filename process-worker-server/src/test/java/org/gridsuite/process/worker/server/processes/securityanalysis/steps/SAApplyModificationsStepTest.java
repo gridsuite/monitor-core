@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.gridsuite.process.worker.server.processes.securityanalysis.steps;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -7,6 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 @ExtendWith(MockitoExtension.class)
 class SAApplyModificationsStepTest {
 

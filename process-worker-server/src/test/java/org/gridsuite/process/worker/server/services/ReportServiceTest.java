@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.gridsuite.process.worker.server.services;
 
 import com.powsybl.commons.report.ReportNode;
@@ -20,6 +26,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 @RestClientTest(ReportService.class)
 @ContextConfiguration(classes = {ProcessWorkerConfig.class, ReportService.class})
 class ReportServiceTest {

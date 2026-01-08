@@ -26,11 +26,11 @@ import java.util.stream.Collectors;
 @Service
 public class ProcessExecutionService {
 
-    private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
+    private final Map<ProcessType, Process<ProcessConfig>> processes;
     private final NotificationService notificationService;
     private final String executionEnvName;
 
-    public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
+    public ProcessExecutionService(List<Process<ProcessConfig>> processList,
                                    NotificationService notificationService,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
@@ -40,7 +40,7 @@ public class ProcessExecutionService {
     }
 
     public void executeProcess(ProcessConfig config) {
-        Process<ProcessConfig> process = (Process<ProcessConfig>) processes.get(config.processType());
+        Process<ProcessConfig> process = processes.get(config.processType());
         if (process == null) {
             throw new IllegalArgumentException("No process found for type: " + config.processType());
         }

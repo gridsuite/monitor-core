@@ -18,14 +18,12 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     private final UUID previousStepExecutionId;
     private final ProcessExecutionContext<C> processContext;
     private final C config;
+    private final ReportInfos reportInfos;
+    private final Instant startedAt = Instant.now();
+    private final ProcessStepType processStepType;
+
     @Setter
     private ResultInfos resultInfos;
-    @Setter
-    private ReportInfos reportInfos;
-    @Getter
-    private final Instant startedAt = Instant.now();
-    @Getter
-    private final ProcessStepType processStepType;
 
     public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, C config, ProcessStepType processStepType, UUID previousStepExecutionId) {
         this.processContext = processContext;

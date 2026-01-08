@@ -1,5 +1,4 @@
 name: Release
-#FIXME
 
 on:
   workflow_dispatch:

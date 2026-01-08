@@ -5,12 +5,12 @@
 
     <parent>
         <groupId>org.gridsuite</groupId>
-        <artifactId>gridsuite-process-server-parent</artifactId>
+        <artifactId>gridsuite-monitor-core-parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>gridsuite-monitor-worker-server</artifactId>
-    <name>Process worker server</name>
+    <name>Monitor worker server</name>
 
     <build>
         <pluginManagement>

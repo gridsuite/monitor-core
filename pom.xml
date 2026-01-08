@@ -11,11 +11,11 @@
     </parent>
 
     <groupId>org.gridsuite</groupId>
-    <artifactId>gridsuite-process-server-parent</artifactId>
+    <artifactId>gridsuite-monitor-core-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
-    <name>Gridsuite process server parent</name>
+    <name>Gridsuite monitor core parent</name>
     <url>https://www.gridsuite.org/</url>
 
     <scm>

@@ -43,7 +43,7 @@ public class ConsumerService {
     }
 
     @Bean
-    public Consumer<Message<String>> consumeProcessUpdate() {
+    public Consumer<Message<String>> consumeMonitorUpdate() {
         return message -> {
             String messageTypeStr = message.getHeaders().get(HEADER_MESSAGE_TYPE, String.class);
             MessageType messageType = MessageType.valueOf(messageTypeStr);

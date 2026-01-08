@@ -5,10 +5,10 @@ spring:
     stream:
       bindings:
         publishRunSa-out-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}process.sa.run
-        consumeProcessUpdate-in-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}process.update
-          group: processUpdateGroup
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.sa.run
+        consumeMonitorUpdate-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
+          group: monitorUpdateGroup
 
 powsybl-ws:
   database:

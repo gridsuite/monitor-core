@@ -62,7 +62,7 @@ class ConsumerServiceTest {
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(payload, headers);
-        Consumer<Message<String>> consumer = consumerService.consumeProcessUpdate();
+        Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
 
         consumer.accept(message);
 
@@ -76,14 +76,14 @@ class ConsumerServiceTest {
     }
 
     @Test
-    void consumeProcessUpdateThrowsOnInvalidJson() {
+    void consumeMonitorUpdateThrowsOnInvalidJson() {
         UUID executionId = UUID.randomUUID();
         String invalidPayload = "{invalid json}";
         Map<String, Object> headers = new HashMap<>();
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
-        Consumer<Message<String>> consumer = consumerService.consumeProcessUpdate();
+        Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
 
         assertThatThrownBy(() -> consumer.accept(message))
                 .isInstanceOf(UncheckedIOException.class)
@@ -108,7 +108,7 @@ class ConsumerServiceTest {
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(payload, headers);
-        Consumer<Message<String>> consumer = consumerService.consumeProcessUpdate();
+        Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
 
         consumer.accept(message);
 

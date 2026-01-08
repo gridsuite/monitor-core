@@ -23,7 +23,7 @@ import java.util.UUID;
 public class NotificationService {
 
     private final StreamBridge updatePublisher;
-    private static final String PROCESS_UPDATE_BINDING = "publishProcessUpdate-out-0";
+    private static final String PROCESS_UPDATE_BINDING = "publishMonitorUpdate-out-0";
 
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";
@@ -32,7 +32,7 @@ public class NotificationService {
         this.updatePublisher = updatePublisher;
     }
 
-    private <T> void sendProcessUpdate(
+    private <T> void sendMonitorUpdate(
             UUID executionId,
             MessageType messageType,
             T payload
@@ -46,7 +46,7 @@ public class NotificationService {
     }
 
     public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate processExecutionStatusUpdate) {
-        sendProcessUpdate(
+        sendMonitorUpdate(
                 executionId,
                 MessageType.EXECUTION_STATUS_UPDATE,
                 processExecutionStatusUpdate
@@ -54,7 +54,7 @@ public class NotificationService {
     }
 
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
-        sendProcessUpdate(
+        sendMonitorUpdate(
                 executionId,
                 MessageType.STEP_STATUS_UPDATE,
                 processExecutionStep

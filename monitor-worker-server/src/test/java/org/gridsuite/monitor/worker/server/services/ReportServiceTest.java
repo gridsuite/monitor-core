@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.commons.report.ReportNode;
-import org.gridsuite.monitor.worker.server.config.ProcessWorkerConfig;
+import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @RestClientTest(ReportService.class)
-@ContextConfiguration(classes = {ProcessWorkerConfig.class, ReportService.class})
+@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportService.class})
 class ReportServiceTest {
 
     private static final UUID REPORT_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");

@@ -5,14 +5,14 @@ on:
     branches:
       - 'main'
   pull_request:
-#FIXME: build two docker images in same repo
+
 jobs:
   build:
     uses: powsybl/github-ci/.github/workflows/build-backend-app-generic.yml@aaae75875296657028f2805e7a3fbdb1418b8b95
     with:
       dockerImage: docker.io/gridsuite/monitor-server
       dockerUsername: gridsuiteci
-      eventType: process_updated
+      eventType: monitor_updated
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

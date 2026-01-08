@@ -73,7 +73,7 @@ class MonitorIntegrationTest {
 
     private UUID caseUuid;
 
-    public static final String PROCESS_SA_RUN_DESTINATION = "process.sa.run";
+    public static final String PROCESS_SA_RUN_DESTINATION = "monitor.process.sa.run";
 
     @BeforeEach
     void setUp() {
@@ -122,7 +122,7 @@ class MonitorIntegrationTest {
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
 
-        consumerService.consumeProcessUpdate().accept(stepMessage1);
+        consumerService.consumeMonitorUpdate().accept(stepMessage1);
 
         // Simulate second step creation via message with both report and result
         UUID stepId2 = UUID.randomUUID();
@@ -145,7 +145,7 @@ class MonitorIntegrationTest {
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
 
-        consumerService.consumeProcessUpdate().accept(stepMessage2);
+        consumerService.consumeMonitorUpdate().accept(stepMessage2);
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId).orElse(null);
@@ -171,7 +171,7 @@ class MonitorIntegrationTest {
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
 
-        consumerService.consumeProcessUpdate().accept(statusMessage);
+        consumerService.consumeMonitorUpdate().accept(statusMessage);
 
         // Verify final state persisted
         execution = executionRepository.findById(executionId).orElse(null);

@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Configuration
-public class ProcessWorkerConfig {
+public class MonitorWorkerConfig {
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {

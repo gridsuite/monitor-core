@@ -1,0 +1,37 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="antoine-bouhours (generated)" id="1767435196970-1">
+        <createTable tableName="process_execution">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="process_executionPK"/>
+            </column>
+            <column name="case_uuid" type="UUID"/>
+            <column name="completed_at" type="TIMESTAMP(6)"/>
+            <column name="execution_env_name" type="VARCHAR(255)"/>
+            <column name="scheduled_at" type="TIMESTAMP(6)"/>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="type" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="antoine-bouhours (generated)" id="1767435196970-2">
+        <createTable tableName="process_execution_step">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="process_execution_stepPK"/>
+            </column>
+            <column name="completed_at" type="TIMESTAMP(6)"/>
+            <column name="result_id" type="UUID"/>
+            <column name="result_type" type="VARCHAR(255)"/>
+            <column name="previous_step_id" type="UUID"/>
+            <column name="report_id" type="UUID"/>
+            <column name="started_at" type="TIMESTAMP(6)"/>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="step_type" type="VARCHAR(255)"/>
+            <column name="execution_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="antoine-bouhours (generated)" id="1767435196970-3">
+        <addForeignKeyConstraint baseColumnNames="execution_id" baseTableName="process_execution_step" constraintName="processExecutionStep_processExecution_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_execution" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

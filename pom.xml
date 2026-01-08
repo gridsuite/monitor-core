@@ -34,9 +34,9 @@
     </developers>
 
     <modules>
-        <module>process-commons</module>
-        <module>process-orchestrator-server</module>
-        <module>process-worker-server</module>
+        <module>monitor-commons</module>
+        <module>monitor-server</module>
+        <module>monitor-worker-server</module>
     </modules>
 
     <properties>
@@ -56,7 +56,7 @@
             </dependency>
             <dependency>
                 <groupId>org.gridsuite</groupId>
-                <artifactId>gridsuite-process-commons</artifactId>
+                <artifactId>gridsuite-monitor-commons</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -6,6 +6,9 @@
  */
 package org.gridsuite.process.orchestrator.server.controllers;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 public final class ProcessOrchestratorApi {
     private ProcessOrchestratorApi() {
     }

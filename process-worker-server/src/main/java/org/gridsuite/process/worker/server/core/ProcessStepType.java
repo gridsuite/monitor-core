@@ -6,6 +6,9 @@
  */
 package org.gridsuite.process.worker.server.core;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 public interface ProcessStepType {
     String getName();
 }

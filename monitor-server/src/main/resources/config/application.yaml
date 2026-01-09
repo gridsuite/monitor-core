@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: monitor-server
+  cloud:
+    stream:
+      bindings:
+        publishRunSecurityAnalysis-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
+        consumeMonitorUpdate-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
+          group: monitorUpdateGroup
+
+powsybl-ws:
+  database:
+    queryBegin: '&'
+    customQuery: ${powsybl-ws.database.customQueryBegin}reWriteBatchedInserts=true
+    name: monitor

@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: monitor-worker-server
+  cloud:
+    function:
+      definition: consumeRun
+    stream:
+      bindings:
+        consumeRun-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.${worker.process}.run
+          group: process${worker.process}RunGroup
+        publishMonitorUpdate-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
+
+worker:
+  execution-env-name: "default-env"
+  process: securityanalysis

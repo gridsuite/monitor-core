@@ -1,0 +1,75 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package org.gridsuite.monitor.worker.server.services;
+
+import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.worker.server.core.Process;
+import org.gridsuite.monitor.worker.server.core.ProcessExecutionContext;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
+@Service
+public class ProcessExecutionService {
+
+    private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
+    private final NotificationService notificationService;
+    private final String executionEnvName;
+
+    public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
+                                   NotificationService notificationService,
+                                   @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
+        this.processes = processList.stream()
+            .collect(Collectors.toMap(Process::getProcessType, w -> w));
+        this.notificationService = notificationService;
+        this.executionEnvName = executionEnvName;
+    }
+
+    public <T extends ProcessConfig> void executeProcess(T config) {
+        @SuppressWarnings("unchecked") // safe: ProcessType uniquely maps to a Process with the matching ProcessConfig subtype
+        Process<T> process = (Process<T>) processes.get(config.processType());
+        if (process == null) {
+            throw new IllegalArgumentException("No process found for type: " + config.processType());
+        }
+
+        ProcessExecutionContext<T> context = createExecutionContext(config, executionEnvName);
+
+        updateExecutionStatus(context, ProcessStatus.RUNNING);
+
+        try {
+            process.execute(context);
+            updateExecutionStatus(context, ProcessStatus.COMPLETED);
+        } catch (Exception e) {
+            updateExecutionStatus(context, ProcessStatus.FAILED);
+            throw e;
+        }
+    }
+
+    private void updateExecutionStatus(ProcessExecutionContext<? extends ProcessConfig> context, ProcessStatus status) {
+        ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
+            status,
+            context.getExecutionEnvName(),
+            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
+        );
+
+        notificationService.updateExecutionStatus(context.getExecutionId(), processExecutionStatusUpdate);
+    }
+
+    private <T extends ProcessConfig> ProcessExecutionContext<T> createExecutionContext(T config, String executionEnvName) {
+        return new ProcessExecutionContext<>(config, executionEnvName);
+    }
+}

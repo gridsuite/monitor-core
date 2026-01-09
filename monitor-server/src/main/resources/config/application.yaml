@@ -14,4 +14,4 @@ powsybl-ws:
   database:
     queryBegin: '&'
     customQuery: ${powsybl-ws.database.customQueryBegin}reWriteBatchedInserts=true
-    name: process
+    name: monitor

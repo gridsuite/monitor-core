@@ -12,6 +12,8 @@ import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +24,7 @@ import java.util.UUID;
 @Getter
 public abstract class AbstractProcess<C extends ProcessConfig> implements Process<C> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProcess.class);
     protected final ProcessType processType;
     protected final StepExecutionService<C> stepExecutionService;
     protected final NotificationService notificationService;
@@ -66,6 +69,6 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
 
     protected void handleStepFailure(ProcessExecutionContext<C> context, ProcessStep<C> step, Exception e) {
         //TODO better error handling
-        e.printStackTrace();
+        LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
     }
 }

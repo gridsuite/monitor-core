@@ -122,7 +122,7 @@ public class MonitorService {
     public List<String> getResults(UUID executionId) {
         List<ResultInfos> resultInfos = getResultInfos(executionId);
         return resultInfos.stream()
-                .map(info -> resultService.getResult(info))
+                .map(resultService::getResult)
                 .toList();
     }
 

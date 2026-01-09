@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.ResultType;
 import org.springframework.stereotype.Service;
 
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,7 +42,7 @@ public class DummySecurityAnalysisService implements ResultProvider {
                 "content", "This is a dummy security analysis result for ID " + resultId
             ));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 }

@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.io.UncheckedIOException;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -30,7 +32,7 @@ public class DummySecurityAnalysisService {
             String resultJson = objectMapper.writeValueAsString(result);
             LOGGER.info("saved results uuid : {} content : {}...", resultInfos.resultUUID(), resultJson.substring(0, Math.min(resultJson.length(), 500)));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 }

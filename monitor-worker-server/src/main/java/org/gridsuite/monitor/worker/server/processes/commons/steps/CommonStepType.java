@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.processes.securityanalysis;
+package org.gridsuite.monitor.worker.server.processes.commons.steps;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +15,8 @@ import org.gridsuite.monitor.worker.server.core.ProcessStepType;
  */
 @Getter
 @RequiredArgsConstructor
-public enum SAStepTypes implements ProcessStepType {
-    APPLY_MODIFICATIONS("APPLY_MODIFICATIONS"),
-    RUN_SA_COMPUTATION("RUN_SA_COMPUTATION");
+public enum CommonStepType implements ProcessStepType {
+    LOAD_NETWORK("LOAD_NETWORK");
 
     private final String name;
 }

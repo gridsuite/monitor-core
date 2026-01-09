@@ -49,7 +49,7 @@ class ProcessExecutionServiceTest {
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
 
-        List<Process<ProcessConfig>> processList = List.of(process);
+        List<Process<? extends ProcessConfig>> processList = List.of(process);
         processExecutionService = new ProcessExecutionService(processList, notificationService, EXECUTION_ENV_NAME);
     }
 

@@ -13,7 +13,7 @@ import lombok.Getter;
  */
 @Getter
 public enum ProcessType {
-    SECURITY_ANALYSIS("publishRunSa-out-0");
+    SECURITY_ANALYSIS("publishRunSecurityAnalysis-out-0");
 
     private final String bindingName;
 

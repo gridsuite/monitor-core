@@ -17,7 +17,7 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.DummySecurityAnalysisService;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.SAStepTypes;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,12 +26,12 @@ import java.util.UUID;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public class SARunComputationStep extends AbstractProcessStep<SecurityAnalysisConfig> {
+public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<SecurityAnalysisConfig> {
 
     private final DummySecurityAnalysisService securityAnalysisService;
 
-    public SARunComputationStep(DummySecurityAnalysisService securityAnalysisService) {
-        super(SAStepTypes.RUN_SA_COMPUTATION);
+    public SecurityAnalysisRunComputationStep(DummySecurityAnalysisService securityAnalysisService) {
+        super(SecurityAnalysisStepType.RUN_SA_COMPUTATION);
         this.securityAnalysisService = securityAnalysisService;
     }
 

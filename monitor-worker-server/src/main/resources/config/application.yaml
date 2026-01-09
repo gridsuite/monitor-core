@@ -14,4 +14,4 @@ spring:
 
 worker:
   execution-env-name: "default-env"
-  process: sa
+  process: securityanalysis

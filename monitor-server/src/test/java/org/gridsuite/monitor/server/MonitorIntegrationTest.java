@@ -73,7 +73,7 @@ class MonitorIntegrationTest {
 
     private UUID caseUuid;
 
-    public static final String PROCESS_SA_RUN_DESTINATION = "monitor.process.sa.run";
+    public static final String PROCESS_SA_RUN_DESTINATION = "monitor.process.securityanalysis.run";
 
     @BeforeEach
     void setUp() {

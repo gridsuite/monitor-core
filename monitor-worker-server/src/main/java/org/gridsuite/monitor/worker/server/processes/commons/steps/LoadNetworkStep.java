@@ -23,7 +23,7 @@ public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessSte
     private final NetworkConversionService networkConversionService;
 
     public LoadNetworkStep(NetworkConversionService networkConversionService) {
-        super(CommonStepTypes.LOAD_NETWORK);
+        super(CommonStepType.LOAD_NETWORK);
         this.networkConversionService = networkConversionService;
     }
 

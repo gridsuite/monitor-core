@@ -11,8 +11,8 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcess;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SAApplyModificationsStep;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SARunComputationStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
@@ -41,8 +41,8 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
     protected List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
         return List.of(
             new LoadNetworkStep<>(networkConversionService),
-            new SAApplyModificationsStep(),
-            new SARunComputationStep(securityAnalysisService)
+            new SecurityAnalysisApplyModificationsStep(),
+            new SecurityAnalysisRunComputationStep(securityAnalysisService)
         );
     }
 }

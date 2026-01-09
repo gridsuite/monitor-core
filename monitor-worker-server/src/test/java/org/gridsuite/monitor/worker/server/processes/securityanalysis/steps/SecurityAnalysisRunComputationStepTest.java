@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class SARunComputationStepTest {
+class SecurityAnalysisRunComputationStepTest {
 
     @Mock
     private DummySecurityAnalysisService securityAnalysisService;
@@ -45,14 +45,14 @@ class SARunComputationStepTest {
     @Mock
     private SecurityAnalysisConfig config;
 
-    private SARunComputationStep runComputationStep;
+    private SecurityAnalysisRunComputationStep runComputationStep;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new SARunComputationStep(securityAnalysisService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.parametersUuid()).thenReturn(PARAMS_UUID);

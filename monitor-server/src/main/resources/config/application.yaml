@@ -4,8 +4,8 @@ spring:
   cloud:
     stream:
       bindings:
-        publishRunSa-out-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.sa.run
+        publishRunSecurityAnalysis-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
         consumeMonitorUpdate-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
           group: monitorUpdateGroup

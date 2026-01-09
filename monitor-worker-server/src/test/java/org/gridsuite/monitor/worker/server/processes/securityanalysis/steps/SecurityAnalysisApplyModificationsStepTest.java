@@ -17,13 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class SAApplyModificationsStepTest {
+class SecurityAnalysisApplyModificationsStepTest {
 
-    private SAApplyModificationsStep applyModificationsStep;
+    private SecurityAnalysisApplyModificationsStep applyModificationsStep;
 
     @BeforeEach
     void setUp() {
-        applyModificationsStep = new SAApplyModificationsStep();
+        applyModificationsStep = new SecurityAnalysisApplyModificationsStep();
     }
 
     @Test

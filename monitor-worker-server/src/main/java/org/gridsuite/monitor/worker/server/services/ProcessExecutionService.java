@@ -26,11 +26,11 @@ import java.util.stream.Collectors;
 @Service
 public class ProcessExecutionService {
 
-    private final Map<ProcessType, Process<ProcessConfig>> processes;
+    private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
     private final NotificationService notificationService;
     private final String executionEnvName;
 
-    public ProcessExecutionService(List<Process<ProcessConfig>> processList,
+    public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
                                    NotificationService notificationService,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
@@ -39,13 +39,14 @@ public class ProcessExecutionService {
         this.executionEnvName = executionEnvName;
     }
 
-    public void executeProcess(ProcessConfig config) {
-        Process<ProcessConfig> process = processes.get(config.processType());
+    public <T extends ProcessConfig> void executeProcess(T config) {
+        @SuppressWarnings("unchecked") // safe: ProcessType uniquely maps to a Process with the matching ProcessConfig subtype
+        Process<T> process = (Process<T>) processes.get(config.processType());
         if (process == null) {
             throw new IllegalArgumentException("No process found for type: " + config.processType());
         }
 
-        ProcessExecutionContext<ProcessConfig> context = createExecutionContext(config, executionEnvName);
+        ProcessExecutionContext<T> context = createExecutionContext(config, executionEnvName);
 
         updateExecutionStatus(context, ProcessStatus.RUNNING);
 
@@ -58,7 +59,7 @@ public class ProcessExecutionService {
         }
     }
 
-    private void updateExecutionStatus(ProcessExecutionContext<ProcessConfig> context, ProcessStatus status) {
+    private void updateExecutionStatus(ProcessExecutionContext<? extends ProcessConfig> context, ProcessStatus status) {
         ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
             status,
             context.getExecutionEnvName(),
@@ -68,7 +69,7 @@ public class ProcessExecutionService {
         notificationService.updateExecutionStatus(context.getExecutionId(), processExecutionStatusUpdate);
     }
 
-    private ProcessExecutionContext<ProcessConfig> createExecutionContext(ProcessConfig config, String executionEnvName) {
+    private <T extends ProcessConfig> ProcessExecutionContext<T> createExecutionContext(T config, String executionEnvName) {
         return new ProcessExecutionContext<>(config, executionEnvName);
     }
 }

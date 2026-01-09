@@ -9,7 +9,7 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis.steps;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.SAStepTypes;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,10 +17,10 @@ import java.util.UUID;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public class SAApplyModificationsStep extends AbstractProcessStep<SecurityAnalysisConfig> {
+public class SecurityAnalysisApplyModificationsStep extends AbstractProcessStep<SecurityAnalysisConfig> {
 
-    public SAApplyModificationsStep() {
-        super(SAStepTypes.APPLY_MODIFICATIONS);
+    public SecurityAnalysisApplyModificationsStep() {
+        super(SecurityAnalysisStepType.APPLY_MODIFICATIONS);
     }
 
     @Override

@@ -5,7 +5,7 @@
 
     <parent>
         <groupId>org.gridsuite</groupId>
-        <artifactId>gridsuite-monitor-core-parent</artifactId>
+        <artifactId>gridsuite-monitor-core</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 

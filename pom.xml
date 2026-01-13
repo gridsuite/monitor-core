@@ -15,7 +15,7 @@
     <version>0.0.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
-    <name>Gridsuite monitor core</name>
+    <name>Monitor core</name>
     <url>https://www.gridsuite.org/</url>
 
     <scm>

@@ -11,9 +11,11 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcess;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
+import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.springframework.stereotype.Component;
@@ -29,11 +31,13 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
     protected final DummySecurityAnalysisService securityAnalysisService;
 
     public SecurityAnalysisProcess(
-            StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
-            NotificationService notificationService,
-            NetworkConversionService networkConversionService,
-            DummySecurityAnalysisService securityAnalysisService) {
-        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService);
+        StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
+        NotificationService notificationService,
+        NetworkConversionService networkConversionService,
+        DummySecurityAnalysisService securityAnalysisService,
+        NetworkModificationService networkModificationService,
+        FilterService filterService) {
+        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService, networkModificationService, filterService);
         this.securityAnalysisService = securityAnalysisService;
     }
 
@@ -41,7 +45,7 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
     protected List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
         return List.of(
             new LoadNetworkStep<>(networkConversionService),
-            new SecurityAnalysisApplyModificationsStep(),
+            new ApplyModificationsStep(networkModificationService, filterService),
             new SecurityAnalysisRunComputationStep(securityAnalysisService)
         );
     }

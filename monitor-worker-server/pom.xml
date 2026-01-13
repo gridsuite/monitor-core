@@ -75,6 +75,10 @@
             <artifactId>gridsuite-monitor-commons</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.gridsuite</groupId>
+            <artifactId>gridsuite-network-modification</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>

@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +60,7 @@ class NotificationServiceTest {
         notificationService.sendProcessRunMessage(securityAnalysisConfig, executionId);
 
         verify(publisher).send(
-                eq(ProcessType.SECURITY_ANALYSIS.getBindingName()),
+                eq("publishRunSecurityAnalysis-out-0"),
                 argThat((ProcessConfig config) -> config.executionId().equals(executionId))
         );
     }

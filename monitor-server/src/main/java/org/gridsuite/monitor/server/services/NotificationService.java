@@ -8,9 +8,11 @@ package org.gridsuite.monitor.server.services;
 
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,12 +22,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    private static final Map<ProcessType, String> BINDING_NAMES = Map.of(
+        ProcessType.SECURITY_ANALYSIS, "publishRunSecurityAnalysis-out-0"
+    );
+
     private final StreamBridge publisher;
 
     public void sendProcessRunMessage(ProcessConfig processConfig, UUID executionId) {
-        publisher.send(
-            processConfig.processType().getBindingName(),
-            processConfig.withExecutionId(executionId)
-        );
+        String bindingName = BINDING_NAMES.get(processConfig.processType());
+        publisher.send(bindingName, processConfig.withExecutionId(executionId));
     }
 }

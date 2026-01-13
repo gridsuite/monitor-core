@@ -9,7 +9,9 @@ package org.gridsuite.monitor.worker.server.core;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.slf4j.Logger;
@@ -29,16 +31,22 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     protected final StepExecutionService<C> stepExecutionService;
     protected final NotificationService notificationService;
     protected final NetworkConversionService networkConversionService;
+    protected final NetworkModificationService networkModificationService;
+    protected final FilterService filterService;
 
     protected AbstractProcess(
             ProcessType processType,
             StepExecutionService<C> stepExecutionService,
             NotificationService notificationService,
-            NetworkConversionService networkConversionService) {
+            NetworkConversionService networkConversionService,
+            NetworkModificationService networkModificationService,
+            FilterService filterService) {
         this.processType = processType;
         this.stepExecutionService = stepExecutionService;
         this.notificationService = notificationService;
         this.networkConversionService = networkConversionService;
+        this.networkModificationService = networkModificationService;
+        this.filterService = filterService;
     }
 
     @Override

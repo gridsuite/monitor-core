@@ -9,7 +9,9 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +43,12 @@ class SecurityAnalysisProcessTest {
     @Mock
     private DummySecurityAnalysisService securityAnalysisService;
 
+    @Mock
+    private NetworkModificationService networkModificationService;
+
+    @Mock
+    private FilterService filterService;
+
     private SecurityAnalysisProcess process;
 
     @BeforeEach
@@ -49,7 +57,9 @@ class SecurityAnalysisProcessTest {
             stepExecutionService,
             notificationService,
             networkConversionService,
-            securityAnalysisService
+            securityAnalysisService,
+            networkModificationService,
+            filterService
         );
     }
 

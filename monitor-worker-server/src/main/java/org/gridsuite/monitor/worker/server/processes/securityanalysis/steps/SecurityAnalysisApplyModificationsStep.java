@@ -10,6 +10,7 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import java.util.UUID;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
+@Component
 public class SecurityAnalysisApplyModificationsStep extends AbstractProcessStep<SecurityAnalysisConfig> {
 
     public SecurityAnalysisApplyModificationsStep() {

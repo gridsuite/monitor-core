@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,9 +36,6 @@ class ProcessTest {
     private NotificationService notificationService;
 
     @Mock
-    private NetworkConversionService networkConversionService;
-
-    @Mock
     private ProcessExecutionContext<ProcessConfig> processContext;
 
     private TestProcess process;
@@ -48,8 +44,7 @@ class ProcessTest {
     void setUp() {
         process = new TestProcess(
                 stepExecutionService,
-                notificationService,
-                networkConversionService);
+                notificationService);
     }
 
     @Test
@@ -120,8 +115,8 @@ class ProcessTest {
      */
     private static class TestProcess extends AbstractProcess<ProcessConfig> {
 
-        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService, NotificationService notificationService, NetworkConversionService networkConversionService) {
-            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService);
+        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService, NotificationService notificationService) {
+            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService);
         }
 
         @Override

@@ -9,6 +9,9 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
@@ -45,11 +48,16 @@ class SecurityAnalysisProcessTest {
 
     @BeforeEach
     void setUp() {
+        LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
+        SecurityAnalysisApplyModificationsStep applyModificationsStep = new SecurityAnalysisApplyModificationsStep();
+        SecurityAnalysisRunComputationStep runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
+
         process = new SecurityAnalysisProcess(
             stepExecutionService,
             notificationService,
-            networkConversionService,
-            securityAnalysisService
+            loadNetworkStep,
+            applyModificationsStep,
+            runComputationStep
         );
     }
 

@@ -56,7 +56,7 @@ class SecurityAnalysisServiceTest {
     }
 
     @Test
-    void sendReportFailed() {
+    void saveResultFailed() {
         SecurityAnalysisResult result = SecurityAnalysisResult.empty();
         server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results/" + RESULT_UUID))

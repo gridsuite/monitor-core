@@ -46,6 +46,10 @@
         <sonar.coverage.jacoco.xmlReportPaths>
             ../monitor-server/target/site/jacoco/jacoco.xml,
             ../monitor-worker-server/target/site/jacoco/jacoco.xml,
+            ../../monitor-server/target/site/jacoco/jacoco.xml,
+            ../../monitor-worker-server/target/site/jacoco/jacoco.xml,
+            ../../../monitor-server/target/site/jacoco/jacoco.xml,
+            ../../../monitor-worker-server/target/site/jacoco/jacoco.xml,
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 

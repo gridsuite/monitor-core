@@ -131,7 +131,7 @@ class NetworkModificationServiceTest {
         for (int i = 0; i < modificationInfos.length; i++) {
             verify(mockModifications[i]).check(network);
             verify(mockModifications[i]).initApplicationContext(filterService, null);
-            verify(mockModifications[i]).apply(eq(network), eq(mockReportNode));
+            verify(mockModifications[i]).apply(network, mockReportNode);
         }
     }
 
@@ -155,7 +155,7 @@ class NetworkModificationServiceTest {
         for (int i = 0; i < modificationInfos.length; i++) {
             verify(mockModifications[i]).check(network);
             verify(mockModifications[i], never()).initApplicationContext(filterService, null);
-            verify(mockModifications[i], never()).apply(eq(network), eq(mockReportNode));
+            verify(mockModifications[i], never()).apply(network, mockReportNode);
         }
     }
 }

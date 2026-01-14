@@ -110,7 +110,8 @@ class FilterServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://filter-server/v1/filters/metadata?ids=" + FILTER_ERROR_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> filterService.getFilters(List.of(FILTER_ERROR_UUID))).isInstanceOf(PowsyblException.class)
+        List<UUID> filterUuids = List.of(FILTER_ERROR_UUID);
+        assertThatThrownBy(() -> filterService.getFilters(filterUuids)).isInstanceOf(PowsyblException.class)
             .hasMessage("Error retrieving filters");
     }
 

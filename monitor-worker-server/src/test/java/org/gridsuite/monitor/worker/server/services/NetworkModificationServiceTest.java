@@ -104,7 +104,8 @@ class NetworkModificationServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modification/" + MODIFICATION_ERROR_UUID + "/network-modifications?onlyMetadata=false"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> networkModificationService.getModifications(List.of(MODIFICATION_ERROR_UUID))).isInstanceOf(PowsyblException.class);
+        List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);
+        assertThatThrownBy(() -> networkModificationService.getModifications(modificationsUuids)).isInstanceOf(PowsyblException.class);
     }
 
     @Test

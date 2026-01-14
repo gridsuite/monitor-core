@@ -45,7 +45,7 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
     protected List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
         return List.of(
             new LoadNetworkStep<>(networkConversionService),
-            new ApplyModificationsStep(networkModificationService, filterService),
+            new ApplyModificationsStep<>(networkModificationService, filterService),
             new SecurityAnalysisRunComputationStep(securityAnalysisService)
         );
     }

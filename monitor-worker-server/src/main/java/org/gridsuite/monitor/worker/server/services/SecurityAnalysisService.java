@@ -1,8 +1,5 @@
 package org.gridsuite.monitor.worker.server.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.powsybl.commons.PowsyblException;
-import com.powsybl.commons.report.ReportNode;
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
 import org.slf4j.Logger;

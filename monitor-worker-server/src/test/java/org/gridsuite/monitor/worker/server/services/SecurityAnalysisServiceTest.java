@@ -2,10 +2,8 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.commons.report.ReportNode;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
-import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

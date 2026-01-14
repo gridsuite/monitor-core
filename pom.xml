@@ -44,8 +44,8 @@
         <sonar.organization>gridsuite</sonar.organization>
         <sonar.projectKey>org.gridsuite:monitor-core</sonar.projectKey>
         <sonar.coverage.jacoco.xmlReportPaths>
-            ${project.basedir}/monitor-server/target/site/jacoco/jacoco.xml,
-            ${project.basedir}/monitor-worker-server/target/site/jacoco/jacoco.xml,
+            ../monitor-server/target/site/jacoco/jacoco.xml,
+            ../monitor-worker-server/target/site/jacoco/jacoco.xml,
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 

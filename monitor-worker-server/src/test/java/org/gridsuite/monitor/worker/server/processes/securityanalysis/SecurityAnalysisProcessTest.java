@@ -12,8 +12,6 @@ import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +23,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -36,29 +35,29 @@ class SecurityAnalysisProcessTest {
     private StepExecutionService<SecurityAnalysisConfig> stepExecutionService;
 
     @Mock
-    private NotificationService notificationService;
+    private LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
 
     @Mock
-    private NetworkConversionService networkConversionService;
+    private SecurityAnalysisApplyModificationsStep applyModificationsStep;
 
     @Mock
-    private DummySecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisRunComputationStep runComputationStep;
 
     private SecurityAnalysisProcess process;
 
     @BeforeEach
     void setUp() {
-        LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
-        SecurityAnalysisApplyModificationsStep applyModificationsStep = new SecurityAnalysisApplyModificationsStep();
-        SecurityAnalysisRunComputationStep runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
-
         process = new SecurityAnalysisProcess(
             stepExecutionService,
-            notificationService,
             loadNetworkStep,
             applyModificationsStep,
             runComputationStep
         );
+    }
+
+    @Test
+    void getProcessTypeShouldReturnSecurityAnalysis() {
+        assertEquals(ProcessType.SECURITY_ANALYSIS, process.getProcessType());
     }
 
     @Test
@@ -67,10 +66,8 @@ class SecurityAnalysisProcessTest {
 
         assertNotNull(steps);
         assertEquals(3, steps.size());
-        assertEquals("LOAD_NETWORK", steps.get(0).getType().getName());
-        assertEquals("APPLY_MODIFICATIONS", steps.get(1).getType().getName());
-        assertEquals("RUN_SA_COMPUTATION", steps.get(2).getType().getName());
-        ProcessType type = process.getProcessType();
-        assertEquals(ProcessType.SECURITY_ANALYSIS, type);
+        assertSame(loadNetworkStep, steps.get(0));
+        assertSame(applyModificationsStep, steps.get(1));
+        assertSame(runComputationStep, steps.get(2));
     }
 }

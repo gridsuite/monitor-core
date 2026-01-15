@@ -43,8 +43,7 @@ class ProcessTest {
     @BeforeEach
     void setUp() {
         process = new TestProcess(
-                stepExecutionService,
-                notificationService);
+                stepExecutionService);
     }
 
     @Test
@@ -115,8 +114,8 @@ class ProcessTest {
      */
     private static class TestProcess extends AbstractProcess<ProcessConfig> {
 
-        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService, NotificationService notificationService) {
-            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService);
+        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService) {
+            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
         }
 
         @Override

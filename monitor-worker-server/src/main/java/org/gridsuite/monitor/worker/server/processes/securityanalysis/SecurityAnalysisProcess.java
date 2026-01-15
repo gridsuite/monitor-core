@@ -13,7 +13,6 @@ import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.springframework.stereotype.Component;
 
@@ -31,11 +30,10 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
 
     public SecurityAnalysisProcess(
             StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
-            NotificationService notificationService,
             LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep,
             SecurityAnalysisApplyModificationsStep applyModificationsStep,
             SecurityAnalysisRunComputationStep runComputationStep) {
-        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService);
+        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
         this.loadNetworkStep = loadNetworkStep;
         this.applyModificationsStep = applyModificationsStep;
         this.runComputationStep = runComputationStep;

@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.core;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +25,12 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProcess.class);
     protected final ProcessType processType;
     protected final StepExecutionService<C> stepExecutionService;
-    protected final NotificationService notificationService;
 
     protected AbstractProcess(
             ProcessType processType,
-            StepExecutionService<C> stepExecutionService,
-            NotificationService notificationService) {
+            StepExecutionService<C> stepExecutionService) {
         this.processType = processType;
         this.stepExecutionService = stepExecutionService;
-        this.notificationService = notificationService;
     }
 
     @Override

@@ -15,6 +15,7 @@ import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.Secu
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
+import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +27,13 @@ import java.util.List;
 @Component
 public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisConfig> {
 
-    protected final DummySecurityAnalysisService securityAnalysisService;
+    protected final SecurityAnalysisService securityAnalysisService;
 
     public SecurityAnalysisProcess(
             StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
             NotificationService notificationService,
             NetworkConversionService networkConversionService,
-            DummySecurityAnalysisService securityAnalysisService) {
+            SecurityAnalysisService securityAnalysisService) {
         super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService);
         this.securityAnalysisService = securityAnalysisService;
     }

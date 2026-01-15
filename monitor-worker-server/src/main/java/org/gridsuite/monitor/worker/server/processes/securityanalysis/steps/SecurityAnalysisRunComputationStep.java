@@ -18,6 +18,7 @@ import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.DummySecurityAnalysisService;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +27,7 @@ import java.util.UUID;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
+@Component
 public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<SecurityAnalysisConfig> {
 
     private final DummySecurityAnalysisService securityAnalysisService;

@@ -12,12 +12,14 @@ import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
+@Component
 public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessStep<C> {
 
     private final NetworkConversionService networkConversionService;

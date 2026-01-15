@@ -95,7 +95,7 @@ class NetworkModificationServiceTest {
         }
 
         List<ModificationInfos> resultListModifications = networkModificationService.getModifications(Arrays.asList(modificationUuids));
-        assertThat(resultListModifications).hasSize(2);
+        assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(Arrays.asList(modificationInfos));
     }
 
     @Test

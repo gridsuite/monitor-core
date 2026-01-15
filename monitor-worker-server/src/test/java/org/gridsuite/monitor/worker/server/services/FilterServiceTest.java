@@ -55,7 +55,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
- * @author Franck Lecuyer <franck.lecuyerat rte-france.com>
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @RestClientTest(FilterService.class)
 class FilterServiceTest {

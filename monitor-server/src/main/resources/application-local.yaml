@@ -8,3 +8,8 @@ spring:
 powsybl-ws:
   database:
     host: localhost
+
+gridsuite:
+  services:
+    security-analysis-server:
+      base-uri: http://localhost:5023

@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-@RestClientTest(ReportService.class)
+@RestClientTest(SecurityAnalysisService.class)
 @ContextConfiguration(classes = {MonitorWorkerConfig.class, SecurityAnalysisService.class})
 class SecurityAnalysisServiceTest {
     private static final UUID RESULT_UUID = UUID.randomUUID();

@@ -39,10 +39,10 @@ import org.springframework.test.web.client.response.MockRestResponseCreators;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -87,7 +87,7 @@ class FilterServiceTest {
         IdentifierListFilter identifierListFilter = new IdentifierListFilter(FILTER_1_UUID, new Date(), EquipmentType.GENERATOR, List.of(new IdentifierListFilterEquipmentAttributes("GEN", 1.0)));
 
         ArrayList<AbstractExpertRule> rules = new ArrayList<>();
-        EnumExpertRule country1Filter = EnumExpertRule.builder().field(FieldType.COUNTRY_1).operator(OperatorType.IN).values(new TreeSet<>(Set.of("FR"))).build();
+        EnumExpertRule country1Filter = EnumExpertRule.builder().field(FieldType.COUNTRY_1).operator(OperatorType.IN).values(new HashSet<>(Set.of("FR"))).build();
         rules.add(country1Filter);
         CombinatorExpertRule parentRule = CombinatorExpertRule.builder().combinator(CombinatorType.AND).rules(rules).build();
         ExpertFilter lineFilter = new ExpertFilter(FILTER_2_UUID, new Date(), EquipmentType.LINE, parentRule);
@@ -101,7 +101,7 @@ class FilterServiceTest {
                     .body(objectMapper.writeValueAsString(listFilters)));
 
         List<AbstractFilter> resultListFilters = filterService.getFilters(filterUuids);
-        assertThat(resultListFilters).hasSize(2);
+        assertThat(resultListFilters).usingRecursiveComparison().isEqualTo(listFilters);
     }
 
     @Test

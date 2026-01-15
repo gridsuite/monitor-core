@@ -8,3 +8,8 @@ spring:
 powsybl-ws:
   database:
     host: localhost
+
+gridsuite:
+  services:
+    report-server:
+      base-uri: http://localhost:5028

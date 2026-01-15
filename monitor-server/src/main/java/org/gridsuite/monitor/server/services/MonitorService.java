@@ -31,7 +31,7 @@ public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
-    private final DummyReportService reportService;
+    private final ReportService reportService;
     private final ResultService resultService;
 
     @Transactional
@@ -110,7 +110,6 @@ public class MonitorService {
 
     private List<UUID> getReportIds(UUID executionId) {
         return executionRepository.findById(executionId)
-            //FIXME: Sort steps by order
             .map(execution -> execution.getSteps().stream()
                 .map(ProcessExecutionStepEntity::getReportId)
                 .filter(java.util.Objects::nonNull)

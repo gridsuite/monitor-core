@@ -6,6 +6,8 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
@@ -33,9 +35,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportService.class})
 class ReportServiceTest {
 
-    private static final UUID REPORT_UUID = UUID.fromString("7928181c-7977-4592-ba19-88027e4254e4");
-    private static final UUID REPORT_ERROR_UUID = UUID.fromString("9928181c-7977-4592-ba19-88027e4254e4");
-    private static final String REPORT_JSON = "{\"version\":\"3.0\",\"dictionaries\":{\"default\":{\"test\":\"a test\"}},\"reportRoot\":{\"messageKey\":\"test\"}}";
+    private static final UUID REPORT_UUID = UUID.randomUUID();
+    private static final UUID REPORT_ERROR_UUID = UUID.randomUUID();
 
     @Autowired
     private ReportService reportService;
@@ -43,24 +44,30 @@ class ReportServiceTest {
     @Autowired
     private MockRestServiceServer server;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @AfterEach
     void tearDown() {
         server.verify();
     }
 
     @Test
-    void sendReport() {
+    void sendReport() throws JsonProcessingException {
         final ReportNode reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
                 .build();
+        String expectedJson = objectMapper.writeValueAsString(reportNode);
+
         server.expect(MockRestRequestMatchers.method(HttpMethod.PUT))
                 .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_UUID))
                 .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockRestRequestMatchers.content().json(REPORT_JSON))
+                .andExpect(MockRestRequestMatchers.content().json(expectedJson))
                 .andRespond(MockRestResponseCreators.withSuccess());
 
-        assertThatNoException().isThrownBy(() -> reportService.sendReport(new ReportInfos(REPORT_UUID, reportNode)));
+        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, reportNode);
+        assertThatNoException().isThrownBy(() -> reportService.sendReport(reportInfos));
     }
 
     @Test
@@ -69,6 +76,7 @@ class ReportServiceTest {
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
                 .build();
+
         server.expect(MockRestRequestMatchers.method(HttpMethod.PUT))
                 .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_ERROR_UUID))
                 .andRespond(MockRestResponseCreators.withServerError());

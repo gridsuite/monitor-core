@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * @author Franck Lecuyer <franck.lecuyerat rte-france.com>
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @RestClientTest(NetworkModificationService.class)
 class NetworkModificationServiceTest {

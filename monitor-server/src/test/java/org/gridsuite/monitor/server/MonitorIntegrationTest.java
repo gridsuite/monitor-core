@@ -105,7 +105,7 @@ class MonitorIntegrationTest {
         UUID stepId1 = UUID.randomUUID();
         UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
-        ProcessExecutionStep processExecutionStep = ProcessExecutionStep.builder()
+        ProcessExecutionStep stepDto1 = ProcessExecutionStep.builder()
                 .id(stepId1)
                 .stepType("LOAD_NETWORK")
                 .stepOrder(0)
@@ -116,14 +116,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-
-        Message<String> stepMessage1 = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(processExecutionStep))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-
-        consumerService.consumeMonitorUpdate().accept(stepMessage1);
+        sendMessage(executionId, stepDto1, MessageType.STEP_STATUS_UPDATE);
 
         // Simulate second step creation via message with both report and result
         UUID stepId2 = UUID.randomUUID();
@@ -140,14 +133,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-
-        Message<String> stepMessage2 = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(stepDto2))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-
-        consumerService.consumeMonitorUpdate().accept(stepMessage2);
+        sendMessage(executionId, stepDto2, MessageType.STEP_STATUS_UPDATE);
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId).orElse(null);
@@ -166,14 +152,7 @@ class MonitorIntegrationTest {
                 .executionEnvName("test-env")
                 .completedAt(Instant.now())
                 .build();
-
-        Message<String> statusMessage = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(finalStatus))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-
-        consumerService.consumeMonitorUpdate().accept(statusMessage);
+        sendMessage(executionId, finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
 
         // Verify final state persisted
         execution = executionRepository.findById(executionId).orElse(null);
@@ -209,5 +188,56 @@ class MonitorIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0]").value(result1))
                 .andExpect(jsonPath("$[1]").value(result2));
+    }
+
+    @Test
+    void stepsShouldBeOrderedByStepOrder() throws Exception {
+        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
+                caseUuid,
+                null,
+                UUID.randomUUID(),
+                List.of("contingency1"),
+                List.of(UUID.randomUUID()));
+        UUID executionId = monitorService.executeProcess(securityAnalysisConfig);
+        outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
+
+        // Insert step 1 first
+        ProcessExecutionStep step1 = ProcessExecutionStep.builder()
+                .id(UUID.randomUUID())
+                .stepType("SECOND_STEP")
+                .stepOrder(1)
+                .status(StepStatus.COMPLETED)
+                .startedAt(Instant.now())
+                .completedAt(Instant.now())
+                .build();
+        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
+
+        // Insert step step 0 second
+        ProcessExecutionStep step0 = ProcessExecutionStep.builder()
+                .id(UUID.randomUUID())
+                .stepType("FIRST_STEP")
+                .stepOrder(0)
+                .status(StepStatus.COMPLETED)
+                .startedAt(Instant.now())
+                .completedAt(Instant.now())
+                .build();
+        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
+
+        // Verify steps are returned in correct order (0, 1) not insertion order
+        ProcessExecutionEntity execution = executionRepository.findById(executionId).orElseThrow();
+        assertThat(execution.getSteps()).hasSize(2);
+        assertThat(execution.getSteps().get(0).getStepType()).isEqualTo("FIRST_STEP");
+        assertThat(execution.getSteps().get(0).getStepOrder()).isZero();
+        assertThat(execution.getSteps().get(1).getStepType()).isEqualTo("SECOND_STEP");
+        assertThat(execution.getSteps().get(1).getStepOrder()).isEqualTo(1);
+    }
+
+    private void sendMessage(UUID executionId, Object step, MessageType messageType) throws Exception {
+        Message<String> message = MessageBuilder
+                .withPayload(objectMapper.writeValueAsString(step))
+                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, messageType.toString())
+                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
+                .build();
+        consumerService.consumeMonitorUpdate().accept(message);
     }
 }

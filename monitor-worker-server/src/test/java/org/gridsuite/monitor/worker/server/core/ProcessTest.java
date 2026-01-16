@@ -8,8 +8,10 @@ package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.worker.server.services.FilterRestService;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
@@ -45,7 +47,13 @@ class ProcessTest {
     private NetworkModificationService networkModificationService;
 
     @Mock
+    private NetworkModificationRestService networkModificationRestService;
+
+    @Mock
     private FilterService filterService;
+
+    @Mock
+    private FilterRestService filterRestService;
 
     @Mock
     private ProcessExecutionContext<ProcessConfig> processContext;
@@ -59,7 +67,9 @@ class ProcessTest {
             notificationService,
             networkConversionService,
             networkModificationService,
-            filterService);
+            networkModificationRestService,
+            filterService,
+            filterRestService);
     }
 
     @Test
@@ -134,8 +144,10 @@ class ProcessTest {
                            NotificationService notificationService,
                            NetworkConversionService networkConversionService,
                            NetworkModificationService networkModificationService,
-                           FilterService filterService) {
-            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService, networkModificationService, filterService);
+                           NetworkModificationRestService networkModificationRestService,
+                           FilterService filterService,
+                           FilterRestService filterRestService) {
+            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService, networkModificationService, networkModificationRestService, filterService, filterRestService);
         }
 
         @Override

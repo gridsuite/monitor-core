@@ -9,8 +9,10 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.worker.server.services.FilterRestService;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
@@ -47,7 +49,13 @@ class SecurityAnalysisProcessTest {
     private NetworkModificationService networkModificationService;
 
     @Mock
+    private NetworkModificationRestService networkModificationRestService;
+
+    @Mock
     private FilterService filterService;
+
+    @Mock
+    private FilterRestService filterRestService;
 
     private SecurityAnalysisProcess process;
 
@@ -59,7 +67,9 @@ class SecurityAnalysisProcessTest {
             networkConversionService,
             securityAnalysisService,
             networkModificationService,
-            filterService
+            networkModificationRestService,
+            filterService,
+            filterRestService
         );
     }
 

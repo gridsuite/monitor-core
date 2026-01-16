@@ -13,8 +13,10 @@ import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
+import org.gridsuite.monitor.worker.server.services.FilterRestService;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
@@ -36,8 +38,10 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
         NetworkConversionService networkConversionService,
         DummySecurityAnalysisService securityAnalysisService,
         NetworkModificationService networkModificationService,
-        FilterService filterService) {
-        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService, networkModificationService, filterService);
+        NetworkModificationRestService networkModificationRestService,
+        FilterService filterService,
+        FilterRestService filterRestService) {
+        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService, networkModificationService, networkModificationRestService, filterService, filterRestService);
         this.securityAnalysisService = securityAnalysisService;
     }
 
@@ -45,7 +49,7 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
     protected List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
         return List.of(
             new LoadNetworkStep<>(networkConversionService),
-            new ApplyModificationsStep<>(networkModificationService, filterService),
+            new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService),
             new SecurityAnalysisRunComputationStep(securityAnalysisService)
         );
     }

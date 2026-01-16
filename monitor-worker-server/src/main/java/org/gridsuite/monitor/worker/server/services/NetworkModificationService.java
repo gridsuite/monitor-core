@@ -15,17 +15,9 @@ import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.modifications.AbstractModification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -33,39 +25,6 @@ import java.util.UUID;
 @Service
 public class NetworkModificationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkModificationService.class);
-    private static final String NETWORK_MODIFICATION_SERVER_API_VERSION = "v1";
-    private static final String DELIMITER = "/";
-
-    private final RestTemplate networkModificationServerRest;
-    private final String networkModificationServerBaseUri;
-
-    public NetworkModificationService(@Value("${gridsuite.services.network-modification-server.base-uri:http://network-modification-server/}") String networkModificationServerBaseUri,
-                                      RestTemplateBuilder restTemplateBuilder) {
-        this.networkModificationServerRest = restTemplateBuilder.build();
-        this.networkModificationServerBaseUri = networkModificationServerBaseUri;
-    }
-
-    public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
-        List<ModificationInfos> modifications = new ArrayList<>();
-
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder
-            .fromUriString(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
-                "network-composite-modification" + DELIMITER + "{uuid}" + DELIMITER + "network-modifications?onlyMetadata=false");
-
-        modificationsUuids.forEach(uuid -> {
-            String path = this.networkModificationServerBaseUri + uriBuilder.buildAndExpand(uuid).toUriString();
-            try {
-                ModificationInfos[] modificationInfos = networkModificationServerRest.getForObject(path, ModificationInfos[].class);
-                if (modificationInfos != null) {
-                    modifications.addAll(Arrays.asList(modificationInfos));
-                }
-            } catch (HttpStatusCodeException e) {
-                throw new PowsyblException("Error retrieving modifications", e);
-            }
-        });
-
-        return modifications;
-    }
 
     public void applyModifications(Network network, List<ModificationInfos> modificationsInfos, ReportNode reportNode, FilterService filterService) {
         modificationsInfos.stream()

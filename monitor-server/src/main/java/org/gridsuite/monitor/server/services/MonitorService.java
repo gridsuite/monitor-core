@@ -110,6 +110,7 @@ public class MonitorService {
 
     private List<UUID> getReportIds(UUID executionId) {
         return executionRepository.findById(executionId)
+            //FIXME: Sort steps by order
             .map(execution -> execution.getSteps().stream()
                 .map(ProcessExecutionStepEntity::getReportId)
                 .filter(java.util.Objects::nonNull)

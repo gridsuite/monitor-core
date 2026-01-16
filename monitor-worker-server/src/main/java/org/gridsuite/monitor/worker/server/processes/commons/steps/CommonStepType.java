@@ -16,7 +16,8 @@ import org.gridsuite.monitor.worker.server.core.ProcessStepType;
 @Getter
 @RequiredArgsConstructor
 public enum CommonStepType implements ProcessStepType {
-    LOAD_NETWORK("LOAD_NETWORK");
+    LOAD_NETWORK("LOAD_NETWORK"),
+    APPLY_MODIFICATIONS("APPLY_MODIFICATIONS");
 
     private final String name;
 }

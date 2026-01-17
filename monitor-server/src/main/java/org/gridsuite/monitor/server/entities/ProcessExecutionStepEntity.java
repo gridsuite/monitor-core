@@ -33,7 +33,7 @@ public class ProcessExecutionStepEntity {
     private String stepType;
 
     @Column
-    private UUID previousStepId;
+    private Integer stepOrder;
 
     @Column
     @Enumerated(EnumType.STRING)

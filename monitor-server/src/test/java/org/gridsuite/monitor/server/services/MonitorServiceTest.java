@@ -238,10 +238,12 @@ class MonitorServiceTest {
         UUID reportId2 = UUID.randomUUID();
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(0)
                 .reportId(reportId1)
                 .build();
         ProcessExecutionStepEntity step2 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(1)
                 .reportId(reportId2)
                 .build();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
@@ -268,11 +270,13 @@ class MonitorServiceTest {
         UUID resultId2 = UUID.randomUUID();
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(0)
                 .resultId(resultId1)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .build();
         ProcessExecutionStepEntity step2 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(1)
                 .resultId(resultId2)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .build();

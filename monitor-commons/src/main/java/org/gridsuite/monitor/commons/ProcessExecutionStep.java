@@ -24,7 +24,7 @@ import java.util.UUID;
 public class ProcessExecutionStep {
     private UUID id;
     private String stepType;
-    private UUID previousStepId;
+    private Integer stepOrder;
     private StepStatus status;
     private UUID resultId;
     private ResultType resultType;

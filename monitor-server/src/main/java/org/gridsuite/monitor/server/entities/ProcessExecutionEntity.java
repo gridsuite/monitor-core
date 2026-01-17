@@ -51,5 +51,6 @@ public class ProcessExecutionEntity {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "execution_id", foreignKey = @ForeignKey(name = "processExecutionStep_processExecution_fk"))
+    @OrderBy("stepOrder ASC")
     private List<ProcessExecutionStepEntity> steps;
 }

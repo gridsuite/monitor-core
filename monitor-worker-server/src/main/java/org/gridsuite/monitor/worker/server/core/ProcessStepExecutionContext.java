@@ -24,7 +24,7 @@ import java.util.UUID;
 public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
     private final UUID stepExecutionId = UUID.randomUUID();
-    private final UUID previousStepExecutionId;
+    private final int stepOrder;
     private final ProcessExecutionContext<C> processContext;
     private final C config;
     private final ReportInfos reportInfos;
@@ -34,7 +34,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     @Setter
     private ResultInfos resultInfos;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, C config, ProcessStepType processStepType, UUID previousStepExecutionId) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, C config, ProcessStepType processStepType, int stepOrder) {
         this.processContext = processContext;
         this.config = config;
         this.processStepType = processStepType;
@@ -43,7 +43,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
                 .withMessageTemplate("monitor.worker.server.stepType")
                 .withUntypedValue("stepType", processStepType.getName())
                 .build());
-        this.previousStepExecutionId = previousStepExecutionId;
+        this.stepOrder = stepOrder;
     }
 
     public UUID getProcessExecutionId() {

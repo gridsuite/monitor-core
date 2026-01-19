@@ -12,7 +12,7 @@ import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.services.ConsumerService;
-import org.gridsuite.monitor.server.services.DummyReportService;
+import org.gridsuite.monitor.server.services.ReportService;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.gridsuite.monitor.server.services.ResultService;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private DummyReportService reportService;
+    private ReportService reportService;
 
     @MockitoBean
     private ResultService resultService;

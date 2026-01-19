@@ -16,7 +16,6 @@ import org.gridsuite.monitor.worker.server.core.ProcessStepType;
 @Getter
 @RequiredArgsConstructor
 public enum SecurityAnalysisStepType implements ProcessStepType {
-    APPLY_MODIFICATIONS("APPLY_MODIFICATIONS"),
     RUN_SA_COMPUTATION("RUN_SA_COMPUTATION");
 
     private final String name;

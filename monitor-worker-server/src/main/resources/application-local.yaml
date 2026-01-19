@@ -14,6 +14,8 @@ gridsuite:
   services:
     report-server:
       base-uri: http://localhost:5028
+    security-analysis-server:
+      base-uri: http://localhost:5023
     network-modification-server:
       base-uri: http://localhost:5007
     filter-server:

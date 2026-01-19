@@ -15,6 +15,7 @@ import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.NotificationService;
+import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class SecurityAnalysisProcessTest {
     private NetworkConversionService networkConversionService;
 
     @Mock
-    private DummySecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisService securityAnalysisService;
 
     @Mock
     private NetworkModificationService networkModificationService;

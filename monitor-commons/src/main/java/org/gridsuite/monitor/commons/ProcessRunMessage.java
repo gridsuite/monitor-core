@@ -6,6 +6,9 @@
  */
 package org.gridsuite.monitor.commons;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import java.util.UUID;
 
 /**
@@ -14,6 +17,10 @@ import java.util.UUID;
 public record ProcessRunMessage<T extends ProcessConfig>(
     UUID executionId,
     UUID caseUuid,
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "processType")
+    @JsonSubTypes({
+        @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
+    })
     T config
 ) {
     public ProcessType processType() {

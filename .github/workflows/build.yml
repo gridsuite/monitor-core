@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'secret-test-remove-dockerimage'
   pull_request:
 
 jobs:

@@ -20,14 +20,16 @@ import java.util.UUID;
 public class ProcessExecutionContext<C extends ProcessConfig> {
 
     private final UUID executionId;
+    private final UUID caseUuid;
     private final C config;
     @Setter
     private Network network;
     private final String executionEnvName;
 
-    public ProcessExecutionContext(C config, String executionEnvName) {
+    public ProcessExecutionContext(UUID executionId, UUID caseUuid, C config, String executionEnvName) {
+        this.executionId = executionId;
+        this.caseUuid = caseUuid;
         this.config = config;
-        this.executionId = config.executionId();
         this.executionEnvName = executionEnvName;
     }
 

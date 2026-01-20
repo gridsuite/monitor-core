@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.worker.server.core.Process;
@@ -56,14 +57,16 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldCompleteSuccessfullyWhenProcessExecutesWithoutError() {
         UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(processConfig.executionId()).thenReturn(executionId);
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
 
-        processExecutionService.executeProcess(processConfig);
+        processExecutionService.executeProcess(runMessage);
 
         verify(process).execute(argThat(context ->
                 context.getExecutionId().equals(executionId) &&
+                        context.getCaseUuid().equals(caseUuid) &&
                         context.getConfig().equals(processConfig) &&
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
         ));
@@ -84,12 +87,13 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldSendFailedStatusWhenProcessThrowsException() {
         UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(processConfig.executionId()).thenReturn(executionId);
         RuntimeException processException = new RuntimeException("Process execution failed");
         doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
 
-        assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(processConfig));
+        assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
         verify(process).execute(any(ProcessExecutionContext.class));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
@@ -105,9 +109,12 @@ class ProcessExecutionServiceTest {
 
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
+        UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
 
-        assertThatThrownBy(() -> processExecutionService.executeProcess(processConfig))
+        assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No process found for type");
         verify(process, never()).execute(any());

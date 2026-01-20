@@ -35,16 +35,16 @@ public class MonitorService {
     private final ResultService resultService;
 
     @Transactional
-    public UUID executeProcess(ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, ProcessConfig processConfig) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .type(processConfig.processType().name())
-            .caseUuid(processConfig.caseUuid())
+            .caseUuid(caseUuid)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
             .build();
         executionRepository.save(execution);
 
-        notificationService.sendProcessRunMessage(processConfig, execution.getId());
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId());
 
         return execution.getId();
     }

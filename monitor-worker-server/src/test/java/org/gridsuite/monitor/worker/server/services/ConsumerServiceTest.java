@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.mockito.Mockito.verify;
@@ -40,11 +42,14 @@ class ConsumerServiceTest {
 
     @Test
     void consumeRun() {
-        Message<ProcessConfig> message = MessageBuilder.withPayload(processConfig).build();
-        Consumer<Message<ProcessConfig>> consumer = consumerService.consumeRun();
+        UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
+        Message<ProcessRunMessage<? extends ProcessConfig>> message = MessageBuilder.withPayload(runMessage).build();
+        Consumer<Message<ProcessRunMessage<? extends ProcessConfig>>> consumer = consumerService.consumeRun();
 
         consumer.accept(message);
 
-        verify(processExecutionService).executeProcess(processConfig);
+        verify(processExecutionService).executeProcess(runMessage);
     }
 }

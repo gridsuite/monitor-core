@@ -50,6 +50,10 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
         return processContext.getExecutionId();
     }
 
+    public UUID getCaseUuid() {
+        return processContext.getCaseUuid();
+    }
+
     public Network getNetwork() {
         return processContext.getNetwork();
     }

@@ -11,6 +11,7 @@ jobs:
   build:
     uses: powsybl/github-ci/.github/workflows/build-backend-app-generic.yml@5a8a89b8a1f75adaec461404f957e02f8dfea948
     with:
+      dockerImage: docker.io/gridsuite/monitor-server
       dockerUsername: gridsuiteci
       eventType: monitor_updated
     secrets:

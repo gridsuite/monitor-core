@@ -10,16 +10,9 @@ import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcess;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
-import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
-import org.gridsuite.monitor.worker.server.services.FilterRestService;
-import org.gridsuite.monitor.worker.server.services.FilterService;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
-import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.springframework.stereotype.Component;
 
@@ -31,27 +24,27 @@ import java.util.List;
 @Component
 public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisConfig> {
 
-    protected final SecurityAnalysisService securityAnalysisService;
+    private final LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
+    private final ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep;
+    private final SecurityAnalysisRunComputationStep runComputationStep;
 
     public SecurityAnalysisProcess(
-        StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
-        NotificationService notificationService,
-        NetworkConversionService networkConversionService,
-        SecurityAnalysisService securityAnalysisService,
-        NetworkModificationService networkModificationService,
-        NetworkModificationRestService networkModificationRestService,
-        FilterService filterService,
-        FilterRestService filterRestService) {
-        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService, networkModificationService, networkModificationRestService, filterService, filterRestService);
-        this.securityAnalysisService = securityAnalysisService;
+            StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
+            LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep,
+            ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep,
+            SecurityAnalysisRunComputationStep runComputationStep) {
+        super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
+        this.loadNetworkStep = loadNetworkStep;
+        this.applyModificationsStep = applyModificationsStep;
+        this.runComputationStep = runComputationStep;
     }
 
     @Override
     protected List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
         return List.of(
-            new LoadNetworkStep<>(networkConversionService),
-            new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService),
-            new SecurityAnalysisRunComputationStep(securityAnalysisService)
+            loadNetworkStep,
+            applyModificationsStep,
+            runComputationStep
         );
     }
 }

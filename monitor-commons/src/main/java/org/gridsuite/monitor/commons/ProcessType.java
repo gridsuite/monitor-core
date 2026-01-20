@@ -6,19 +6,9 @@
  */
 package org.gridsuite.monitor.commons;
 
-import lombok.Getter;
-
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@Getter
 public enum ProcessType {
-    SECURITY_ANALYSIS("publishRunSecurityAnalysis-out-0");
-
-    private final String bindingName;
-
-    ProcessType(String bindingName) {
-        this.bindingName = bindingName;
-    }
-
+    SECURITY_ANALYSIS
 }

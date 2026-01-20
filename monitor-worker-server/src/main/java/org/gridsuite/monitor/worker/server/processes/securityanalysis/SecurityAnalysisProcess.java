@@ -10,8 +10,8 @@ import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcess;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.springframework.stereotype.Component;
@@ -25,13 +25,13 @@ import java.util.List;
 public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisConfig> {
 
     private final LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
-    private final SecurityAnalysisApplyModificationsStep applyModificationsStep;
+    private final ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep;
     private final SecurityAnalysisRunComputationStep runComputationStep;
 
     public SecurityAnalysisProcess(
             StepExecutionService<SecurityAnalysisConfig> stepExecutionService,
             LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep,
-            SecurityAnalysisApplyModificationsStep applyModificationsStep,
+            ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep,
             SecurityAnalysisRunComputationStep runComputationStep) {
         super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
         this.loadNetworkStep = loadNetworkStep;

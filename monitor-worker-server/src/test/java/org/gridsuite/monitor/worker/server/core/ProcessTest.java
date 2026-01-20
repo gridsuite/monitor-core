@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,9 +30,6 @@ import static org.mockito.Mockito.*;
 class ProcessTest {
     @Mock
     private StepExecutionService<ProcessConfig> stepExecutionService;
-
-    @Mock
-    private NotificationService notificationService;
 
     @Mock
     private ProcessExecutionContext<ProcessConfig> processContext;

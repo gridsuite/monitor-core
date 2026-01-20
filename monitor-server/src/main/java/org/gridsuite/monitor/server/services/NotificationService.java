@@ -23,9 +23,9 @@ public class NotificationService {
     private final StreamBridge publisher;
 
     public void sendProcessRunMessage(ProcessConfig processConfig, UUID executionId) {
-        publisher.send(
-            processConfig.processType().getBindingName(),
-            processConfig.withExecutionId(executionId)
-        );
+        String bindingName = switch (processConfig.processType()) {
+            case SECURITY_ANALYSIS -> "publishRunSecurityAnalysis-out-0";
+        };
+        publisher.send(bindingName, processConfig.withExecutionId(executionId));
     }
 }

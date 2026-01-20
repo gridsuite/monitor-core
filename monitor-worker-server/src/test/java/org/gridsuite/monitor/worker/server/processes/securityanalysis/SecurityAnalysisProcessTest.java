@@ -9,8 +9,8 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,9 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -38,7 +36,7 @@ class SecurityAnalysisProcessTest {
     private LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
 
     @Mock
-    private SecurityAnalysisApplyModificationsStep applyModificationsStep;
+    private ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep;
 
     @Mock
     private SecurityAnalysisRunComputationStep runComputationStep;

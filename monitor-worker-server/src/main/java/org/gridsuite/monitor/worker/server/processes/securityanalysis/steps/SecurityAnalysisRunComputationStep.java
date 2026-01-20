@@ -16,8 +16,8 @@ import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.DummySecurityAnalysisService;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
+import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -30,9 +30,9 @@ import java.util.UUID;
 @Component
 public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<SecurityAnalysisConfig> {
 
-    private final DummySecurityAnalysisService securityAnalysisService;
+    private final SecurityAnalysisService securityAnalysisService;
 
-    public SecurityAnalysisRunComputationStep(DummySecurityAnalysisService securityAnalysisService) {
+    public SecurityAnalysisRunComputationStep(SecurityAnalysisService securityAnalysisService) {
         super(SecurityAnalysisStepType.RUN_SA_COMPUTATION);
         this.securityAnalysisService = securityAnalysisService;
     }
@@ -47,10 +47,10 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
         List<Contingency> contingencyList = contingencies.stream().map(id -> new Contingency(id, new LineContingency(id))).toList();
         SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
                 .setReportNode(context.getReportInfos().reportNode());
-        SecurityAnalysisReport result = SecurityAnalysis.run(context.getNetwork(), contingencyList, runParameters);
+        SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), contingencyList, runParameters);
 
         ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-        securityAnalysisService.saveResult(resultInfos, result);
+        securityAnalysisService.saveResult(resultInfos.resultUUID(), saReport.getResult());
         context.setResultInfos(resultInfos);
     }
 }

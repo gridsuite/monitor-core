@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    uses: powsybl/github-ci/.github/workflows/build-backend-app-generic.yml@9cb66b2581c1dd401ede4e30e89a8561cf38cdc5
+    uses: powsybl/github-ci/.github/workflows/build-backend-app-generic.yml@5a8a89b8a1f75adaec461404f957e02f8dfea948
     with:
       dockerUsername: gridsuiteci
       eventType: monitor_updated

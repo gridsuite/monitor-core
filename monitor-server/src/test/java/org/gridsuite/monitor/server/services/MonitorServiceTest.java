@@ -41,7 +41,7 @@ class MonitorServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private DummyReportService reportService;
+    private ReportService reportService;
 
     @Mock
     private ResultService resultService;

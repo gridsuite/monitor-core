@@ -31,7 +31,7 @@ public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
-    private final DummyReportService reportService;
+    private final ReportService reportService;
     private final ResultService resultService;
 
     @Transactional

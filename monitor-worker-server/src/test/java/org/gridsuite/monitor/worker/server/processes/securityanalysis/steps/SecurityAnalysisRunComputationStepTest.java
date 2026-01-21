@@ -9,12 +9,12 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis.steps;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
-import com.powsybl.security.SecurityAnalysisReport;
+import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.DummySecurityAnalysisService;
+import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 class SecurityAnalysisRunComputationStepTest {
 
     @Mock
-    private DummySecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisService securityAnalysisService;
 
     @Mock
     private ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext;
@@ -75,11 +75,8 @@ class SecurityAnalysisRunComputationStepTest {
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
         verify(securityAnalysisService).saveResult(
-                argThat(resultInfos ->
-                        resultInfos.resultUUID() != null &&
-                        resultInfos.resultType().equals(ResultType.SECURITY_ANALYSIS)
-                ),
-                any(SecurityAnalysisReport.class)
+                any(UUID.class),
+                any(SecurityAnalysisResult.class)
         );
         verify(stepContext).setResultInfos(argThat(resultInfos ->
                         resultInfos.resultUUID() != null &&

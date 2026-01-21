@@ -49,7 +49,7 @@ public class StepExecutionService<C extends ProcessConfig> {
             StepStatus.RUNNING,
             null,
             null,
-            null,
+            context.getReportInfos().reportUuid(),
             context.getStartedAt(),
             null
         );

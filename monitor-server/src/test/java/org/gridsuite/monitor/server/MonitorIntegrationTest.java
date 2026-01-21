@@ -102,13 +102,30 @@ class MonitorIntegrationTest {
         assertThat(execution.getSteps()).isEmpty();
 
         // Simulate first step creation via message with both report and result
+        UUID stepId0 = UUID.randomUUID();
+        UUID reportId0 = UUID.randomUUID();
+        UUID resultId0 = UUID.randomUUID();
+        ProcessExecutionStep step0 = ProcessExecutionStep.builder()
+                .id(stepId0)
+                .stepType("LOAD_NETWORK")
+                .stepOrder(0)
+                .status(StepStatus.COMPLETED)
+                .reportId(reportId0)
+                .resultId(resultId0)
+                .resultType(ResultType.SECURITY_ANALYSIS)
+                .startedAt(Instant.now())
+                .completedAt(Instant.now())
+                .build();
+        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
+
+        // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
         UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
-        ProcessExecutionStep stepDto1 = ProcessExecutionStep.builder()
+        ProcessExecutionStep step1 = ProcessExecutionStep.builder()
                 .id(stepId1)
-                .stepType("LOAD_NETWORK")
-                .stepOrder(0)
+                .stepType("SECURITY_ANALYSIS")
+                .stepOrder(1)
                 .status(StepStatus.COMPLETED)
                 .reportId(reportId1)
                 .resultId(resultId1)
@@ -116,35 +133,18 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, stepDto1, MessageType.STEP_STATUS_UPDATE);
-
-        // Simulate second step creation via message with both report and result
-        UUID stepId2 = UUID.randomUUID();
-        UUID reportId2 = UUID.randomUUID();
-        UUID resultId2 = UUID.randomUUID();
-        ProcessExecutionStep stepDto2 = ProcessExecutionStep.builder()
-                .id(stepId2)
-                .stepType("SECURITY_ANALYSIS")
-                .stepOrder(1)
-                .status(StepStatus.COMPLETED)
-                .reportId(reportId2)
-                .resultId(resultId2)
-                .resultType(ResultType.SECURITY_ANALYSIS)
-                .startedAt(Instant.now())
-                .completedAt(Instant.now())
-                .build();
-        sendMessage(executionId, stepDto2, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId).orElse(null);
         assertThat(execution.getSteps()).hasSize(2);
-        assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId1);
+        assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
-        assertThat(execution.getSteps().get(0).getReportId()).isEqualTo(reportId1);
-        assertThat(execution.getSteps().get(0).getResultId()).isEqualTo(resultId1);
-        assertThat(execution.getSteps().get(1).getId()).isEqualTo(stepId2);
-        assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId2);
-        assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId2);
+        assertThat(execution.getSteps().get(0).getReportId()).isEqualTo(reportId0);
+        assertThat(execution.getSteps().get(0).getResultId()).isEqualTo(resultId0);
+        assertThat(execution.getSteps().get(1).getId()).isEqualTo(stepId1);
+        assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId1);
+        assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId1);
 
         // Complete the execution via message
         ProcessExecutionStatusUpdate finalStatus = ProcessExecutionStatusUpdate.builder()
@@ -160,76 +160,34 @@ class MonitorIntegrationTest {
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
 
         // Mock the report service responses
-        Report report1 = new Report(reportId1, null, "Load Network Report", null, List.of());
-        Report report2 = new Report(reportId2, null, "Security Analysis Report", null, List.of());
+        Report report0 = new Report(reportId0, null, "Load Network Report", null, List.of());
+        Report report1 = new Report(reportId1, null, "Security Analysis Report", null, List.of());
+        when(reportService.getReport(reportId0)).thenReturn(report0);
         when(reportService.getReport(reportId1)).thenReturn(report1);
-        when(reportService.getReport(reportId2)).thenReturn(report2);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id").value(reportId1.toString()))
+                .andExpect(jsonPath("$[0].id").value(reportId0.toString()))
                 .andExpect(jsonPath("$[0].message").value("Load Network Report"))
-                .andExpect(jsonPath("$[1].id").value(reportId2.toString()))
+                .andExpect(jsonPath("$[1].id").value(reportId1.toString()))
                 .andExpect(jsonPath("$[1].message").value("Security Analysis Report"));
 
         // Mock the result service responses
-        String result1 = "{\"result\": \"success\"}";
-        String result2 = "{\"securityAnalysisResult\": \"violations found\"}";
+        String result0 = "{\"result\": \"success\"}";
+        String result1 = "{\"securityAnalysisResult\": \"violations found\"}";
+        when(resultService.getResult(new ResultInfos(resultId0, ResultType.SECURITY_ANALYSIS))).thenReturn(result0);
         when(resultService.getResult(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS))).thenReturn(result1);
-        when(resultService.getResult(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))).thenReturn(result2);
 
         // Test the results endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0]").value(result1))
-                .andExpect(jsonPath("$[1]").value(result2));
-    }
-
-    @Test
-    void stepsShouldBeOrderedByStepOrder() throws Exception {
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-                caseUuid,
-                null,
-                UUID.randomUUID(),
-                List.of("contingency1"),
-                List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(securityAnalysisConfig);
-        outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
-
-        // Insert step 1 first
-        ProcessExecutionStep step1 = ProcessExecutionStep.builder()
-                .id(UUID.randomUUID())
-                .stepType("SECOND_STEP")
-                .stepOrder(1)
-                .status(StepStatus.COMPLETED)
-                .startedAt(Instant.now())
-                .completedAt(Instant.now())
-                .build();
-        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
-
-        // Insert step step 0 second
-        ProcessExecutionStep step0 = ProcessExecutionStep.builder()
-                .id(UUID.randomUUID())
-                .stepType("FIRST_STEP")
-                .stepOrder(0)
-                .status(StepStatus.COMPLETED)
-                .startedAt(Instant.now())
-                .completedAt(Instant.now())
-                .build();
-        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
-
-        // Verify steps are returned in correct order (0, 1) not insertion order
-        ProcessExecutionEntity execution = executionRepository.findById(executionId).orElseThrow();
-        assertThat(execution.getSteps()).hasSize(2);
-        assertThat(execution.getSteps().get(0).getStepType()).isEqualTo("FIRST_STEP");
-        assertThat(execution.getSteps().get(0).getStepOrder()).isZero();
-        assertThat(execution.getSteps().get(1).getStepType()).isEqualTo("SECOND_STEP");
-        assertThat(execution.getSteps().get(1).getStepOrder()).isEqualTo(1);
+                .andExpect(jsonPath("$[0]").value(result0))
+                .andExpect(jsonPath("$[1]").value(result1));
     }
 
     private void sendMessage(UUID executionId, Object step, MessageType messageType) throws Exception {

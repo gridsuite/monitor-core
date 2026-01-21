@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -37,11 +36,10 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     public void execute(ProcessExecutionContext<C> context) {
         List<ProcessStep<C>> steps = defineSteps();
         boolean skipRemaining = false;
-        UUID previousStepId = null;
 
-        for (ProcessStep<C> step : steps) {
-            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, previousStepId);
-            previousStepId = stepContext.getStepExecutionId();
+        for (int i = 0; i < steps.size(); i++) {
+            ProcessStep<C> step = steps.get(i);
+            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, i);
 
             if (skipRemaining) {
                 stepExecutionService.skipStep(stepContext, step);

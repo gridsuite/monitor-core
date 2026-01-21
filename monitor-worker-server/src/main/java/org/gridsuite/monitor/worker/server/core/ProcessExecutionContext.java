@@ -33,7 +33,7 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
         this.executionEnvName = executionEnvName;
     }
 
-    public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step, UUID previousStepId) {
-        return new ProcessStepExecutionContext<>(this, config, step.getType(), previousStepId);
+    public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step, int stepOrder) {
+        return new ProcessStepExecutionContext<>(this, config, step.getType(), stepOrder);
     }
 }

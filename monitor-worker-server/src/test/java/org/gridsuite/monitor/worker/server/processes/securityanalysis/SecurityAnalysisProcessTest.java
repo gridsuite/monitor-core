@@ -9,13 +9,9 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
-import org.gridsuite.monitor.worker.server.services.FilterRestService;
-import org.gridsuite.monitor.worker.server.services.FilterService;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
-import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -38,25 +33,13 @@ class SecurityAnalysisProcessTest {
     private StepExecutionService<SecurityAnalysisConfig> stepExecutionService;
 
     @Mock
-    private NotificationService notificationService;
+    private LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
 
     @Mock
-    private NetworkConversionService networkConversionService;
+    private ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep;
 
     @Mock
-    private SecurityAnalysisService securityAnalysisService;
-
-    @Mock
-    private NetworkModificationService networkModificationService;
-
-    @Mock
-    private NetworkModificationRestService networkModificationRestService;
-
-    @Mock
-    private FilterService filterService;
-
-    @Mock
-    private FilterRestService filterRestService;
+    private SecurityAnalysisRunComputationStep runComputationStep;
 
     private SecurityAnalysisProcess process;
 
@@ -64,14 +47,15 @@ class SecurityAnalysisProcessTest {
     void setUp() {
         process = new SecurityAnalysisProcess(
             stepExecutionService,
-            notificationService,
-            networkConversionService,
-            securityAnalysisService,
-            networkModificationService,
-            networkModificationRestService,
-            filterService,
-            filterRestService
+            loadNetworkStep,
+            applyModificationsStep,
+            runComputationStep
         );
+    }
+
+    @Test
+    void getProcessTypeShouldReturnSecurityAnalysis() {
+        assertEquals(ProcessType.SECURITY_ANALYSIS, process.getProcessType());
     }
 
     @Test
@@ -80,10 +64,8 @@ class SecurityAnalysisProcessTest {
 
         assertNotNull(steps);
         assertEquals(3, steps.size());
-        assertEquals("LOAD_NETWORK", steps.get(0).getType().getName());
-        assertEquals("APPLY_MODIFICATIONS", steps.get(1).getType().getName());
-        assertEquals("RUN_SA_COMPUTATION", steps.get(2).getType().getName());
-        ProcessType type = process.getProcessType();
-        assertEquals(ProcessType.SECURITY_ANALYSIS, type);
+        assertSame(loadNetworkStep, steps.get(0));
+        assertSame(applyModificationsStep, steps.get(1));
+        assertSame(runComputationStep, steps.get(2));
     }
 }

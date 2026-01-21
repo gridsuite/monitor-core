@@ -63,14 +63,14 @@ class ProcessExecutionContextTest {
         ProcessStepType stepType = mock(ProcessStepType.class);
         when(stepType.getName()).thenReturn("test-step");
         when(step.getType()).thenReturn(stepType);
-        UUID previousStepId = UUID.randomUUID();
+        int stepOrder = 3;
 
-        ProcessStepExecutionContext<ProcessConfig> stepContext = processContext.createStepContext(step, previousStepId);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = processContext.createStepContext(step, stepOrder);
 
         assertThat(stepContext).isNotNull();
         assertThat(stepContext.getProcessContext()).isEqualTo(processContext);
         assertThat(stepContext.getConfig()).isEqualTo(config);
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
-        assertThat(stepContext.getPreviousStepExecutionId()).isEqualTo(previousStepId);
+        assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);
     }
 }

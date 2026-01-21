@@ -57,18 +57,19 @@ class MonitorControllerTest {
                 List.of(modificationUuid)
         );
 
-        when(monitorService.executeProcess(any(UUID.class), any(SecurityAnalysisConfig.class)))
+        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))
                 .thenReturn(executionId);
 
         mockMvc.perform(post("/v1/execute/security-analysis")
                         .param("caseUuid", caseUuid.toString())
+                        .header("userId", "user1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(monitorService).executeProcess(eq(caseUuid), any(SecurityAnalysisConfig.class));
+        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class));
     }
 
     @Test

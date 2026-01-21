@@ -26,6 +26,8 @@ public class MonitorController {
 
     private final MonitorService monitorService;
 
+    public static final String HEADER_USER_ID = "userId";
+
     public MonitorController(MonitorService monitorService) {
         this.monitorService = monitorService;
     }
@@ -33,8 +35,9 @@ public class MonitorController {
     @PostMapping("/execute/security-analysis")
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @RequestParam UUID caseUuid,
-            @RequestBody SecurityAnalysisConfig securityAnalysisConfig) {
-        UUID executionId = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
+            @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
+            @RequestHeader(HEADER_USER_ID) String userId) {
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
         return ResponseEntity.ok(executionId);
     }
 

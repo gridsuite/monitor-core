@@ -35,12 +35,13 @@ public class MonitorService {
     private final ResultService resultService;
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .type(processConfig.processType().name())
             .caseUuid(caseUuid)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
+            .userId(userId)
             .build();
         executionRepository.save(execution);
 
@@ -50,11 +51,14 @@ public class MonitorService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant completedAt) {
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {
                 execution.setExecutionEnvName(executionEnvName);
+            }
+            if (startedAt != null) {
+                execution.setStartedAt(startedAt);
             }
             if (completedAt != null) {
                 execution.setCompletedAt(completedAt);

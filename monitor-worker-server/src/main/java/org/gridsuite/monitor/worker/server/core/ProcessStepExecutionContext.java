@@ -20,23 +20,27 @@ import java.util.UUID;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@Getter
 public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
-    private final UUID stepExecutionId = UUID.randomUUID();
-    private final int stepOrder;
     private final ProcessExecutionContext<C> processContext;
-    private final C config;
+
+    @Getter
+    private final UUID stepExecutionId = UUID.randomUUID();
+    @Getter
+    private final int stepOrder;
+    @Getter
     private final ReportInfos reportInfos;
+    @Getter
     private final Instant startedAt = Instant.now();
+    @Getter
     private final ProcessStepType processStepType;
 
+    @Getter
     @Setter
     private ResultInfos resultInfos;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, C config, ProcessStepType processStepType, int stepOrder) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, int stepOrder) {
         this.processContext = processContext;
-        this.config = config;
         this.processStepType = processStepType;
         this.reportInfos = new ReportInfos(UUID.randomUUID(), ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()
@@ -48,6 +52,10 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
     public UUID getProcessExecutionId() {
         return processContext.getExecutionId();
+    }
+
+    public C getConfig() {
+        return processContext.getConfig();
     }
 
     public Network getNetwork() {

@@ -25,7 +25,7 @@ public class ConsumerService {
     private final ProcessExecutionService executionService;
 
     @Bean
-    public Consumer<Message<ProcessRunMessage<? extends ProcessConfig>>> consumeRun() {
+    public <T extends ProcessConfig> Consumer<Message<ProcessRunMessage<T>>> consumeRun() {
         return message -> executionService.executeProcess(message.getPayload());
     }
 }

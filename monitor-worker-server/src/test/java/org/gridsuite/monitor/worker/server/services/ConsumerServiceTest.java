@@ -13,11 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import static org.mockito.Mockito.verify;
 
@@ -42,11 +40,9 @@ class ConsumerServiceTest {
 
     @Test
     void consumeRun() {
-        UUID executionId = UUID.randomUUID();
-        UUID caseUuid = UUID.randomUUID();
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
-        Message<ProcessRunMessage<? extends ProcessConfig>> message = (Message<ProcessRunMessage<? extends ProcessConfig>>) (Message<?>) MessageBuilder.withPayload(runMessage).build();
-        Consumer<Message<ProcessRunMessage<? extends ProcessConfig>>> consumer = consumerService.consumeRun();
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig);
+        var message = MessageBuilder.<ProcessRunMessage<? extends ProcessConfig>>withPayload(runMessage).build();
+        var consumer = consumerService.consumeRun();
 
         consumer.accept(message);
 

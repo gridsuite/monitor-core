@@ -57,8 +57,7 @@ class ProcessExecutionContextTest {
 
     @Test
     void shouldCreateStepContext() {
-        UUID caseUuid = UUID.randomUUID();
-        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), caseUuid, config, "test-env");
+        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), UUID.randomUUID(), config, "test-env");
         ProcessStep<ProcessConfig> step = mock(ProcessStep.class);
         ProcessStepType stepType = mock(ProcessStepType.class);
         when(stepType.getName()).thenReturn("test-step");

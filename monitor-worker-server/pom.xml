@@ -12,6 +12,10 @@
     <artifactId>gridsuite-monitor-worker-server</artifactId>
     <name>Monitor worker server</name>
 
+    <properties>
+        <network-modification.version>0.61.0</network-modification.version>
+    </properties>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -77,6 +81,7 @@
         <dependency>
             <groupId>org.gridsuite</groupId>
             <artifactId>gridsuite-network-modification</artifactId>
+            <version>${network-modification.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

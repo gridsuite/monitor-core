@@ -25,11 +25,5 @@ import java.util.UUID;
 public interface ProcessConfig {
     ProcessType processType();
 
-    UUID caseUuid();
-
-    UUID executionId();
-
     List<UUID> modificationUuids();
-
-    ProcessConfig withExecutionId(UUID executionId);
 }

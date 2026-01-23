@@ -31,8 +31,10 @@ public class MonitorController {
     }
 
     @PostMapping("/execute/security-analysis")
-    public ResponseEntity<UUID> executeSecurityAnalysis(@RequestBody SecurityAnalysisConfig securityAnalysisConfig) {
-        UUID executionId = monitorService.executeProcess(securityAnalysisConfig);
+    public ResponseEntity<UUID> executeSecurityAnalysis(
+            @RequestParam UUID caseUuid,
+            @RequestBody SecurityAnalysisConfig securityAnalysisConfig) {
+        UUID executionId = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
         return ResponseEntity.ok(executionId);
     }
 

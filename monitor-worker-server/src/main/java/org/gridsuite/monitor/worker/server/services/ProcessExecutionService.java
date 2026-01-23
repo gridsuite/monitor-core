@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.worker.server.core.Process;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -39,37 +41,38 @@ public class ProcessExecutionService {
         this.executionEnvName = executionEnvName;
     }
 
-    public <T extends ProcessConfig> void executeProcess(T config) {
+    public <T extends ProcessConfig> void executeProcess(ProcessRunMessage<T> runMessage) {
         @SuppressWarnings("unchecked") // safe: ProcessType uniquely maps to a Process with the matching ProcessConfig subtype
-        Process<T> process = (Process<T>) processes.get(config.processType());
+        Process<T> process = (Process<T>) processes.get(runMessage.processType());
         if (process == null) {
-            throw new IllegalArgumentException("No process found for type: " + config.processType());
+            throw new IllegalArgumentException("No process found for type: " + runMessage.processType());
         }
 
-        ProcessExecutionContext<T> context = createExecutionContext(config, executionEnvName);
+        ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
+            runMessage.executionId(),
+            runMessage.caseUuid(),
+            runMessage.config(),
+            executionEnvName
+        );
 
-        updateExecutionStatus(context, ProcessStatus.RUNNING);
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
 
         try {
             process.execute(context);
-            updateExecutionStatus(context, ProcessStatus.COMPLETED);
+            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
         } catch (Exception e) {
-            updateExecutionStatus(context, ProcessStatus.FAILED);
+            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
             throw e;
         }
     }
 
-    private void updateExecutionStatus(ProcessExecutionContext<? extends ProcessConfig> context, ProcessStatus status) {
+    private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {
         ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
             status,
-            context.getExecutionEnvName(),
+            envName,
             status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
         );
 
-        notificationService.updateExecutionStatus(context.getExecutionId(), processExecutionStatusUpdate);
-    }
-
-    private <T extends ProcessConfig> ProcessExecutionContext<T> createExecutionContext(T config, String executionEnvName) {
-        return new ProcessExecutionContext<>(config, executionEnvName);
+        notificationService.updateExecutionStatus(executionId, processExecutionStatusUpdate);
     }
 }

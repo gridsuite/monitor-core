@@ -84,12 +84,10 @@ class MonitorIntegrationTest {
     void securityAnalysisProcessIT() throws Exception {
         // Start process execution
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-                caseUuid,
-                null,
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(securityAnalysisConfig);
+        UUID executionId = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);

@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -51,24 +52,23 @@ class MonitorControllerTest {
         UUID modificationUuid = UUID.randomUUID();
         UUID executionId = UUID.randomUUID();
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
-                caseUuid,
-                null,
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
                 List.of(modificationUuid)
         );
 
-        when(monitorService.executeProcess(any(SecurityAnalysisConfig.class)))
+        when(monitorService.executeProcess(any(UUID.class), any(SecurityAnalysisConfig.class)))
                 .thenReturn(executionId);
 
         mockMvc.perform(post("/v1/execute/security-analysis")
+                        .param("caseUuid", caseUuid.toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(monitorService).executeProcess(any(SecurityAnalysisConfig.class));
+        verify(monitorService).executeProcess(eq(caseUuid), any(SecurityAnalysisConfig.class));
     }
 
     @Test

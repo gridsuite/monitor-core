@@ -6,20 +6,17 @@
  */
 package org.gridsuite.monitor.commons;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public record SecurityAnalysisConfig(
-    UUID parametersUuid,
-    List<String> contingencies,
-    List<UUID> modificationUuids
-) implements ProcessConfig {
-
-    @Override
+public record ProcessRunMessage<T extends ProcessConfig>(
+    UUID executionId,
+    UUID caseUuid,
+    T config
+) {
     public ProcessType processType() {
-        return ProcessType.SECURITY_ANALYSIS;
+        return config.processType();
     }
 }

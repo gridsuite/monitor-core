@@ -59,4 +59,14 @@ public class MonitorController {
         List<String> results = monitorService.getResults(executionId);
         return ResponseEntity.ok(results);
     }
+
+    @DeleteMapping("/executions/{executionId}")
+    @Operation(summary = "Delete an execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
+                           @ApiResponse(responseCode = "404", description = "Execution was not found")})
+    public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
+        return monitorService.deleteExecution(executionId) ?
+            ResponseEntity.ok().build() :
+            ResponseEntity.notFound().build();
+    }
 }

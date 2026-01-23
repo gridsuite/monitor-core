@@ -58,8 +58,6 @@ class MonitorServiceTest {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         securityAnalysisConfig = new SecurityAnalysisConfig(
-                caseUuid,
-                null,
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID())
@@ -76,7 +74,7 @@ class MonitorServiceTest {
                     return entity;
                 });
 
-        UUID result = monitorService.executeProcess(securityAnalysisConfig);
+        UUID result = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
@@ -87,6 +85,7 @@ class MonitorServiceTest {
                         execution.getScheduledAt() != null
         ));
         verify(notificationService).sendProcessRunMessage(
+                caseUuid,
                 securityAnalysisConfig,
                 result
         );

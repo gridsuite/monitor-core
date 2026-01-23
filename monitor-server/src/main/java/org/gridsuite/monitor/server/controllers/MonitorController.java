@@ -37,8 +37,10 @@ public class MonitorController {
     @PostMapping("/execute/security-analysis")
     @Operation(summary = "Execute a security analysis process")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
-    public ResponseEntity<UUID> executeSecurityAnalysis(@RequestBody SecurityAnalysisConfig securityAnalysisConfig) {
-        UUID executionId = monitorService.executeProcess(securityAnalysisConfig);
+    public ResponseEntity<UUID> executeSecurityAnalysis(
+            @RequestParam UUID caseUuid,
+            @RequestBody SecurityAnalysisConfig securityAnalysisConfig) {
+        UUID executionId = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
         return ResponseEntity.ok(executionId);
     }
 

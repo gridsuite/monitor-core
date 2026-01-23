@@ -42,8 +42,10 @@ class ProcessStepExecutionContextTest {
     void shouldInitializeCorrectly() {
         int stepOrder = 2;
         UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
         when(processContext.getExecutionId()).thenReturn(executionId);
+        when(processContext.getCaseUuid()).thenReturn(caseUuid);
         when(processContext.getNetwork()).thenReturn(network);
 
         ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, config, stepType, stepOrder);
@@ -57,6 +59,7 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getReportInfos()).isNotNull();
         assertThat(stepContext.getReportInfos().reportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
+        assertThat(stepContext.getCaseUuid()).isEqualTo(caseUuid);
         assertThat(stepContext.getNetwork()).isEqualTo(network);
     }
 

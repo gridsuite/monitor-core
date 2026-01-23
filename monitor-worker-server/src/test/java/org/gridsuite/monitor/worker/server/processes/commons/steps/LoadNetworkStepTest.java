@@ -36,9 +36,6 @@ class LoadNetworkStepTest {
     @Mock
     private NetworkConversionService networkConversionService;
 
-    @Mock
-    private ProcessConfig config;
-
     private LoadNetworkStep<ProcessConfig> loadNetworkStep;
 
     @Mock
@@ -50,8 +47,7 @@ class LoadNetworkStepTest {
     @BeforeEach
     void setUp() {
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
-        when(config.caseUuid()).thenReturn(CASE_UUID);
-        when(stepContext.getConfig()).thenReturn(config);
+        when(stepContext.getCaseUuid()).thenReturn(CASE_UUID);
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")

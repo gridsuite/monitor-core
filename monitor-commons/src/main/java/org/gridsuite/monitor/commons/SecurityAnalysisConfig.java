@@ -13,8 +13,6 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public record SecurityAnalysisConfig(
-    UUID caseUuid,
-    UUID executionId,
     UUID parametersUuid,
     List<String> contingencies,
     List<UUID> modificationUuids
@@ -23,10 +21,5 @@ public record SecurityAnalysisConfig(
     @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;
-    }
-
-    @Override
-    public ProcessConfig withExecutionId(UUID executionId) {
-        return new SecurityAnalysisConfig(caseUuid, executionId, parametersUuid, contingencies, modificationUuids);
     }
 }

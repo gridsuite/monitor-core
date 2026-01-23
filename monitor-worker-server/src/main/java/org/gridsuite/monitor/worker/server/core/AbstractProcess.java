@@ -9,14 +9,11 @@ package org.gridsuite.monitor.worker.server.core;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -27,29 +24,22 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProcess.class);
     protected final ProcessType processType;
     protected final StepExecutionService<C> stepExecutionService;
-    protected final NotificationService notificationService;
-    protected final NetworkConversionService networkConversionService;
 
     protected AbstractProcess(
             ProcessType processType,
-            StepExecutionService<C> stepExecutionService,
-            NotificationService notificationService,
-            NetworkConversionService networkConversionService) {
+            StepExecutionService<C> stepExecutionService) {
         this.processType = processType;
         this.stepExecutionService = stepExecutionService;
-        this.notificationService = notificationService;
-        this.networkConversionService = networkConversionService;
     }
 
     @Override
     public void execute(ProcessExecutionContext<C> context) {
         List<ProcessStep<C>> steps = defineSteps();
         boolean skipRemaining = false;
-        UUID previousStepId = null;
 
-        for (ProcessStep<C> step : steps) {
-            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, previousStepId);
-            previousStepId = stepContext.getStepExecutionId();
+        for (int i = 0; i < steps.size(); i++) {
+            ProcessStep<C> step = steps.get(i);
+            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, i);
 
             if (skipRemaining) {
                 stepExecutionService.skipStep(stepContext, step);

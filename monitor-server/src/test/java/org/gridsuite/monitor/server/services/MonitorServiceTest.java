@@ -41,7 +41,7 @@ class MonitorServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private DummyReportService reportService;
+    private ReportService reportService;
 
     @Mock
     private ResultService resultService;
@@ -236,17 +236,19 @@ class MonitorServiceTest {
     void getReportsShouldReturnReports() {
         UUID reportId1 = UUID.randomUUID();
         UUID reportId2 = UUID.randomUUID();
-        ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
+        ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(0)
                 .reportId(reportId1)
                 .build();
-        ProcessExecutionStepEntity step2 = ProcessExecutionStepEntity.builder()
+        ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(1)
                 .reportId(reportId2)
                 .build();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
-                .steps(List.of(step1, step2))
+                .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         Report report1 = new Report(reportId1, null, "Report 1", null, List.of());
@@ -266,19 +268,21 @@ class MonitorServiceTest {
     void getResultsShouldReturnResults() {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
-        ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
+        ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(0)
                 .resultId(resultId1)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .build();
-        ProcessExecutionStepEntity step2 = ProcessExecutionStepEntity.builder()
+        ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
+                .stepOrder(1)
                 .resultId(resultId2)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .build();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
-                .steps(List.of(step1, step2))
+                .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         String result1 = "{\"result\": \"data1\"}";

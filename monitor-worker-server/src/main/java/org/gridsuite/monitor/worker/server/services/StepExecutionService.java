@@ -30,7 +30,7 @@ public class StepExecutionService<C extends ProcessConfig> {
         ProcessExecutionStep executionStep = new ProcessExecutionStep(
                 context.getStepExecutionId(),
                 step.getType().getName(),
-                context.getPreviousStepExecutionId(),
+                context.getStepOrder(),
                 StepStatus.SKIPPED,
                 null,
                 null,
@@ -45,11 +45,11 @@ public class StepExecutionService<C extends ProcessConfig> {
         ProcessExecutionStep executionStep = new ProcessExecutionStep(
             context.getStepExecutionId(),
             step.getType().getName(),
-            context.getPreviousStepExecutionId(),
+            context.getStepOrder(),
             StepStatus.RUNNING,
             null,
             null,
-            null,
+            context.getReportInfos().reportUuid(),
             context.getStartedAt(),
             null
         );
@@ -69,7 +69,7 @@ public class StepExecutionService<C extends ProcessConfig> {
         ProcessExecutionStep updated = new ProcessExecutionStep(
             context.getStepExecutionId(),
             step.getType().getName(),
-            context.getPreviousStepExecutionId(),
+            context.getStepOrder(),
             status,
             context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null,
             context.getResultInfos() != null ? context.getResultInfos().resultType() : null,

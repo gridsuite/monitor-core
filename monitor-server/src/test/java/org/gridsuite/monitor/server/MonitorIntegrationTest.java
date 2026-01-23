@@ -12,7 +12,7 @@ import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.services.ConsumerService;
-import org.gridsuite.monitor.server.services.DummyReportService;
+import org.gridsuite.monitor.server.services.ReportService;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.gridsuite.monitor.server.services.ResultService;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private DummyReportService reportService;
+    private ReportService reportService;
 
     @MockitoBean
     private ResultService resultService;
@@ -102,12 +102,30 @@ class MonitorIntegrationTest {
         assertThat(execution.getSteps()).isEmpty();
 
         // Simulate first step creation via message with both report and result
+        UUID stepId0 = UUID.randomUUID();
+        UUID reportId0 = UUID.randomUUID();
+        UUID resultId0 = UUID.randomUUID();
+        ProcessExecutionStep step0 = ProcessExecutionStep.builder()
+                .id(stepId0)
+                .stepType("LOAD_NETWORK")
+                .stepOrder(0)
+                .status(StepStatus.COMPLETED)
+                .reportId(reportId0)
+                .resultId(resultId0)
+                .resultType(ResultType.SECURITY_ANALYSIS)
+                .startedAt(Instant.now())
+                .completedAt(Instant.now())
+                .build();
+        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
+
+        // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
         UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
-        ProcessExecutionStep processExecutionStep = ProcessExecutionStep.builder()
+        ProcessExecutionStep step1 = ProcessExecutionStep.builder()
                 .id(stepId1)
-                .stepType("LOAD_NETWORK")
+                .stepType("SECURITY_ANALYSIS")
+                .stepOrder(1)
                 .status(StepStatus.COMPLETED)
                 .reportId(reportId1)
                 .resultId(resultId1)
@@ -115,48 +133,18 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-
-        Message<String> stepMessage1 = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(processExecutionStep))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-
-        consumerService.consumeMonitorUpdate().accept(stepMessage1);
-
-        // Simulate second step creation via message with both report and result
-        UUID stepId2 = UUID.randomUUID();
-        UUID reportId2 = UUID.randomUUID();
-        UUID resultId2 = UUID.randomUUID();
-        ProcessExecutionStep stepDto2 = ProcessExecutionStep.builder()
-                .id(stepId2)
-                .stepType("SECURITY_ANALYSIS")
-                .status(StepStatus.COMPLETED)
-                .reportId(reportId2)
-                .resultId(resultId2)
-                .resultType(ResultType.SECURITY_ANALYSIS)
-                .startedAt(Instant.now())
-                .completedAt(Instant.now())
-                .build();
-
-        Message<String> stepMessage2 = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(stepDto2))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-
-        consumerService.consumeMonitorUpdate().accept(stepMessage2);
+        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId).orElse(null);
         assertThat(execution.getSteps()).hasSize(2);
-        assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId1);
+        assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
-        assertThat(execution.getSteps().get(0).getReportId()).isEqualTo(reportId1);
-        assertThat(execution.getSteps().get(0).getResultId()).isEqualTo(resultId1);
-        assertThat(execution.getSteps().get(1).getId()).isEqualTo(stepId2);
-        assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId2);
-        assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId2);
+        assertThat(execution.getSteps().get(0).getReportId()).isEqualTo(reportId0);
+        assertThat(execution.getSteps().get(0).getResultId()).isEqualTo(resultId0);
+        assertThat(execution.getSteps().get(1).getId()).isEqualTo(stepId1);
+        assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId1);
+        assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId1);
 
         // Complete the execution via message
         ProcessExecutionStatusUpdate finalStatus = ProcessExecutionStatusUpdate.builder()
@@ -164,14 +152,7 @@ class MonitorIntegrationTest {
                 .executionEnvName("test-env")
                 .completedAt(Instant.now())
                 .build();
-
-        Message<String> statusMessage = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(finalStatus))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-
-        consumerService.consumeMonitorUpdate().accept(statusMessage);
+        sendMessage(executionId, finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
 
         // Verify final state persisted
         execution = executionRepository.findById(executionId).orElse(null);
@@ -179,33 +160,42 @@ class MonitorIntegrationTest {
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
 
         // Mock the report service responses
-        Report report1 = new Report(reportId1, null, "Load Network Report", null, List.of());
-        Report report2 = new Report(reportId2, null, "Security Analysis Report", null, List.of());
+        Report report0 = new Report(reportId0, null, "Load Network Report", null, List.of());
+        Report report1 = new Report(reportId1, null, "Security Analysis Report", null, List.of());
+        when(reportService.getReport(reportId0)).thenReturn(report0);
         when(reportService.getReport(reportId1)).thenReturn(report1);
-        when(reportService.getReport(reportId2)).thenReturn(report2);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id").value(reportId1.toString()))
+                .andExpect(jsonPath("$[0].id").value(reportId0.toString()))
                 .andExpect(jsonPath("$[0].message").value("Load Network Report"))
-                .andExpect(jsonPath("$[1].id").value(reportId2.toString()))
+                .andExpect(jsonPath("$[1].id").value(reportId1.toString()))
                 .andExpect(jsonPath("$[1].message").value("Security Analysis Report"));
 
         // Mock the result service responses
-        String result1 = "{\"result\": \"success\"}";
-        String result2 = "{\"securityAnalysisResult\": \"violations found\"}";
+        String result0 = "{\"result\": \"success\"}";
+        String result1 = "{\"securityAnalysisResult\": \"violations found\"}";
+        when(resultService.getResult(new ResultInfos(resultId0, ResultType.SECURITY_ANALYSIS))).thenReturn(result0);
         when(resultService.getResult(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS))).thenReturn(result1);
-        when(resultService.getResult(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))).thenReturn(result2);
 
         // Test the results endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0]").value(result1))
-                .andExpect(jsonPath("$[1]").value(result2));
+                .andExpect(jsonPath("$[0]").value(result0))
+                .andExpect(jsonPath("$[1]").value(result1));
+    }
+
+    private void sendMessage(UUID executionId, Object step, MessageType messageType) throws Exception {
+        Message<String> message = MessageBuilder
+                .withPayload(objectMapper.writeValueAsString(step))
+                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, messageType.toString())
+                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
+                .build();
+        consumerService.consumeMonitorUpdate().accept(message);
     }
 }

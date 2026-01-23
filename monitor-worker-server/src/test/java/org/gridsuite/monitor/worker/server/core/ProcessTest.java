@@ -8,8 +8,6 @@ package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
-import org.gridsuite.monitor.worker.server.services.NotificationService;
 import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,10 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -34,12 +30,6 @@ class ProcessTest {
     private StepExecutionService<ProcessConfig> stepExecutionService;
 
     @Mock
-    private NotificationService notificationService;
-
-    @Mock
-    private NetworkConversionService networkConversionService;
-
-    @Mock
     private ProcessExecutionContext<ProcessConfig> processContext;
 
     private TestProcess process;
@@ -47,26 +37,16 @@ class ProcessTest {
     @BeforeEach
     void setUp() {
         process = new TestProcess(
-                stepExecutionService,
-                notificationService,
-                networkConversionService);
+                stepExecutionService);
     }
 
     @Test
     void executeShouldExecuteAllStepsSuccessfullyWhenNoErrors() {
-        UUID step1Id = UUID.randomUUID();
-        UUID step2Id = UUID.randomUUID();
-        UUID step3Id = UUID.randomUUID();
-
         ProcessStepExecutionContext<ProcessConfig> stepContext1 = mock(ProcessStepExecutionContext.class);
         ProcessStepExecutionContext<ProcessConfig> stepContext2 = mock(ProcessStepExecutionContext.class);
         ProcessStepExecutionContext<ProcessConfig> stepContext3 = mock(ProcessStepExecutionContext.class);
 
-        when(stepContext1.getStepExecutionId()).thenReturn(step1Id);
-        when(stepContext2.getStepExecutionId()).thenReturn(step2Id);
-        when(stepContext3.getStepExecutionId()).thenReturn(step3Id);
-
-        when(processContext.createStepContext(any(), any()))
+        when(processContext.createStepContext(any(), anyInt()))
                 .thenReturn(stepContext1)
                 .thenReturn(stepContext2)
                 .thenReturn(stepContext3);
@@ -75,25 +55,19 @@ class ProcessTest {
 
         verify(stepExecutionService, times(3)).executeStep(any(), any());
         verify(stepExecutionService, never()).skipStep(any(), any());
-        // Verify previousStepId is correctly set
+        // Verify stepOrder is correctly set
         InOrder inOrder = inOrder(processContext);
-        inOrder.verify(processContext).createStepContext(any(), eq(null));
-        inOrder.verify(processContext).createStepContext(any(), eq(step1Id));
-        inOrder.verify(processContext).createStepContext(any(), eq(step2Id));
+        inOrder.verify(processContext).createStepContext(any(), eq(0));
+        inOrder.verify(processContext).createStepContext(any(), eq(1));
+        inOrder.verify(processContext).createStepContext(any(), eq(2));
     }
 
     @Test
     void executeShouldSkipAllRemainingStepsWhenFirstStepFails() {
-        UUID step1Id = UUID.randomUUID();
-        UUID step2Id = UUID.randomUUID();
-        UUID step3Id = UUID.randomUUID();
         ProcessStepExecutionContext<ProcessConfig> stepContext1 = mock(ProcessStepExecutionContext.class);
         ProcessStepExecutionContext<ProcessConfig> stepContext2 = mock(ProcessStepExecutionContext.class);
         ProcessStepExecutionContext<ProcessConfig> stepContext3 = mock(ProcessStepExecutionContext.class);
-        when(stepContext1.getStepExecutionId()).thenReturn(step1Id);
-        when(stepContext2.getStepExecutionId()).thenReturn(step2Id);
-        when(stepContext3.getStepExecutionId()).thenReturn(step3Id);
-        when(processContext.createStepContext(any(), any()))
+        when(processContext.createStepContext(any(), anyInt()))
                 .thenReturn(stepContext1)
                 .thenReturn(stepContext2)
                 .thenReturn(stepContext3);
@@ -108,11 +82,11 @@ class ProcessTest {
         verify(stepExecutionService).skipStep(eq(stepContext3), any());
         verify(stepExecutionService, times(1)).executeStep(any(), any());
         verify(stepExecutionService, times(2)).skipStep(any(), any());
-        // Verify previousStepId is correctly set
+        // Verify stepOrder is correctly set
         InOrder inOrder = inOrder(processContext);
-        inOrder.verify(processContext).createStepContext(any(), eq(null));
-        inOrder.verify(processContext).createStepContext(any(), eq(step1Id));
-        inOrder.verify(processContext).createStepContext(any(), eq(step2Id));
+        inOrder.verify(processContext).createStepContext(any(), eq(0));
+        inOrder.verify(processContext).createStepContext(any(), eq(1));
+        inOrder.verify(processContext).createStepContext(any(), eq(2));
     }
 
     /**
@@ -120,8 +94,8 @@ class ProcessTest {
      */
     private static class TestProcess extends AbstractProcess<ProcessConfig> {
 
-        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService, NotificationService notificationService, NetworkConversionService networkConversionService) {
-            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService, notificationService, networkConversionService);
+        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService) {
+            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
         }
 
         @Override

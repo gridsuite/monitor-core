@@ -31,7 +31,7 @@ public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
-    private final DummyReportService reportService;
+    private final ReportService reportService;
     private final ResultService resultService;
 
     @Transactional
@@ -74,7 +74,7 @@ public class MonitorService {
                     existingStep -> {
                         existingStep.setStatus(stepEntity.getStatus());
                         existingStep.setStepType(stepEntity.getStepType());
-                        existingStep.setPreviousStepId(stepEntity.getPreviousStepId());
+                        existingStep.setStepOrder(stepEntity.getStepOrder());
                         existingStep.setStartedAt(stepEntity.getStartedAt());
                         existingStep.setCompletedAt(stepEntity.getCompletedAt());
                         existingStep.setResultId(stepEntity.getResultId());
@@ -90,7 +90,7 @@ public class MonitorService {
         return ProcessExecutionStepEntity.builder()
                 .id(processExecutionStep.getId())
                 .stepType(processExecutionStep.getStepType())
-                .previousStepId(processExecutionStep.getPreviousStepId())
+                .stepOrder(processExecutionStep.getStepOrder())
                 .status(processExecutionStep.getStatus())
                 .resultId(processExecutionStep.getResultId())
                 .resultType(processExecutionStep.getResultType())
@@ -110,7 +110,6 @@ public class MonitorService {
 
     private List<UUID> getReportIds(UUID executionId) {
         return executionRepository.findById(executionId)
-            //FIXME: Sort steps by order
             .map(execution -> execution.getSteps().stream()
                 .map(ProcessExecutionStepEntity::getReportId)
                 .filter(java.util.Objects::nonNull)
@@ -128,7 +127,6 @@ public class MonitorService {
 
     private List<ResultInfos> getResultInfos(UUID executionId) {
         return executionRepository.findById(executionId)
-                //FIXME: Sort steps by order
                 .map(execution -> execution.getSteps().stream()
                 .filter(step -> step.getResultId() != null)
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))

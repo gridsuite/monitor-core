@@ -17,7 +17,7 @@ import java.util.UUID;
 public record ProcessRunMessage<T extends ProcessConfig>(
     UUID executionId,
     UUID caseUuid,
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "processType")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "processType")
     @JsonSubTypes({
         @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
     })

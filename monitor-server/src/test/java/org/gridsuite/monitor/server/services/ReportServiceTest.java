@@ -53,7 +53,7 @@ class ReportServiceTest {
         Report report = Report.builder().id(reportId).message("message3").subReports(List.of(child1Report, child2Report)).build();
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
+            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "?withLeaves=true"))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(report)));
@@ -67,7 +67,7 @@ class ReportServiceTest {
         UUID reportId = UUID.randomUUID();
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
+            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "?withLeaves=true"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> reportService.getReport(reportId)).isInstanceOf(RestClientException.class);

@@ -83,6 +83,7 @@ public class ProcessConfigService {
         }
     }
 
+    @Transactional
     public boolean deleteProcessConfig(UUID processConfigUuid) {
         if (processConfigRepository.existsById(processConfigUuid)) {
             processConfigRepository.deleteById(processConfigUuid);

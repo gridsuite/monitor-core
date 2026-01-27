@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.*;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
@@ -309,5 +310,50 @@ class MonitorServiceTest {
         assertThat(results).hasSize(2).containsExactly(result1, result2);
         verify(executionRepository).findById(executionId);
         verify(resultService, times(2)).getResult(any(ResultInfos.class));
+    }
+
+    @Test
+    void getAllSecurityAnalysisLaunchedProcesses() {
+        UUID execution1Uuid = UUID.randomUUID();
+        UUID case1Uuid = UUID.randomUUID();
+        Instant scheduledAt1 = Instant.now().minusSeconds(60);
+        Instant startedAt1 = Instant.now().minusSeconds(30);
+        Instant completedAt1 = Instant.now();
+        ProcessExecutionEntity execution1 = ProcessExecutionEntity.builder()
+            .id(execution1Uuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case1Uuid)
+            .status(ProcessStatus.COMPLETED)
+            .executionEnvName("env1")
+            .scheduledAt(scheduledAt1)
+            .startedAt(startedAt1)
+            .completedAt(completedAt1)
+            .userId("user1")
+            .build();
+
+        UUID execution2Uuid = UUID.randomUUID();
+        UUID case2Uuid = UUID.randomUUID();
+        Instant scheduledAt2 = Instant.now().minusSeconds(90);
+        Instant startedAt2 = Instant.now().minusSeconds(80);
+        ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
+            .id(execution2Uuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case2Uuid)
+            .status(ProcessStatus.RUNNING)
+            .executionEnvName("env2")
+            .scheduledAt(scheduledAt2)
+            .startedAt(startedAt2)
+            .userId("user2")
+            .build();
+
+        when(executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name())).thenReturn(List.of(execution2, execution1));
+
+        List<ProcessExecution> result = monitorService.getAllSecurityAnalysisLaunchedProcesses();
+
+        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, "user2");
+
+        assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
+        verify(executionRepository).findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name());
     }
 }

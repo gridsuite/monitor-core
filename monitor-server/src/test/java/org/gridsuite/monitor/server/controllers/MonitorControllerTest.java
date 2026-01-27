@@ -7,7 +7,10 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.services.MonitorService;
@@ -18,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -112,5 +116,24 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$[1]").value(result2));
 
         verify(monitorService).getResults(executionId);
+    }
+
+    @Test
+    void getAllSecurityAnalysisLaunchedProcesses() throws Exception {
+        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, "user2");
+        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, "user3");
+
+        List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
+
+        when(monitorService.getAllSecurityAnalysisLaunchedProcesses()).thenReturn(processExecutionList);
+
+        mockMvc.perform(get("/v1/executions/security-analysis"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
+
+        verify(monitorService).getAllSecurityAnalysisLaunchedProcesses();
     }
 }

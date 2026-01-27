@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.adapter;
 
 import com.powsybl.cases.datasource.CaseDataSourceClient;
 import com.powsybl.commons.PowsyblException;
@@ -13,12 +13,10 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.NetworkFactory;
+import org.gridsuite.monitor.worker.server.services.external.client.CaseRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Properties;
 import java.util.UUID;
@@ -30,17 +28,16 @@ import java.util.UUID;
 public class NetworkConversionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
 
-    private final RestTemplate caseServerRest;
+    private final CaseRestClient caseRestClient;
 
-    public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri,
-                                    RestTemplateBuilder restTemplateBuilder) {
-        this.caseServerRest = restTemplateBuilder.rootUri(caseServerBaseUri).build();
+    public NetworkConversionService(CaseRestClient caseRestClient) {
+        this.caseRestClient = caseRestClient;
     }
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
         LOGGER.info("Creating network");
 
-        CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerRest, caseUuid);
+        CaseDataSourceClient dataSource = caseRestClient.getCaseDataSource(caseUuid);
 
         Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
         if (importer == null) {

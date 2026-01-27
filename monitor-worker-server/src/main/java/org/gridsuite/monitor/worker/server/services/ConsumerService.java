@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -24,7 +25,7 @@ public class ConsumerService {
     private final ProcessExecutionService executionService;
 
     @Bean
-    public Consumer<Message<ProcessConfig>> consumeRun() {
+    public <T extends ProcessConfig> Consumer<Message<ProcessRunMessage<T>>> consumeRun() {
         return message -> executionService.executeProcess(message.getPayload());
     }
 }

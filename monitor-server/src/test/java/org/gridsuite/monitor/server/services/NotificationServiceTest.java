@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.services;
 
-import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,8 +47,6 @@ class NotificationServiceTest {
         executionId = UUID.randomUUID();
 
         securityAnalysisConfig = new SecurityAnalysisConfig(
-                caseUuid,
-                null,
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID())
@@ -57,11 +55,14 @@ class NotificationServiceTest {
 
     @Test
     void sendProcessRunMessage() {
-        notificationService.sendProcessRunMessage(securityAnalysisConfig, executionId);
+        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId);
 
         verify(publisher).send(
                 eq("publishRunSecurityAnalysis-out-0"),
-                argThat((ProcessConfig config) -> config.executionId().equals(executionId))
+                argThat((ProcessRunMessage<?> message) ->
+                        message.executionId().equals(executionId) &&
+                        message.caseUuid().equals(caseUuid) &&
+                        message.config().equals(securityAnalysisConfig))
         );
     }
 }

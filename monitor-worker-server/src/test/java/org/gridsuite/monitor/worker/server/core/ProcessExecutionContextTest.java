@@ -67,7 +67,8 @@ class ProcessExecutionContextTest {
         ProcessStepExecutionContext<ProcessConfig> stepContext = processContext.createStepContext(step, stepOrder);
 
         assertThat(stepContext).isNotNull();
-        assertThat(stepContext.getProcessContext()).isEqualTo(processContext);
+        assertThat(stepContext.getNetwork()).isEqualTo(processContext.getNetwork());
+        assertThat(stepContext.getProcessExecutionId()).isEqualTo(processContext.getExecutionId());
         assertThat(stepContext.getConfig()).isEqualTo(config);
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);

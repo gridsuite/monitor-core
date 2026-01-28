@@ -38,7 +38,7 @@ public class NetworkModificationRestService {
     public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
         String path = this.networkModificationServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
                 "network-composite-modifications" + DELIMITER + "network-modifications")
-            .queryParam("uuids", modificationsUuids)
+            .queryParam("uuids", modificationsUuids.toArray())
             .queryParam("onlyMetadata", "false")
             .buildAndExpand()
             .toUriString();

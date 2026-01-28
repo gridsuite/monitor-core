@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.springframework.http.ResponseEntity;
@@ -61,5 +62,12 @@ public class MonitorController {
     public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         List<String> results = monitorService.getResults(executionId);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/executions/security-analysis")
+    @Operation(summary = "Get all security analysis launched processes")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis launched processes")})
+    public ResponseEntity<List<ProcessExecution>> getAllSecurityAnalysisLaunchedProcesses() {
+        return ResponseEntity.ok(monitorService.getAllSecurityAnalysisLaunchedProcesses());
     }
 }

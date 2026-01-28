@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
@@ -136,5 +138,22 @@ public class MonitorService {
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
                 .toList())
             .orElse(List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProcessExecution> getAllSecurityAnalysisLaunchedProcesses() {
+        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name()).stream()
+            .map(execution -> ProcessExecution.builder()
+                .id(execution.getId())
+                .type(execution.getType())
+                .caseUuid(execution.getCaseUuid())
+                .status(execution.getStatus())
+                .executionEnvName(execution.getExecutionEnvName())
+                .scheduledAt(execution.getScheduledAt())
+                .startedAt(execution.getStartedAt())
+                .completedAt(execution.getCompletedAt())
+                .userId(execution.getUserId())
+                .build()
+            ).toList();
     }
 }

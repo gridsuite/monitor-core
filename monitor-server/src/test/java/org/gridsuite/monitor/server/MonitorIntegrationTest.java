@@ -30,6 +30,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,11 +74,14 @@ class MonitorIntegrationTest {
 
     private UUID caseUuid;
 
+    private String userId;
+
     public static final String PROCESS_SA_RUN_DESTINATION = "monitor.process.securityanalysis.run";
 
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
+        userId = "user1";
     }
 
     @Test
@@ -87,7 +91,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
@@ -145,10 +149,13 @@ class MonitorIntegrationTest {
         assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId1);
 
         // Complete the execution via message
+        Instant startedAt = Instant.now();
+        Instant completedAt = Instant.now();
         ProcessExecutionStatusUpdate finalStatus = ProcessExecutionStatusUpdate.builder()
                 .status(ProcessStatus.COMPLETED)
                 .executionEnvName("test-env")
-                .completedAt(Instant.now())
+                .startedAt(startedAt)
+                .completedAt(completedAt)
                 .build();
         sendMessage(executionId, finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
 
@@ -156,6 +163,8 @@ class MonitorIntegrationTest {
         execution = executionRepository.findById(executionId).orElse(null);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
+        assertThat(execution.getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(execution.getCompletedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(completedAt.truncatedTo(ChronoUnit.MILLIS));
 
         // Mock the report service responses
         Report report0 = new Report(reportId0, null, "Load Network Report", null, List.of());

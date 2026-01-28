@@ -60,7 +60,7 @@ public class ConsumerService {
 
     private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
-        monitorService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getCompletedAt());
+        monitorService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getStartedAt(), payload.getCompletedAt());
     }
 
     private void handleStepStatusUpdate(UUID executionId, Message<String> message) {

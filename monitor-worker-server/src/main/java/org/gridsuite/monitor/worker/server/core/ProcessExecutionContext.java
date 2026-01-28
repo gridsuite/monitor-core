@@ -34,6 +34,6 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
     }
 
     public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step, int stepOrder) {
-        return new ProcessStepExecutionContext<>(this, config, step.getType(), stepOrder);
+        return new ProcessStepExecutionContext<>(this, step.getType(), stepOrder);
     }
 }

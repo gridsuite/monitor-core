@@ -23,7 +23,6 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.HttpServerErrorException;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,37 +54,39 @@ class NetworkModificationRestServiceTest {
 
     @Test
     void getModifications() {
-        UUID[] modificationUuids = {MODIFICATION_1_UUID, MODIFICATION_2_UUID};
-
         ModificationInfos modificationInfos1 = LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build();
         ModificationInfos modificationInfos2 = LoadModificationInfos.builder().equipmentId("load2").q0(new AttributeModification<>(null, OperationType.UNSET)).build();
 
-        ModificationInfos[] modificationInfos = {modificationInfos1, modificationInfos2};
+        List<ModificationInfos> modificationInfos = List.of(modificationInfos1, modificationInfos2);
+        ModificationInfos[] modificationsArray = modificationInfos.toArray(ModificationInfos[]::new);
 
-        for (int i = 0; i < modificationUuids.length; i++) {
-            ModificationInfos[] modificationsArray = {modificationInfos[i]};
-            try {
-                server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-                    .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modification/" + modificationUuids[i] + "/network-modifications?onlyMetadata=false"))
-                    .andRespond(MockRestResponseCreators.withSuccess()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(objectMapper.writeValueAsString(modificationsArray)));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+                .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications?uuids=" + MODIFICATION_1_UUID + "&uuids=" + MODIFICATION_2_UUID + "&onlyMetadata=false"))
+                .andRespond(MockRestResponseCreators.withSuccess()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(objectMapper.writeValueAsString(modificationsArray)));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
 
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(Arrays.asList(modificationUuids));
-        assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(Arrays.asList(modificationInfos));
+        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of(MODIFICATION_1_UUID, MODIFICATION_2_UUID));
+        assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(modificationInfos);
     }
 
     @Test
     void getModificationsNotFound() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modification/" + MODIFICATION_ERROR_UUID + "/network-modifications?onlyMetadata=false"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications?uuids=" + MODIFICATION_ERROR_UUID + "&onlyMetadata=false"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);
         assertThatThrownBy(() -> networkModificationRestService.getModifications(modificationsUuids)).isInstanceOf(HttpServerErrorException.InternalServerError.class);
+    }
+
+    @Test
+    void getEmptyModifications() {
+        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of());
+        assertThat(resultListModifications).isEmpty();
     }
 }

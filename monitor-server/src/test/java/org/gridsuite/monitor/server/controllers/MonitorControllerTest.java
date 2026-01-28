@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -111,5 +112,29 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$[1]").value(result2));
 
         verify(monitorService).getResults(executionId);
+    }
+
+    @Test
+    void deleteExecutionShouldReturnTrue() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.deleteExecution(executionId))
+            .thenReturn(Boolean.TRUE);
+
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isOk());
+
+        verify(monitorService).deleteExecution(executionId);
+    }
+
+    @Test
+    void deleteExecutionShouldReturnFalse() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.deleteExecution(executionId))
+            .thenReturn(Boolean.FALSE);
+
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(monitorService).deleteExecution(executionId);
     }
 }

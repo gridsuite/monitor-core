@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -51,5 +52,16 @@ public class SecurityAnalysisService {
             .toUriString();
 
         return restTemplate.exchange(getSecurityAnalysisServerBaseUri() + path, HttpMethod.GET, null, String.class).getBody();
+    }
+
+    public void deleteResult(UUID resultUuid) {
+        LOGGER.info("Deleting result {}", resultUuid);
+
+        var path = UriComponentsBuilder.fromPath("/results")
+            .queryParam("resultsUuids", List.of(resultUuid))
+            .build()
+            .toUriString();
+
+        restTemplate.delete(getSecurityAnalysisServerBaseUri() + path);
     }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -71,5 +72,27 @@ class ReportServiceTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> reportService.getReport(reportId)).isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void deleteReport() {
+        UUID reportId = UUID.randomUUID();
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.DELETE))
+            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
+            .andRespond(MockRestResponseCreators.withSuccess());
+
+        assertThatNoException().isThrownBy(() -> reportService.deleteReport(reportId));
+    }
+
+    @Test
+    void deleteReportFailed() {
+        UUID reportId = UUID.randomUUID();
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.DELETE))
+            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
+            .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> reportService.deleteReport(reportId)).isInstanceOf(RestClientException.class);
     }
 }

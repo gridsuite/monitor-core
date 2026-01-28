@@ -83,4 +83,10 @@ class NetworkModificationRestServiceTest {
         List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);
         assertThatThrownBy(() -> networkModificationRestService.getModifications(modificationsUuids)).isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
+
+    @Test
+    void getEmptyModifications() {
+        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of());
+        assertThat(resultListModifications).isEmpty();
+    }
 }

@@ -7,6 +7,7 @@
 
 package org.gridsuite.monitor.worker.server.services;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -36,13 +37,17 @@ public class NetworkModificationRestService {
     }
 
     public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
-        String path = this.networkModificationServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
-                "network-composite-modifications" + DELIMITER + "network-modifications")
-            .queryParam("uuids", modificationsUuids.toArray())
-            .queryParam("onlyMetadata", "false")
-            .buildAndExpand()
-            .toUriString();
-        ModificationInfos[] modificationInfos = networkModificationServerRest.getForObject(path, ModificationInfos[].class);
-        return modificationInfos != null ? Arrays.asList(modificationInfos) : List.of();
+        if (CollectionUtils.isNotEmpty(modificationsUuids)) {
+            String path = this.networkModificationServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
+                    "network-composite-modifications" + DELIMITER + "network-modifications")
+                .queryParam("uuids", modificationsUuids.toArray())
+                .queryParam("onlyMetadata", "false")
+                .buildAndExpand()
+                .toUriString();
+            ModificationInfos[] modificationInfos = networkModificationServerRest.getForObject(path, ModificationInfos[].class);
+            return modificationInfos != null ? Arrays.asList(modificationInfos) : List.of();
+        } else {
+            return List.of();
+        }
     }
 }

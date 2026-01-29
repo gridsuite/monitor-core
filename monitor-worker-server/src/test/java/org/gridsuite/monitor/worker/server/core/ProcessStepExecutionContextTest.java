@@ -43,15 +43,16 @@ class ProcessStepExecutionContextTest {
         int stepOrder = 2;
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID stepExecutionId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
         when(processContext.getExecutionId()).thenReturn(executionId);
         when(processContext.getCaseUuid()).thenReturn(caseUuid);
         when(processContext.getNetwork()).thenReturn(network);
         when(processContext.getConfig()).thenReturn(config);
 
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepExecutionId, stepOrder);
 
-        assertThat(stepContext.getStepExecutionId()).isNotNull();
+        assertThat(stepContext.getStepExecutionId()).isEqualTo(stepExecutionId);
         assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);
         assertThat(stepContext.getNetwork()).isEqualTo(processContext.getNetwork());
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(processContext.getExecutionId());
@@ -68,8 +69,9 @@ class ProcessStepExecutionContextTest {
     @Test
     void stepExecutionContextShouldSetAndGetFromParentExecutionContext() {
         int stepOrder = 1;
+        UUID stepId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepId, stepOrder);
 
         Network newNetwork = mock(Network.class);
         stepContext.setNetwork(newNetwork);

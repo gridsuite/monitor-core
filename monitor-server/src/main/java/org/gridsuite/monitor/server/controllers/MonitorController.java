@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.services.MonitorService;
@@ -58,5 +59,12 @@ public class MonitorController {
     public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         List<String> results = monitorService.getResults(executionId);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/executions/{executionId}/step-infos")
+    @Operation(summary = "Get execution steps statuses")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution steps statuses")})
+    public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return ResponseEntity.ok(monitorService.getStepsInfos(executionId));
     }
 }

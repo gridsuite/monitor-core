@@ -9,6 +9,8 @@ package org.gridsuite.monitor.worker.server.core;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 
+import java.util.List;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -17,4 +19,6 @@ public interface Process<C extends ProcessConfig> {
     ProcessType getProcessType();
 
     void execute(ProcessExecutionContext<C> context);
+
+    List<ProcessStep<C>> defineSteps();
 }

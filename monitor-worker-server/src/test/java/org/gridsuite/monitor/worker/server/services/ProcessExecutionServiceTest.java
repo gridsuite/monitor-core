@@ -8,11 +8,17 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.Process;
 import org.gridsuite.monitor.worker.server.core.ProcessExecutionContext;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +48,28 @@ class ProcessExecutionServiceTest {
     @Mock
     private ProcessConfig processConfig;
 
+    @Mock
+    private NetworkConversionService networkConversionService;
+
+    @Mock
+    private NetworkModificationService networkModificationService;
+
+    @Mock
+    private NetworkModificationRestService networkModificationRestService;
+
+    @Mock
+    private FilterService filterService;
+
+    @Mock
+    private SecurityAnalysisService securityAnalysisService;
+
     private ProcessExecutionService processExecutionService;
+
+    private LoadNetworkStep<ProcessConfig> loadNetworkStep;
+
+    private ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep;
+
+    private SecurityAnalysisRunComputationStep runComputationStep;
 
     private static final String EXECUTION_ENV_NAME = "test-env";
 
@@ -52,6 +79,10 @@ class ProcessExecutionServiceTest {
 
         List<Process<? extends ProcessConfig>> processList = List.of(process);
         processExecutionService = new ProcessExecutionService(processList, notificationService, EXECUTION_ENV_NAME);
+
+        loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
     }
 
     @Test
@@ -61,8 +92,31 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
+        when(process.defineSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
+
+        verify(process, times(1)).defineSteps();
+        verify(notificationService, times(3)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        InOrder inOrder = inOrder(notificationService);
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(update ->
+                update.getStatus() == StepStatus.SCHEDULED &&
+                    update.getId().equals(loadNetworkStep.getId()) &&
+                    update.getStepType().equals(loadNetworkStep.getType().getName()) &&
+                    update.getStepOrder() == 0
+        ));
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(update ->
+                update.getStatus() == StepStatus.SCHEDULED &&
+                    update.getId().equals(applyModificationsStep.getId()) &&
+                    update.getStepType().equals(applyModificationsStep.getType().getName()) &&
+                    update.getStepOrder() == 1
+        ));
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(update ->
+                update.getStatus() == StepStatus.SCHEDULED &&
+                    update.getId().equals(runComputationStep.getId()) &&
+                    update.getStepType().equals(runComputationStep.getType().getName()) &&
+                    update.getStepOrder() == 2
+        ));
 
         verify(process).execute(argThat(context ->
                 context.getExecutionId().equals(executionId) &&
@@ -71,7 +125,7 @@ class ProcessExecutionServiceTest {
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
         ));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
-        InOrder inOrder = inOrder(notificationService);
+        inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&

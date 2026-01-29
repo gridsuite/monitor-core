@@ -99,7 +99,7 @@ class ProcessTest {
         }
 
         @Override
-        protected List<ProcessStep<ProcessConfig>> defineSteps() {
+        public List<ProcessStep<ProcessConfig>> defineSteps() {
             // Return 3 dummy steps for testing
             ProcessStep<ProcessConfig> step1 = mock(ProcessStep.class);
             ProcessStep<ProcessConfig> step2 = mock(ProcessStep.class);

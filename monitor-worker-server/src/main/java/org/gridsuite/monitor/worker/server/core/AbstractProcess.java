@@ -55,8 +55,6 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
         }
     }
 
-    protected abstract List<ProcessStep<C>> defineSteps();
-
     protected void handleStepFailure(ProcessExecutionContext<C> context, ProcessStep<C> step, Exception e) {
         //TODO better error handling
         LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());

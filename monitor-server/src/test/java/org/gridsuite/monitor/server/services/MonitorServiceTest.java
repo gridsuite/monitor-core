@@ -298,4 +298,27 @@ class MonitorServiceTest {
         verify(resultService, times(2)).getResult(any(ResultInfos.class));
     }
 
+    @Test
+    void getStepsInfos() {
+        UUID executionUuid = UUID.randomUUID();
+        UUID stepId1 = UUID.randomUUID();
+        UUID stepId2 = UUID.randomUUID();
+        Instant startedAt1 = Instant.now();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionUuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .steps(List.of(ProcessExecutionStepEntity.builder().id(stepId1).stepType("loadNetwork").stepOrder(0).status(StepStatus.RUNNING).startedAt(startedAt1).build(),
+                            ProcessExecutionStepEntity.builder().id(stepId2).stepType("applyModifs").stepOrder(1).status(StepStatus.SCHEDULED).build()))
+            .build();
+
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
+
+        List<ProcessExecutionStep> result = monitorService.getStepsInfos(executionUuid);
+
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, null, startedAt1, null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null, null);
+
+        assertThat(result).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
+        verify(executionRepository).findById(executionUuid);
+    }
 }

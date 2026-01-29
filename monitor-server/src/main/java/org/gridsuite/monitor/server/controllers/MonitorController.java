@@ -11,10 +11,15 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.services.MonitorService;
+import org.gridsuite.monitor.server.services.ReportService;
+import org.gridsuite.monitor.server.services.ResultService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +34,13 @@ import java.util.UUID;
 public class MonitorController {
 
     private final MonitorService monitorService;
+    private final ResultService resultService;
+    private final ReportService reportService;
 
-    public MonitorController(MonitorService monitorService) {
+    public MonitorController(MonitorService monitorService, ResultService resultService, ReportService reportService) {
         this.monitorService = monitorService;
+        this.resultService = resultService;
+        this.reportService = reportService;
     }
 
     @PostMapping("/execute/security-analysis")
@@ -48,7 +57,11 @@ public class MonitorController {
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports")})
     public ResponseEntity<List<Report>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<Report> reports = monitorService.getReports(executionId);
+        List<UUID> reportIds = monitorService.getReportIds(executionId);
+        List<Report> reports = reportIds.stream()
+                    .map(reportService::getReport)
+                    .toList();
+
         return ResponseEntity.ok(reports);
     }
 
@@ -56,7 +69,11 @@ public class MonitorController {
     @Operation(summary = "Get results for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results")})
     public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<String> results = monitorService.getResults(executionId);
+        List<ResultInfos> resultInfos = monitorService.getResultInfos(executionId);
+        List<String> results = resultInfos.stream()
+                .map(resultService::getResult)
+                .toList();
+
         return ResponseEntity.ok(results);
     }
 

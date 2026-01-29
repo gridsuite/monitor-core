@@ -47,12 +47,14 @@ class ProcessStepExecutionContextTest {
         when(processContext.getExecutionId()).thenReturn(executionId);
         when(processContext.getCaseUuid()).thenReturn(caseUuid);
         when(processContext.getNetwork()).thenReturn(network);
+        when(processContext.getConfig()).thenReturn(config);
 
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, config, stepType, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepOrder);
 
         assertThat(stepContext.getStepExecutionId()).isNotNull();
         assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);
-        assertThat(stepContext.getProcessContext()).isEqualTo(processContext);
+        assertThat(stepContext.getNetwork()).isEqualTo(processContext.getNetwork());
+        assertThat(stepContext.getProcessExecutionId()).isEqualTo(processContext.getExecutionId());
         assertThat(stepContext.getConfig()).isEqualTo(config);
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
@@ -67,7 +69,7 @@ class ProcessStepExecutionContextTest {
     void stepExecutionContextShouldSetAndGetFromParentExecutionContext() {
         int stepOrder = 1;
         when(stepType.getName()).thenReturn("test-step");
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, config, stepType, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepOrder);
 
         Network newNetwork = mock(Network.class);
         stepContext.setNetwork(newNetwork);

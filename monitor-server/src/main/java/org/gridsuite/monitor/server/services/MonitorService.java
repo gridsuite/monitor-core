@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services;
 
+import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
@@ -13,40 +14,27 @@ import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.events.ExecutionDeletedEvent;
+import org.gridsuite.monitor.server.events.ProcessExecutionEvent;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
+@RequiredArgsConstructor
 public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
-    private final NotificationService notificationService;
-    private final ReportService reportService;
-    private final ResultService resultService;
-    private final MonitorService self;
-
-    public MonitorService(ProcessExecutionRepository executionRepository,
-                          NotificationService notificationService,
-                          ReportService reportService,
-                          ResultService resultService,
-                          @Lazy MonitorService monitorService) {
-        this.executionRepository = executionRepository;
-        this.notificationService = notificationService;
-        this.reportService = reportService;
-        this.resultService = resultService;
-        this.self = monitorService;
-    }
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, ProcessConfig processConfig) {
@@ -58,7 +46,7 @@ public class MonitorService {
             .build();
         executionRepository.save(execution);
 
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId());
+        eventPublisher.publishEvent(new ProcessExecutionEvent(caseUuid, processConfig, execution.getId()));
 
         return execution.getId();
     }
@@ -115,31 +103,17 @@ public class MonitorService {
     }
 
     @Transactional(readOnly = true)
-    public List<Report> getReports(UUID executionId) {
-        List<UUID> reportIds = getReportIds(executionId);
-        return reportIds.stream()
-                .map(reportService::getReport)
-                .toList();
-    }
-
-    private List<UUID> getReportIds(UUID executionId) {
+    public List<UUID> getReportIds(UUID executionId) {
         return executionRepository.findById(executionId)
             .map(execution -> execution.getSteps().stream()
                 .map(ProcessExecutionStepEntity::getReportId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .toList())
             .orElse(List.of());
     }
 
     @Transactional(readOnly = true)
-    public List<String> getResults(UUID executionId) {
-        List<ResultInfos> resultInfos = getResultInfos(executionId);
-        return resultInfos.stream()
-                .map(resultService::getResult)
-                .toList();
-    }
-
-    private List<ResultInfos> getResultInfos(UUID executionId) {
+    public List<ResultInfos> getResultInfos(UUID executionId) {
         return executionRepository.findById(executionId)
                 .map(execution -> execution.getSteps().stream()
                 .filter(step -> step.getResultId() != null)
@@ -148,39 +122,24 @@ public class MonitorService {
             .orElse(List.of());
     }
 
-    @Transactional(readOnly = true)
-    public boolean getReportsAndResultsUuids(UUID executionId, List<ResultInfos> resultIds, List<UUID> reportIds) {
-        Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
-        if (executionEntity.isPresent()) {
-            executionEntity.get().getSteps().forEach(step -> {
-                if (step.getResultId() != null && step.getResultType() != null) {
-                    resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
-                }
-                if (step.getReportId() != null) {
-                    reportIds.add(step.getReportId());
-                }
-            });
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     @Transactional
-    public void deleteExecutionEntity(UUID executionId) {
-        executionRepository.deleteById(executionId);
-    }
-
     public boolean deleteExecution(UUID executionId) {
-        List<ResultInfos> resultIds = new ArrayList<>();
-        List<UUID> reportIds = new ArrayList<>();
-        boolean executionFound = self.getReportsAndResultsUuids(executionId, resultIds, reportIds);
-        if (executionFound) {
-            resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportService::deleteReport);
+        return executionRepository.findById(executionId)
+            .map(entity -> {
+                List<ResultInfos> resultInfos = entity.getSteps().stream()
+                    .filter(s -> s.getResultId() != null && s.getResultType() != null)
+                    .map(s -> new ResultInfos(s.getResultId(), s.getResultType()))
+                    .toList();
+                List<UUID> reportIds = entity.getSteps().stream()
+                    .map(ProcessExecutionStepEntity::getReportId)
+                    .filter(Objects::nonNull)
+                    .toList();
 
-            self.deleteExecutionEntity(executionId);
-        }
-        return executionFound;
+                executionRepository.delete(entity);
+                eventPublisher.publishEvent(new ExecutionDeletedEvent(resultInfos, reportIds));
+
+                return true;
+            })
+            .orElse(false);
     }
 }

@@ -10,6 +10,7 @@ package org.gridsuite.monitor.commons;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public enum StepStatus {
+    SCHEDULED,
     RUNNING,
     COMPLETED,
     FAILED,

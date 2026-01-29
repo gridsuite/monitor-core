@@ -133,4 +133,16 @@ public class MonitorService {
                 .toList())
             .orElse(List.of());
     }
+
+    @Transactional(readOnly = true)
+    public List<ProcessExecutionStep> getStepsInfos(UUID executionId) {
+        return executionRepository.findById(executionId)
+                .map(execution -> execution.getSteps().stream()
+                .map(step ->
+                    new ProcessExecutionStep(step.getId(), step.getStepType(), step.getStepOrder(),
+                                             step.getStatus(), step.getResultId(), step.getResultType(),
+                                             step.getReportId(), step.getStartedAt(), step.getCompletedAt()))
+                .toList())
+            .orElse(List.of());
+    }
 }

@@ -8,11 +8,14 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.Process;
 import org.gridsuite.monitor.worker.server.core.ProcessExecutionContext;
+import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -55,9 +58,15 @@ public class ProcessExecutionService {
             executionEnvName
         );
 
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+        List<ProcessStep<T>> steps = process.defineSteps();
+        for (int i = 0; i < steps.size(); i++) {
+            ProcessStep<T> step = steps.get(i);
+            notificationService.updateStepStatus(context.getExecutionId(),
+                new ProcessExecutionStep(step.getId(), step.getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null));
+        }
 
         try {
+            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
             process.execute(context);
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
         } catch (Exception e) {

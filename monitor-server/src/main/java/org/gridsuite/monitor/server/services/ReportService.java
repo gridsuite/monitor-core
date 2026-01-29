@@ -46,7 +46,9 @@ public class ReportService {
     public Report getReport(UUID reportId) {
         var uriBuilder = UriComponentsBuilder.fromPath("{id}");
 
-        var path = uriBuilder.buildAndExpand(reportId).toUriString();
+        var path = uriBuilder
+            .queryParam("withLeaves", Boolean.TRUE)
+            .buildAndExpand(reportId).toUriString();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 

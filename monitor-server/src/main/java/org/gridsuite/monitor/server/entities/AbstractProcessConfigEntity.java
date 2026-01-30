@@ -18,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.ForeignKey;
 import lombok.AllArgsConstructor;
@@ -53,6 +54,7 @@ public abstract class AbstractProcessConfigEntity {
                     joinColumns = @JoinColumn(name = "process_config_id"),
                     foreignKey = @ForeignKey(name = "AbstractProcessConfigEntity_modificationUuids_fk1"))
     @Column(name = "modification_uuid")
+    @OrderColumn(name = "pos_modifications")
     private List<UUID> modificationUuids;
 
     public abstract ProcessType getType();

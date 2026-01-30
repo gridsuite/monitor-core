@@ -52,10 +52,14 @@ class ConsumerServiceTest {
     @Test
     void consumeProcessExecutionStatusUpdateMessage() throws JsonProcessingException {
         UUID executionId = UUID.randomUUID();
+        Instant startedAt = Instant.parse("2025-01-01T11:59:00Z");
+        Instant completedAt = Instant.parse("2025-01-01T12:00:00Z");
+
         ProcessExecutionStatusUpdate statusUpdate = ProcessExecutionStatusUpdate.builder()
                 .status(ProcessStatus.RUNNING)
                 .executionEnvName("env-1")
-                .completedAt(Instant.parse("2025-01-01T12:00:00Z"))
+                .startedAt(startedAt)
+                .completedAt(completedAt)
                 .build();
         String payload = objectMapper.writeValueAsString(statusUpdate);
         Map<String, Object> headers = new HashMap<>();
@@ -70,7 +74,8 @@ class ConsumerServiceTest {
                 executionId,
                 ProcessStatus.RUNNING,
                 "env-1",
-                Instant.parse("2025-01-01T12:00:00Z")
+                startedAt,
+                completedAt
         );
         verify(monitorService, never()).updateStepStatus(any(), any());
     }
@@ -89,7 +94,7 @@ class ConsumerServiceTest {
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
-        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any());
+        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
         verify(monitorService, never()).updateStepStatus(any(), any());
     }
 
@@ -113,6 +118,6 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(monitorService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any());
+        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
     }
 }

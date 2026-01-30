@@ -15,21 +15,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProcessExecutionMapper {
-
-    public ProcessExecutionEntity toEntity(ProcessExecution dto) {
-        ProcessExecutionEntity entity = new ProcessExecutionEntity();
-        entity.setId(dto.id());
-        entity.setType(dto.type());
-        entity.setCaseUuid(dto.caseUuid());
-        entity.setStatus(dto.status());
-        entity.setExecutionEnvName(dto.executionEnvName());
-        entity.setScheduledAt(dto.scheduledAt());
-        entity.setStartedAt(dto.startedAt());
-        entity.setCompletedAt(dto.completedAt());
-        entity.setUserId(dto.userId());
-        return entity;
-    }
-
     public ProcessExecution toDto(ProcessExecutionEntity entity) {
         return new ProcessExecution(
             entity.getId(),

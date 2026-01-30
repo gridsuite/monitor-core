@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -79,7 +80,7 @@ class ProcessConfigControllerTest {
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
-            .thenReturn(securityAnalysisConfig);
+            .thenReturn(Optional.of(securityAnalysisConfig));
 
         mockMvc.perform(get("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -95,7 +96,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
-            .thenReturn(null);
+            .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON))

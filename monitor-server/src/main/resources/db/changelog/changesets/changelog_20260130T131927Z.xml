@@ -1,13 +1,16 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-1">
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-1">
         <createTable tableName="process_config">
+            <column name="process_type" type="VARCHAR(31)">
+                <constraints nullable="false"/>
+            </column>
             <column name="id" type="UUID">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="process_configPK"/>
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-2">
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-2">
         <createTable tableName="process_config_modifications">
             <column name="process_config_id" type="UUID">
                 <constraints nullable="false"/>
@@ -15,7 +18,7 @@
             <column name="modification_uuid" type="UUID"/>
         </createTable>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-3">
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-3">
         <createTable tableName="security_analysis_config">
             <column name="parameters_uuid" type="UUID"/>
             <column name="id" type="UUID">
@@ -23,7 +26,7 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-4">
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-4">
         <createTable tableName="security_analysis_contingencies">
             <column name="security_analysis_config_id" type="UUID">
                 <constraints nullable="false"/>
@@ -31,23 +34,23 @@
             <column name="contingency" type="VARCHAR(255)"/>
         </createTable>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-5">
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-5">
         <addColumn tableName="process_execution">
             <column name="started_at" type="timestamp(6)"/>
         </addColumn>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-6">
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-6">
         <addColumn tableName="process_execution">
             <column name="user_id" type="varchar(255)"/>
         </addColumn>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-7">
-        <addForeignKeyConstraint baseColumnNames="security_analysis_config_id" baseTableName="security_analysis_contingencies" constraintName="FKcarfsvgf8yssm4vyip3a8wqgl" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="security_analysis_config" validate="true"/>
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-7">
+        <addForeignKeyConstraint baseColumnNames="process_config_id" baseTableName="process_config_modifications" constraintName="AbstractProcessConfigEntity_modificationUuids_fk1" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-8">
-        <addForeignKeyConstraint baseColumnNames="process_config_id" baseTableName="process_config_modifications" constraintName="FKfu6oqvh9x586hg8a04lpfm3xh" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-8">
+        <addForeignKeyConstraint baseColumnNames="security_analysis_config_id" baseTableName="security_analysis_contingencies" constraintName="SecurityAnalysisConfigEntity_contingencies_fk1" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="security_analysis_config" validate="true"/>
     </changeSet>
-    <changeSet author="lecuyerfra (generated)" id="1769087507446-9">
-        <addForeignKeyConstraint baseColumnNames="id" baseTableName="security_analysis_config" constraintName="FKgipqfgbwgi0mlvc1y9xbo6s2d" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
+    <changeSet author="lecuyerfra (generated)" id="1769779183768-9">
+        <addForeignKeyConstraint baseColumnNames="id" baseTableName="security_analysis_config" constraintName="securityAnalysisConfig_id_fk_constraint" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
     </changeSet>
 </databaseChangeLog>

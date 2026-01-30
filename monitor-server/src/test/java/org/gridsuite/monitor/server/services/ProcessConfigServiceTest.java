@@ -10,6 +10,7 @@ import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
@@ -44,6 +44,8 @@ class ProcessConfigServiceTest {
     private ProcessConfigService processConfigService;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
+
+    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper = new SecurityAnalysisConfigMapper();
 
     @BeforeEach
     void setUp() {
@@ -79,42 +81,16 @@ class ProcessConfigServiceTest {
     }
 
     @Test
-    void createProcessConfigWithNullType() {
-        ProcessConfig processConfig = new ProcessConfig() {
-            @Override
-            public ProcessType processType() {
-                return null;
-            }
-
-            @Override
-            public List<UUID> modificationUuids() {
-                return List.of();
-            }
-        };
-
-        assertThatThrownBy(() -> processConfigService.createProcessConfig(processConfig))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unsupported process config type: null");
-    }
-
-    @Test
     void getSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
-        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
-            .thenAnswer(invocation -> {
-                SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
-                entity.setId(processConfigId);
-                return entity;
-            });
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
 
-        processConfigService.createProcessConfig(securityAnalysisConfig);
-
-        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = new SecurityAnalysisConfigEntity(securityAnalysisConfig);
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
 
-        ProcessConfig processConfig = processConfigService.getProcessConfig(processConfigId);
+        Optional<ProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
         verify(processConfigRepository).findById(processConfigId);
-        assertThat(processConfig).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
+        assertThat(processConfig).isPresent();
+        assertThat(processConfig.get()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
     }
 
     @Test
@@ -123,23 +99,15 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
 
-        ProcessConfig processConfig = processConfigService.getProcessConfig(processConfigId);
+        Optional<ProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
         verify(processConfigRepository).findById(processConfigId);
-        assertThat(processConfig).isNull();
+        assertThat(processConfig).isEmpty();
     }
 
     @Test
     void updateSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
-        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
-            .thenAnswer(invocation -> {
-                SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
-                entity.setId(processConfigId);
-                return entity;
-            });
-
-        processConfigService.createProcessConfig(securityAnalysisConfig);
-        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = new SecurityAnalysisConfigEntity(securityAnalysisConfig);
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
@@ -150,12 +118,13 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
 
         boolean done = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
-        assertThat(done).isEqualTo(Boolean.TRUE);
+        assertThat(done).isTrue();
 
         verify(processConfigRepository).findById(processConfigId);
 
-        ProcessConfig processConfigUpdated = processConfigService.getProcessConfig(processConfigId);
-        assertThat(processConfigUpdated).usingRecursiveComparison().isEqualTo(newSecurityAnalysisConfig);
+        Optional<ProcessConfig> processConfigUpdated = processConfigService.getProcessConfig(processConfigId);
+        assertThat(processConfigUpdated).isPresent();
+        assertThat(processConfigUpdated.get()).usingRecursiveComparison().isEqualTo(newSecurityAnalysisConfig);
     }
 
     @Test
@@ -170,29 +139,20 @@ class ProcessConfigServiceTest {
                 List.of(UUID.randomUUID())
         );
         boolean done = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
-        assertThat(done).isEqualTo(Boolean.FALSE);
+        assertThat(done).isFalse();
 
         verify(processConfigRepository).findById(processConfigId);
-        verify(processConfigRepository, never()).save(any());
     }
 
     @Test
     void deleteSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
-        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
-            .thenAnswer(invocation -> {
-                SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
-                entity.setId(processConfigId);
-                return entity;
-            });
-
-        processConfigService.createProcessConfig(securityAnalysisConfig);
 
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.TRUE);
         doNothing().when(processConfigRepository).deleteById(processConfigId);
 
         boolean done = processConfigService.deleteProcessConfig(processConfigId);
-        assertThat(done).isEqualTo(Boolean.TRUE);
+        assertThat(done).isTrue();
 
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository).deleteById(processConfigId);
@@ -205,7 +165,7 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.FALSE);
 
         boolean done = processConfigService.deleteProcessConfig(processConfigId);
-        assertThat(done).isEqualTo(Boolean.FALSE);
+        assertThat(done).isFalse();
 
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository, never()).deleteById(processConfigId);

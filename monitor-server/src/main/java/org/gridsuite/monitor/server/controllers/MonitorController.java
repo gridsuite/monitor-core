@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
@@ -64,10 +65,10 @@ public class MonitorController {
         return ResponseEntity.ok(results);
     }
 
-    @GetMapping("/executions/security-analysis")
-    @Operation(summary = "Get all security analysis launched processes")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis launched processes")})
-    public ResponseEntity<List<ProcessExecution>> getAllSecurityAnalysisLaunchedProcesses() {
-        return ResponseEntity.ok(monitorService.getAllSecurityAnalysisLaunchedProcesses());
+    @GetMapping("/executions")
+    @Operation(summary = "Get launched processes")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The launched processes")})
+    public ResponseEntity<List<ProcessExecution>> getLaunchedProcesses(@Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
+        return ResponseEntity.ok(monitorService.getLaunchedProcesses(processType));
     }
 }

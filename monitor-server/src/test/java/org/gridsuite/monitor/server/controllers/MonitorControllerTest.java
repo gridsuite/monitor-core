@@ -119,21 +119,21 @@ class MonitorControllerTest {
     }
 
     @Test
-    void getAllSecurityAnalysisLaunchedProcesses() throws Exception {
+    void getLaunchedProcesses() throws Exception {
         ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), "user1");
         ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, "user2");
         ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, "user3");
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 
-        when(monitorService.getAllSecurityAnalysisLaunchedProcesses()).thenReturn(processExecutionList);
+        when(monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS)).thenReturn(processExecutionList);
 
-        mockMvc.perform(get("/v1/executions/security-analysis"))
+        mockMvc.perform(get("/v1/executions?processType=SECURITY_ANALYSIS").accept(MediaType.APPLICATION_JSON_VALUE).header("userId", "user1,user2,user3"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$", hasSize(3)))
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
-        verify(monitorService).getAllSecurityAnalysisLaunchedProcesses();
+        verify(monitorService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
     }
 }

@@ -313,7 +313,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void getAllSecurityAnalysisLaunchedProcesses() {
+    void getLaunchedProcesses() {
         UUID execution1Uuid = UUID.randomUUID();
         UUID case1Uuid = UUID.randomUUID();
         Instant scheduledAt1 = Instant.now().minusSeconds(60);
@@ -348,7 +348,7 @@ class MonitorServiceTest {
 
         when(executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name())).thenReturn(List.of(execution2, execution1));
 
-        List<ProcessExecution> result = monitorService.getAllSecurityAnalysisLaunchedProcesses();
+        List<ProcessExecution> result = monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
 
         ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, "user1");
         ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, "user2");

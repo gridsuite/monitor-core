@@ -16,6 +16,7 @@ import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
+    private final ProcessExecutionMapper processExecutionMapper = new ProcessExecutionMapper();
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
@@ -141,19 +143,8 @@ public class MonitorService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProcessExecution> getAllSecurityAnalysisLaunchedProcesses() {
-        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name()).stream()
-            .map(execution -> ProcessExecution.builder()
-                .id(execution.getId())
-                .type(execution.getType())
-                .caseUuid(execution.getCaseUuid())
-                .status(execution.getStatus())
-                .executionEnvName(execution.getExecutionEnvName())
-                .scheduledAt(execution.getScheduledAt())
-                .startedAt(execution.getStartedAt())
-                .completedAt(execution.getCompletedAt())
-                .userId(execution.getUserId())
-                .build()
-            ).toList();
+    public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
+        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
+            .map(processExecutionMapper::toDto).toList();
     }
 }

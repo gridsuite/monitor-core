@@ -10,8 +10,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.*;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.services.ConsumerService;
+import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.gridsuite.monitor.server.services.ReportService;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.gridsuite.monitor.server.services.ResultService;
@@ -32,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +55,13 @@ class MonitorIntegrationTest {
     private MonitorService monitorService;
 
     @Autowired
+    private ProcessConfigService configService;
+
+    @Autowired
     private ProcessExecutionRepository executionRepository;
+
+    @Autowired
+    private ProcessConfigRepository processConfigRepository;
 
     @Autowired
     private ConsumerService consumerService;
@@ -204,5 +213,40 @@ class MonitorIntegrationTest {
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
         consumerService.consumeMonitorUpdate().accept(message);
+    }
+
+    @Test
+    void processConfigIT() {
+        UUID parametersUuid = UUID.randomUUID();
+        UUID modificationUuid = UUID.randomUUID();
+        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
+                parametersUuid,
+                List.of("contingency1", "contingency2"),
+                List.of(modificationUuid)
+        );
+        UUID configId = configService.createProcessConfig(securityAnalysisConfig);
+        assertThat(processConfigRepository.findById(configId)).isNotEmpty();
+
+        Optional<ProcessConfig> config = configService.getProcessConfig(configId);
+        assertThat(config).isNotEmpty();
+        assertThat(config.get()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
+
+        UUID updatedParametersUuid = UUID.randomUUID();
+        UUID updatedModificationUuid = UUID.randomUUID();
+        SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
+                updatedParametersUuid,
+                List.of("contingency3", "contingency4"),
+                List.of(updatedModificationUuid)
+        );
+        boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
+        assertThat(updated).isTrue();
+        Optional<ProcessConfig> updatedConfig = configService.getProcessConfig(configId);
+        assertThat(updatedConfig).isNotEmpty();
+        assertThat(updatedConfig.get()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
+
+        boolean deleted = configService.deleteProcessConfig(configId);
+        assertThat(deleted).isTrue();
+        Optional<ProcessConfig> deletedConfig = configService.getProcessConfig(configId);
+        assertThat(deletedConfig).isEmpty();
     }
 }

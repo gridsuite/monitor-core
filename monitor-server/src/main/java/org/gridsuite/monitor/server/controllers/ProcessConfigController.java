@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -45,8 +46,7 @@ public class ProcessConfigController {
     @Operation(summary = "Create process config")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was created")})
-    public ResponseEntity<UUID> createProcessConfig(
-            @RequestBody(required = false) ProcessConfig processConfig) {
+    public ResponseEntity<UUID> createProcessConfig(@RequestBody ProcessConfig processConfig) {
         return ResponseEntity.ok().body(processConfigService.createProcessConfig(processConfig));
     }
 
@@ -57,9 +57,8 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config was not found")})
     public ResponseEntity<ProcessConfig> getProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
-        ProcessConfig processConfig = processConfigService.getProcessConfig(processConfigUuid);
-        return processConfig != null ? ResponseEntity.ok().body(processConfig)
-                : ResponseEntity.notFound().build();
+        Optional<ProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
+        return processConfig.map(config -> ResponseEntity.ok().body(config)).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping(value = "/{uuid}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -69,7 +68,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config was not found")})
     public ResponseEntity<Void> updateProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid,
-            @RequestBody(required = false) ProcessConfig processConfig) {
+            @RequestBody ProcessConfig processConfig) {
         return processConfigService.updateProcessConfig(processConfigUuid, processConfig) ?
             ResponseEntity.ok().build() :
             ResponseEntity.notFound().build();

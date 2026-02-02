@@ -17,7 +17,6 @@ import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,20 +36,17 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
-    private final MonitorService self;
     private final ProcessExecutionMapper processExecutionMapper;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
                           ReportService reportService,
                           ResultService resultService,
-                          @Lazy MonitorService monitorService,
                           ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.reportService = reportService;
         this.resultService = resultService;
-        this.self = monitorService;
         this.processExecutionMapper = processExecutionMapper;
     }
 
@@ -164,8 +160,11 @@ public class MonitorService {
             .map(processExecutionMapper::toDto).toList();
     }
 
-    @Transactional(readOnly = true)
-    public boolean getReportsAndResultsUuids(UUID executionId, List<ResultInfos> resultIds, List<UUID> reportIds) {
+    @Transactional
+    public boolean deleteExecution(UUID executionId) {
+        List<ResultInfos> resultIds = new ArrayList<>();
+        List<UUID> reportIds = new ArrayList<>();
+
         Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
         if (executionEntity.isPresent()) {
             executionEntity.get().getSteps().forEach(step -> {
@@ -176,27 +175,13 @@ public class MonitorService {
                     reportIds.add(step.getReportId());
                 }
             });
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    @Transactional
-    public void deleteExecutionEntity(UUID executionId) {
-        executionRepository.deleteById(executionId);
-    }
-
-    public boolean deleteExecution(UUID executionId) {
-        List<ResultInfos> resultIds = new ArrayList<>();
-        List<UUID> reportIds = new ArrayList<>();
-        boolean executionFound = self.getReportsAndResultsUuids(executionId, resultIds, reportIds);
-        if (executionFound) {
             resultIds.forEach(resultService::deleteResult);
             reportIds.forEach(reportService::deleteReport);
 
-            self.deleteExecutionEntity(executionId);
+            executionRepository.deleteById(executionId);
+
+            return true;
         }
-        return executionFound;
+        return false;
     }
 }

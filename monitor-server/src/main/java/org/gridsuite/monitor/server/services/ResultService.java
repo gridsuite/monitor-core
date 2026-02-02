@@ -31,21 +31,19 @@ public class ResultService {
                 ));
     }
 
-    public String getResult(ResultInfos resultInfos) {
-        ResultProvider provider = providers.get(resultInfos.resultType());
-        if (provider != null) {
-            return provider.getResult(resultInfos.resultUUID());
-        } else {
-            throw new IllegalArgumentException("Unsupported result type: " + resultInfos.resultType());
+    public ResultProvider getProvider(ResultType resultType) {
+        ResultProvider provider = providers.get(resultType);
+        if (provider == null) {
+            throw new IllegalArgumentException("Unsupported result type: " + resultType);
         }
+        return provider;
+    }
+
+    public String getResult(ResultInfos resultInfos) {
+        return getProvider(resultInfos.resultType()).getResult(resultInfos.resultUUID());
     }
 
     public void deleteResult(ResultInfos resultInfos) {
-        ResultProvider provider = providers.get(resultInfos.resultType());
-        if (provider != null) {
-            provider.deleteResult(resultInfos.resultUUID());
-        } else {
-            throw new IllegalArgumentException("Unsupported result type: " + resultInfos.resultType());
-        }
+        getProvider(resultInfos.resultType()).deleteResult(resultInfos.resultUUID());
     }
 }

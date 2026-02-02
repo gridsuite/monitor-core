@@ -20,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -394,8 +393,6 @@ class MonitorServiceTest {
         doNothing().when(reportService).deleteReport(reportId2);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
-        ReflectionTestUtils.setField(monitorService, "self", monitorService);
-
         boolean done = monitorService.deleteExecution(executionId);
         assertThat(done).isTrue();
 
@@ -409,8 +406,6 @@ class MonitorServiceTest {
     @Test
     void deleteExecutionShouldReturnFalseWhenExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
-
-        ReflectionTestUtils.setField(monitorService, "self", monitorService);
 
         boolean done = monitorService.deleteExecution(executionId);
         assertThat(done).isFalse();

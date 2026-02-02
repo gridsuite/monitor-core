@@ -14,6 +14,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -45,6 +46,7 @@ public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
                     joinColumns = @JoinColumn(name = "security_analysis_config_id"),
                     foreignKey = @ForeignKey(name = "SecurityAnalysisConfigEntity_contingencies_fk1"))
     @Column(name = "contingency")
+    @OrderColumn(name = "pos_contingencies")
     private List<String> contingencies;
 
     @Override

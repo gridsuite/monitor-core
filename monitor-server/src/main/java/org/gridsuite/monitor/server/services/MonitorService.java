@@ -36,7 +36,7 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
-    private final ProcessExecutionMapper processExecutionMapper = new ProcessExecutionMapper();
+    private final ProcessExecutionMapper processExecutionMapper;
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {

@@ -25,10 +25,11 @@ import java.util.UUID;
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
 
-    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper = new SecurityAnalysisConfigMapper();
+    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
         this.processConfigRepository = processConfigRepository;
+        this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
     }
 
     @Transactional

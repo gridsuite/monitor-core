@@ -23,5 +23,6 @@ import java.time.Instant;
 public class ProcessExecutionStatusUpdate {
     private ProcessStatus status;
     private String executionEnvName;
+    private Instant startedAt;
     private Instant completedAt;
 }

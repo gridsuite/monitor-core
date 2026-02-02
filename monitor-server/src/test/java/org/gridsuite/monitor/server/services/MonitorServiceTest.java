@@ -7,15 +7,18 @@
 package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.*;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -31,7 +34,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class})
 class MonitorServiceTest {
 
     @Mock
@@ -49,14 +52,19 @@ class MonitorServiceTest {
     @InjectMocks
     private MonitorService monitorService;
 
+    @Spy
+    private ProcessExecutionMapper processExecutionMapper;
+
     private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;
     private UUID executionId;
+    private String userId;
 
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
+        userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
@@ -74,15 +82,17 @@ class MonitorServiceTest {
                     return entity;
                 });
 
-        UUID result = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
+        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
                         caseUuid.equals(execution.getCaseUuid()) &&
+                        userId.equals(execution.getUserId()) &&
                         ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
-                        execution.getScheduledAt() != null
+                        execution.getScheduledAt() != null &&
+                        execution.getStartedAt() == null
         ));
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
@@ -97,16 +107,18 @@ class MonitorServiceTest {
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
+                .userId(userId)
                 .status(ProcessStatus.SCHEDULED)
                 .scheduledAt(Instant.now())
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null);
+        monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null, null);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
         assertThat(execution.getExecutionEnvName()).isNull();
+        assertThat(execution.getStartedAt()).isNull();
         assertThat(execution.getCompletedAt()).isNull();
         verify(executionRepository).save(execution);
     }
@@ -117,18 +129,21 @@ class MonitorServiceTest {
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
+                .userId(userId)
                 .status(ProcessStatus.RUNNING)
                 .scheduledAt(Instant.now())
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         String envName = "production-env";
+        Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, completedAt);
+        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, startedAt, completedAt);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
+        assertThat(execution.getStartedAt()).isEqualTo(startedAt);
         assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
         verify(executionRepository).save(execution);
     }
@@ -137,7 +152,7 @@ class MonitorServiceTest {
     void updateExecutionStatusShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now());
+        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now());
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());
@@ -149,6 +164,7 @@ class MonitorServiceTest {
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
+                .userId(userId)
                 .status(ProcessStatus.RUNNING)
                 .steps(new ArrayList<>())
                 .build();
@@ -201,6 +217,7 @@ class MonitorServiceTest {
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
+                .userId(userId)
                 .status(ProcessStatus.RUNNING)
                 .steps(new ArrayList<>(List.of(existingStep)))
                 .build();
@@ -247,6 +264,7 @@ class MonitorServiceTest {
                 .build();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
+                .userId(userId)
                 .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
@@ -282,6 +300,7 @@ class MonitorServiceTest {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .steps(List.of(step0, step1))
+                .userId(userId)
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         String result1 = "{\"result\": \"data1\"}";
@@ -298,4 +317,48 @@ class MonitorServiceTest {
         verify(resultService, times(2)).getResult(any(ResultInfos.class));
     }
 
+    @Test
+    void getLaunchedProcesses() {
+        UUID execution1Uuid = UUID.randomUUID();
+        UUID case1Uuid = UUID.randomUUID();
+        Instant scheduledAt1 = Instant.now().minusSeconds(60);
+        Instant startedAt1 = Instant.now().minusSeconds(30);
+        Instant completedAt1 = Instant.now();
+        ProcessExecutionEntity execution1 = ProcessExecutionEntity.builder()
+            .id(execution1Uuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case1Uuid)
+            .status(ProcessStatus.COMPLETED)
+            .executionEnvName("env1")
+            .scheduledAt(scheduledAt1)
+            .startedAt(startedAt1)
+            .completedAt(completedAt1)
+            .userId("user1")
+            .build();
+
+        UUID execution2Uuid = UUID.randomUUID();
+        UUID case2Uuid = UUID.randomUUID();
+        Instant scheduledAt2 = Instant.now().minusSeconds(90);
+        Instant startedAt2 = Instant.now().minusSeconds(80);
+        ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
+            .id(execution2Uuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case2Uuid)
+            .status(ProcessStatus.RUNNING)
+            .executionEnvName("env2")
+            .scheduledAt(scheduledAt2)
+            .startedAt(startedAt2)
+            .userId("user2")
+            .build();
+
+        when(executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name())).thenReturn(List.of(execution2, execution1));
+
+        List<ProcessExecution> result = monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+
+        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, "user2");
+
+        assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
+        verify(executionRepository).findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name());
+    }
 }

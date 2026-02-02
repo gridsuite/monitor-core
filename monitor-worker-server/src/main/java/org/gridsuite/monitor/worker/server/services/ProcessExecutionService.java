@@ -79,6 +79,7 @@ public class ProcessExecutionService {
         ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
             status,
             envName,
+            status == ProcessStatus.RUNNING ? Instant.now() : null,
             status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
         );
 

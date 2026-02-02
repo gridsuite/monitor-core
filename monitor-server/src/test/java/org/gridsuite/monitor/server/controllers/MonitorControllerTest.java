@@ -10,6 +10,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.StepStatus;
+import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
+
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.services.MonitorService;
@@ -60,18 +64,19 @@ class MonitorControllerTest {
                 List.of(modificationUuid)
         );
 
-        when(monitorService.executeProcess(any(UUID.class), any(SecurityAnalysisConfig.class)))
+        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))
                 .thenReturn(executionId);
 
         mockMvc.perform(post("/v1/execute/security-analysis")
                         .param("caseUuid", caseUuid.toString())
+                        .header("userId", "user1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(monitorService).executeProcess(eq(caseUuid), any(SecurityAnalysisConfig.class));
+        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class));
     }
 
     @Test
@@ -117,6 +122,25 @@ class MonitorControllerTest {
     }
 
     @Test
+    void getLaunchedProcesses() throws Exception {
+        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, "user2");
+        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, "user3");
+
+        List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
+
+        when(monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS)).thenReturn(processExecutionList);
+
+        mockMvc.perform(get("/v1/executions?processType=SECURITY_ANALYSIS").accept(MediaType.APPLICATION_JSON_VALUE).header("userId", "user1,user2,user3"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
+
+        verify(monitorService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
     void getStepsInfos() throws Exception {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, UUID.randomUUID(), Instant.now(), null);
@@ -127,10 +151,10 @@ class MonitorControllerTest {
         when(monitorService.getStepsInfos(executionId)).thenReturn(processExecutionStepList);
 
         mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(3)))
-                .andExpect(content().json(objectMapper.writeValueAsString(processExecutionStepList)));
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecutionStepList)));
 
         verify(monitorService).getStepsInfos(executionId);
     }

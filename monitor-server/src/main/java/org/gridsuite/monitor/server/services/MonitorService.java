@@ -10,10 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,14 +36,16 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
+    private final ProcessExecutionMapper processExecutionMapper;
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .type(processConfig.processType().name())
             .caseUuid(caseUuid)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
+            .userId(userId)
             .build();
         executionRepository.save(execution);
 
@@ -50,11 +55,14 @@ public class MonitorService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant completedAt) {
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {
                 execution.setExecutionEnvName(executionEnvName);
+            }
+            if (startedAt != null) {
+                execution.setStartedAt(startedAt);
             }
             if (completedAt != null) {
                 execution.setCompletedAt(completedAt);
@@ -135,13 +143,19 @@ public class MonitorService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
+        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
+            .map(processExecutionMapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<ProcessExecutionStep> getStepsInfos(UUID executionId) {
         return executionRepository.findById(executionId)
-                .map(execution -> execution.getSteps().stream()
+            .map(execution -> execution.getSteps().stream()
                 .map(step ->
                     new ProcessExecutionStep(step.getId(), step.getStepType(), step.getStepOrder(),
-                                             step.getStatus(), step.getResultId(), step.getResultType(),
-                                             step.getReportId(), step.getStartedAt(), step.getCompletedAt()))
+                        step.getStatus(), step.getResultId(), step.getResultType(),
+                        step.getReportId(), step.getStartedAt(), step.getCompletedAt()))
                 .toList())
             .orElse(List.of());
     }

@@ -158,6 +158,7 @@ public class MonitorService {
             .orElse(List.of());
     }
 
+    @Transactional(readOnly = true)
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
             .map(processExecutionMapper::toDto).toList();

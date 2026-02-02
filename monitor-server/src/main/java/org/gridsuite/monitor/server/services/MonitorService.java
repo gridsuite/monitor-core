@@ -10,10 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,7 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
+    private final ProcessExecutionMapper processExecutionMapper;
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
@@ -136,5 +140,11 @@ public class MonitorService {
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
                 .toList())
             .orElse(List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
+        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
+            .map(processExecutionMapper::toDto).toList();
     }
 }

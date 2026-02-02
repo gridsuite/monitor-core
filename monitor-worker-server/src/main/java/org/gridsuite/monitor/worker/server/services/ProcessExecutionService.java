@@ -58,11 +58,16 @@ public class ProcessExecutionService {
             executionEnvName
         );
 
-        List<ProcessStep<T>> steps = process.defineSteps();
-        for (int i = 0; i < steps.size(); i++) {
-            ProcessStep<T> step = steps.get(i);
-            notificationService.updateStepStatus(context.getExecutionId(),
-                new ProcessExecutionStep(step.getId(), step.getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null));
+        try {
+            List<ProcessStep<T>> steps = process.defineSteps();
+            for (int i = 0; i < steps.size(); i++) {
+                ProcessStep<T> step = steps.get(i);
+                notificationService.updateStepStatus(context.getExecutionId(),
+                    new ProcessExecutionStep(step.getId(), step.getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null));
+            }
+        } catch (Exception e) {
+            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
+            throw e;
         }
 
         try {

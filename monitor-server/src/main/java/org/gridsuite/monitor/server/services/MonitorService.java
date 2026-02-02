@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -151,7 +152,7 @@ public class MonitorService {
     @Transactional(readOnly = true)
     public List<ProcessExecutionStep> getStepsInfos(UUID executionId) {
         return executionRepository.findById(executionId)
-            .map(execution -> execution.getSteps().stream()
+            .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .map(step ->
                     new ProcessExecutionStep(step.getId(), step.getStepType(), step.getStepOrder(),
                         step.getStatus(), step.getResultId(), step.getResultType(),

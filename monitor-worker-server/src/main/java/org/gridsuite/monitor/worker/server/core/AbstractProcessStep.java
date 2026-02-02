@@ -18,9 +18,10 @@ import java.util.UUID;
 public abstract class AbstractProcessStep<C extends ProcessConfig> implements ProcessStep<C> {
 
     private final ProcessStepType type;
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
 
     protected AbstractProcessStep(ProcessStepType type) {
         this.type = type;
+        this.id = UUID.randomUUID();
     }
 }

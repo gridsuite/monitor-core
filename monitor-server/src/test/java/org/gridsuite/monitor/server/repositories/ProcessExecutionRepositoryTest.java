@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.repositories;
 
 import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
@@ -16,7 +17,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,5 +77,74 @@ class ProcessExecutionRepositoryTest {
         assertThat(retrieved.getSteps().get(0).getStepOrder()).isZero();
         assertThat(retrieved.getSteps().get(1).getStepType()).isEqualTo("SECOND_STEP");
         assertThat(retrieved.getSteps().get(1).getStepOrder()).isEqualTo(1);
+    }
+
+    @Test
+    void securityAnalysisLaunchedProcesses() {
+        UUID case1Uuid = UUID.randomUUID();
+        Instant scheduledAt1 = Instant.now().minusSeconds(60);
+        Instant startedAt1 = Instant.now().minusSeconds(30);
+        Instant completedAt1 = Instant.now();
+        ProcessExecutionEntity execution1 = ProcessExecutionEntity.builder()
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case1Uuid)
+            .status(ProcessStatus.COMPLETED)
+            .executionEnvName("env1")
+            .scheduledAt(scheduledAt1)
+            .startedAt(startedAt1)
+            .completedAt(completedAt1)
+            .userId("user1")
+            .build();
+
+        UUID case2Uuid = UUID.randomUUID();
+        Instant scheduledAt2 = Instant.now().minusSeconds(90);
+        Instant startedAt2 = Instant.now().minusSeconds(20);
+        ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case2Uuid)
+            .status(ProcessStatus.RUNNING)
+            .executionEnvName("env2")
+            .scheduledAt(scheduledAt2)
+            .startedAt(startedAt2)
+            .userId("user2")
+            .build();
+
+        UUID case3Uuid = UUID.randomUUID();
+        Instant scheduledAt3 = Instant.now().minusSeconds(90);
+        ProcessExecutionEntity execution3 = ProcessExecutionEntity.builder()
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(case3Uuid)
+            .status(ProcessStatus.SCHEDULED)
+            .executionEnvName("env3")
+            .scheduledAt(scheduledAt3)
+            .userId("user3")
+            .build();
+
+        executionRepository.saveAll(List.of(execution1, execution2, execution3));
+
+        // Force DB write and reload
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ProcessExecutionEntity> retrieved = executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name());
+        assertThat(retrieved).hasSize(2);
+
+        assertThat(retrieved.get(0).getType()).isEqualTo(ProcessType.SECURITY_ANALYSIS.name());
+        assertThat(retrieved.get(0).getCaseUuid()).isEqualTo(case2Uuid);
+        assertThat(retrieved.get(0).getStatus()).isEqualTo(ProcessStatus.RUNNING);
+        assertThat(retrieved.get(0).getExecutionEnvName()).isEqualTo("env2");
+        assertThat(retrieved.get(0).getScheduledAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(scheduledAt2.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(retrieved.get(0).getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt2.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(retrieved.get(0).getCompletedAt()).isNull();
+        assertThat(retrieved.get(0).getUserId()).isEqualTo("user2");
+
+        assertThat(retrieved.get(1).getType()).isEqualTo(ProcessType.SECURITY_ANALYSIS.name());
+        assertThat(retrieved.get(1).getCaseUuid()).isEqualTo(case1Uuid);
+        assertThat(retrieved.get(1).getStatus()).isEqualTo(ProcessStatus.COMPLETED);
+        assertThat(retrieved.get(1).getExecutionEnvName()).isEqualTo("env1");
+        assertThat(retrieved.get(1).getScheduledAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(scheduledAt1.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(retrieved.get(1).getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt1.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(retrieved.get(1).getCompletedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(completedAt1.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(retrieved.get(1).getUserId()).isEqualTo("user1");
     }
 }

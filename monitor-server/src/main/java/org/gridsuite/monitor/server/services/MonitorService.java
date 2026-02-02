@@ -9,10 +9,13 @@ package org.gridsuite.monitor.server.services;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,26 +38,30 @@ public class MonitorService {
     private final ReportService reportService;
     private final ResultService resultService;
     private final MonitorService self;
+    private final ProcessExecutionMapper processExecutionMapper;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
                           ReportService reportService,
                           ResultService resultService,
-                          @Lazy MonitorService monitorService) {
+                          @Lazy MonitorService monitorService,
+                          ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.reportService = reportService;
         this.resultService = resultService;
         this.self = monitorService;
+        this.processExecutionMapper = processExecutionMapper;
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .type(processConfig.processType().name())
             .caseUuid(caseUuid)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
+            .userId(userId)
             .build();
         executionRepository.save(execution);
 
@@ -64,11 +71,14 @@ public class MonitorService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant completedAt) {
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {
                 execution.setExecutionEnvName(executionEnvName);
+            }
+            if (startedAt != null) {
+                execution.setStartedAt(startedAt);
             }
             if (completedAt != null) {
                 execution.setCompletedAt(completedAt);
@@ -146,6 +156,11 @@ public class MonitorService {
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
                 .toList())
             .orElse(List.of());
+    }
+
+    public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
+        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
+            .map(processExecutionMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)

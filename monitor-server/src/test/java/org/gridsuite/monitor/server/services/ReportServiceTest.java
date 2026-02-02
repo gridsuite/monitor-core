@@ -8,7 +8,8 @@ package org.gridsuite.monitor.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportLog;
+import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,21 +46,19 @@ class ReportServiceTest {
     @Test
     void getReport() throws JsonProcessingException {
         UUID reportId = UUID.randomUUID();
-        UUID child1ReportId = UUID.randomUUID();
-        UUID child2ReportId = UUID.randomUUID();
 
-        Report child1Report = Report.builder().id(child1ReportId).message("message1").severity(Severity.INFO).build();
-        Report child2Report = Report.builder().id(child2ReportId).message("message2").severity(Severity.WARN).build();
-        Report report = Report.builder().id(reportId).message("message3").subReports(List.of(child1Report, child2Report)).build();
+        ReportPage reportPage = new ReportPage(1, List.of(
+            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
+            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "?withLeaves=true"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs"))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(objectMapper.writeValueAsString(report)));
+                .body(objectMapper.writeValueAsString(reportPage)));
 
-        Report reportResult = reportService.getReport(reportId);
-        assertThat(reportResult).usingRecursiveComparison().isEqualTo(report);
+        ReportPage reportResult = reportService.getReport(reportId);
+        assertThat(reportResult).usingRecursiveComparison().isEqualTo(reportPage);
     }
 
     @Test
@@ -67,7 +66,7 @@ class ReportServiceTest {
         UUID reportId = UUID.randomUUID();
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "?withLeaves=true"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> reportService.getReport(reportId)).isInstanceOf(RestClientException.class);

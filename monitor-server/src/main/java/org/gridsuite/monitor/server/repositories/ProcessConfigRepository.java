@@ -6,17 +6,15 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.entities.AbstractProcessConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Repository
-public interface ProcessExecutionRepository extends JpaRepository<ProcessExecutionEntity, UUID> {
-    List<ProcessExecutionEntity> findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(String type);
+public interface ProcessConfigRepository extends JpaRepository<AbstractProcessConfigEntity, UUID> {
 }

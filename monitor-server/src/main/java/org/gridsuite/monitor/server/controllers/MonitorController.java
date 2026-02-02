@@ -11,7 +11,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,8 @@ public class MonitorController {
 
     private final MonitorService monitorService;
 
+    public static final String HEADER_USER_ID = "userId";
+
     public MonitorController(MonitorService monitorService) {
         this.monitorService = monitorService;
     }
@@ -39,8 +43,9 @@ public class MonitorController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @RequestParam UUID caseUuid,
-            @RequestBody SecurityAnalysisConfig securityAnalysisConfig) {
-        UUID executionId = monitorService.executeProcess(caseUuid, securityAnalysisConfig);
+            @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
+            @RequestHeader(HEADER_USER_ID) String userId) {
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
         return ResponseEntity.ok(executionId);
     }
 
@@ -58,5 +63,12 @@ public class MonitorController {
     public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         List<String> results = monitorService.getResults(executionId);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/executions")
+    @Operation(summary = "Get launched processes")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The launched processes")})
+    public ResponseEntity<List<ProcessExecution>> getLaunchedProcesses(@Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
+        return ResponseEntity.ok(monitorService.getLaunchedProcesses(processType));
     }
 }

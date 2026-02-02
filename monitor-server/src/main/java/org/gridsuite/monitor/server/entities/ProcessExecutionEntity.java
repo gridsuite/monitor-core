@@ -47,7 +47,13 @@ public class ProcessExecutionEntity {
     private Instant scheduledAt;
 
     @Column
+    private Instant startedAt;
+
+    @Column
     private Instant completedAt;
+
+    @Column
+    private String userId;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "execution_id", foreignKey = @ForeignKey(name = "processExecutionStep_processExecution_fk"))

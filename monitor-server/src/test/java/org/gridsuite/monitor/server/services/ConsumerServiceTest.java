@@ -149,6 +149,7 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(monitorService).updateStepsStatuses(eq(executionId), any(List.class));
+        verify(monitorService, never()).updateStepStatus(any(), any());
         verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
     }
 }

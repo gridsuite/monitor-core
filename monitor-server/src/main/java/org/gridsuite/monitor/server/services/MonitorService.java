@@ -75,7 +75,12 @@ public class MonitorService {
     }
 
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
-        execution.getSteps().stream()
+        List<ProcessExecutionStepEntity> steps = Optional.ofNullable(execution.getSteps()).orElseGet(() -> {
+            List<ProcessExecutionStepEntity> newSteps = new java.util.ArrayList<>();
+            execution.setSteps(newSteps);
+            return newSteps;
+        });
+        steps.stream()
             .filter(s -> s.getId().equals(stepEntity.getId()))
             .findFirst()
             .ifPresentOrElse(
@@ -89,7 +94,7 @@ public class MonitorService {
                     existingStep.setResultType(stepEntity.getResultType());
                     existingStep.setReportId(stepEntity.getReportId());
                 },
-                () -> execution.getSteps().add(stepEntity));
+                () -> steps.add(stepEntity));
     }
 
     @Transactional

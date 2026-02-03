@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
@@ -97,25 +96,20 @@ class ProcessExecutionServiceTest {
         processExecutionService.executeProcess(runMessage);
 
         verify(process, times(1)).defineSteps();
-        verify(notificationService, times(3)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-        InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(update ->
-                update.getStatus() == StepStatus.SCHEDULED &&
-                    update.getId().equals(loadNetworkStep.getId()) &&
-                    update.getStepType().equals(loadNetworkStep.getType().getName()) &&
-                    update.getStepOrder() == 0
-        ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(update ->
-                update.getStatus() == StepStatus.SCHEDULED &&
-                    update.getId().equals(applyModificationsStep.getId()) &&
-                    update.getStepType().equals(applyModificationsStep.getType().getName()) &&
-                    update.getStepOrder() == 1
-        ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(update ->
-                update.getStatus() == StepStatus.SCHEDULED &&
-                    update.getId().equals(runComputationStep.getId()) &&
-                    update.getStepType().equals(runComputationStep.getType().getName()) &&
-                    update.getStepOrder() == 2
+        verify(notificationService, times(1)).updateStepsStatuses(eq(executionId), argThat(steps ->
+            steps.size() == 3 &&
+            steps.get(0).getStatus() == StepStatus.SCHEDULED &&
+            steps.get(0).getId().equals(loadNetworkStep.getId()) &&
+            steps.get(0).getStepType().equals(loadNetworkStep.getType().getName()) &&
+            steps.get(0).getStepOrder() == 0 &&
+            steps.get(1).getStatus() == StepStatus.SCHEDULED &&
+            steps.get(1).getId().equals(applyModificationsStep.getId()) &&
+            steps.get(1).getStepType().equals(applyModificationsStep.getType().getName()) &&
+            steps.get(1).getStepOrder() == 1 &&
+            steps.get(2).getStatus() == StepStatus.SCHEDULED &&
+            steps.get(2).getId().equals(runComputationStep.getId()) &&
+            steps.get(2).getStepType().equals(runComputationStep.getType().getName()) &&
+            steps.get(2).getStepOrder() == 2
         ));
 
         verify(process).execute(argThat(context ->
@@ -125,7 +119,7 @@ class ProcessExecutionServiceTest {
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
         ));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
-        inOrder = inOrder(notificationService);
+        InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&

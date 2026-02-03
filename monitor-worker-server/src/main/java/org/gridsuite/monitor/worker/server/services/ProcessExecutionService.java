@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -60,11 +61,10 @@ public class ProcessExecutionService {
 
         try {
             List<ProcessStep<T>> steps = process.defineSteps();
-            for (int i = 0; i < steps.size(); i++) {
-                ProcessStep<T> step = steps.get(i);
-                notificationService.updateStepStatus(context.getExecutionId(),
-                    new ProcessExecutionStep(step.getId(), step.getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null));
-            }
+            notificationService.updateStepsStatuses(context.getExecutionId(),
+                IntStream.range(0, steps.size())
+                    .mapToObj(i -> new ProcessExecutionStep(steps.get(i).getId(), steps.get(i).getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null))
+                    .toList());
         } catch (Exception e) {
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
             throw e;

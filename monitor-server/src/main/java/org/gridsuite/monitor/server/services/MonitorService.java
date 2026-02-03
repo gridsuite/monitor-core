@@ -17,6 +17,7 @@ import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,7 @@ public class MonitorService {
     private final ReportService reportService;
     private final ResultService resultService;
     private final ProcessExecutionMapper processExecutionMapper;
+    private final ProcessExecutionStepMapper processExecutionStepMapper;
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
@@ -72,25 +74,40 @@ public class MonitorService {
         });
     }
 
+    private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
+        execution.getSteps().stream()
+            .filter(s -> s.getId().equals(stepEntity.getId()))
+            .findFirst()
+            .ifPresentOrElse(
+                existingStep -> {
+                    existingStep.setStatus(stepEntity.getStatus());
+                    existingStep.setStepType(stepEntity.getStepType());
+                    existingStep.setStepOrder(stepEntity.getStepOrder());
+                    existingStep.setStartedAt(stepEntity.getStartedAt());
+                    existingStep.setCompletedAt(stepEntity.getCompletedAt());
+                    existingStep.setResultId(stepEntity.getResultId());
+                    existingStep.setResultType(stepEntity.getResultType());
+                    existingStep.setReportId(stepEntity.getReportId());
+                },
+                () -> execution.getSteps().add(stepEntity));
+    }
+
     @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
-            execution.getSteps().stream()
-                .filter(s -> s.getId().equals(stepEntity.getId()))
-                .findFirst()
-                .ifPresentOrElse(
-                    existingStep -> {
-                        existingStep.setStatus(stepEntity.getStatus());
-                        existingStep.setStepType(stepEntity.getStepType());
-                        existingStep.setStepOrder(stepEntity.getStepOrder());
-                        existingStep.setStartedAt(stepEntity.getStartedAt());
-                        existingStep.setCompletedAt(stepEntity.getCompletedAt());
-                        existingStep.setResultId(stepEntity.getResultId());
-                        existingStep.setResultType(stepEntity.getResultType());
-                        existingStep.setReportId(stepEntity.getReportId());
-                    },
-                    () -> execution.getSteps().add(stepEntity));
+            updateStep(execution, stepEntity);
+            executionRepository.save(execution);
+        });
+    }
+
+    @Transactional
+    public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+        executionRepository.findById(executionId).ifPresent(execution -> {
+            processExecutionSteps.forEach(processExecutionStep -> {
+                ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+                updateStep(execution, stepEntity);
+            });
             executionRepository.save(execution);
         });
     }
@@ -150,14 +167,14 @@ public class MonitorService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProcessExecutionStep> getStepsInfos(UUID executionId) {
-        return executionRepository.findById(executionId)
-            .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
-                .map(step ->
-                    new ProcessExecutionStep(step.getId(), step.getStepType(), step.getStepOrder(),
-                        step.getStatus(), step.getResultId(), step.getResultType(),
-                        step.getReportId(), step.getStartedAt(), step.getCompletedAt()))
-                .toList())
-            .orElse(List.of());
+    public Optional<List<ProcessExecutionStep>> getStepsInfos(UUID executionId) {
+        Optional<ProcessExecutionEntity> entity = executionRepository.findById(executionId);
+        if (entity.isPresent()) {
+            return entity.map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
+                .map(processExecutionStepMapper::toDto)
+                .toList());
+        } else {
+            return Optional.empty();
+        }
     }
 }

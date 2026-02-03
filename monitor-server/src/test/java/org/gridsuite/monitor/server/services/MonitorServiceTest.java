@@ -12,6 +12,7 @@ import org.gridsuite.monitor.server.dto.Report;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,9 @@ class MonitorServiceTest {
 
     @Spy
     private ProcessExecutionMapper processExecutionMapper;
+
+    @Spy
+    private ProcessExecutionStepMapper processExecutionStepMapper;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;
@@ -377,12 +381,13 @@ class MonitorServiceTest {
 
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
 
-        List<ProcessExecutionStep> result = monitorService.getStepsInfos(executionUuid);
+        Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
 
         ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, null, startedAt1, null);
         ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null, null);
 
-        assertThat(result).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
+        assertThat(result).isPresent();
+        assertThat(result.get()).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
         verify(executionRepository).findById(executionUuid);
     }
 }

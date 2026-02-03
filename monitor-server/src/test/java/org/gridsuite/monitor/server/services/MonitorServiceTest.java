@@ -253,6 +253,89 @@ class MonitorServiceTest {
     }
 
     @Test
+    void updateStepsStatusesShouldUpdateExistingSteps() {
+        UUID stepId1 = UUID.randomUUID();
+        UUID stepId2 = UUID.randomUUID();
+        UUID originalResultId1 = UUID.randomUUID();
+        UUID originalResultId2 = UUID.randomUUID();
+        UUID newResultId1 = UUID.randomUUID();
+        UUID newResultId2 = UUID.randomUUID();
+        UUID newReportId1 = UUID.randomUUID();
+        UUID newReportId2 = UUID.randomUUID();
+        Instant startedAt1 = Instant.now().minusSeconds(60);
+        Instant startedAt2 = Instant.now().minusSeconds(40);
+        Instant completedAt1 = Instant.now();
+        Instant completedAt2 = Instant.now();
+
+        ProcessExecutionStepEntity existingStep1 = ProcessExecutionStepEntity.builder()
+            .id(stepId1)
+            .stepType("LOAD_NETWORK")
+            .status(StepStatus.RUNNING)
+            .resultId(originalResultId1)
+            .startedAt(startedAt1)
+            .build();
+        ProcessExecutionStepEntity existingStep2 = ProcessExecutionStepEntity.builder()
+            .id(stepId2)
+            .stepType("LOAD_FLOW")
+            .status(StepStatus.RUNNING)
+            .resultId(originalResultId2)
+            .startedAt(startedAt2)
+            .build();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(caseUuid)
+            .userId(userId)
+            .status(ProcessStatus.RUNNING)
+            .steps(new ArrayList<>(List.of(existingStep1, existingStep2)))
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        ProcessExecutionStep updateDto1 = ProcessExecutionStep.builder()
+            .id(stepId1)
+            .stepType("LOAD_NETWORK_UPDATED")
+            .status(StepStatus.COMPLETED)
+            .resultId(newResultId1)
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .reportId(newReportId1)
+            .startedAt(startedAt1)
+            .completedAt(completedAt1)
+            .build();
+        ProcessExecutionStep updateDto2 = ProcessExecutionStep.builder()
+            .id(stepId2)
+            .stepType("LOAD_FLOW_UPDATED")
+            .status(StepStatus.COMPLETED)
+            .resultId(newResultId2)
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .reportId(newReportId2)
+            .startedAt(startedAt2)
+            .completedAt(completedAt2)
+            .build();
+        monitorService.updateStepsStatuses(executionId, List.of(updateDto1, updateDto2));
+
+        verify(executionRepository).findById(executionId);
+        assertThat(execution.getSteps()).hasSize(2);
+        ProcessExecutionStepEntity updatedStep1 = execution.getSteps().get(0);
+        assertThat(updatedStep1.getId()).isEqualTo(stepId1);
+        assertThat(updatedStep1.getStepType()).isEqualTo("LOAD_NETWORK_UPDATED");
+        assertThat(updatedStep1.getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(updatedStep1.getResultId()).isEqualTo(newResultId1);
+        assertThat(updatedStep1.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
+        assertThat(updatedStep1.getReportId()).isEqualTo(newReportId1);
+        assertThat(updatedStep1.getCompletedAt()).isEqualTo(completedAt1);
+
+        ProcessExecutionStepEntity updatedStep2 = execution.getSteps().get(1);
+        assertThat(updatedStep2.getId()).isEqualTo(stepId2);
+        assertThat(updatedStep2.getStepType()).isEqualTo("LOAD_FLOW_UPDATED");
+        assertThat(updatedStep2.getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(updatedStep2.getResultId()).isEqualTo(newResultId2);
+        assertThat(updatedStep2.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
+        assertThat(updatedStep2.getReportId()).isEqualTo(newReportId2);
+        assertThat(updatedStep2.getCompletedAt()).isEqualTo(completedAt2);
+
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
     void getReportsShouldReturnReports() {
         UUID reportId1 = UUID.randomUUID();
         UUID reportId2 = UUID.randomUUID();

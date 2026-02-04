@@ -172,4 +172,15 @@ class MonitorControllerTest {
 
         verify(monitorService).getStepsInfos(executionId);
     }
+
+    @Test
+    void getStepsInfosShouldReturn404WhenExecutionNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(monitorService).getStepsInfos(executionId);
+    }
 }

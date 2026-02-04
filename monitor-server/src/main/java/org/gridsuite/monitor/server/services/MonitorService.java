@@ -141,7 +141,7 @@ public class MonitorService {
 
     private List<UUID> getReportIds(UUID executionId) {
         return executionRepository.findById(executionId)
-            .map(execution -> execution.getSteps().stream()
+            .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .map(ProcessExecutionStepEntity::getReportId)
                 .filter(java.util.Objects::nonNull)
                 .toList())
@@ -158,7 +158,7 @@ public class MonitorService {
 
     private List<ResultInfos> getResultInfos(UUID executionId) {
         return executionRepository.findById(executionId)
-                .map(execution -> execution.getSteps().stream()
+            .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .filter(step -> step.getResultId() != null)
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
                 .toList())

@@ -479,4 +479,31 @@ class MonitorServiceTest {
         assertThat(result.get()).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
         verify(executionRepository).findById(executionUuid);
     }
+
+    @Test
+    void getStepsInfosShouldReturnEmptyWhenExecutionNotFound() {
+        UUID executionUuid = UUID.randomUUID();
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
+
+        Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
+
+        assertThat(result).isEmpty();
+        verify(executionRepository).findById(executionUuid);
+    }
+
+    @Test
+    void getStepsInfosShouldReturnEmptyListWhenNoSteps() {
+        UUID executionUuid = UUID.randomUUID();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionUuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .steps(null)
+            .build();
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
+
+        Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEmpty();
+    }
 }

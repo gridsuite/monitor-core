@@ -20,6 +20,7 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -69,6 +70,25 @@ class SecurityAnalysisServiceTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> securityAnalysisService.getResult(RESULT_UUID))
+            .isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void deleteResult() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.DELETE))
+            .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results?resultsUuids=" + RESULT_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess());
+
+        assertThatNoException().isThrownBy(() -> securityAnalysisService.deleteResult(RESULT_UUID));
+    }
+
+    @Test
+    void deleteResultFailed() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.DELETE))
+            .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results?resultsUuids=" + RESULT_UUID))
+            .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> securityAnalysisService.deleteResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
     }
 }

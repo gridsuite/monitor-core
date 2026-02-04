@@ -31,4 +31,9 @@ public class SecurityAnalysisResultProvider implements ResultProvider {
     public String getResult(UUID resultId) {
         return securityAnalysisService.getResult(resultId);
     }
+
+    @Override
+    public void deleteResult(UUID resultId) {
+        securityAnalysisService.deleteResult(resultId);
+    }
 }

@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.server.services;
 
-import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,13 +31,22 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-@RequiredArgsConstructor
 public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
+
+    public MonitorService(ProcessExecutionRepository executionRepository,
+                          NotificationService notificationService,
+                          ReportService reportService,
+                          ResultService resultService) {
+        this.executionRepository = executionRepository;
+        this.notificationService = notificationService;
+        this.reportService = reportService;
+        this.resultService = resultService;
+    }
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
@@ -179,5 +188,30 @@ public class MonitorService {
         } else {
             return Optional.empty();
         }
+    }
+
+    @Transactional
+    public boolean deleteExecution(UUID executionId) {
+        List<ResultInfos> resultIds = new ArrayList<>();
+        List<UUID> reportIds = new ArrayList<>();
+
+        Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
+        if (executionEntity.isPresent()) {
+            Optional.ofNullable(executionEntity.get().getSteps()).orElse(List.of()).forEach(step -> {
+                if (step.getResultId() != null && step.getResultType() != null) {
+                    resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
+                }
+                if (step.getReportId() != null) {
+                    reportIds.add(step.getReportId());
+                }
+            });
+            resultIds.forEach(resultService::deleteResult);
+            reportIds.forEach(reportService::deleteReport);
+
+            executionRepository.deleteById(executionId);
+
+            return true;
+        }
+        return false;
     }
 }

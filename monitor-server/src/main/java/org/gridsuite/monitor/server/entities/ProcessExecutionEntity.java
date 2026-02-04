@@ -23,7 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "processExecution")
+@Table(name = "process_execution")
 public class ProcessExecutionEntity {
 
     @Id

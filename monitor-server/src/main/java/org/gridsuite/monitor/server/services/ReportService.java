@@ -52,4 +52,12 @@ public class ReportService {
 
         return restTemplate.exchange(this.getReportServerURI() + path, HttpMethod.GET, new HttpEntity<>(headers), new ParameterizedTypeReference<ReportPage>() { }).getBody();
     }
+
+    public void deleteReport(UUID reportId) {
+        var path = UriComponentsBuilder.fromPath("{id}")
+            .buildAndExpand(reportId)
+            .toUriString();
+
+        restTemplate.delete(this.getReportServerURI() + path);
+    }
 }

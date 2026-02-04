@@ -497,4 +497,58 @@ class MonitorServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get()).isEmpty();
     }
+
+    @Test
+    void deleteExecutionShouldDeleteResultsAndReports() {
+        UUID reportId1 = UUID.randomUUID();
+        UUID resultId1 = UUID.randomUUID();
+        UUID reportId2 = UUID.randomUUID();
+        UUID resultId2 = UUID.randomUUID();
+        ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .stepOrder(0)
+            .reportId(reportId1)
+            .resultId(resultId1)
+            .build();
+        ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .stepOrder(1)
+            .reportId(reportId2)
+            .resultId(resultId2)
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .build();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .steps(List.of(step0, step1))
+            .build();
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        doNothing().when(executionRepository).deleteById(executionId);
+
+        doNothing().when(reportService).deleteReport(reportId1);
+        doNothing().when(reportService).deleteReport(reportId2);
+        doNothing().when(resultService).deleteResult(any(ResultInfos.class));
+
+        boolean done = monitorService.deleteExecution(executionId);
+        assertThat(done).isTrue();
+
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).deleteById(executionId);
+        verify(reportService).deleteReport(reportId1);
+        verify(reportService).deleteReport(reportId2);
+        verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
+    }
+
+    @Test
+    void deleteExecutionShouldReturnFalseWhenExecutionNotFound() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        boolean done = monitorService.deleteExecution(executionId);
+        assertThat(done).isFalse();
+
+        verify(executionRepository).findById(executionId);
+        verifyNoInteractions(reportService);
+        verifyNoInteractions(resultService);
+        verify(executionRepository, never()).deleteById(executionId);
+    }
 }

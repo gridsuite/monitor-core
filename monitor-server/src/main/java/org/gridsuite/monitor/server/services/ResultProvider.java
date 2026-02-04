@@ -17,4 +17,6 @@ public interface ResultProvider {
     ResultType getType();
 
     String getResult(UUID resultId);
+
+    void deleteResult(UUID resultId);
 }

@@ -50,7 +50,8 @@ class ProcessConfigServiceTest {
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID()
         );
     }
 
@@ -110,7 +111,8 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency3", "contingency4", "contingency5"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID()
         );
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
@@ -134,7 +136,8 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID()
         );
         boolean done = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
         assertThat(done).isFalse();

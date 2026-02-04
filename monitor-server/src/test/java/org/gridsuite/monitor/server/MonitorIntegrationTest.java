@@ -101,7 +101,8 @@ class MonitorIntegrationTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID()));
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID());
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
 
         // Verify message was published
@@ -237,10 +238,13 @@ class MonitorIntegrationTest {
     void processConfigIT() {
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
+        UUID loadflowparametersUuid = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
-                List.of(modificationUuid)
+                List.of(modificationUuid),
+                loadflowparametersUuid
+
         );
         UUID configId = configService.createProcessConfig(securityAnalysisConfig);
         assertThat(processConfigRepository.findById(configId)).isNotEmpty();
@@ -251,10 +255,12 @@ class MonitorIntegrationTest {
 
         UUID updatedParametersUuid = UUID.randomUUID();
         UUID updatedModificationUuid = UUID.randomUUID();
+        UUID updatedLoadflowParametersUuid = UUID.randomUUID();
         SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 updatedParametersUuid,
                 List.of("contingency3", "contingency4"),
-                List.of(updatedModificationUuid)
+                List.of(updatedModificationUuid),
+                updatedLoadflowParametersUuid
         );
         boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
         assertThat(updated).isTrue();

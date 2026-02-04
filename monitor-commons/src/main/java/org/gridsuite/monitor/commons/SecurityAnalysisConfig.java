@@ -15,7 +15,8 @@ import java.util.UUID;
 public record SecurityAnalysisConfig(
     UUID parametersUuid,
     List<String> contingencies,
-    List<UUID> modificationUuids
+    List<UUID> modificationUuids,
+    UUID loadflowParametersUuid
 ) implements ProcessConfig {
 
     @Override

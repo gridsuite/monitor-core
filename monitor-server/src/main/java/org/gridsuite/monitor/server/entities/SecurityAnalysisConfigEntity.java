@@ -49,6 +49,9 @@ public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
     @OrderColumn(name = "pos_contingencies")
     private List<String> contingencies;
 
+    @Column(name = "loadflow_parameters_uuid")
+    private UUID loadflowParametersUuid;
+
     @Override
     public ProcessType getType() {
         return ProcessType.SECURITY_ANALYSIS;

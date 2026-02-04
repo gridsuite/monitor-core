@@ -24,7 +24,8 @@ public class SecurityAnalysisConfigMapper {
         return new SecurityAnalysisConfig(
             entity.getParametersUuid(),
             entity.getContingencies(),
-            entity.getModificationUuids()
+            entity.getModificationUuids(),
+            entity.getLoadflowParametersUuid()
         );
     }
 
@@ -32,5 +33,6 @@ public class SecurityAnalysisConfigMapper {
         entity.setParametersUuid(dto.parametersUuid());
         entity.setContingencies(dto.contingencies());
         entity.setModificationUuids(dto.modificationUuids());
+        entity.setLoadflowParametersUuid(dto.loadflowParametersUuid());
     }
 }

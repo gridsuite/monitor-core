@@ -60,10 +60,13 @@ class MonitorControllerTest {
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
         UUID executionId = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
-                List.of(modificationUuid)
+                List.of(modificationUuid),
+                loadflowParametersUuid
         );
 
         when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))

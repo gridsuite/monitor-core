@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.MessageType;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
@@ -71,7 +72,7 @@ public class ConsumerService {
     }
 
     private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
-        List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), List.class);
+        List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
         monitorService.updateStepsStatuses(executionId, processExecutionSteps);
     }
 
@@ -80,6 +81,14 @@ public class ConsumerService {
             return objectMapper.readValue(payload, clazz);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException("Failed to parse payload as " + clazz.getSimpleName(), e);
+        }
+    }
+
+    private <T> T parsePayload(String payload, TypeReference<T> typeReference) {
+        try {
+            return objectMapper.readValue(payload, typeReference);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException("Failed to parse payload", e);
         }
     }
 }

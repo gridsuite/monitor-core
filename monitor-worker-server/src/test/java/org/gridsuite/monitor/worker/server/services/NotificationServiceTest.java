@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +74,24 @@ class NotificationServiceTest {
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
                     return true;
                 })
+        );
+    }
+
+    @Test
+    void updateStepsStatusesShouldSendStepStatusUpdateMessage() {
+        UUID executionId = UUID.randomUUID();
+        List<ProcessExecutionStep> payload = List.of(new ProcessExecutionStep(), new ProcessExecutionStep());
+
+        notificationService.updateStepsStatuses(executionId, payload);
+
+        verify(streamBridge).send(
+            eq("publishMonitorUpdate-out-0"),
+            argThat((Message<?> message) -> {
+                assertThat(message.getPayload()).isSameAs(payload);
+                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE);
+                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
+                return true;
+            })
         );
     }
 }

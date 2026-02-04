@@ -7,9 +7,11 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
@@ -24,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -150,6 +153,36 @@ class MonitorControllerTest {
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
         verify(monitorService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getStepsInfos() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, UUID.randomUUID(), Instant.now(), null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(UUID.randomUUID(), "applyModifs", 1, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
+        ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
+        List<ProcessExecutionStep> processExecutionStepList = List.of(processExecutionStep1, processExecutionStep2, processExecutionStep3);
+
+        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));
+
+        mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecutionStepList)));
+
+        verify(monitorService).getStepsInfos(executionId);
+    }
+
+    @Test
+    void getStepsInfosShouldReturn404WhenExecutionNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(monitorService).getStepsInfos(executionId);
     }
 
     @Test

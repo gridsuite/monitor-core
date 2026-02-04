@@ -20,6 +20,7 @@ import org.springframework.messaging.support.GenericMessage;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -118,6 +119,37 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(monitorService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void consumeProcessExecutionStepsUpdateMessage() throws JsonProcessingException {
+        UUID executionId = UUID.randomUUID();
+        UUID stepId1 = UUID.randomUUID();
+        UUID stepId2 = UUID.randomUUID();
+        ProcessExecutionStep stepUpdate1 = ProcessExecutionStep.builder()
+            .id(stepId1)
+            .stepType("LOAD_NETWORK")
+            .status(StepStatus.SCHEDULED)
+            .startedAt(Instant.now())
+            .build();
+        ProcessExecutionStep stepUpdate2 = ProcessExecutionStep.builder()
+            .id(stepId2)
+            .stepType("SECURITY_ANALYSIS")
+            .status(StepStatus.SCHEDULED)
+            .startedAt(Instant.now())
+            .build();
+        String payload = objectMapper.writeValueAsString(List.of(stepUpdate1, stepUpdate2));
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
+        Message<String> message = new GenericMessage<>(payload, headers);
+        Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
+
+        consumer.accept(message);
+
+        verify(monitorService).updateStepsStatuses(eq(executionId), any(List.class));
+        verify(monitorService, never()).updateStepStatus(any(), any());
         verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
     }
 }

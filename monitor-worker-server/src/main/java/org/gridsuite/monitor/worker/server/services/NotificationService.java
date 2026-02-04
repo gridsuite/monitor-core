@@ -14,6 +14,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -58,6 +59,14 @@ public class NotificationService {
                 executionId,
                 MessageType.STEP_STATUS_UPDATE,
                 processExecutionStep
+        );
+    }
+
+    public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+        sendMonitorUpdate(
+            executionId,
+            MessageType.STEPS_STATUSES_UPDATE,
+            processExecutionSteps
         );
     }
 }

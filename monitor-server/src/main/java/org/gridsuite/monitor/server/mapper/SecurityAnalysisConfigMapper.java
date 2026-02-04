@@ -8,23 +8,19 @@ package org.gridsuite.monitor.server.mapper;
 
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@Component
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class SecurityAnalysisConfigMapper {
-
-    public SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto) {
+    public static SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto) {
         SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity();
-        entity.setParametersUuid(dto.parametersUuid());
-        entity.setContingencies(dto.contingencies());
-        entity.setModificationUuids(dto.modificationUuids());
+        update(entity, dto);
         return entity;
     }
 
-    public SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity entity) {
+    public static SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity entity) {
         return new SecurityAnalysisConfig(
             entity.getParametersUuid(),
             entity.getContingencies(),
@@ -32,7 +28,7 @@ public class SecurityAnalysisConfigMapper {
         );
     }
 
-    public void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto) {
+    public static void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto) {
         entity.setParametersUuid(dto.parametersUuid());
         entity.setContingencies(dto.contingencies());
         entity.setModificationUuids(dto.modificationUuids());

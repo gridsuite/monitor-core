@@ -11,8 +11,13 @@ import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.Process;
 import org.gridsuite.monitor.worker.server.core.ProcessExecutionContext;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
+import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
+import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +47,28 @@ class ProcessExecutionServiceTest {
     @Mock
     private ProcessConfig processConfig;
 
+    @Mock
+    private NetworkConversionService networkConversionService;
+
+    @Mock
+    private NetworkModificationService networkModificationService;
+
+    @Mock
+    private NetworkModificationRestService networkModificationRestService;
+
+    @Mock
+    private FilterService filterService;
+
+    @Mock
+    private SecurityAnalysisService securityAnalysisService;
+
     private ProcessExecutionService processExecutionService;
+
+    private LoadNetworkStep<ProcessConfig> loadNetworkStep;
+
+    private ApplyModificationsStep<SecurityAnalysisConfig> applyModificationsStep;
+
+    private SecurityAnalysisRunComputationStep runComputationStep;
 
     private static final String EXECUTION_ENV_NAME = "test-env";
 
@@ -52,6 +78,10 @@ class ProcessExecutionServiceTest {
 
         List<Process<? extends ProcessConfig>> processList = List.of(process);
         processExecutionService = new ProcessExecutionService(processList, notificationService, EXECUTION_ENV_NAME);
+
+        loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
     }
 
     @Test
@@ -61,8 +91,26 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
+        when(process.defineSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
+
+        verify(process, times(1)).defineSteps();
+        verify(notificationService, times(1)).updateStepsStatuses(eq(executionId), argThat(steps ->
+            steps.size() == 3 &&
+            steps.get(0).getStatus() == StepStatus.SCHEDULED &&
+            steps.get(0).getId().equals(loadNetworkStep.getId()) &&
+            steps.get(0).getStepType().equals(loadNetworkStep.getType().getName()) &&
+            steps.get(0).getStepOrder() == 0 &&
+            steps.get(1).getStatus() == StepStatus.SCHEDULED &&
+            steps.get(1).getId().equals(applyModificationsStep.getId()) &&
+            steps.get(1).getStepType().equals(applyModificationsStep.getType().getName()) &&
+            steps.get(1).getStepOrder() == 1 &&
+            steps.get(2).getStatus() == StepStatus.SCHEDULED &&
+            steps.get(2).getId().equals(runComputationStep.getId()) &&
+            steps.get(2).getStepType().equals(runComputationStep.getType().getName()) &&
+            steps.get(2).getStepOrder() == 2
+        ));
 
         verify(process).execute(argThat(context ->
                 context.getExecutionId().equals(executionId) &&

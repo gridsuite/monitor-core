@@ -8,6 +8,8 @@ package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 
+import java.util.UUID;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -15,6 +17,7 @@ public interface ProcessStep<C extends ProcessConfig> {
 
     ProcessStepType getType();
 
-    void execute(ProcessStepExecutionContext<C> context);
+    UUID getId();
 
+    void execute(ProcessStepExecutionContext<C> context);
 }

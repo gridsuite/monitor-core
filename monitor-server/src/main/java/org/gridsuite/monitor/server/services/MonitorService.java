@@ -197,7 +197,7 @@ public class MonitorService {
 
         Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
         if (executionEntity.isPresent()) {
-            executionEntity.get().getSteps().forEach(step -> {
+            Optional.ofNullable(executionEntity.get().getSteps()).orElse(List.of()).forEach(step -> {
                 if (step.getResultId() != null && step.getResultType() != null) {
                     resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
                 }

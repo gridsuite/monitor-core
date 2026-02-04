@@ -88,7 +88,7 @@ public class ConsumerService {
         try {
             return objectMapper.readValue(payload, typeReference);
         } catch (JsonProcessingException e) {
-            throw new UncheckedIOException("Failed to parse payload", e);
+            throw new UncheckedIOException("Failed to parse payload as " + typeReference.getType().getTypeName(), e);
         }
     }
 }

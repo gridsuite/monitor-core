@@ -100,6 +100,24 @@ class ConsumerServiceTest {
     }
 
     @Test
+    void consumeMonitorUpdateStepsStatusesThrowsOnInvalidJson() {
+        UUID executionId = UUID.randomUUID();
+        String invalidPayload = "{invalid json}";
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
+        Message<String> message = new GenericMessage<>(invalidPayload, headers);
+        Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
+
+        assertThatThrownBy(() -> consumer.accept(message))
+            .isInstanceOf(UncheckedIOException.class)
+            .hasMessageContaining("Failed to parse payload as java.util.List<org.gridsuite.monitor.commons.ProcessExecutionStep>");
+
+        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(monitorService, never()).updateStepsStatuses(any(), any());
+    }
+
+    @Test
     void consumeProcessExecutionStepUpdateMessage() throws JsonProcessingException {
         UUID executionId = UUID.randomUUID();
         UUID stepId = UUID.randomUUID();

@@ -8,7 +8,9 @@ package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportLog;
+import org.gridsuite.monitor.server.dto.ReportPage;
+import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
@@ -176,20 +178,36 @@ class MonitorIntegrationTest {
         assertThat(execution.getCompletedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(completedAt.truncatedTo(ChronoUnit.MILLIS));
 
         // Mock the report service responses
-        Report report0 = new Report(reportId0, null, "Load Network Report", null, List.of());
-        Report report1 = new Report(reportId1, null, "Security Analysis Report", null, List.of());
-        when(reportService.getReport(reportId0)).thenReturn(report0);
-        when(reportService.getReport(reportId1)).thenReturn(report1);
+        ReportPage reportPage0 = new ReportPage(1, List.of(
+            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
+            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
+        ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
+
+        when(reportService.getReport(reportId0)).thenReturn(reportPage0);
+        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id").value(reportId0.toString()))
-                .andExpect(jsonPath("$[0].message").value("Load Network Report"))
-                .andExpect(jsonPath("$[1].id").value(reportId1.toString()))
-                .andExpect(jsonPath("$[1].message").value("Security Analysis Report"));
+                .andExpect(jsonPath("$[0].number").value(1))
+                .andExpect(jsonPath("$[0].content", hasSize(2)))
+                .andExpect(jsonPath("$[0].content[0].message").value("message1"))
+                .andExpect(jsonPath("$[0].content[0].severity").value(Severity.INFO.toString()))
+                .andExpect(jsonPath("$[0].content[0].depth").value(1))
+                .andExpect(jsonPath("$[0].content[1].message").value("message2"))
+                .andExpect(jsonPath("$[0].content[1].severity").value(Severity.WARN.toString()))
+                .andExpect(jsonPath("$[0].content[1].depth").value(2))
+                .andExpect(jsonPath("$[0].totalElements").value(100))
+                .andExpect(jsonPath("$[0].totalPages").value(10))
+                .andExpect(jsonPath("$[1].number").value(2))
+                .andExpect(jsonPath("$[1].content", hasSize(1)))
+                .andExpect(jsonPath("$[1].content[0].message").value("message3"))
+                .andExpect(jsonPath("$[1].content[0].severity").value(Severity.ERROR.toString()))
+                .andExpect(jsonPath("$[1].content[0].depth").value(3))
+                .andExpect(jsonPath("$[1].totalElements").value(200))
+                .andExpect(jsonPath("$[1].totalPages").value(20));
 
         // Mock the result service responses
         String result0 = "{\"result\": \"success\"}";

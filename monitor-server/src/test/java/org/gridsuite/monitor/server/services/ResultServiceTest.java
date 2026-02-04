@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,5 +58,30 @@ class ResultServiceTest {
         assertThatThrownBy(() -> emptyService.getResult(resultInfos))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void deleteResultShouldDeleteFromCorrectProvider() {
+        UUID resultId = UUID.randomUUID();
+        doNothing().when(resultProvider).deleteResult(resultId);
+        when(resultProvider.getType()).thenReturn(ResultType.SECURITY_ANALYSIS);
+        resultService = new ResultService(List.of(resultProvider));
+        ResultInfos resultInfos = new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS);
+
+        resultService.deleteResult(resultInfos);
+
+        verify(resultProvider).deleteResult(resultId);
+    }
+
+    @Test
+    void deleteResultShouldThrowExceptionWhenProviderNotFound() {
+        UUID resultId = UUID.randomUUID();
+        ResultInfos resultInfos = new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS);
+
+        ResultService emptyService = new ResultService(List.of());
+
+        assertThatThrownBy(() -> emptyService.deleteResult(resultInfos))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
     }
 }

@@ -44,4 +44,16 @@ class SecurityAnalysisResultProviderTest {
         verify(securityAnalysisService).getResult(id);
         verifyNoMoreInteractions(securityAnalysisService);
     }
+
+    @Test
+    void deleteResultShouldDelegateToSecurityAnalysisService() {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(securityAnalysisService).deleteResult(id);
+
+        provider.deleteResult(id);
+
+        verify(securityAnalysisService).deleteResult(id);
+        verifyNoMoreInteractions(securityAnalysisService);
+    }
 }

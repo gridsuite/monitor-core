@@ -6,24 +6,24 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
-import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
+import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class ProcessExecutionMapper {
-    public static ProcessExecution toDto(ProcessExecutionEntity entity) {
-        return new ProcessExecution(
+public class ProcessExecutionStepMapper {
+    public static ProcessExecutionStep toDto(ProcessExecutionStepEntity entity) {
+        return new ProcessExecutionStep(
             entity.getId(),
-            entity.getType(),
-            entity.getCaseUuid(),
+            entity.getStepType(),
+            entity.getStepOrder(),
             entity.getStatus(),
-            entity.getExecutionEnvName(),
-            entity.getScheduledAt(),
+            entity.getResultId(),
+            entity.getResultType(),
+            entity.getReportId(),
             entity.getStartedAt(),
-            entity.getCompletedAt(),
-            entity.getUserId());
+            entity.getCompletedAt());
     }
 }

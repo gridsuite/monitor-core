@@ -7,11 +7,14 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportLog;
+import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.junit.jupiter.api.Test;
@@ -23,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -30,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -79,23 +84,36 @@ class MonitorControllerTest {
     @Test
     void getExecutionReportsShouldReturnListOfReports() throws Exception {
         UUID executionId = UUID.randomUUID();
-        UUID reportId1 = UUID.randomUUID();
-        UUID reportId2 = UUID.randomUUID();
-        Report report1 = new Report(reportId1, null, "Report 1", Severity.INFO, List.of());
-        Report report2 = new Report(reportId2, null, "Report 2", Severity.WARN, List.of());
+        List<ReportLog> reportLogs1 = List.of(
+            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
+            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID()));
+        ReportPage reportPage1 = new ReportPage(1, reportLogs1, 100, 10);
+        List<ReportLog> reportLogs2 = List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID()));
+        ReportPage reportPage2 = new ReportPage(2, reportLogs2, 200, 20);
         when(monitorService.getReports(executionId))
-                .thenReturn(List.of(report1, report2));
+                .thenReturn(List.of(reportPage1, reportPage2));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id").value(reportId1.toString()))
-                .andExpect(jsonPath("$[0].message").value("Report 1"))
-                .andExpect(jsonPath("$[0].severity").value("INFO"))
-                .andExpect(jsonPath("$[1].id").value(reportId2.toString()))
-                .andExpect(jsonPath("$[1].message").value("Report 2"))
-                .andExpect(jsonPath("$[1].severity").value("WARN"));
+                .andExpect(jsonPath("$[0].number").value(1))
+                .andExpect(jsonPath("$[0].content", hasSize(2)))
+                .andExpect(jsonPath("$[0].content[0].message").value("message1"))
+                .andExpect(jsonPath("$[0].content[0].severity").value(Severity.INFO.toString()))
+                .andExpect(jsonPath("$[0].content[0].depth").value(1))
+                .andExpect(jsonPath("$[0].content[1].message").value("message2"))
+                .andExpect(jsonPath("$[0].content[1].severity").value(Severity.WARN.toString()))
+                .andExpect(jsonPath("$[0].content[1].depth").value(2))
+                .andExpect(jsonPath("$[0].totalElements").value(100))
+                .andExpect(jsonPath("$[0].totalPages").value(10))
+                .andExpect(jsonPath("$[1].number").value(2))
+                .andExpect(jsonPath("$[1].content", hasSize(1)))
+                .andExpect(jsonPath("$[1].content[0].message").value("message3"))
+                .andExpect(jsonPath("$[1].content[0].severity").value(Severity.ERROR.toString()))
+                .andExpect(jsonPath("$[1].content[0].depth").value(3))
+                .andExpect(jsonPath("$[1].totalElements").value(200))
+                .andExpect(jsonPath("$[1].totalPages").value(20));
 
         verify(monitorService).getReports(executionId);
     }
@@ -135,5 +153,59 @@ class MonitorControllerTest {
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
         verify(monitorService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getStepsInfos() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, UUID.randomUUID(), Instant.now(), null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(UUID.randomUUID(), "applyModifs", 1, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
+        ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
+        List<ProcessExecutionStep> processExecutionStepList = List.of(processExecutionStep1, processExecutionStep2, processExecutionStep3);
+
+        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));
+
+        mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecutionStepList)));
+
+        verify(monitorService).getStepsInfos(executionId);
+    }
+
+    @Test
+    void getStepsInfosShouldReturn404WhenExecutionNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(monitorService).getStepsInfos(executionId);
+    }
+
+    @Test
+    void deleteExecutionShouldReturnTrue() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.deleteExecution(executionId))
+            .thenReturn(Boolean.TRUE);
+
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isOk());
+
+        verify(monitorService).deleteExecution(executionId);
+    }
+
+    @Test
+    void deleteExecutionShouldReturnFalse() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(monitorService.deleteExecution(executionId))
+            .thenReturn(Boolean.FALSE);
+
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(monitorService).deleteExecution(executionId);
     }
 }

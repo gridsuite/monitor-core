@@ -8,17 +8,17 @@ package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.*;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportLog;
+import org.gridsuite.monitor.server.dto.ReportPage;
+import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
-import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -51,9 +51,6 @@ class MonitorServiceTest {
 
     @InjectMocks
     private MonitorService monitorService;
-
-    @Spy
-    private ProcessExecutionMapper processExecutionMapper;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;
@@ -249,6 +246,89 @@ class MonitorServiceTest {
     }
 
     @Test
+    void updateStepsStatusesShouldUpdateExistingSteps() {
+        UUID stepId1 = UUID.randomUUID();
+        UUID stepId2 = UUID.randomUUID();
+        UUID originalResultId1 = UUID.randomUUID();
+        UUID originalResultId2 = UUID.randomUUID();
+        UUID newResultId1 = UUID.randomUUID();
+        UUID newResultId2 = UUID.randomUUID();
+        UUID newReportId1 = UUID.randomUUID();
+        UUID newReportId2 = UUID.randomUUID();
+        Instant startedAt1 = Instant.now().minusSeconds(60);
+        Instant startedAt2 = Instant.now().minusSeconds(40);
+        Instant completedAt1 = Instant.now();
+        Instant completedAt2 = Instant.now();
+
+        ProcessExecutionStepEntity existingStep1 = ProcessExecutionStepEntity.builder()
+            .id(stepId1)
+            .stepType("LOAD_NETWORK")
+            .status(StepStatus.RUNNING)
+            .resultId(originalResultId1)
+            .startedAt(startedAt1)
+            .build();
+        ProcessExecutionStepEntity existingStep2 = ProcessExecutionStepEntity.builder()
+            .id(stepId2)
+            .stepType("LOAD_FLOW")
+            .status(StepStatus.RUNNING)
+            .resultId(originalResultId2)
+            .startedAt(startedAt2)
+            .build();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(caseUuid)
+            .userId(userId)
+            .status(ProcessStatus.RUNNING)
+            .steps(new ArrayList<>(List.of(existingStep1, existingStep2)))
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        ProcessExecutionStep updateDto1 = ProcessExecutionStep.builder()
+            .id(stepId1)
+            .stepType("LOAD_NETWORK_UPDATED")
+            .status(StepStatus.COMPLETED)
+            .resultId(newResultId1)
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .reportId(newReportId1)
+            .startedAt(startedAt1)
+            .completedAt(completedAt1)
+            .build();
+        ProcessExecutionStep updateDto2 = ProcessExecutionStep.builder()
+            .id(stepId2)
+            .stepType("LOAD_FLOW_UPDATED")
+            .status(StepStatus.COMPLETED)
+            .resultId(newResultId2)
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .reportId(newReportId2)
+            .startedAt(startedAt2)
+            .completedAt(completedAt2)
+            .build();
+        monitorService.updateStepsStatuses(executionId, List.of(updateDto1, updateDto2));
+
+        verify(executionRepository).findById(executionId);
+        assertThat(execution.getSteps()).hasSize(2);
+        ProcessExecutionStepEntity updatedStep1 = execution.getSteps().get(0);
+        assertThat(updatedStep1.getId()).isEqualTo(stepId1);
+        assertThat(updatedStep1.getStepType()).isEqualTo("LOAD_NETWORK_UPDATED");
+        assertThat(updatedStep1.getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(updatedStep1.getResultId()).isEqualTo(newResultId1);
+        assertThat(updatedStep1.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
+        assertThat(updatedStep1.getReportId()).isEqualTo(newReportId1);
+        assertThat(updatedStep1.getCompletedAt()).isEqualTo(completedAt1);
+
+        ProcessExecutionStepEntity updatedStep2 = execution.getSteps().get(1);
+        assertThat(updatedStep2.getId()).isEqualTo(stepId2);
+        assertThat(updatedStep2.getStepType()).isEqualTo("LOAD_FLOW_UPDATED");
+        assertThat(updatedStep2.getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(updatedStep2.getResultId()).isEqualTo(newResultId2);
+        assertThat(updatedStep2.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
+        assertThat(updatedStep2.getReportId()).isEqualTo(newReportId2);
+        assertThat(updatedStep2.getCompletedAt()).isEqualTo(completedAt2);
+
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
     void getReportsShouldReturnReports() {
         UUID reportId1 = UUID.randomUUID();
         UUID reportId2 = UUID.randomUUID();
@@ -268,14 +348,18 @@ class MonitorServiceTest {
                 .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        Report report1 = new Report(reportId1, null, "Report 1", null, List.of());
-        Report report2 = new Report(reportId2, null, "Report 2", null, List.of());
-        when(reportService.getReport(reportId1)).thenReturn(report1);
-        when(reportService.getReport(reportId2)).thenReturn(report2);
 
-        List<Report> result = monitorService.getReports(executionId);
+        ReportPage reportPage1 = new ReportPage(1, List.of(
+            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
+            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
+        ReportPage reportPage2 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        assertThat(result).hasSize(2).containsExactly(report1, report2);
+        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportService.getReport(reportId2)).thenReturn(reportPage2);
+
+        List<ReportPage> result = monitorService.getReports(executionId);
+
+        assertThat(result).hasSize(2).containsExactly(reportPage1, reportPage2);
         verify(executionRepository).findById(executionId);
         verify(reportService).getReport(reportId1);
         verify(reportService).getReport(reportId2);
@@ -360,5 +444,111 @@ class MonitorServiceTest {
 
         assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
         verify(executionRepository).findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name());
+    }
+
+    @Test
+    void getStepsInfos() {
+        UUID executionUuid = UUID.randomUUID();
+        UUID stepId1 = UUID.randomUUID();
+        UUID stepId2 = UUID.randomUUID();
+        Instant startedAt1 = Instant.now();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionUuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .steps(List.of(ProcessExecutionStepEntity.builder().id(stepId1).stepType("loadNetwork").stepOrder(0).status(StepStatus.RUNNING).startedAt(startedAt1).build(),
+                ProcessExecutionStepEntity.builder().id(stepId2).stepType("applyModifs").stepOrder(1).status(StepStatus.SCHEDULED).build()))
+            .build();
+
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
+
+        Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
+
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, null, startedAt1, null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null, null);
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
+        verify(executionRepository).findById(executionUuid);
+    }
+
+    @Test
+    void getStepsInfosShouldReturnEmptyWhenExecutionNotFound() {
+        UUID executionUuid = UUID.randomUUID();
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
+
+        Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
+
+        assertThat(result).isEmpty();
+        verify(executionRepository).findById(executionUuid);
+    }
+
+    @Test
+    void getStepsInfosShouldReturnEmptyListWhenNoSteps() {
+        UUID executionUuid = UUID.randomUUID();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionUuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .steps(null)
+            .build();
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
+
+        Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEmpty();
+    }
+
+    @Test
+    void deleteExecutionShouldDeleteResultsAndReports() {
+        UUID reportId1 = UUID.randomUUID();
+        UUID resultId1 = UUID.randomUUID();
+        UUID reportId2 = UUID.randomUUID();
+        UUID resultId2 = UUID.randomUUID();
+        ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .stepOrder(0)
+            .reportId(reportId1)
+            .resultId(resultId1)
+            .build();
+        ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .stepOrder(1)
+            .reportId(reportId2)
+            .resultId(resultId2)
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .build();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .steps(List.of(step0, step1))
+            .build();
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        doNothing().when(executionRepository).deleteById(executionId);
+
+        doNothing().when(reportService).deleteReport(reportId1);
+        doNothing().when(reportService).deleteReport(reportId2);
+        doNothing().when(resultService).deleteResult(any(ResultInfos.class));
+
+        boolean done = monitorService.deleteExecution(executionId);
+        assertThat(done).isTrue();
+
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).deleteById(executionId);
+        verify(reportService).deleteReport(reportId1);
+        verify(reportService).deleteReport(reportId2);
+        verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
+    }
+
+    @Test
+    void deleteExecutionShouldReturnFalseWhenExecutionNotFound() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        boolean done = monitorService.deleteExecution(executionId);
+        assertThat(done).isFalse();
+
+        verify(executionRepository).findById(executionId);
+        verifyNoInteractions(reportService);
+        verifyNoInteractions(resultService);
+        verify(executionRepository, never()).deleteById(executionId);
     }
 }

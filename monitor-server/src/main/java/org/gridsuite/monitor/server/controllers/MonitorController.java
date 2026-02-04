@@ -11,10 +11,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,8 +53,8 @@ public class MonitorController {
     @GetMapping("/executions/{executionId}/reports")
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports")})
-    public ResponseEntity<List<Report>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<Report> reports = monitorService.getReports(executionId);
+    public ResponseEntity<List<ReportPage>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        List<ReportPage> reports = monitorService.getReports(executionId);
         return ResponseEntity.ok(reports);
     }
 
@@ -71,4 +72,25 @@ public class MonitorController {
     public ResponseEntity<List<ProcessExecution>> getLaunchedProcesses(@Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
         return ResponseEntity.ok(monitorService.getLaunchedProcesses(processType));
     }
+
+    @GetMapping("/executions/{executionId}/step-infos")
+    @Operation(summary = "Get execution steps statuses")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The execution steps statuses"),
+        @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return monitorService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/executions/{executionId}")
+    @Operation(summary = "Delete an execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
+        @ApiResponse(responseCode = "404", description = "Execution was not found")})
+    public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
+        return monitorService.deleteExecution(executionId) ?
+            ResponseEntity.ok().build() :
+            ResponseEntity.notFound().build();
+    }
 }
+

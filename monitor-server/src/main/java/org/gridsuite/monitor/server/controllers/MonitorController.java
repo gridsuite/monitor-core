@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
@@ -70,5 +71,15 @@ public class MonitorController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The launched processes")})
     public ResponseEntity<List<ProcessExecution>> getLaunchedProcesses(@Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
         return ResponseEntity.ok(monitorService.getLaunchedProcesses(processType));
+    }
+
+    @GetMapping("/executions/{executionId}/step-infos")
+    @Operation(summary = "Get execution steps statuses")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The execution steps statuses"),
+        @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return monitorService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

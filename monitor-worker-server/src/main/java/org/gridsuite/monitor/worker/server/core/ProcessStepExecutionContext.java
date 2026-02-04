@@ -25,7 +25,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     private final ProcessExecutionContext<C> processContext;
 
     @Getter
-    private final UUID stepExecutionId = UUID.randomUUID();
+    private final UUID stepExecutionId;
     @Getter
     private final int stepOrder;
     @Getter
@@ -39,8 +39,9 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     @Setter
     private ResultInfos resultInfos;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, int stepOrder) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, UUID stepId, int stepOrder) {
         this.processContext = processContext;
+        this.stepExecutionId = stepId;
         this.processStepType = processStepType;
         this.reportInfos = new ReportInfos(UUID.randomUUID(), ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()

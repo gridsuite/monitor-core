@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -53,6 +54,7 @@ public class ConsumerService {
             switch (messageType) {
                 case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message);
                 case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, message);
+                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, message);
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
             }
         };
@@ -66,6 +68,11 @@ public class ConsumerService {
     private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
         monitorService.updateStepStatus(executionId, processExecutionStep);
+    }
+
+    private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
+        List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), List.class);
+        monitorService.updateStepsStatuses(executionId, processExecutionSteps);
     }
 
     private <T> T parsePayload(String payload, Class<T> clazz) {

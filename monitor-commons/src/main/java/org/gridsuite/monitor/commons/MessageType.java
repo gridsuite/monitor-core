@@ -11,5 +11,6 @@ package org.gridsuite.monitor.commons;
  */
 public enum MessageType {
     EXECUTION_STATUS_UPDATE,
-    STEP_STATUS_UPDATE
+    STEP_STATUS_UPDATE,
+    STEPS_STATUSES_UPDATE,
 }

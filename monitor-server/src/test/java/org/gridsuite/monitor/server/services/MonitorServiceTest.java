@@ -8,7 +8,9 @@ package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.*;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportLog;
+import org.gridsuite.monitor.server.dto.ReportPage;
+import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
@@ -268,14 +270,18 @@ class MonitorServiceTest {
                 .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        Report report1 = new Report(reportId1, null, "Report 1", null, List.of());
-        Report report2 = new Report(reportId2, null, "Report 2", null, List.of());
-        when(reportService.getReport(reportId1)).thenReturn(report1);
-        when(reportService.getReport(reportId2)).thenReturn(report2);
 
-        List<Report> result = monitorService.getReports(executionId);
+        ReportPage reportPage1 = new ReportPage(1, List.of(
+            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
+            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
+        ReportPage reportPage2 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        assertThat(result).hasSize(2).containsExactly(report1, report2);
+        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportService.getReport(reportId2)).thenReturn(reportPage2);
+
+        List<ReportPage> result = monitorService.getReports(executionId);
+
+        assertThat(result).hasSize(2).containsExactly(reportPage1, reportPage2);
         verify(executionRepository).findById(executionId);
         verify(reportService).getReport(reportId1);
         verify(reportService).getReport(reportId2);

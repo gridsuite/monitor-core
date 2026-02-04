@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.services;
 
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportPage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
@@ -43,14 +43,14 @@ public class ReportService {
         return this.reportServerBaseUri + DELIMITER + REPORT_API_VERSION + DELIMITER + "reports" + DELIMITER;
     }
 
-    public Report getReport(UUID reportId) {
-        var uriBuilder = UriComponentsBuilder.fromPath("{id}");
+    public ReportPage getReport(UUID reportId) {
+        var uriBuilder = UriComponentsBuilder.fromPath("{id}/logs");
 
         var path = uriBuilder.buildAndExpand(reportId).toUriString();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        return restTemplate.exchange(this.getReportServerURI() + path, HttpMethod.GET, new HttpEntity<>(headers), new ParameterizedTypeReference<Report>() { }).getBody();
+        return restTemplate.exchange(this.getReportServerURI() + path, HttpMethod.GET, new HttpEntity<>(headers), new ParameterizedTypeReference<ReportPage>() { }).getBody();
     }
 
     public void deleteReport(UUID reportId) {

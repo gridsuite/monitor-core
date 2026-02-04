@@ -12,7 +12,7 @@ import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
@@ -121,7 +121,7 @@ public class MonitorService {
     }
 
     @Transactional(readOnly = true)
-    public List<Report> getReports(UUID executionId) {
+    public List<ReportPage> getReports(UUID executionId) {
         List<UUID> reportIds = getReportIds(executionId);
         return reportIds.stream()
                 .map(reportService::getReport)

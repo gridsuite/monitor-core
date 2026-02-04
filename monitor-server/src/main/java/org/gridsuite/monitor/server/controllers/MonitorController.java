@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.Report;
+import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,8 +52,8 @@ public class MonitorController {
     @GetMapping("/executions/{executionId}/reports")
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports")})
-    public ResponseEntity<List<Report>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<Report> reports = monitorService.getReports(executionId);
+    public ResponseEntity<List<ReportPage>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        List<ReportPage> reports = monitorService.getReports(executionId);
         return ResponseEntity.ok(reports);
     }
 

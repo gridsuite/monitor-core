@@ -13,15 +13,12 @@ import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
-import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
-import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -54,12 +51,6 @@ class MonitorServiceTest {
 
     @InjectMocks
     private MonitorService monitorService;
-
-    @Spy
-    private ProcessExecutionMapper processExecutionMapper;
-
-    @Spy
-    private ProcessExecutionStepMapper processExecutionStepMapper;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;

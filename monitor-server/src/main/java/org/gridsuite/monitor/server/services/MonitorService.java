@@ -38,8 +38,6 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
-    private final ProcessExecutionMapper processExecutionMapper;
-    private final ProcessExecutionStepMapper processExecutionStepMapper;
 
     @Transactional
     public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
@@ -168,7 +166,7 @@ public class MonitorService {
     @Transactional(readOnly = true)
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
-            .map(processExecutionMapper::toDto).toList();
+            .map(ProcessExecutionMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -176,7 +174,7 @@ public class MonitorService {
         Optional<ProcessExecutionEntity> entity = executionRepository.findById(executionId);
         if (entity.isPresent()) {
             return entity.map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
-                .map(processExecutionStepMapper::toDto)
+                .map(ProcessExecutionStepMapper::toDto)
                 .toList());
         } else {
             return Optional.empty();

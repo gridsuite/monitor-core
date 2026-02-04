@@ -8,14 +8,13 @@ package org.gridsuite.monitor.server.mapper;
 
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@Component
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class ProcessExecutionMapper {
-    public ProcessExecution toDto(ProcessExecutionEntity entity) {
+    public static ProcessExecution toDto(ProcessExecutionEntity entity) {
         return new ProcessExecution(
             entity.getId(),
             entity.getType(),

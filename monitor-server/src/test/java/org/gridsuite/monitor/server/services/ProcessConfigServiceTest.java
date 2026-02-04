@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -45,9 +44,6 @@ class ProcessConfigServiceTest {
     private ProcessConfigService processConfigService;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
-
-    @Spy
-    private SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
 
     @BeforeEach
     void setUp() {
@@ -85,7 +81,7 @@ class ProcessConfigServiceTest {
     @Test
     void getSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
 
@@ -109,7 +105,7 @@ class ProcessConfigServiceTest {
     @Test
     void updateSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),

@@ -21,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -80,7 +79,7 @@ public class MonitorController {
         @ApiResponse(responseCode = "200", description = "The execution steps statuses"),
         @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        Optional<List<ProcessExecutionStep>> processExecutionStepList = monitorService.getStepsInfos(executionId);
-        return processExecutionStepList.map(list -> ResponseEntity.ok().body(list)).orElseGet(() -> ResponseEntity.notFound().build());
+        return monitorService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

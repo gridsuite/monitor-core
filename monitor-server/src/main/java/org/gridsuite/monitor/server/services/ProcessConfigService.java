@@ -25,17 +25,14 @@ import java.util.UUID;
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
 
-    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
-
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository) {
         this.processConfigRepository = processConfigRepository;
-        this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
     }
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
         AbstractProcessConfigEntity entity = switch (processConfig) {
-            case SecurityAnalysisConfig sac -> securityAnalysisConfigMapper.toEntity(sac);
+            case SecurityAnalysisConfig sac -> SecurityAnalysisConfigMapper.toEntity(sac);
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         };
         return processConfigRepository.save(entity).getId();
@@ -45,7 +42,7 @@ public class ProcessConfigService {
     public Optional<ProcessConfig> getProcessConfig(UUID processConfigUuid) {
         return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
             case SecurityAnalysisConfigEntity sae ->
-                Optional.of((ProcessConfig) securityAnalysisConfigMapper.toDto(sae));
+                Optional.of((ProcessConfig) SecurityAnalysisConfigMapper.toDto(sae));
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
         });
     }
@@ -59,7 +56,7 @@ public class ProcessConfigService {
                 }
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
-                        securityAnalysisConfigMapper.update((SecurityAnalysisConfigEntity) entity, sac);
+                        SecurityAnalysisConfigMapper.update((SecurityAnalysisConfigEntity) entity, sac);
                     default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
                 return true;

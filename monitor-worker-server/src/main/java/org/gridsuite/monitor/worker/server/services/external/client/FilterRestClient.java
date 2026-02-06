@@ -3,8 +3,9 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.filter.AbstractFilter;
@@ -24,7 +25,7 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class FilterRestService {
+public class FilterRestClient {
     private static final String FILTER_SERVER_API_VERSION = "v1";
 
     private static final String DELIMITER = "/";
@@ -33,8 +34,8 @@ public class FilterRestService {
 
     private final RestTemplate restTemplate;
 
-    public FilterRestService(@Value("${gridsuite.services.filter-server.base-uri:http://filter-server/}") String filterServerBaseUri,
-                             RestTemplateBuilder restTemplateBuilder) {
+    public FilterRestClient(@Value("${gridsuite.services.filter-server.base-uri:http://filter-server/}") String filterServerBaseUri,
+                            RestTemplateBuilder restTemplateBuilder) {
         this.filterServerBaseUri = filterServerBaseUri;
         this.restTemplate = restTemplateBuilder.build();
     }

@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +23,7 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.HttpServerErrorException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,10 +33,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RestClientTest(NetworkModificationRestService.class)
-class NetworkModificationRestServiceTest {
+@RestClientTest(NetworkModificationRestClient.class)
+class NetworkModificationRestClientTest {
     @Autowired
-    private NetworkModificationRestService networkModificationRestService;
+    private NetworkModificationRestClient networkModificationRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -54,39 +55,37 @@ class NetworkModificationRestServiceTest {
 
     @Test
     void getModifications() {
+        UUID[] modificationUuids = {MODIFICATION_1_UUID, MODIFICATION_2_UUID};
+
         ModificationInfos modificationInfos1 = LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build();
         ModificationInfos modificationInfos2 = LoadModificationInfos.builder().equipmentId("load2").q0(new AttributeModification<>(null, OperationType.UNSET)).build();
 
-        List<ModificationInfos> modificationInfos = List.of(modificationInfos1, modificationInfos2);
-        ModificationInfos[] modificationsArray = modificationInfos.toArray(ModificationInfos[]::new);
+        ModificationInfos[] modificationInfos = {modificationInfos1, modificationInfos2};
 
-        try {
-            server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-                .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications?uuids=" + MODIFICATION_1_UUID + "&uuids=" + MODIFICATION_2_UUID + "&onlyMetadata=false"))
-                .andRespond(MockRestResponseCreators.withSuccess()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(objectMapper.writeValueAsString(modificationsArray)));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        for (int i = 0; i < modificationUuids.length; i++) {
+            ModificationInfos[] modificationsArray = {modificationInfos[i]};
+            try {
+                server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+                    .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modification/" + modificationUuids[i] + "/network-modifications?onlyMetadata=false"))
+                    .andRespond(MockRestResponseCreators.withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(modificationsArray)));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of(MODIFICATION_1_UUID, MODIFICATION_2_UUID));
-        assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(modificationInfos);
+        List<ModificationInfos> resultListModifications = networkModificationRestClient.getModifications(Arrays.asList(modificationUuids));
+        assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(Arrays.asList(modificationInfos));
     }
 
     @Test
     void getModificationsNotFound() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications?uuids=" + MODIFICATION_ERROR_UUID + "&onlyMetadata=false"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modification/" + MODIFICATION_ERROR_UUID + "/network-modifications?onlyMetadata=false"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);
-        assertThatThrownBy(() -> networkModificationRestService.getModifications(modificationsUuids)).isInstanceOf(HttpServerErrorException.InternalServerError.class);
-    }
-
-    @Test
-    void getEmptyModifications() {
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of());
-        assertThat(resultListModifications).isEmpty();
+        assertThatThrownBy(() -> networkModificationRestClient.getModifications(modificationsUuids)).isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
 }

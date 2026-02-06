@@ -9,7 +9,7 @@ package org.gridsuite.monitor.worker.server.core;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.StepExecutionService;
+import org.gridsuite.monitor.worker.server.services.internal.StepExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

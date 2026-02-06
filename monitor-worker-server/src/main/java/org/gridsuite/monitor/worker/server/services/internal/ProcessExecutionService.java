@@ -3,19 +3,18 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.internal;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.Process;
 import org.gridsuite.monitor.worker.server.core.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.worker.server.services.messaging.NotificationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -59,19 +57,9 @@ public class ProcessExecutionService {
             executionEnvName
         );
 
-        try {
-            List<ProcessStep<T>> steps = process.defineSteps();
-            notificationService.updateStepsStatuses(context.getExecutionId(),
-                IntStream.range(0, steps.size())
-                    .mapToObj(i -> new ProcessExecutionStep(steps.get(i).getId(), steps.get(i).getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null))
-                    .toList());
-        } catch (Exception e) {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
-            throw e;
-        }
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
 
         try {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
             process.execute(context);
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
         } catch (Exception e) {
@@ -84,7 +72,6 @@ public class ProcessExecutionService {
         ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
             status,
             envName,
-            status == ProcessStatus.RUNNING ? Instant.now() : null,
             status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
         );
 

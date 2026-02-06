@@ -3,9 +3,10 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
  */
 
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.modification.dto.ModificationInfos;
@@ -23,15 +24,15 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class NetworkModificationRestService {
+public class NetworkModificationRestClient {
     private static final String NETWORK_MODIFICATION_SERVER_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
     private final RestTemplate networkModificationServerRest;
     private final String networkModificationServerBaseUri;
 
-    public NetworkModificationRestService(@Value("${gridsuite.services.network-modification-server.base-uri:http://network-modification-server/}") String networkModificationServerBaseUri,
-                                          RestTemplateBuilder restTemplateBuilder) {
+    public NetworkModificationRestClient(@Value("${gridsuite.services.network-modification-server.base-uri:http://network-modification-server/}") String networkModificationServerBaseUri,
+                                         RestTemplateBuilder restTemplateBuilder) {
         this.networkModificationServerRest = restTemplateBuilder.build();
         this.networkModificationServerBaseUri = networkModificationServerBaseUri;
     }

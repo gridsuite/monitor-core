@@ -1,4 +1,11 @@
-package org.gridsuite.monitor.worker.server.services;
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
+ */
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
@@ -18,8 +25,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Service
-public class SecurityAnalysisService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisService.class);
+public class SecurityAnalysisRestClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisRestClient.class);
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -32,7 +39,7 @@ public class SecurityAnalysisService {
         return this.securityAnalysisServerBaseUri + DELIMITER + SA_API_VERSION + DELIMITER;
     }
 
-    public SecurityAnalysisService(
+    public SecurityAnalysisRestClient(
         RestTemplateBuilder restTemplateBuilder,
         @Value("${gridsuite.services.security-analysis-server.base-uri:http://security-analysis-server/}") String securityAnalysisServerBaseUri) {
         this.securityAnalysisServerBaseUri = securityAnalysisServerBaseUri;

@@ -16,7 +16,7 @@ import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
-import org.gridsuite.monitor.server.services.MonitorService;
+import org.gridsuite.monitor.server.services.internal.MonitorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.services.internal;
 
 import org.gridsuite.monitor.commons.*;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
@@ -14,6 +14,8 @@ import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.services.external.client.ReportRestClient;
+import org.gridsuite.monitor.server.services.messaging.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +46,7 @@ class MonitorServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private ReportService reportService;
+    private ReportRestClient reportRestClient;
 
     @Mock
     private ResultService resultService;
@@ -354,15 +356,15 @@ class MonitorServiceTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
         ReportPage reportPage2 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
-        when(reportService.getReport(reportId2)).thenReturn(reportPage2);
+        when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestClient.getReport(reportId2)).thenReturn(reportPage2);
 
         List<ReportPage> result = monitorService.getReports(executionId);
 
         assertThat(result).hasSize(2).containsExactly(reportPage1, reportPage2);
         verify(executionRepository).findById(executionId);
-        verify(reportService).getReport(reportId1);
-        verify(reportService).getReport(reportId2);
+        verify(reportRestClient).getReport(reportId1);
+        verify(reportRestClient).getReport(reportId2);
     }
 
     @Test
@@ -525,8 +527,8 @@ class MonitorServiceTest {
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         doNothing().when(executionRepository).deleteById(executionId);
 
-        doNothing().when(reportService).deleteReport(reportId1);
-        doNothing().when(reportService).deleteReport(reportId2);
+        doNothing().when(reportRestClient).deleteReport(reportId1);
+        doNothing().when(reportRestClient).deleteReport(reportId2);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
         boolean done = monitorService.deleteExecution(executionId);
@@ -534,8 +536,8 @@ class MonitorServiceTest {
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).deleteById(executionId);
-        verify(reportService).deleteReport(reportId1);
-        verify(reportService).deleteReport(reportId2);
+        verify(reportRestClient).deleteReport(reportId1);
+        verify(reportRestClient).deleteReport(reportId2);
         verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
     }
 
@@ -547,7 +549,7 @@ class MonitorServiceTest {
         assertThat(done).isFalse();
 
         verify(executionRepository).findById(executionId);
-        verifyNoInteractions(reportService);
+        verifyNoInteractions(reportRestClient);
         verifyNoInteractions(resultService);
         verify(executionRepository, never()).deleteById(executionId);
     }

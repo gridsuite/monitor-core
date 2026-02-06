@@ -16,7 +16,7 @@ import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
-import org.gridsuite.monitor.server.services.MonitorService;
+import org.gridsuite.monitor.server.services.internal.MonitorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

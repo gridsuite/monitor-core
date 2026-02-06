@@ -4,9 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.services.external.adapter;
 
 import org.gridsuite.monitor.commons.ResultType;
+import org.gridsuite.monitor.server.services.internal.ResultProvider;
+import org.gridsuite.monitor.server.services.external.client.SecurityAnalysisRestClient;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -16,10 +18,10 @@ import java.util.UUID;
  */
 @Service
 public class SecurityAnalysisResultProvider implements ResultProvider {
-    private final SecurityAnalysisService securityAnalysisService;
+    private final SecurityAnalysisRestClient securityAnalysisRestClient;
 
-    public SecurityAnalysisResultProvider(SecurityAnalysisService securityAnalysisService) {
-        this.securityAnalysisService = securityAnalysisService;
+    public SecurityAnalysisResultProvider(SecurityAnalysisRestClient securityAnalysisRestClient) {
+        this.securityAnalysisRestClient = securityAnalysisRestClient;
     }
 
     @Override
@@ -29,11 +31,11 @@ public class SecurityAnalysisResultProvider implements ResultProvider {
 
     @Override
     public String getResult(UUID resultId) {
-        return securityAnalysisService.getResult(resultId);
+        return securityAnalysisRestClient.getResult(resultId);
     }
 
     @Override
     public void deleteResult(UUID resultId) {
-        securityAnalysisService.deleteResult(resultId);
+        securityAnalysisRestClient.deleteResult(resultId);
     }
 }

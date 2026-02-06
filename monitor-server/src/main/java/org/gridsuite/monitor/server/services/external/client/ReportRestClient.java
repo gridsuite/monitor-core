@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.services.external.client;
 
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +24,7 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class ReportService {
+public class ReportRestClient {
     private static final String REPORT_API_VERSION = "v1";
 
     private static final String DELIMITER = "/";
@@ -33,8 +33,8 @@ public class ReportService {
 
     private final RestTemplate restTemplate;
 
-    public ReportService(@Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
-                         RestTemplateBuilder restTemplateBuilder) {
+    public ReportRestClient(@Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
+                            RestTemplateBuilder restTemplateBuilder) {
         this.reportServerBaseUri = reportServerBaseUri;
         this.restTemplate = restTemplateBuilder.build();
     }

@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.services.internal;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
@@ -18,6 +18,8 @@ import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.services.messaging.NotificationService;
+import org.gridsuite.monitor.server.services.external.client.ReportRestClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,16 +37,16 @@ public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
-    private final ReportService reportService;
+    private final ReportRestClient reportRestClient;
     private final ResultService resultService;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
-                          ReportService reportService,
+                          ReportRestClient reportRestClient,
                           ResultService resultService) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
-        this.reportService = reportService;
+        this.reportRestClient = reportRestClient;
         this.resultService = resultService;
     }
 
@@ -142,7 +144,7 @@ public class MonitorService {
     public List<ReportPage> getReports(UUID executionId) {
         List<UUID> reportIds = getReportIds(executionId);
         return reportIds.stream()
-                .map(reportService::getReport)
+                .map(reportRestClient::getReport)
                 .toList();
     }
 
@@ -206,7 +208,7 @@ public class MonitorService {
                 }
             });
             resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportService::deleteReport);
+            reportIds.forEach(reportRestClient::deleteReport);
 
             executionRepository.deleteById(executionId);
 

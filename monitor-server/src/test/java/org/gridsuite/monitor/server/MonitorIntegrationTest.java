@@ -14,11 +14,11 @@ import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.ConsumerService;
+import org.gridsuite.monitor.server.services.messaging.ConsumerService;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
-import org.gridsuite.monitor.server.services.ReportService;
-import org.gridsuite.monitor.server.services.MonitorService;
-import org.gridsuite.monitor.server.services.ResultService;
+import org.gridsuite.monitor.server.services.external.client.ReportRestClient;
+import org.gridsuite.monitor.server.services.internal.MonitorService;
+import org.gridsuite.monitor.server.services.internal.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ReportService reportService;
+    private ReportRestClient reportRestClient;
 
     @MockitoBean
     private ResultService resultService;
@@ -183,8 +183,8 @@ class MonitorIntegrationTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
         ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        when(reportService.getReport(reportId0)).thenReturn(reportPage0);
-        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestClient.getReport(reportId0)).thenReturn(reportPage0);
+        when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))

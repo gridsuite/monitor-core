@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.services.external.client;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -27,15 +27,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-@RestClientTest(SecurityAnalysisService.class)
-@ContextConfiguration(classes = { SecurityAnalysisService.class })
-class SecurityAnalysisServiceTest {
+@RestClientTest(SecurityAnalysisRestClient.class)
+@ContextConfiguration(classes = { SecurityAnalysisRestClient.class })
+class SecurityAnalysisRestClientTest {
 
     private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final String RESULT_BODY = "{\"status\":\"OK\"}";
 
     @Autowired
-    private SecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -56,7 +56,7 @@ class SecurityAnalysisServiceTest {
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = securityAnalysisService.getResult(RESULT_UUID);
+        String result = securityAnalysisRestClient.getResult(RESULT_UUID);
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -69,7 +69,7 @@ class SecurityAnalysisServiceTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisService.getResult(RESULT_UUID))
+        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
     }
 
@@ -79,7 +79,7 @@ class SecurityAnalysisServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results?resultsUuids=" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withSuccess());
 
-        assertThatNoException().isThrownBy(() -> securityAnalysisService.deleteResult(RESULT_UUID));
+        assertThatNoException().isThrownBy(() -> securityAnalysisRestClient.deleteResult(RESULT_UUID));
     }
 
     @Test
@@ -88,7 +88,7 @@ class SecurityAnalysisServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results?resultsUuids=" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisService.deleteResult(RESULT_UUID))
+        assertThatThrownBy(() -> securityAnalysisRestClient.deleteResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
     }
 }

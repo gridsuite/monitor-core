@@ -4,9 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.services.external.adapter;
 
 import org.gridsuite.monitor.commons.ResultType;
+import org.gridsuite.monitor.server.services.external.client.SecurityAnalysisRestClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -19,11 +20,11 @@ import static org.mockito.Mockito.*;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 class SecurityAnalysisResultProviderTest {
-    private final SecurityAnalysisService securityAnalysisService =
-        Mockito.mock(SecurityAnalysisService.class);
+    private final SecurityAnalysisRestClient securityAnalysisRestClient =
+        Mockito.mock(SecurityAnalysisRestClient.class);
 
     private final SecurityAnalysisResultProvider provider =
-        new SecurityAnalysisResultProvider(securityAnalysisService);
+        new SecurityAnalysisResultProvider(securityAnalysisRestClient);
 
     @Test
     void getTypeShouldReturnSecurityAnalysis() {
@@ -36,24 +37,24 @@ class SecurityAnalysisResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(securityAnalysisService.getResult(id)).thenReturn(expected);
+        when(securityAnalysisRestClient.getResult(id)).thenReturn(expected);
 
         String result = provider.getResult(id);
 
         assertThat(result).isEqualTo(expected);
-        verify(securityAnalysisService).getResult(id);
-        verifyNoMoreInteractions(securityAnalysisService);
+        verify(securityAnalysisRestClient).getResult(id);
+        verifyNoMoreInteractions(securityAnalysisRestClient);
     }
 
     @Test
     void deleteResultShouldDelegateToSecurityAnalysisService() {
         UUID id = UUID.randomUUID();
 
-        doNothing().when(securityAnalysisService).deleteResult(id);
+        doNothing().when(securityAnalysisRestClient).deleteResult(id);
 
         provider.deleteResult(id);
 
-        verify(securityAnalysisService).deleteResult(id);
-        verifyNoMoreInteractions(securityAnalysisService);
+        verify(securityAnalysisRestClient).deleteResult(id);
+        verifyNoMoreInteractions(securityAnalysisRestClient);
     }
 }

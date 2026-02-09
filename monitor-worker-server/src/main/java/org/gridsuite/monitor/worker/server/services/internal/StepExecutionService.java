@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.internal;
 
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
@@ -12,6 +12,8 @@ import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.services.external.client.ReportRestClient;
+import org.gridsuite.monitor.worker.server.services.messaging.NotificationService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,7 +26,7 @@ import java.time.Instant;
 public class StepExecutionService<C extends ProcessConfig> {
 
     private final NotificationService notificationService;
-    private final ReportService reportService;
+    private final ReportRestClient reportRestClient;
 
     public void skipStep(ProcessStepExecutionContext<?> context, ProcessStep<?> step) {
         ProcessExecutionStep executionStep = new ProcessExecutionStep(
@@ -57,7 +59,7 @@ public class StepExecutionService<C extends ProcessConfig> {
 
         try {
             step.execute(context);
-            reportService.sendReport(context.getReportInfos());
+            reportRestClient.sendReport(context.getReportInfos());
             updateStepStatus(context, StepStatus.COMPLETED, step);
         } catch (Exception e) {
             updateStepStatus(context, StepStatus.FAILED, step);

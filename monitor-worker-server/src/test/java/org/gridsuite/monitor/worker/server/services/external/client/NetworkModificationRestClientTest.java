@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,10 +32,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RestClientTest(NetworkModificationRestService.class)
-class NetworkModificationRestServiceTest {
+@RestClientTest(NetworkModificationRestClient.class)
+class NetworkModificationRestClientTest {
     @Autowired
-    private NetworkModificationRestService networkModificationRestService;
+    private NetworkModificationRestClient networkModificationRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -70,7 +70,7 @@ class NetworkModificationRestServiceTest {
             throw new RuntimeException(e);
         }
 
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of(MODIFICATION_1_UUID, MODIFICATION_2_UUID));
+        List<ModificationInfos> resultListModifications = networkModificationRestClient.getModifications(List.of(MODIFICATION_1_UUID, MODIFICATION_2_UUID));
         assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(modificationInfos);
     }
 
@@ -81,12 +81,12 @@ class NetworkModificationRestServiceTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);
-        assertThatThrownBy(() -> networkModificationRestService.getModifications(modificationsUuids)).isInstanceOf(HttpServerErrorException.InternalServerError.class);
+        assertThatThrownBy(() -> networkModificationRestClient.getModifications(modificationsUuids)).isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
 
     @Test
     void getEmptyModifications() {
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of());
+        List<ModificationInfos> resultListModifications = networkModificationRestClient.getModifications(List.of());
         assertThat(resultListModifications).isEmpty();
     }
 }

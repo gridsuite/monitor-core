@@ -13,7 +13,7 @@ import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
-import org.gridsuite.monitor.worker.server.services.StepExecutionService;
+import org.gridsuite.monitor.worker.server.services.internal.StepExecutionService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

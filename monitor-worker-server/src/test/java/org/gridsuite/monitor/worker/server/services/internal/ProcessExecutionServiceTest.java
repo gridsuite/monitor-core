@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.internal;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStatusUpdate;
@@ -18,6 +18,12 @@ import org.gridsuite.monitor.worker.server.core.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
+import org.gridsuite.monitor.worker.server.services.external.adapter.FilterService;
+import org.gridsuite.monitor.worker.server.services.external.adapter.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.external.adapter.NetworkModificationService;
+import org.gridsuite.monitor.worker.server.services.external.client.NetworkModificationRestClient;
+import org.gridsuite.monitor.worker.server.services.external.client.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.worker.server.services.messaging.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,13 +60,13 @@ class ProcessExecutionServiceTest {
     private NetworkModificationService networkModificationService;
 
     @Mock
-    private NetworkModificationRestService networkModificationRestService;
+    private NetworkModificationRestClient networkModificationRestClient;
 
     @Mock
     private FilterService filterService;
 
     @Mock
-    private SecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     private ProcessExecutionService processExecutionService;
 
@@ -80,8 +86,8 @@ class ProcessExecutionServiceTest {
         processExecutionService = new ProcessExecutionService(processList, notificationService, EXECUTION_ENV_NAME);
 
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
-        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService);
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, filterService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,13 +24,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-@RestClientTest(SecurityAnalysisService.class)
-@ContextConfiguration(classes = {MonitorWorkerConfig.class, SecurityAnalysisService.class})
-class SecurityAnalysisServiceTest {
+@RestClientTest(SecurityAnalysisRestClient.class)
+@ContextConfiguration(classes = {MonitorWorkerConfig.class, SecurityAnalysisRestClient.class})
+class SecurityAnalysisRestClientTest {
     private static final UUID RESULT_UUID = UUID.randomUUID();
 
     @Autowired
-    private SecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -52,7 +52,7 @@ class SecurityAnalysisServiceTest {
             .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(result)))
             .andRespond(MockRestResponseCreators.withSuccess());
 
-        assertThatNoException().isThrownBy(() -> securityAnalysisService.saveResult(RESULT_UUID, result));
+        assertThatNoException().isThrownBy(() -> securityAnalysisRestClient.saveResult(RESULT_UUID, result));
     }
 
     @Test
@@ -62,6 +62,6 @@ class SecurityAnalysisServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results/" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisService.saveResult(RESULT_UUID, result)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> securityAnalysisRestClient.saveResult(RESULT_UUID, result)).isInstanceOf(RestClientException.class);
     }
 }

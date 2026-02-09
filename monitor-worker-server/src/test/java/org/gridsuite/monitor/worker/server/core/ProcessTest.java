@@ -8,7 +8,7 @@ package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.worker.server.services.StepExecutionService;
+import org.gridsuite.monitor.worker.server.services.internal.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

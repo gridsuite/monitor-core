@@ -17,7 +17,7 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
-import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
+import org.gridsuite.monitor.worker.server.services.external.client.SecurityAnalysisRestClient;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -30,11 +30,11 @@ import java.util.UUID;
 @Component
 public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<SecurityAnalysisConfig> {
 
-    private final SecurityAnalysisService securityAnalysisService;
+    private final SecurityAnalysisRestClient securityAnalysisRestClient;
 
-    public SecurityAnalysisRunComputationStep(SecurityAnalysisService securityAnalysisService) {
+    public SecurityAnalysisRunComputationStep(SecurityAnalysisRestClient securityAnalysisRestClient) {
         super(SecurityAnalysisStepType.RUN_SA_COMPUTATION);
-        this.securityAnalysisService = securityAnalysisService;
+        this.securityAnalysisRestClient = securityAnalysisRestClient;
     }
 
     @Override
@@ -50,7 +50,7 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
         SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), contingencyList, runParameters);
 
         ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-        securityAnalysisService.saveResult(resultInfos.resultUUID(), saReport.getResult());
+        securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), saReport.getResult());
         context.setResultInfos(resultInfos);
     }
 }

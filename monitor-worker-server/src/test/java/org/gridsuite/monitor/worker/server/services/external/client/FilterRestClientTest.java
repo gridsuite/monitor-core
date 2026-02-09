@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,10 +43,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RestClientTest(FilterRestService.class)
-class FilterRestServiceTest {
+@RestClientTest(FilterRestClient.class)
+class FilterRestClientTest {
     @Autowired
-    private FilterRestService filterRestService;
+    private FilterRestClient filterRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -83,7 +83,7 @@ class FilterRestServiceTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(objectMapper.writeValueAsString(listFilters)));
 
-        List<AbstractFilter> resultListFilters = filterRestService.getFilters(filterUuids);
+        List<AbstractFilter> resultListFilters = filterRestClient.getFilters(filterUuids);
         assertThat(resultListFilters).usingRecursiveComparison().isEqualTo(listFilters);
     }
 
@@ -94,7 +94,7 @@ class FilterRestServiceTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> filterUuids = List.of(FILTER_ERROR_UUID);
-        assertThatThrownBy(() -> filterRestService.getFilters(filterUuids)).isInstanceOf(PowsyblException.class)
+        assertThatThrownBy(() -> filterRestClient.getFilters(filterUuids)).isInstanceOf(PowsyblException.class)
             .hasMessage("Error retrieving filters");
     }
 }

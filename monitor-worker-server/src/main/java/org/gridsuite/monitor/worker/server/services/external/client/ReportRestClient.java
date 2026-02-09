@@ -3,8 +3,9 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * SPDX-License-Identifier: MPL-2.0
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +29,7 @@ import java.util.Objects;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class ReportService {
+public class ReportRestClient {
 
     static final String REPORT_API_VERSION = "v1";
     private static final String DELIMITER = "/";
@@ -39,9 +40,9 @@ public class ReportService {
 
     private final ObjectMapper objectMapper;
 
-    public ReportService(ObjectMapper objectMapper,
-                         @Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
-                         RestTemplateBuilder restTemplateBuilder) {
+    public ReportRestClient(ObjectMapper objectMapper,
+                            @Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
+                            RestTemplateBuilder restTemplateBuilder) {
         this.reportServerBaseUri = reportServerBaseUri;
         this.objectMapper = objectMapper;
         this.restTemplate = restTemplateBuilder.build();

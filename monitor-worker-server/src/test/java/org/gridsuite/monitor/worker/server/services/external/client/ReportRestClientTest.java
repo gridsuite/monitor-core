@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,15 +31,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@RestClientTest(ReportService.class)
-@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportService.class})
-class ReportServiceTest {
+@RestClientTest(ReportRestClient.class)
+@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestClient.class})
+class ReportRestClientTest {
 
     private static final UUID REPORT_UUID = UUID.randomUUID();
     private static final UUID REPORT_ERROR_UUID = UUID.randomUUID();
 
     @Autowired
-    private ReportService reportService;
+    private ReportRestClient reportRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -67,7 +67,7 @@ class ReportServiceTest {
                 .andRespond(MockRestResponseCreators.withSuccess());
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, reportNode);
-        assertThatNoException().isThrownBy(() -> reportService.sendReport(reportInfos));
+        assertThatNoException().isThrownBy(() -> reportRestClient.sendReport(reportInfos));
     }
 
     @Test
@@ -82,6 +82,6 @@ class ReportServiceTest {
                 .andRespond(MockRestResponseCreators.withServerError());
 
         ReportInfos reportInfos = new ReportInfos(REPORT_ERROR_UUID, reportNode);
-        assertThatThrownBy(() -> reportService.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> reportRestClient.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
     }
 }

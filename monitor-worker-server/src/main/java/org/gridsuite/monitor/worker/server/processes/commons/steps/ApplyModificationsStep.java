@@ -13,9 +13,9 @@ import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.services.FilterService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
+import org.gridsuite.monitor.worker.server.services.external.adapter.FilterService;
+import org.gridsuite.monitor.worker.server.services.external.client.NetworkModificationRestClient;
+import org.gridsuite.monitor.worker.server.services.external.adapter.NetworkModificationService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,15 +28,15 @@ import java.util.UUID;
 public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractProcessStep<C> {
 
     private final NetworkModificationService networkModificationService;
-    private final NetworkModificationRestService networkModificationRestService;
+    private final NetworkModificationRestClient networkModificationRestClient;
 
     private final FilterService filterService;
 
-    public ApplyModificationsStep(NetworkModificationService networkModificationService, NetworkModificationRestService networkModificationRestService,
+    public ApplyModificationsStep(NetworkModificationService networkModificationService, NetworkModificationRestClient networkModificationRestClient,
                                   FilterService filterService) {
         super(CommonStepType.APPLY_MODIFICATIONS);
         this.networkModificationService = networkModificationService;
-        this.networkModificationRestService = networkModificationRestService;
+        this.networkModificationRestClient = networkModificationRestClient;
         this.filterService = filterService;
     }
 
@@ -50,7 +50,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     }
 
     private void applyModifications(List<UUID> modificationIds, Network network, ReportNode reportNode) {
-        List<ModificationInfos> modificationInfos = networkModificationRestService.getModifications(modificationIds);
+        List<ModificationInfos> modificationInfos = networkModificationRestClient.getModifications(modificationIds);
         networkModificationService.applyModifications(network, modificationInfos, reportNode, filterService);
     }
 }

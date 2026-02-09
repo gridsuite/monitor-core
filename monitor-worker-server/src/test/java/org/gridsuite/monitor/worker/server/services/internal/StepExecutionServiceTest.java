@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.internal;
 
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.ProcessConfig;
@@ -14,6 +14,8 @@ import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.ProcessStepType;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
+import org.gridsuite.monitor.worker.server.services.external.client.ReportRestClient;
+import org.gridsuite.monitor.worker.server.services.messaging.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +40,7 @@ class StepExecutionServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private ReportService reportService;
+    private ReportRestClient reportRestClient;
 
     @Mock
     private ProcessStep<ProcessConfig> processStep;
@@ -53,7 +55,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService<>(notificationService, reportService);
+        stepExecutionService = new StepExecutionService<>(notificationService, reportRestClient);
     }
 
     @Test
@@ -69,7 +71,7 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(context, processStep);
 
         verify(processStep).execute(context);
-        verify(reportService).sendReport(any(ReportInfos.class));
+        verify(reportRestClient).sendReport(any(ReportInfos.class));
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
@@ -111,7 +113,7 @@ class StepExecutionServiceTest {
                         step.getCompletedAt() != null
         ));
         // Verify report was NOT sent on failure
-        verify(reportService, never()).sendReport(any(ReportInfos.class));
+        verify(reportRestClient, never()).sendReport(any(ReportInfos.class));
     }
 
     @Test
@@ -126,7 +128,7 @@ class StepExecutionServiceTest {
 
         verify(processStep, never()).execute(any());
         // Verify report was NOT sent on skip
-        verify(reportService, never()).sendReport(any(ReportInfos.class));
+        verify(reportRestClient, never()).sendReport(any(ReportInfos.class));
         verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.SKIPPED &&
                         "SKIPPED_STEP".equals(step.getStepType()) &&

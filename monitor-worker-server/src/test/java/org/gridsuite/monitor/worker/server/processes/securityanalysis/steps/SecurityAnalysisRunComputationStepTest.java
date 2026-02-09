@@ -14,7 +14,7 @@ import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
-import org.gridsuite.monitor.worker.server.services.SecurityAnalysisService;
+import org.gridsuite.monitor.worker.server.services.external.client.SecurityAnalysisRestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 class SecurityAnalysisRunComputationStepTest {
 
     @Mock
-    private SecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     @Mock
     private ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext;
@@ -52,7 +52,7 @@ class SecurityAnalysisRunComputationStepTest {
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient);
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.parametersUuid()).thenReturn(PARAMS_UUID);
@@ -74,7 +74,7 @@ class SecurityAnalysisRunComputationStepTest {
 
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
-        verify(securityAnalysisService).saveResult(
+        verify(securityAnalysisRestClient).saveResult(
                 any(UUID.class),
                 any(SecurityAnalysisResult.class)
         );

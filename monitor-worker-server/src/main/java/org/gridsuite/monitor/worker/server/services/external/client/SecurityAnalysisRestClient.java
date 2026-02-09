@@ -1,4 +1,4 @@
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.services.external.client;
 
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
@@ -18,8 +18,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Service
-public class SecurityAnalysisService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisService.class);
+public class SecurityAnalysisRestClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisRestClient.class);
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -32,7 +32,7 @@ public class SecurityAnalysisService {
         return this.securityAnalysisServerBaseUri + DELIMITER + SA_API_VERSION + DELIMITER;
     }
 
-    public SecurityAnalysisService(
+    public SecurityAnalysisRestClient(
         RestTemplateBuilder restTemplateBuilder,
         @Value("${gridsuite.services.security-analysis-server.base-uri:http://security-analysis-server/}") String securityAnalysisServerBaseUri) {
         this.securityAnalysisServerBaseUri = securityAnalysisServerBaseUri;

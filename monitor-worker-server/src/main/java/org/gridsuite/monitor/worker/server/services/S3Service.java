@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.worker.server.dto.S3InputStreamInfos;
@@ -13,6 +19,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
+/**
+ * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
+ */
 public class S3Service {
     public static final String METADATA_FILE_NAME = "file-name";
 

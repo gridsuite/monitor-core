@@ -102,7 +102,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);

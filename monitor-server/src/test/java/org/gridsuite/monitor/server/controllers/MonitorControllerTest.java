@@ -66,7 +66,7 @@ class MonitorControllerTest {
                 List.of(modificationUuid)
         );
 
-        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))
+        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), eq(false)))
                 .thenReturn(executionId);
 
         mockMvc.perform(post("/v1/execute/security-analysis")
@@ -78,7 +78,7 @@ class MonitorControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class));
+        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), eq(false));
     }
 
     @Test

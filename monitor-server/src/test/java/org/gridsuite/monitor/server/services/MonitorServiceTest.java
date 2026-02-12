@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.*;
+import org.gridsuite.monitor.commons.utils.S3PathUtils;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
@@ -17,6 +18,9 @@ import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,8 +73,9 @@ class MonitorServiceTest {
         );
     }
 
-    @Test
-    void executeProcessCreateExecutionAndSendNotification() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void executeProcessCreateExecutionAndSendNotification(boolean isDebug) {
         UUID expectedExecutionId = UUID.randomUUID();
         when(executionRepository.save(any(ProcessExecutionEntity.class)))
                 .thenAnswer(invocation -> {
@@ -79,7 +84,7 @@ class MonitorServiceTest {
                     return entity;
                 });
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
+        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
@@ -94,7 +99,7 @@ class MonitorServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
-                false,
+                isDebug,
                 result
         );
     }
@@ -143,6 +148,62 @@ class MonitorServiceTest {
         assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
         assertThat(execution.getStartedAt()).isEqualTo(startedAt);
         assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
+        verify(executionRepository).save(execution);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessStatus.class, names = {"COMPLETED", "FAILED"})
+    void updateExecutionStatusWithDebugOnAndProcessStatusDoneShouldUpdateDebugLocation(ProcessStatus processStatus) {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(caseUuid)
+            .userId(userId)
+            .status(ProcessStatus.RUNNING)
+            .scheduledAt(Instant.now())
+            .isDebug(true)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        String envName = "production-env";
+        Instant startedAt = Instant.now().minusSeconds(60);
+        Instant completedAt = Instant.now();
+
+        monitorService.updateExecutionStatus(executionId, processStatus, envName, startedAt, completedAt);
+
+        verify(executionRepository).findById(executionId);
+        // assert standard fields
+        assertThat(execution.getStatus()).isEqualTo(processStatus);
+        assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
+        assertThat(execution.getStartedAt()).isEqualTo(startedAt);
+        assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
+
+        // assert debug location field
+        assertThat(execution.getDebugFileLocation()).isEqualTo(S3PathUtils.toDebugLocation(envName, ProcessType.SECURITY_ANALYSIS.name(), executionId));
+        verify(executionRepository).save(execution);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessStatus.class, names = {"RUNNING", "SCHEDULED"})
+    void updateExecutionStatusWithDebugOnAndProcessStatusNotDoneShouldNotUpdateDebugLocation(ProcessStatus processStatus) {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(caseUuid)
+            .userId(userId)
+            .status(ProcessStatus.RUNNING)
+            .scheduledAt(Instant.now())
+            .isDebug(true)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        String envName = "production-env";
+        Instant startedAt = Instant.now().minusSeconds(60);
+        Instant completedAt = Instant.now();
+
+        monitorService.updateExecutionStatus(executionId, processStatus, envName, startedAt, completedAt);
+
+        verify(executionRepository).findById(executionId);
+        // assert debug location field
+        assertThat(execution.getDebugFileLocation()).isNull();
         verify(executionRepository).save(execution);
     }
 

@@ -18,11 +18,15 @@ import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.services.MonitorService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.Instant;
 import java.util.List;
@@ -54,8 +58,10 @@ class MonitorControllerTest {
     @MockitoBean
     private MonitorService monitorService;
 
-    @Test
-    void executeSecurityAnalysisShouldReturnExecutionId() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @NullSource
+    void executeSecurityAnalysisShouldReturnExecutionId(Boolean isDebug) throws Exception {
         UUID caseUuid = UUID.randomUUID();
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
@@ -65,20 +71,27 @@ class MonitorControllerTest {
                 List.of("contingency1", "contingency2"),
                 List.of(modificationUuid)
         );
+        boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
-        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), eq(false)))
+        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue)))
                 .thenReturn(executionId);
 
-        mockMvc.perform(post("/v1/execute/security-analysis")
-                        .param("caseUuid", caseUuid.toString())
-                        .header("userId", "user1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(config)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").value(executionId.toString()));
+        MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
+            .param("caseUuid", caseUuid.toString())
+            .header("userId", "user1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(config));
 
-        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), eq(false));
+        if (isDebug != null) {
+            request.param("isDebug", isDebug.toString());
+        }
+
+        mockMvc.perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").value(executionId.toString()));
+
+        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue));
     }
 
     @Test

@@ -68,7 +68,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
         s3Service.exportCompressedToS3(
             getDebugFilePath(context, DEBUG_FILENAME),
             DEBUG_FILENAME,
-            dataSource -> context.getNetwork().write("XIIDM", null, dataSource)
+            networkFile -> context.getNetwork().write("XIIDM", null, networkFile)
         );
     }
 

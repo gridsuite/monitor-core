@@ -44,6 +44,7 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
         return List.of(
             loadNetworkStep,
             applyModificationsStep,
+            applyModificationsStep,
             runComputationStep
         );
     }

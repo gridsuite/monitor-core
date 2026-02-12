@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.core;
 
 import lombok.Getter;
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.utils.S3PathUtils;
 
 import java.util.UUID;
 
@@ -23,5 +24,12 @@ public abstract class AbstractProcessStep<C extends ProcessConfig> implements Pr
     protected AbstractProcessStep(ProcessStepType type) {
         this.type = type;
         this.id = UUID.randomUUID();
+    }
+
+    protected String getDebugFilePath(ProcessStepExecutionContext<C> context, String fileName) {
+        return String.join(S3PathUtils.S3_DELIMITER,
+            S3PathUtils.toDebugLocation(context.getExecutionEnvironment(), context.getConfig().processType().name(), context.getProcessExecutionId()),
+            type.getName() + "_" + context.getStepOrder(),
+            fileName);
     }
 }

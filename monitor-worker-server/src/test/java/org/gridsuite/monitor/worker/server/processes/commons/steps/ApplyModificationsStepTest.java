@@ -19,6 +19,7 @@ import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
+import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +51,9 @@ class ApplyModificationsStepTest {
     private FilterService filterService;
 
     @Mock
+    private S3Service s3Service ;
+
+    @Mock
     private ProcessConfig config;
 
     private ApplyModificationsStep<ProcessConfig> applyModificationsStep;
@@ -62,7 +66,7 @@ class ApplyModificationsStepTest {
 
     @BeforeEach
     void setUp() {
-        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
         when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         when(stepContext.getConfig()).thenReturn(config);
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()

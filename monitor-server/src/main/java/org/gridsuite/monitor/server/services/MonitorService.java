@@ -11,6 +11,7 @@ import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.commons.utils.S3PathUtils;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
@@ -49,17 +50,18 @@ public class MonitorService {
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, boolean isDebug) {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .type(processConfig.processType().name())
             .caseUuid(caseUuid)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
             .userId(userId)
+            .isDebug(isDebug)
             .build();
         executionRepository.save(execution);
 
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId());
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, isDebug, execution.getId());
 
         return execution.getId();
     }
@@ -76,6 +78,9 @@ public class MonitorService {
             }
             if (completedAt != null) {
                 execution.setCompletedAt(completedAt);
+            }
+            if (execution.isDebug()) {
+                execution.setDebugFileLocation(S3PathUtils.toDebugLocation(executionEnvName, execution.getType(), executionId));
             }
             executionRepository.save(execution);
         });

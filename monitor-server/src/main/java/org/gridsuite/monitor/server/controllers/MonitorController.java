@@ -45,8 +45,9 @@ public class MonitorController {
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @RequestParam UUID caseUuid,
             @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
+            @RequestBody boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
         return ResponseEntity.ok(executionId);
     }
 

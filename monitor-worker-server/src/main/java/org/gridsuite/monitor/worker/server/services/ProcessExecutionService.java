@@ -56,6 +56,7 @@ public class ProcessExecutionService {
             runMessage.executionId(),
             runMessage.caseUuid(),
             runMessage.config(),
+            runMessage.isDebug(),
             executionEnvName
         );
 

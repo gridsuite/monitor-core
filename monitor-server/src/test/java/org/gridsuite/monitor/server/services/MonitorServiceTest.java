@@ -79,7 +79,7 @@ class MonitorServiceTest {
                     return entity;
                 });
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
@@ -94,6 +94,7 @@ class MonitorServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
+                false,
                 result
         );
     }

@@ -21,7 +21,8 @@ public record ProcessRunMessage<T extends ProcessConfig>(
     @JsonSubTypes({
         @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
     })
-    T config
+    T config,
+    boolean isDebug
 ) {
     public ProcessType processType() {
         return config.processType();

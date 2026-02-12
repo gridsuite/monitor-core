@@ -51,7 +51,7 @@ class ApplyModificationsStepTest {
     private FilterService filterService;
 
     @Mock
-    private S3Service s3Service ;
+    private S3Service s3Service;
 
     @Mock
     private ProcessConfig config;

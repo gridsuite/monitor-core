@@ -1,7 +1,6 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.worker.server.dto.S3InputStreamInfos;
-import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;

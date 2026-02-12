@@ -45,7 +45,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     private final S3Service s3Service;
     private final FilterService filterService;
 
-    private final String DEBUG_FILENAME = "debug.xiidm.gz";
+    private static final String DEBUG_FILENAME = "debug.xiidm.gz";
 
     public ApplyModificationsStep(NetworkModificationService networkModificationService,
                                   NetworkModificationRestService networkModificationRestService,

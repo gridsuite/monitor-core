@@ -26,7 +26,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
@@ -74,20 +78,24 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     }
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
-        Path tmp = Files.createTempFile("debug-temp", ".xiidm");
-        Path gzPath = Files.createTempFile("debug-temp", ".xiidm.gz");
+        FileAttribute<Set<PosixFilePermission>> tempDirectoryAttributes = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+        Path tempDirectory = Files.createTempDirectory("process-debug", tempDirectoryAttributes);
+
+        Path tempDebugFile = Files.createTempFile(tempDirectory, "debug", ".xiidm");
+        Path tempGzFile = Files.createTempFile(tempDirectory, "debug", ".xiidm.gz");
         try {
-            DataSource ds = DataSource.fromPath(tmp);
+            DataSource ds = DataSource.fromPath(tempDebugFile);
             context.getNetwork().write("XIIDM", null, ds);
-            try (InputStream in = Files.newInputStream(tmp);
-                OutputStream out = new GZIPOutputStream(Files.newOutputStream(gzPath))) {
+            try (InputStream in = Files.newInputStream(tempDebugFile);
+                OutputStream out = new GZIPOutputStream(Files.newOutputStream(tempGzFile))) {
                 in.transferTo(out);
             }
 
-            s3Service.uploadFile(gzPath, getDebugFilePath(context, DEBUG_FILENAME), DEBUG_FILENAME);
+            s3Service.uploadFile(tempGzFile, getDebugFilePath(context, DEBUG_FILENAME), DEBUG_FILENAME);
         } finally {
-            Files.deleteIfExists(tmp);
-            Files.deleteIfExists(gzPath);
+            Files.deleteIfExists(tempDebugFile);
+            Files.deleteIfExists(tempGzFile);
+            Files.deleteIfExists(tempDirectory);
         }
     }
 

@@ -32,7 +32,10 @@ import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ *     Apply modifications passed in context to network passed in context<br/>
+ *     If <b>debug</b> is enabled, resulting network will be saved into S3
+ *
+ *     @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Component
 public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractProcessStep<C> {
@@ -72,7 +75,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     }
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
-        Path tmp = Files.createTempFile("debug", ".xiidm");
+        Path tmp = Files.createTempFile("debug-temp", ".xiidm");
 
         DataSource ds = DataSource.fromPath(tmp);
         context.getNetwork().write("XIIDM", null, ds);

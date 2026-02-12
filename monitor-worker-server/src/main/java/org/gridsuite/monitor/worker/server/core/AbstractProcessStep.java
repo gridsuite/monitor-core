@@ -29,7 +29,7 @@ public abstract class AbstractProcessStep<C extends ProcessConfig> implements Pr
     protected String getDebugFilePath(ProcessStepExecutionContext<C> context, String fileName) {
         return String.join(S3PathUtils.S3_DELIMITER,
             S3PathUtils.toDebugLocation(context.getExecutionEnvironment(), context.getConfig().processType().name(), context.getProcessExecutionId()),
-            type.getName() + "_" + context.getStepOrder(),
+            context.getProcessStepType().getName() + "_" + context.getStepOrder(),
             fileName);
     }
 }

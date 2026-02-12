@@ -44,8 +44,8 @@ public class MonitorController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @RequestParam UUID caseUuid,
+            @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
-            @RequestBody boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
         return ResponseEntity.ok(executionId);

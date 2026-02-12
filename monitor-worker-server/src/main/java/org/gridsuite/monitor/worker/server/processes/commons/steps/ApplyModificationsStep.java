@@ -76,19 +76,20 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
         Path tmp = Files.createTempFile("debug-temp", ".xiidm");
+        Path gzPath = Files.createTempFile("debug-temp", ".xiidm.gz");
+        try {
+            DataSource ds = DataSource.fromPath(tmp);
+            context.getNetwork().write("XIIDM", null, ds);
+            try (InputStream in = Files.newInputStream(tmp);
+                OutputStream out = new GZIPOutputStream(Files.newOutputStream(gzPath))) {
+                in.transferTo(out);
+            }
 
-        DataSource ds = DataSource.fromPath(tmp);
-        context.getNetwork().write("XIIDM", null, ds);
-
-        Path gzPath = Paths.get(DEBUG_FILENAME);
-        try (InputStream in = Files.newInputStream(tmp);
-            OutputStream out = new GZIPOutputStream(Files.newOutputStream(gzPath))) {
-            in.transferTo(out);
+            s3Service.uploadFile(gzPath, getDebugFilePath(context, DEBUG_FILENAME), DEBUG_FILENAME);
+        } finally {
+            Files.deleteIfExists(tmp);
+            Files.deleteIfExists(gzPath);
         }
-
-        Files.deleteIfExists(tmp);
-
-        s3Service.uploadFile(gzPath, getDebugFilePath(context, DEBUG_FILENAME), DEBUG_FILENAME);
     }
 
     private void applyModifications(List<UUID> modificationIds, Network network, ReportNode reportNode) {

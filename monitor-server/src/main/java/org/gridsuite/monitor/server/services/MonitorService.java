@@ -79,7 +79,8 @@ public class MonitorService {
             if (completedAt != null) {
                 execution.setCompletedAt(completedAt);
             }
-            if (execution.isDebug()) {
+            if (execution.isDebug() && executionEnvName != null
+                && (status.equals(ProcessStatus.COMPLETED) || status.equals(ProcessStatus.FAILED))) {
                 execution.setDebugFileLocation(S3PathUtils.toDebugLocation(executionEnvName, execution.getType(), executionId));
             }
             executionRepository.save(execution);

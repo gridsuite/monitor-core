@@ -6,20 +6,43 @@
  */
 package org.gridsuite.monitor.commons;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public record SecurityAnalysisConfig(
-    UUID parametersUuid,
-    List<String> contingencies,
-    List<UUID> modificationUuids
-) implements ProcessConfig {
+@Getter
+@EqualsAndHashCode(callSuper = true)
+public class SecurityAnalysisConfig extends AbstractProcessConfig {
+    @JsonProperty(required = true)
+    private final UUID parametersUuid;
+
+    @JsonProperty(required = true)
+    private final List<String> contingencies;
+
+    public SecurityAnalysisConfig(
+        UUID parametersUuid,
+        List<String> contingencies,
+        List<UUID> modificationUuids,
+        String owner,
+        Instant creationDate,
+        Instant lastModificationDate,
+        String lastModifiedBy
+    ) {
+        super(modificationUuids, owner, creationDate, lastModificationDate, lastModifiedBy);
+        this.parametersUuid = parametersUuid;
+        this.contingencies = contingencies != null ? List.copyOf(contingencies) : null;
+    }
 
     @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;
     }
 }
+

@@ -55,7 +55,7 @@ class SecurityAnalysisRunComputationStepTest {
         runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
 
         when(stepContext.getConfig()).thenReturn(config);
-        when(config.parametersUuid()).thenReturn(PARAMS_UUID);
+        when(config.getParametersUuid()).thenReturn(PARAMS_UUID);
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -68,7 +68,7 @@ class SecurityAnalysisRunComputationStepTest {
     void executeRunSecurityAnalysis() {
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
-        when(config.contingencies()).thenReturn(List.of("NHV1_NHV2_1", "NHV1_NHV2_2"));
+        when(config.getContingencies()).thenReturn(List.of("NHV1_NHV2_1", "NHV1_NHV2_2"));
 
         runComputationStep.execute(stepContext);
 

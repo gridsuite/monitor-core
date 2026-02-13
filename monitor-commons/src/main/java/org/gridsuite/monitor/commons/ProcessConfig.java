@@ -6,9 +6,11 @@
  */
 package org.gridsuite.monitor.commons;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,5 +27,17 @@ import java.util.UUID;
 public interface ProcessConfig {
     ProcessType processType();
 
-    List<UUID> modificationUuids();
+    List<UUID> getModificationUuids();
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    String getOwner();
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    Instant getCreationDate();
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    Instant getLastModificationDate();
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    String getLastModifiedBy();
 }

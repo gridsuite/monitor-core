@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.Constants;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.StepStatus;
@@ -63,7 +64,8 @@ class MonitorControllerTest {
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
-                List.of(modificationUuid)
+                List.of(modificationUuid),
+                "user1", Instant.now(), null, null
         );
 
         when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))
@@ -71,7 +73,7 @@ class MonitorControllerTest {
 
         mockMvc.perform(post("/v1/execute/security-analysis")
                         .param("caseUuid", caseUuid.toString())
-                        .header("userId", "user1")
+                        .header(Constants.HEADER_USER_ID, "user1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isOk())
@@ -146,7 +148,7 @@ class MonitorControllerTest {
 
         when(monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS)).thenReturn(processExecutionList);
 
-        mockMvc.perform(get("/v1/executions?processType=SECURITY_ANALYSIS").accept(MediaType.APPLICATION_JSON_VALUE).header("userId", "user1,user2,user3"))
+        mockMvc.perform(get("/v1/executions?processType=SECURITY_ANALYSIS").accept(MediaType.APPLICATION_JSON_VALUE).header(Constants.HEADER_USER_ID, "user1,user2,user3"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$", hasSize(3)))

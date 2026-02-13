@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import static org.gridsuite.monitor.commons.Constants.HEADER_USER_ID;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -32,8 +34,6 @@ import java.util.UUID;
 public class MonitorController {
 
     private final MonitorService monitorService;
-
-    public static final String HEADER_USER_ID = "userId";
 
     public MonitorController(MonitorService monitorService) {
         this.monitorService = monitorService;

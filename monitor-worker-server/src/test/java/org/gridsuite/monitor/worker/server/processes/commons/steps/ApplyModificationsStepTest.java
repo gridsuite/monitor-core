@@ -63,7 +63,7 @@ class ApplyModificationsStepTest {
     @BeforeEach
     void setUp() {
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService);
-        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
+        when(config.getModificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         when(stepContext.getConfig()).thenReturn(config);
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")

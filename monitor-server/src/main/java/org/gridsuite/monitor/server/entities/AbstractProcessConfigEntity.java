@@ -25,10 +25,12 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import org.gridsuite.monitor.commons.ProcessType;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
 
@@ -43,6 +45,7 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @AllArgsConstructor
 @Getter
 @Setter
+@SuperBuilder
 public abstract class AbstractProcessConfigEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -56,6 +59,18 @@ public abstract class AbstractProcessConfigEntity {
     @Column(name = "modification_uuid")
     @OrderColumn(name = "pos_modifications")
     private List<UUID> modificationUuids;
+
+    @Column(name = "owner", length = 80, nullable = false)
+    private String owner;
+
+    @Column(name = "creation_date", nullable = false)
+    private Instant creationDate;
+
+    @Column(name = "last_modification_date", nullable = false)
+    private Instant lastModificationDate;
+
+    @Column(name = "last_modified_by", length = 80, nullable = false)
+    private String lastModifiedBy;
 
     public abstract ProcessType getType();
 }

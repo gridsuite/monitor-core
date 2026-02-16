@@ -14,23 +14,27 @@ import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.util.function.ThrowingConsumer;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -88,5 +92,50 @@ class ApplyModificationsStepTest {
         applyModificationsStep.execute(stepContext);
         verify(networkModificationRestService).getModifications(any(List.class));
         verify(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
+    }
+
+    @Test
+    void executeApplyModificationsDebugOn() throws IOException {
+        String stepType = applyModificationsStep.getType().getName();
+        assertEquals("APPLY_MODIFICATIONS", stepType);
+
+        List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
+
+        Network network = mock(Network.class);
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(modificationInfos);
+        doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
+
+        // --- mock data specific to debug behaviour ---
+        when(stepContext.isDebug()).thenReturn(true);
+        when(stepContext.getExecutionEnvironment()).thenReturn("execution_env");
+        UUID processExecutionId = UUID.randomUUID();
+        when(stepContext.getProcessExecutionId()).thenReturn(processExecutionId);
+        when(stepContext.getProcessStepType()).thenReturn(CommonStepType.APPLY_MODIFICATIONS);
+        when(stepContext.getStepOrder()).thenReturn(7);
+        when(config.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+
+        // -- execute method
+        applyModificationsStep.execute(stepContext);
+
+        verify(networkModificationRestService).getModifications(any(List.class));
+        verify(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
+
+        // --- verify debug behaviour ---
+        ArgumentCaptor<ThrowingConsumer<Path>> networkWriterCapture = ArgumentCaptor.forClass(ThrowingConsumer.class);
+
+        verify(s3Service).exportCompressedToS3(
+            eq("execution_env_debug/process/SECURITY_ANALYSIS/" + processExecutionId + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz"),
+            eq("debug.xiidm.gz"),
+            networkWriterCapture.capture()
+        );
+
+        // --- assert network has been written to export method ---
+        Path mockedPath = mock(Path.class);
+        ThrowingConsumer<Path> networkWriter = networkWriterCapture.getValue();
+
+        networkWriter.accept(mockedPath);
+
+        verify(network).write("XIIDM", null, mockedPath);
     }
 }

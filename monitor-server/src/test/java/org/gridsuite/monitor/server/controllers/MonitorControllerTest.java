@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -220,5 +221,35 @@ class MonitorControllerTest {
             .andExpect(status().isNotFound());
 
         verify(monitorService).deleteExecution(executionId);
+    }
+
+    @Test
+    void getDebugFilesReturnsOK() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        byte[] zipContent = "dummy-zip-content".getBytes();
+
+        when(monitorService.getDebugInfos(executionId))
+            .thenReturn(Optional.of(zipContent));
+
+        mockMvc.perform(get("/v1/executions/{executionId}/debug-infos", executionId))
+            .andExpect(status().isOk())
+            .andExpect(header().string(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"archive.zip\""))
+            .andExpect(header().string(
+                HttpHeaders.CONTENT_TYPE,
+                MediaType.APPLICATION_OCTET_STREAM_VALUE))
+            .andExpect(header().longValue(
+                HttpHeaders.CONTENT_LENGTH,
+                zipContent.length))
+            .andExpect(content().bytes(zipContent));
+    }
+
+    @Test
+    void getDebugFilesReturnsNotFound() throws Exception {
+        when(monitorService.getDebugInfos(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}/debug-infos", UUID.randomUUID()))
+            .andExpect(status().isNotFound());
     }
 }

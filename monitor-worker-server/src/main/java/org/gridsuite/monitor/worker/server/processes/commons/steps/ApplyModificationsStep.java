@@ -59,7 +59,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
             try {
                 exportUpdatedNetworkToS3(context);
             } catch (IOException e) {
-                throw new PowsyblException("An error occurred while saving debug file", e);
+                throw new PowsyblException("An error occurred while saving debug file: " + e.getCause(), e);
             }
         }
     }

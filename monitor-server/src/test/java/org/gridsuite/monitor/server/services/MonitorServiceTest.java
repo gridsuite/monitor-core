@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.*;
 import org.gridsuite.monitor.commons.utils.S3PathUtils;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
@@ -25,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -52,6 +55,9 @@ class MonitorServiceTest {
 
     @Mock
     private ResultService resultService;
+
+    @Mock
+    private S3RestService s3RestService;
 
     @InjectMocks
     private MonitorService monitorService;
@@ -612,5 +618,55 @@ class MonitorServiceTest {
         verifyNoInteractions(reportService);
         verifyNoInteractions(resultService);
         verify(executionRepository, never()).deleteById(executionId);
+    }
+
+    @Test
+    void getExistingDebugInfo() throws Exception {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setDebugFileLocation("debug/file/location");
+        byte[] expectedBytes = "zip-content".getBytes();
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        when(s3RestService.downloadDirectoryAsZip("debug/file/location")).thenReturn(expectedBytes);
+
+        Optional<byte[]> result = monitorService.getDebugInfos(executionId);
+
+        assertThat(result).isPresent();
+        assertThat(expectedBytes).isEqualTo(result.get());
+
+        verify(executionRepository).findById(executionId);
+        verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
+    }
+
+    @Test
+    void getNotExistingDebugInfo() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        Optional<byte[]> result = monitorService.getDebugInfos(executionId);
+
+        assertThat(result).isEmpty();
+
+        verify(executionRepository).findById(executionId);
+        verifyNoInteractions(s3RestService);
+    }
+
+    @Test
+    void getExistingDebugInfoError() throws Exception {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setDebugFileLocation("debug/file/location");
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        when(s3RestService.downloadDirectoryAsZip("debug/file/location")).thenThrow(new IOException("S3 error"));
+
+        PowsyblException exception = assertThrows(
+            PowsyblException.class,
+            () -> monitorService.getDebugInfos(executionId)
+        );
+
+        assertThat(exception.getMessage()).contains("An error occurred while downloading debug files");
+
+        verify(executionRepository).findById(executionId);
+        verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
     }
 }

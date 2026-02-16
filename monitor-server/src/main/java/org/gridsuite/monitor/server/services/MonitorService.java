@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
@@ -22,11 +23,9 @@ import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -38,15 +37,18 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
+    private final S3RestService s3RestService;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
                           ReportService reportService,
-                          ResultService resultService) {
+                          ResultService resultService,
+                          S3RestService s3RestService) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.reportService = reportService;
         this.resultService = resultService;
+        this.s3RestService = s3RestService;
     }
 
     @Transactional
@@ -168,6 +170,18 @@ public class MonitorService {
                 .map(resultService::getResult)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public Optional<byte[]> getDebugInfos(UUID executionId) {
+        return executionRepository.findById(executionId).map(execution -> {
+            try {
+                return s3RestService.downloadDirectoryAsZip(execution.getDebugFileLocation());
+            } catch (IOException e) {
+                throw new PowsyblException("An error occurred while downloading debug files : " + e.getCause());
+            }
+        });
+    }
+
 
     private List<ResultInfos> getResultInfos(UUID executionId) {
         return executionRepository.findById(executionId)

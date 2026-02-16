@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 
@@ -32,7 +33,7 @@ public class S3Service {
         Path compressedDebugFile = null;
 
         try {
-            debugFile = Files.createTempFile(tempDir, fileName, ".tmp");
+            debugFile = Files.createTempFile(tempDir, fileName, ".xiidm");
             compressedDebugFile = Files.createTempFile(tempDir, fileName, ".gz");
 
             writer.accept(debugFile);
@@ -44,15 +45,26 @@ public class S3Service {
 
             s3RestService.uploadFile(compressedDebugFile, s3Key, fileName);
         } finally {
-            if (debugFile != null) {
-                Files.deleteIfExists(debugFile);
-            }
-            if (compressedDebugFile != null) {
-                Files.deleteIfExists(compressedDebugFile);
-            }
             if (tempDir != null) {
-                Files.deleteIfExists(tempDir);
+                deleteDirectoryRecursively(tempDir);
             }
+        }
+    }
+
+    private void deleteDirectoryRecursively(Path directoryPath) throws IOException {
+        if (directoryPath == null || !Files.exists(directoryPath)) {
+            return;
+        }
+
+        try (var walk = Files.walk(directoryPath)) {
+            walk.sorted(Comparator.reverseOrder())
+                .forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException e) {
+                        // TODO: should we throw if temp files deletion fails ?
+                    }
+                });
         }
     }
 }

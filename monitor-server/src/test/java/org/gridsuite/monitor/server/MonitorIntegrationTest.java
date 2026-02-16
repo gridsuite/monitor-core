@@ -14,11 +14,7 @@ import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.ConsumerService;
-import org.gridsuite.monitor.server.services.ProcessConfigService;
-import org.gridsuite.monitor.server.services.ReportService;
-import org.gridsuite.monitor.server.services.MonitorService;
-import org.gridsuite.monitor.server.services.ResultService;
+import org.gridsuite.monitor.server.services.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +28,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -82,6 +79,9 @@ class MonitorIntegrationTest {
 
     @MockitoBean
     private ResultService resultService;
+
+    @MockitoBean
+    private S3RestService s3RestService;
 
     private UUID caseUuid;
 

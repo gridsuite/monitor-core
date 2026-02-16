@@ -28,6 +28,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -81,6 +82,9 @@ class MonitorIntegrationTest {
 
     @MockitoBean
     private S3RestService s3RestService;
+
+    @MockitoBean
+    private S3Client s3Client;
 
     private UUID caseUuid;
 

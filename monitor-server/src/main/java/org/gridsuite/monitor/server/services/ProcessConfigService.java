@@ -30,9 +30,9 @@ public class ProcessConfigService {
     }
 
     @Transactional
-    public UUID createProcessConfig(ProcessConfig processConfig) {
+    public UUID createProcessConfig(ProcessConfig processConfig, String userId) {
         AbstractProcessConfigEntity entity = switch (processConfig) {
-            case SecurityAnalysisConfig sac -> SecurityAnalysisConfigMapper.toEntity(sac);
+            case SecurityAnalysisConfig sac -> SecurityAnalysisConfigMapper.toEntity(sac, userId);
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         };
         return processConfigRepository.save(entity).getId();
@@ -48,15 +48,16 @@ public class ProcessConfigService {
     }
 
     @Transactional
-    public boolean updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
+    public boolean updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig, String userId) {
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
                 if (entity.getType() != processConfig.processType()) {
                     throw new IllegalArgumentException("Process config type mismatch : " + entity.getType());
                 }
+
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
-                        SecurityAnalysisConfigMapper.update((SecurityAnalysisConfigEntity) entity, sac);
+                        SecurityAnalysisConfigMapper.update((SecurityAnalysisConfigEntity) entity, sac, userId);
                     default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
                 return true;

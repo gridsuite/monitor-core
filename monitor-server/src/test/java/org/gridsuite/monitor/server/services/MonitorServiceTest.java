@@ -65,7 +65,8 @@ class MonitorServiceTest {
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                "user1", Instant.now().minusSeconds(120), Instant.now(), "user2"
         );
     }
 

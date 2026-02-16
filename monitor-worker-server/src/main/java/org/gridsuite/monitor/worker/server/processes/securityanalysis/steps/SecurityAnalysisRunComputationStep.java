@@ -41,8 +41,8 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
     public void execute(ProcessStepExecutionContext<SecurityAnalysisConfig> context) {
         Objects.requireNonNull(context.getNetwork());
         // FIXME use params from computation server
-        UUID params = context.getConfig().parametersUuid();
-        List<String> contingencies = context.getConfig().contingencies();
+        UUID params = context.getConfig().getParametersUuid();
+        List<String> contingencies = context.getConfig().getContingencies();
         // FIXME get contingencies
         List<Contingency> contingencyList = contingencies.stream().map(id -> new Contingency(id, new LineContingency(id))).toList();
         SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()

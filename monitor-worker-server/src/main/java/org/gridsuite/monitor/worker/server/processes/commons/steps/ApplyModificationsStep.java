@@ -42,7 +42,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     @Override
     public void execute(ProcessStepExecutionContext<C> context) {
-        List<UUID> modificationIds = context.getConfig().modificationUuids();
+        List<UUID> modificationIds = context.getConfig().getModificationUuids();
         Network network = context.getNetwork();
         if (CollectionUtils.isNotEmpty(modificationIds)) {
             applyModifications(modificationIds, network, context.getReportInfos().reportNode());

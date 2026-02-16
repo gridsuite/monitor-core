@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import org.gridsuite.monitor.commons.ProcessType;
 
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
+@SuperBuilder
 public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
     @Column(name = "parameters_uuid")
     private UUID parametersUuid;

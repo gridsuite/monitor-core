@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.Constants;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
@@ -17,11 +18,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -53,20 +56,22 @@ class ProcessConfigControllerTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                null, null, null, null
         );
 
-        when(processConfigService.createProcessConfig(any(ProcessConfig.class)))
+        when(processConfigService.createProcessConfig(any(ProcessConfig.class), any(String.class)))
             .thenReturn(processConfigId);
 
         mockMvc.perform(post("/v1/process-configs")
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header(Constants.HEADER_USER_ID, "user1")
                         .content(objectMapper.writeValueAsString(securityAnalysisConfig)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(processConfigId.toString()));
 
-        verify(processConfigService).createProcessConfig(any(SecurityAnalysisConfig.class));
+        verify(processConfigService).createProcessConfig(any(SecurityAnalysisConfig.class), eq("user1"));
     }
 
     @Test
@@ -75,7 +80,8 @@ class ProcessConfigControllerTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            "user1", Instant.now().minusSeconds(120), Instant.now(), "user2"
         );
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
 
@@ -111,18 +117,20 @@ class ProcessConfigControllerTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            null, null, null, null
         );
 
-        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
+        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class), any(String.class)))
             .thenReturn(Boolean.TRUE);
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
+                .header(Constants.HEADER_USER_ID, "user2")
                 .content(objectMapper.writeValueAsString(securityAnalysisConfig)))
             .andExpect(status().isOk());
 
-        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
+        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class), eq("user2"));
     }
 
     @Test
@@ -131,18 +139,20 @@ class ProcessConfigControllerTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            null, null, null, null
         );
 
-        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
+        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class), any(String.class)))
             .thenReturn(Boolean.FALSE);
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
+                .header(Constants.HEADER_USER_ID, "user2")
                 .content(objectMapper.writeValueAsString(securityAnalysisConfig)))
             .andExpect(status().isNotFound());
 
-        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
+        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class), any(String.class));
     }
 
     @Test

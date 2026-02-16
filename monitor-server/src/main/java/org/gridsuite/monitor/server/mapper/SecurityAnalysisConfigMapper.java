@@ -9,14 +9,24 @@ package org.gridsuite.monitor.server.mapper;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 
+import java.time.Instant;
+
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class SecurityAnalysisConfigMapper {
-    public static SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto) {
+    public static SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto, String owner) {
         SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity();
-        update(entity, dto);
+        entity.setOwner(owner);
+        entity.setLastModifiedBy(owner);
+        Instant now = Instant.now();
+        entity.setCreationDate(now);
+
+        entity.setLastModificationDate(now);
+        entity.setParametersUuid(dto.getParametersUuid());
+        entity.setContingencies(dto.getContingencies());
+        entity.setModificationUuids(dto.getModificationUuids());
         return entity;
     }
 
@@ -24,13 +34,20 @@ public class SecurityAnalysisConfigMapper {
         return new SecurityAnalysisConfig(
             entity.getParametersUuid(),
             entity.getContingencies(),
-            entity.getModificationUuids()
+            entity.getModificationUuids(),
+            entity.getOwner(),
+            entity.getCreationDate(),
+            entity.getLastModificationDate(),
+            entity.getLastModifiedBy()
         );
     }
 
-    public static void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto) {
-        entity.setParametersUuid(dto.parametersUuid());
-        entity.setContingencies(dto.contingencies());
-        entity.setModificationUuids(dto.modificationUuids());
+    public static void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto, String userId) {
+        entity.setLastModifiedBy(userId);
+        entity.setLastModificationDate(Instant.now());
+
+        entity.setParametersUuid(dto.getParametersUuid());
+        entity.setContingencies(dto.getContingencies());
+        entity.setModificationUuids(dto.getModificationUuids());
     }
 }

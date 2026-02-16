@@ -101,7 +101,8 @@ class MonitorIntegrationTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID()));
+                List.of(UUID.randomUUID()),
+                null, null, null, null);
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
 
         // Verify message was published
@@ -150,6 +151,7 @@ class MonitorIntegrationTest {
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId).orElse(null);
+        assertThat(execution).isNotNull();
         assertThat(execution.getSteps()).hasSize(2);
         assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
@@ -172,6 +174,7 @@ class MonitorIntegrationTest {
 
         // Verify final state persisted
         execution = executionRepository.findById(executionId).orElse(null);
+        assertThat(execution).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
         assertThat(execution.getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt.truncatedTo(ChronoUnit.MILLIS));
@@ -240,27 +243,34 @@ class MonitorIntegrationTest {
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
-                List.of(modificationUuid)
+                List.of(modificationUuid),
+                null, null, null, null
         );
-        UUID configId = configService.createProcessConfig(securityAnalysisConfig);
+        UUID configId = configService.createProcessConfig(securityAnalysisConfig, "user1");
         assertThat(processConfigRepository.findById(configId)).isNotEmpty();
 
         Optional<ProcessConfig> config = configService.getProcessConfig(configId);
         assertThat(config).isNotEmpty();
-        assertThat(config.get()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
+        assertThat(config.get().getOwner()).isEqualTo("user1");
+        assertThat(config.get().getLastModifiedBy()).isEqualTo("user1");
+        assertThat(config.get().getCreationDate()).isNotNull();
+        assertThat(config.get().getLastModificationDate()).isNotNull();
 
         UUID updatedParametersUuid = UUID.randomUUID();
         UUID updatedModificationUuid = UUID.randomUUID();
         SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 updatedParametersUuid,
                 List.of("contingency3", "contingency4"),
-                List.of(updatedModificationUuid)
+                List.of(updatedModificationUuid),
+                null, null, null, null
         );
-        boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
+        boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig, "user2");
         assertThat(updated).isTrue();
         Optional<ProcessConfig> updatedConfig = configService.getProcessConfig(configId);
         assertThat(updatedConfig).isNotEmpty();
-        assertThat(updatedConfig.get()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
+        assertThat(updatedConfig.get().getOwner()).isEqualTo("user1");
+        assertThat(updatedConfig.get().getLastModifiedBy()).isEqualTo("user2");
+        assertThat(updatedConfig.get().getLastModificationDate()).isNotNull();
 
         boolean deleted = configService.deleteProcessConfig(configId);
         assertThat(deleted).isTrue();

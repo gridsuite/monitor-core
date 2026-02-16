@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.stream.function.StreamBridge;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +50,8 @@ class NotificationServiceTest {
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                "user1", Instant.now().minusSeconds(120), Instant.now(), "user2"
         );
     }
 

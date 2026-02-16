@@ -8,8 +8,11 @@ package org.gridsuite.monitor.server.repositories;
 
 import org.gridsuite.monitor.server.entities.AbstractProcessConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -17,4 +20,6 @@ import java.util.UUID;
  */
 @Repository
 public interface ProcessConfigRepository extends JpaRepository<AbstractProcessConfigEntity, UUID> {
+    @Query("SELECT e FROM AbstractProcessConfigEntity e WHERE TYPE(e) = :processType ORDER BY e.lastModificationDate DESC")
+    List<AbstractProcessConfigEntity> findAllByProcessTypeOrderByLastModificationDateDesc(@Param("processType") Class<?> processType);
 }

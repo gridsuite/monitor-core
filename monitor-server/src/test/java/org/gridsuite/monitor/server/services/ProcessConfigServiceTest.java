@@ -168,4 +168,51 @@ class ProcessConfigServiceTest {
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository, never()).deleteById(processConfigId);
     }
+
+    @Test
+    void getSecurityAnalysisConfigs() {
+        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency1", "contingency2"), List.of(UUID.randomUUID()), null, null, null, null);
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity1 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig1, "user1");
+        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency3", "contingency4"), List.of(UUID.randomUUID()), null, null, null, null);
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity2 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig2, "user2");
+
+        when(processConfigRepository.findAllByProcessTypeOrderByLastModificationDateDesc(SecurityAnalysisConfigEntity.class))
+            .thenReturn(List.of(securityAnalysisConfigEntity1, securityAnalysisConfigEntity2));
+
+        Optional<List<ProcessConfig>> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+
+        verify(processConfigRepository).findAllByProcessTypeOrderByLastModificationDateDesc(SecurityAnalysisConfigEntity.class);
+        assertThat(processConfigs).isPresent();
+        assertThat(processConfigs.get()).hasSize(2);
+        assertThat(processConfigs.get().get(0).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+        assertThat(processConfigs.get().get(1).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+
+        SecurityAnalysisConfig resSecurityAnalysisConfig1 = (SecurityAnalysisConfig) processConfigs.get().get(0);
+        assertThat(resSecurityAnalysisConfig1.getParametersUuid()).isEqualTo(securityAnalysisConfig1.getParametersUuid());
+        assertThat(resSecurityAnalysisConfig1.getContingencies()).isEqualTo(securityAnalysisConfig1.getContingencies());
+        assertThat(resSecurityAnalysisConfig1.getModificationUuids()).isEqualTo(securityAnalysisConfig1.getModificationUuids());
+        assertThat(resSecurityAnalysisConfig1.getOwner()).isEqualTo("user1");
+        assertThat(resSecurityAnalysisConfig1.getCreationDate()).isNotNull();
+        assertThat(resSecurityAnalysisConfig1.getLastModificationDate()).isNotNull();
+        assertThat(resSecurityAnalysisConfig1.getLastModifiedBy()).isEqualTo("user1");
+
+        SecurityAnalysisConfig resSecurityAnalysisConfig2 = (SecurityAnalysisConfig) processConfigs.get().get(1);
+        assertThat(resSecurityAnalysisConfig2.getParametersUuid()).isEqualTo(securityAnalysisConfig2.getParametersUuid());
+        assertThat(resSecurityAnalysisConfig2.getContingencies()).isEqualTo(securityAnalysisConfig2.getContingencies());
+        assertThat(resSecurityAnalysisConfig2.getModificationUuids()).isEqualTo(securityAnalysisConfig2.getModificationUuids());
+        assertThat(resSecurityAnalysisConfig2.getOwner()).isEqualTo("user2");
+        assertThat(resSecurityAnalysisConfig2.getCreationDate()).isNotNull();
+        assertThat(resSecurityAnalysisConfig2.getLastModificationDate()).isNotNull();
+        assertThat(resSecurityAnalysisConfig2.getLastModifiedBy()).isEqualTo("user2");
+    }
+
+    @Test
+    void getSecurityAnalysisConfigsNotFound() {
+        when(processConfigRepository.findAllByProcessTypeOrderByLastModificationDateDesc(SecurityAnalysisConfigEntity.class)).thenReturn(List.of());
+
+        Optional<List<ProcessConfig>> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+
+        verify(processConfigRepository).findAllByProcessTypeOrderByLastModificationDateDesc(SecurityAnalysisConfigEntity.class);
+        assertThat(processConfigs).isEmpty();
+    }
 }

@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.junit.jupiter.api.Test;
@@ -169,5 +170,49 @@ class ProcessConfigControllerTest {
             .andExpect(status().isNotFound());
 
         verify(processConfigService).deleteProcessConfig(any(UUID.class));
+    }
+
+    @Test
+    void getAllSecurityAnalysisConfigs() throws Exception {
+        List<ProcessConfig> securityAnalysisConfigs = List.of(
+            new SecurityAnalysisConfig(
+                UUID.randomUUID(),
+                List.of("contingency1", "contingency2"),
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                "user1", Instant.now().minusSeconds(120), Instant.now(), "user2"
+            ),
+            new SecurityAnalysisConfig(
+                UUID.randomUUID(),
+                List.of("contingency3", "contingency4"),
+                List.of(UUID.randomUUID()),
+                "user1", Instant.now().minusSeconds(60), Instant.now().plusSeconds(30), "user2"
+            )
+        );
+        String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);
+
+        when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
+            .thenReturn(Optional.of(securityAnalysisConfigs));
+
+        mockMvc.perform(get("/v1/process-configs")
+                .param("processType", ProcessType.SECURITY_ANALYSIS.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(expectedJson));
+
+        verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getAllSecurityAnalysisConfigsNotFound() throws Exception {
+        when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/process-configs")
+                .param("processType", ProcessType.SECURITY_ANALYSIS.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
+
+        verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
     }
 }

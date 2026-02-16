@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
@@ -15,6 +16,7 @@ import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,7 +44,7 @@ public class ProcessConfigService {
     public Optional<ProcessConfig> getProcessConfig(UUID processConfigUuid) {
         return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
             case SecurityAnalysisConfigEntity sae ->
-                Optional.of((ProcessConfig) SecurityAnalysisConfigMapper.toDto(sae));
+                Optional.of(SecurityAnalysisConfigMapper.toDto(sae));
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
         });
     }
@@ -71,5 +73,21 @@ public class ProcessConfigService {
             return true;
         }
         return false;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<List<ProcessConfig>> getProcessConfigs(ProcessType processType) {
+        Class<?> entityTypeClass = switch (processType) {
+            case SECURITY_ANALYSIS -> SecurityAnalysisConfigEntity.class;
+        };
+
+        List<AbstractProcessConfigEntity> processConfigList = processConfigRepository.findAllByProcessTypeOrderByLastModificationDateDesc(entityTypeClass);
+        return processConfigList.isEmpty()
+            ? Optional.empty()
+            : Optional.of(processConfigList.stream().map(entity ->
+                switch (entity) {
+                    case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+                    default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
+                }).toList());
     }
 }

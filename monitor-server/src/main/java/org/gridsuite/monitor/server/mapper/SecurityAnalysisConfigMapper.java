@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
+import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 
@@ -20,7 +21,7 @@ public class SecurityAnalysisConfigMapper {
         return entity;
     }
 
-    public static SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity entity) {
+    public static ProcessConfig toDto(SecurityAnalysisConfigEntity entity) {
         return new SecurityAnalysisConfig(
             entity.getParametersUuid(),
             entity.getContingencies(),

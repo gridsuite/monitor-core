@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.*;
+import org.gridsuite.monitor.server.config.TestS3Config;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
@@ -22,13 +23,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -46,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @SpringBootTest(classes = {MonitorServerApplication.class, TestChannelBinderConfiguration.class})
+@Import(TestS3Config.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @AutoConfigureMockMvc
 class MonitorIntegrationTest {
@@ -79,12 +81,6 @@ class MonitorIntegrationTest {
 
     @MockitoBean
     private ResultService resultService;
-
-    @MockitoBean
-    private S3RestService s3RestService;
-
-    @MockitoBean
-    private S3Client s3Client;
 
     private UUID caseUuid;
 

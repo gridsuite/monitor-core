@@ -182,7 +182,6 @@ public class MonitorService {
         });
     }
 
-
     private List<ResultInfos> getResultInfos(UUID executionId) {
         return executionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()

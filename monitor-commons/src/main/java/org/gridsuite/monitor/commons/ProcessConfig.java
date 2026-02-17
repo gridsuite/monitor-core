@@ -23,6 +23,9 @@ import java.util.UUID;
     @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
 })
 public interface ProcessConfig {
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    UUID getId();
+
     ProcessType processType();
 
     List<UUID> modificationUuids();

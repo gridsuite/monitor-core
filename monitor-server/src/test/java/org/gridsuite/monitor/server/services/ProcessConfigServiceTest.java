@@ -49,6 +49,7 @@ class ProcessConfigServiceTest {
     void setUp() {
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID())
         );
@@ -109,6 +110,7 @@ class ProcessConfigServiceTest {
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 List.of("contingency3", "contingency4", "contingency5"),
                 List.of(UUID.randomUUID())
         );
@@ -132,6 +134,7 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
+                UUID.randomUUID(),
                 UUID.randomUUID(),
                 List.of("contingency1"),
                 List.of(UUID.randomUUID())
@@ -171,9 +174,9 @@ class ProcessConfigServiceTest {
 
     @Test
     void getSecurityAnalysisConfigs() {
-        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency1", "contingency2"), List.of(UUID.randomUUID()), null, null, null, null);
+        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(UUID.randomUUID(), UUID.randomUUID(), List.of("contingency1", "contingency2"), List.of(UUID.randomUUID()), null, null, null, null);
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity1 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig1, "user1");
-        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency3", "contingency4"), List.of(UUID.randomUUID()), null, null, null, null);
+        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), UUID.randomUUID(), List.of("contingency3", "contingency4"), List.of(UUID.randomUUID()), null, null, null, null);
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity2 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig2, "user2");
 
         when(processConfigRepository.findAllByProcessTypeOrderByLastModificationDateDesc(SecurityAnalysisConfigEntity.class))

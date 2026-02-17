@@ -53,6 +53,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID())
         );
@@ -74,6 +75,7 @@ class ProcessConfigControllerTest {
     void getSecurityAnalysisConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
+            UUID.randomUUID(),
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
@@ -111,6 +113,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
+            UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
         );
@@ -130,6 +133,7 @@ class ProcessConfigControllerTest {
     void updateSecurityAnalysisConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
+            UUID.randomUUID(),
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
@@ -177,11 +181,13 @@ class ProcessConfigControllerTest {
         List<ProcessConfig> securityAnalysisConfigs = List.of(
             new SecurityAnalysisConfig(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID()),
                 "user1", Instant.now().minusSeconds(120), Instant.now(), "user2"
             ),
             new SecurityAnalysisConfig(
+                UUID.randomUUID(),
                 UUID.randomUUID(),
                 List.of("contingency3", "contingency4"),
                 List.of(UUID.randomUUID()),

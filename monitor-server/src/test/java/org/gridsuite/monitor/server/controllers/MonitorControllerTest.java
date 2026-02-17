@@ -61,6 +61,7 @@ class MonitorControllerTest {
         UUID modificationUuid = UUID.randomUUID();
         UUID executionId = UUID.randomUUID();
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
+                UUID.randomUUID(),
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
                 List.of(modificationUuid)

@@ -23,6 +23,7 @@ public class SecurityAnalysisConfigMapper {
 
     public static ProcessConfig toDto(SecurityAnalysisConfigEntity entity) {
         return new SecurityAnalysisConfig(
+            entity.getId(),
             entity.getParametersUuid(),
             entity.getContingencies(),
             entity.getModificationUuids()

@@ -100,6 +100,7 @@ class MonitorIntegrationTest {
         // Start process execution
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
@@ -238,6 +239,7 @@ class MonitorIntegrationTest {
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
+                UUID.randomUUID(),
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
                 List.of(modificationUuid)
@@ -252,6 +254,7 @@ class MonitorIntegrationTest {
         UUID updatedParametersUuid = UUID.randomUUID();
         UUID updatedModificationUuid = UUID.randomUUID();
         SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
+                UUID.randomUUID(),
                 updatedParametersUuid,
                 List.of("contingency3", "contingency4"),
                 List.of(updatedModificationUuid)
@@ -273,6 +276,7 @@ class MonitorIntegrationTest {
         UUID parametersUuid1 = UUID.randomUUID();
         UUID modificationUuid1 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
+            UUID.randomUUID(),
             parametersUuid1,
             List.of("contingency1", "contingency2"),
             List.of(modificationUuid1),
@@ -284,6 +288,7 @@ class MonitorIntegrationTest {
         UUID parametersUuid2 = UUID.randomUUID();
         UUID modificationUuid2 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
+            UUID.randomUUID(),
             parametersUuid2,
             List.of("contingency3", "contingency4"),
             List.of(modificationUuid2),

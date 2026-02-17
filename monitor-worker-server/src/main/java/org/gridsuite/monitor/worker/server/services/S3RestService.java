@@ -39,7 +39,7 @@ public class S3RestService {
                 .build();
             s3Client.putObject(putRequest, RequestBody.fromFile(filePath));
         } catch (SdkException e) {
-            throw new IOException("Error occurred while uploading file to S3: " + e.getMessage());
+            throw new IOException("Error occurred while uploading file to S3: " + e.getMessage(), e);
         }
     }
 }

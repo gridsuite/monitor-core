@@ -9,8 +9,11 @@ package org.gridsuite.monitor.server.services;
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.SnapshotRefinerConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.server.entities.SnapshotRefinerConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
+import org.gridsuite.monitor.server.mapper.SnapshotRefinerConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,7 @@ class ProcessConfigServiceTest {
     private ProcessConfigService processConfigService;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
+    private SnapshotRefinerConfig snapshotRefinerConfig;
 
     @BeforeEach
     void setUp() {
@@ -50,6 +54,11 @@ class ProcessConfigServiceTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID())
+        );
+
+        snapshotRefinerConfig = new SnapshotRefinerConfig(
+                Optional.of(UUID.randomUUID()),
+                Optional.of(UUID.randomUUID())
         );
     }
 
@@ -78,6 +87,41 @@ class ProcessConfigServiceTest {
     }
 
     @Test
+    void createSnapshotRefinerConfig() {
+        UUID expectedProcessConfigId = UUID.randomUUID();
+        when(processConfigRepository.save(any(SnapshotRefinerConfigEntity.class)))
+            .thenAnswer(invocation -> {
+                SnapshotRefinerConfigEntity entity = invocation.getArgument(0);
+                entity.setId(expectedProcessConfigId);
+                return entity;
+            });
+
+        UUID result = processConfigService.createProcessConfig(snapshotRefinerConfig);
+        assertThat(result).isEqualTo(expectedProcessConfigId);
+
+        ArgumentCaptor<SnapshotRefinerConfigEntity> captor = ArgumentCaptor.forClass(SnapshotRefinerConfigEntity.class);
+        verify(processConfigRepository).save(captor.capture());
+
+        SnapshotRefinerConfigEntity savedEntity = captor.getValue();
+        assertThat(savedEntity.getId()).isEqualTo(expectedProcessConfigId);
+        assertThat(savedEntity.getProcessType()).isEqualTo(ProcessType.SNAPSHOT_REFINER);
+        assertThat(savedEntity.getLoadFlowParametersUuid()).isEqualTo(snapshotRefinerConfig.loadFlowParametersUuid().get());
+        assertThat(savedEntity.getStateEstimationParametersUuid()).isEqualTo(snapshotRefinerConfig.stateEstimationParametersUuid().get());
+        assertThat(savedEntity.getModificationUuids()).isEmpty();
+    }
+
+    @Test
+    void getProcessConfigNotFound() {
+        UUID processConfigId = UUID.randomUUID();
+
+        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
+
+        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
+        verify(processConfigRepository).findById(processConfigId);
+        assertThat(processConfig).isEmpty();
+    }
+
+    @Test
     void getSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
@@ -91,14 +135,16 @@ class ProcessConfigServiceTest {
     }
 
     @Test
-    void getSecurityAnalysisConfigNotFound() {
+    void getSnapshotRefinerConfig() {
         UUID processConfigId = UUID.randomUUID();
+        SnapshotRefinerConfigEntity snapshotRefinerConfigEntity = SnapshotRefinerConfigMapper.toEntity(snapshotRefinerConfig);
 
-        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
+        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(snapshotRefinerConfigEntity));
 
         Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
         verify(processConfigRepository).findById(processConfigId);
-        assertThat(processConfig).isEmpty();
+        assertThat(processConfig).isPresent();
+        assertThat(processConfig.get().processConfig()).usingRecursiveComparison().isEqualTo(snapshotRefinerConfig);
     }
 
     @Test
@@ -125,6 +171,28 @@ class ProcessConfigServiceTest {
     }
 
     @Test
+    void updateSnapshotRefinerConfig() {
+        UUID processConfigId = UUID.randomUUID();
+        SnapshotRefinerConfigEntity snapshotRefinerConfigEntity = SnapshotRefinerConfigMapper.toEntity(snapshotRefinerConfig);
+
+        SnapshotRefinerConfig newSnapshotRefinerConfig = new SnapshotRefinerConfig(
+                Optional.of(UUID.randomUUID()),
+                Optional.of(UUID.randomUUID())
+        );
+
+        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(snapshotRefinerConfigEntity));
+
+        boolean done = processConfigService.updateProcessConfig(processConfigId, newSnapshotRefinerConfig);
+        assertThat(done).isTrue();
+
+        verify(processConfigRepository).findById(processConfigId);
+
+        Optional<PersistedProcessConfig> processConfigUpdated = processConfigService.getProcessConfig(processConfigId);
+        assertThat(processConfigUpdated).isPresent();
+        assertThat(processConfigUpdated.get().processConfig()).usingRecursiveComparison().isEqualTo(newSnapshotRefinerConfig);
+    }
+
+    @Test
     void updateSecurityAnalysisConfigNotFound() {
         UUID processConfigId = UUID.randomUUID();
 
@@ -142,7 +210,24 @@ class ProcessConfigServiceTest {
     }
 
     @Test
-    void deleteSecurityAnalysisConfig() {
+    void updateSnapshotRefinerConfigNotFound() {
+        UUID processConfigId = UUID.randomUUID();
+
+        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
+
+        SnapshotRefinerConfig newSnapshotRefinerConfig = new SnapshotRefinerConfig(
+                Optional.of(UUID.randomUUID()),
+                Optional.of(UUID.randomUUID())
+        );
+
+        boolean done = processConfigService.updateProcessConfig(processConfigId, newSnapshotRefinerConfig);
+        assertThat(done).isFalse();
+
+        verify(processConfigRepository).findById(processConfigId);
+    }
+
+    @Test
+    void deleteProcessConfig() {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.TRUE);
@@ -156,7 +241,7 @@ class ProcessConfigServiceTest {
     }
 
     @Test
-    void deleteSecurityAnalysisConfigNotFound() {
+    void deleteProcessConfigNotFound() {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.FALSE);
@@ -197,12 +282,48 @@ class ProcessConfigServiceTest {
     }
 
     @Test
+    void getSnapshotRefinerConfigs() {
+        SnapshotRefinerConfig snapshotRefinerConfig1 = new SnapshotRefinerConfig(Optional.of(UUID.randomUUID()), Optional.empty());
+        SnapshotRefinerConfigEntity snapshotRefinerConfigEntity1 = SnapshotRefinerConfigMapper.toEntity(snapshotRefinerConfig1);
+        SnapshotRefinerConfig snapshotRefinerConfig2 = new SnapshotRefinerConfig(Optional.empty(), Optional.of(UUID.randomUUID()));
+        SnapshotRefinerConfigEntity snapshotRefinerConfigEntity2 = SnapshotRefinerConfigMapper.toEntity(snapshotRefinerConfig2);
+
+        when(processConfigRepository.findAllByProcessType(ProcessType.SNAPSHOT_REFINER))
+                .thenReturn(List.of(snapshotRefinerConfigEntity1, snapshotRefinerConfigEntity2));
+
+        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SNAPSHOT_REFINER);
+
+        verify(processConfigRepository).findAllByProcessType(ProcessType.SNAPSHOT_REFINER);
+        assertThat(processConfigs).hasSize(2);
+        assertThat(processConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SNAPSHOT_REFINER);
+        assertThat(processConfigs.get(1).processConfig().processType()).isEqualTo(ProcessType.SNAPSHOT_REFINER);
+
+        SnapshotRefinerConfig resSnapshotRefinerConfig1 = (SnapshotRefinerConfig) processConfigs.get(0).processConfig();
+        assertThat(resSnapshotRefinerConfig1.loadFlowParametersUuid()).isEqualTo(snapshotRefinerConfig1.loadFlowParametersUuid());
+        assertThat(resSnapshotRefinerConfig1.stateEstimationParametersUuid()).isEqualTo(snapshotRefinerConfig1.stateEstimationParametersUuid());
+
+        SnapshotRefinerConfig resSnapshotRefinerConfig2 = (SnapshotRefinerConfig) processConfigs.get(1).processConfig();
+        assertThat(resSnapshotRefinerConfig2.loadFlowParametersUuid()).isEqualTo(snapshotRefinerConfig2.loadFlowParametersUuid());
+        assertThat(resSnapshotRefinerConfig2.stateEstimationParametersUuid()).isEqualTo(snapshotRefinerConfig2.stateEstimationParametersUuid());
+    }
+
+    @Test
     void getSecurityAnalysisConfigsNotFound() {
         when(processConfigRepository.findAllByProcessType(ProcessType.SECURITY_ANALYSIS)).thenReturn(List.of());
 
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
         verify(processConfigRepository).findAllByProcessType(ProcessType.SECURITY_ANALYSIS);
+        assertThat(processConfigs).isEmpty();
+    }
+
+    @Test
+    void getSnapshotRefinerConfigsNotFound() {
+        when(processConfigRepository.findAllByProcessType(ProcessType.SNAPSHOT_REFINER)).thenReturn(List.of());
+
+        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SNAPSHOT_REFINER);
+
+        verify(processConfigRepository).findAllByProcessType(ProcessType.SNAPSHOT_REFINER);
         assertThat(processConfigs).isEmpty();
     }
 }

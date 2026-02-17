@@ -10,9 +10,12 @@ import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.SnapshotRefinerConfig;
 import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.server.entities.SnapshotRefinerConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
+import org.gridsuite.monitor.server.mapper.SnapshotRefinerConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +41,9 @@ public class ProcessConfigService {
             case SecurityAnalysisConfig sac -> {
                 return processConfigRepository.save(SecurityAnalysisConfigMapper.toEntity(sac)).getId();
             }
+            case SnapshotRefinerConfig src -> {
+                return processConfigRepository.save(SnapshotRefinerConfigMapper.toEntity(src)).getId();
+            }
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         }
     }
@@ -46,6 +52,7 @@ public class ProcessConfigService {
     public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
         return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
             case SecurityAnalysisConfigEntity sae -> Optional.of(SecurityAnalysisConfigMapper.toDto(sae));
+            case SnapshotRefinerConfigEntity src -> Optional.of(SnapshotRefinerConfigMapper.toDto(src));
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         });
     }
@@ -60,6 +67,8 @@ public class ProcessConfigService {
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
                         SecurityAnalysisConfigMapper.update((SecurityAnalysisConfigEntity) entity, sac);
+                    case SnapshotRefinerConfig src ->
+                        SnapshotRefinerConfigMapper.update((SnapshotRefinerConfigEntity) entity, src);
                     default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
                 return true;
@@ -81,6 +90,7 @@ public class ProcessConfigService {
         List<ProcessConfigEntity> processConfigs = processConfigRepository.findAllByProcessType(processType);
         return processConfigs.stream().map(entity -> switch (entity) {
             case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+            case SnapshotRefinerConfigEntity src -> SnapshotRefinerConfigMapper.toDto(src);
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         }).toList();
     }

@@ -11,8 +11,13 @@ import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.SnapshotRefinerConfig;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -22,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -49,40 +55,49 @@ class ProcessConfigControllerTest {
     @MockitoBean
     private ProcessConfigService processConfigService;
 
-    @Test
-    void createSecurityAnalysisConfig() throws Exception {
-        UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+    private static Stream<Arguments> provideProcessConfig() {
+        return Stream.of(
+                Arguments.of(
+                    new SecurityAnalysisConfig(
+                        UUID.randomUUID(),
+                        List.of("contingency1", "contingency2"),
+                        List.of(UUID.randomUUID(), UUID.randomUUID()))
+                ),
+                Arguments.of(
+                    new SnapshotRefinerConfig(
+                        Optional.of(UUID.randomUUID()),
+                        Optional.empty())
+                )
         );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideProcessConfig")
+    void createSecurityAnalysisConfig(ProcessConfig processConfig) throws Exception {
+        UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.createProcessConfig(any(ProcessConfig.class)))
             .thenReturn(processConfigId);
 
         mockMvc.perform(post("/v1/process-configs")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(securityAnalysisConfig)))
+                        .content(objectMapper.writeValueAsString(processConfig)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(processConfigId.toString()));
 
-        verify(processConfigService).createProcessConfig(any(SecurityAnalysisConfig.class));
+        verify(processConfigService).createProcessConfig(processConfig);
     }
 
-    @Test
-    void getSecurityAnalysisConfig() throws Exception {
+    @ParameterizedTest
+    @MethodSource("provideProcessConfig")
+    void getPersistedProcessConfig(ProcessConfig processConfig) throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        PersistedProcessConfig securityAnalysisConfig = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
-        ));
-        String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
+        PersistedProcessConfig persistedProcessConfig = new PersistedProcessConfig(processConfigId, processConfig);
+        String expectedJson = objectMapper.writeValueAsString(persistedProcessConfig);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
-            .thenReturn(Optional.of(securityAnalysisConfig));
+            .thenReturn(Optional.of(persistedProcessConfig));
 
         mockMvc.perform(get("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -90,11 +105,11 @@ class ProcessConfigControllerTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json(expectedJson));
 
-        verify(processConfigService).getProcessConfig(any(UUID.class));
+        verify(processConfigService).getProcessConfig(processConfigId);
     }
 
     @Test
-    void getSecurityAnalysisConfigNotFound() throws Exception {
+    void getProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -104,51 +119,43 @@ class ProcessConfigControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound());
 
-        verify(processConfigService).getProcessConfig(any(UUID.class));
+        verify(processConfigService).getProcessConfig(processConfigId);
     }
 
-    @Test
-    void updateSecurityAnalysisConfig() throws Exception {
+    @ParameterizedTest
+    @MethodSource("provideProcessConfig")
+    void updateProcessConfig(ProcessConfig processConfig) throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
-        );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
             .thenReturn(Boolean.TRUE);
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(securityAnalysisConfig)))
+                .content(objectMapper.writeValueAsString(processConfig)))
             .andExpect(status().isOk());
 
-        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
+        verify(processConfigService).updateProcessConfig(processConfigId, processConfig);
     }
 
-    @Test
-    void updateSecurityAnalysisConfigNotFound() throws Exception {
+    @ParameterizedTest
+    @MethodSource("provideProcessConfig")
+    void updateProcessConfigNotFound(ProcessConfig processConfig) throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
-        );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
             .thenReturn(Boolean.FALSE);
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(securityAnalysisConfig)))
+                .content(objectMapper.writeValueAsString(processConfig)))
             .andExpect(status().isNotFound());
 
-        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
+        verify(processConfigService).updateProcessConfig(processConfigId, processConfig);
     }
 
     @Test
-    void deleteSecurityAnalysisConfig() throws Exception {
+    void deleteProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
@@ -157,11 +164,11 @@ class ProcessConfigControllerTest {
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isOk());
 
-        verify(processConfigService).deleteProcessConfig(any(UUID.class));
+        verify(processConfigService).deleteProcessConfig(processConfigId);
     }
 
     @Test
-    void deleteSecurityAnalysisConfigNotFound() throws Exception {
+    void deleteProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
@@ -170,7 +177,7 @@ class ProcessConfigControllerTest {
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isNotFound());
 
-        verify(processConfigService).deleteProcessConfig(any(UUID.class));
+        verify(processConfigService).deleteProcessConfig(processConfigId);
     }
 
     @Test
@@ -203,17 +210,45 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void getAllSecurityAnalysisConfigsNotFound() throws Exception {
-        when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
+    void getAllSnapshotRefinerConfigs() throws Exception {
+        List<PersistedProcessConfig> snapshotRefinerConfigs = List.of(
+                new PersistedProcessConfig(UUID.randomUUID(), new SnapshotRefinerConfig(
+                        Optional.of(UUID.randomUUID()),
+                        Optional.of(UUID.randomUUID())
+                )),
+                new PersistedProcessConfig(UUID.randomUUID(), new SnapshotRefinerConfig(
+                        Optional.of(UUID.randomUUID()),
+                        Optional.of(UUID.randomUUID())
+                ))
+        );
+        String expectedJson = objectMapper.writeValueAsString(snapshotRefinerConfigs);
+
+        when(processConfigService.getProcessConfigs(ProcessType.SNAPSHOT_REFINER))
+                .thenReturn(snapshotRefinerConfigs);
+
+        mockMvc.perform(get("/v1/process-configs")
+                        .param("processType", ProcessType.SNAPSHOT_REFINER.name())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json(expectedJson));
+
+        verify(processConfigService).getProcessConfigs(ProcessType.SNAPSHOT_REFINER);
+    }
+
+    @ParameterizedTest
+    @EnumSource(ProcessType.class)
+    void getAllProcessConfigsNotFound(ProcessType processType) throws Exception {
+        when(processConfigService.getProcessConfigs(processType))
             .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/process-configs")
-                .param("processType", ProcessType.SECURITY_ANALYSIS.name())
+                .param("processType", processType.name())
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json("[]"));
 
-        verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        verify(processConfigService).getProcessConfigs(processType);
     }
 }

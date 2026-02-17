@@ -17,7 +17,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     property = "processType"
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
+    @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
+    @JsonSubTypes.Type(value = SnapshotRefinerConfig.class, name = "SNAPSHOT_REFINER")
 })
 public interface ProcessConfig {
     ProcessType processType();

@@ -19,7 +19,8 @@ public record ProcessRunMessage<T extends ProcessConfig>(
     UUID caseUuid,
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "processType")
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
+        @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
+        @JsonSubTypes.Type(value = SnapshotRefinerConfig.class, name = "SNAPSHOT_REFINER")
     })
     T config,
     String debugFileLocation

@@ -25,8 +25,8 @@ public class S3Configuration {
 
     @SuppressWarnings("checkstyle:MethodName")
     @Bean
-    public S3RestService S3Service(S3Client s3Client) {
-        LOGGER.info("Configuring S3Service with bucket: {}", bucketName);
+    public S3RestService s3RestService(S3Client s3Client) {
+        LOGGER.info("Configuring S3RestService with bucket: {}", bucketName);
         return new S3RestService(s3Client, bucketName);
     }
 }

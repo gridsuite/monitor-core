@@ -11,9 +11,12 @@ import java.util.UUID;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class S3PathUtils {
+public final class S3PathUtils {
     public static final String S3_DELIMITER = "/";
+
+    private S3PathUtils() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
 
     /**
      * Builds root path used to build debug file location

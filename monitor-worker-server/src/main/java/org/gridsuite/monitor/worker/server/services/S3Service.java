@@ -1,5 +1,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.function.ThrowingConsumer;
 
@@ -17,6 +19,7 @@ import java.util.zip.GZIPOutputStream;
 
 @Service
 public class S3Service {
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3Service.class);
     private final S3RestService s3RestService;
 
     public S3Service(S3RestService s3RestService) {
@@ -63,6 +66,7 @@ public class S3Service {
                         Files.deleteIfExists(path);
                     } catch (IOException e) {
                         // TODO: should we throw if temp files deletion fails ?
+                        LOGGER.warn("Error deleting file {}", path, e);
                     }
                 });
         }

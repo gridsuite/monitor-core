@@ -46,16 +46,16 @@ public class S3RestService {
         );
     }
 
-    byte[] buildZip(String directoryKey, List<String> keys, Function<String, InputStream> objectFetcher) throws IOException {
+    byte[] buildZip(String directoryKey, List<String> filesS3Keys, Function<String, InputStream> s3ObjectFetcher) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (ZipOutputStream zip = new ZipOutputStream(outputStream)) {
-            for (String key : keys) {
-                String entryName = key.substring(directoryKey.length());
-                zip.putNextEntry(new ZipEntry(entryName));
-                try (InputStream in = objectFetcher.apply(key)) {
-                    in.transferTo(zip);
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
+            for (String fileS3Key : filesS3Keys) {
+                String zipEntryName = fileS3Key.substring(directoryKey.length());
+                zipOutputStream.putNextEntry(new ZipEntry(zipEntryName));
+                try (InputStream in = s3ObjectFetcher.apply(fileS3Key)) {
+                    in.transferTo(zipOutputStream);
                 }
-                zip.closeEntry();
+                zipOutputStream.closeEntry();
             }
         }
 
@@ -63,7 +63,7 @@ public class S3RestService {
     }
 
     List<String> getFilesKeysInDirectory(String directoryKey) {
-        List<String> keys = new ArrayList<>();
+        List<String> filesS3Keys = new ArrayList<>();
         ListObjectsV2Request request = ListObjectsV2Request.builder()
             .bucket(bucketName)
             .prefix(directoryKey)
@@ -71,46 +71,13 @@ public class S3RestService {
         ListObjectsV2Response response;
         do {
             response = s3Client.listObjectsV2(request);
-            response.contents().forEach(obj -> keys.add(obj.key()));
+            response.contents().forEach(obj -> filesS3Keys.add(obj.key()));
 
             request = request.toBuilder()
                 .continuationToken(response.nextContinuationToken())
                 .build();
         } while (Boolean.TRUE.equals(response.isTruncated())); // S3 pagination, this loop ends if this is the last page
 
-        return keys;
+        return filesS3Keys;
     }
-
-    /*public byte[] downloadDirectoryAsZip(String directoryKey) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
-            ListObjectsV2Request request = ListObjectsV2Request.builder()
-                .bucket(bucketName)
-                .prefix(directoryKey)
-                .build();
-            ListObjectsV2Response response;
-            do {
-                response = s3Client.listObjectsV2(request);
-                for (S3Object object : response.contents()) {
-                    String currentElementKey = object.key();
-                    // element key contains parents folder, we make a substring up to "directoryKey"
-                    String currentElementName = currentElementKey.substring(directoryKey.length());
-                    zipOutputStream.putNextEntry(new ZipEntry(currentElementName));
-                    try (ResponseInputStream<GetObjectResponse> s3Stream =
-                             s3Client.getObject(GetObjectRequest.builder()
-                                 .bucket(bucketName)
-                                 .key(currentElementKey)
-                                 .build())) {
-                        s3Stream.transferTo(zipOutputStream);
-                    }
-                    zipOutputStream.closeEntry();
-                }
-                request = request.toBuilder()
-                    .continuationToken(response.nextContinuationToken())
-                    .build();
-            } while (Boolean.TRUE.equals(response.isTruncated())); // S3 pagination, this loop ends if this is the last page
-        }
-
-        return outputStream.toByteArray();
-    }*/
 }

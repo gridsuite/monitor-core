@@ -92,5 +92,16 @@ public class MonitorController {
             ResponseEntity.ok().build() :
             ResponseEntity.notFound().build();
     }
+
+    @PostMapping("/execute/security-analysis-using-servers")
+    @Operation(summary = "Execute a security analysis process using existing servers (network-modification-server and security-analysis-server)")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
+    public ResponseEntity<UUID> executeSecurityAnalysisUsingServers(
+            @RequestParam UUID caseUuid,
+            @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
+            @RequestHeader(HEADER_USER_ID) String userId) {
+        UUID executionId = monitorService.executeProcessUsingServers(caseUuid, userId, securityAnalysisConfig);
+        return ResponseEntity.ok(executionId);
+    }
 }
 

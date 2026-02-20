@@ -92,8 +92,8 @@ public class ProcessConfigController {
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get all process config of a given type")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "process configs of the given type were returned"),
-        @ApiResponse(responseCode = "404", description = "no process config of the given type was found")})
+        @ApiResponse(responseCode = "200", description = "The process configs of the given type were returned"),
+        @ApiResponse(responseCode = "404", description = "No process config of the given type was found")})
     public ResponseEntity<List<ProcessConfig>> getProcessConfigs(
         @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
         Optional<List<ProcessConfig>> processConfigs = processConfigService.getProcessConfigs(processType);

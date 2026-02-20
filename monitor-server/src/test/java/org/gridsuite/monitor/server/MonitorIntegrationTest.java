@@ -295,16 +295,15 @@ class MonitorIntegrationTest {
         UUID configId2 = configService.createProcessConfig(securityAnalysisConfig2);
         assertThat(processConfigRepository.findById(configId2)).isNotEmpty();
 
-        Optional<List<ProcessConfig>> processConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
-        assertThat(processConfigs).isPresent();
-        assertThat(processConfigs.get()).hasSize(2);
+        List<ProcessConfig> processConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        assertThat(processConfigs).hasSize(2);
 
-        SecurityAnalysisConfig retrievedConfig1 = (SecurityAnalysisConfig) processConfigs.get().stream()
-            .filter(c -> c.getId().equals(configId1))
+        SecurityAnalysisConfig retrievedConfig1 = (SecurityAnalysisConfig) processConfigs.stream()
+            .filter(c -> c.id().equals(configId1))
             .findFirst()
             .orElseThrow();
-        SecurityAnalysisConfig retrievedConfig2 = (SecurityAnalysisConfig) processConfigs.get().stream()
-            .filter(c -> c.getId().equals(configId2))
+        SecurityAnalysisConfig retrievedConfig2 = (SecurityAnalysisConfig) processConfigs.stream()
+            .filter(c -> c.id().equals(configId2))
             .findFirst()
             .orElseThrow();
 
@@ -319,15 +318,14 @@ class MonitorIntegrationTest {
         boolean deleted = configService.deleteProcessConfig(configId1);
         assertThat(deleted).isTrue();
 
-        Optional<List<ProcessConfig>> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
-        assertThat(remainingConfigs).isPresent();
-        assertThat(remainingConfigs.get()).hasSize(1);
-        assertThat(remainingConfigs.get().get(0).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+        List<ProcessConfig> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        assertThat(remainingConfigs).hasSize(1);
+        assertThat(remainingConfigs.get(0).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
         boolean deletedSecond = configService.deleteProcessConfig(configId2);
         assertThat(deletedSecond).isTrue();
 
-        Optional<List<ProcessConfig>> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        List<ProcessConfig> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(noConfigs).isEmpty();
     }
 }

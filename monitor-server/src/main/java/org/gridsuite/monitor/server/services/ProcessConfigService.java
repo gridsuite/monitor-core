@@ -76,18 +76,16 @@ public class ProcessConfigService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<List<ProcessConfig>> getProcessConfigs(ProcessType processType) {
+    public List<ProcessConfig> getProcessConfigs(ProcessType processType) {
         Class<?> entityTypeClass = switch (processType) {
             case SECURITY_ANALYSIS -> SecurityAnalysisConfigEntity.class;
         };
 
         List<AbstractProcessConfigEntity> processConfigList = processConfigRepository.findAllByProcessType(entityTypeClass);
-        return processConfigList.isEmpty()
-            ? Optional.empty()
-            : Optional.of(processConfigList.stream().map(entity ->
-                switch (entity) {
-                    case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
-                    default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
-                }).toList());
+        return processConfigList.stream().map(entity ->
+            switch (entity) {
+                case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+                default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
+            }).toList();
     }
 }

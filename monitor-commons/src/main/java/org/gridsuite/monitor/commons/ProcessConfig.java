@@ -25,7 +25,7 @@ import java.util.UUID;
 })
 public interface ProcessConfig {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    UUID getId();
+    UUID id();
 
     ProcessType processType();
 

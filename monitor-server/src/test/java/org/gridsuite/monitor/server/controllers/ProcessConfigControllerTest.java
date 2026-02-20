@@ -195,10 +195,10 @@ class ProcessConfigControllerTest {
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);
 
         when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
-            .thenReturn(Optional.of(securityAnalysisConfigs));
+            .thenReturn(securityAnalysisConfigs);
 
         mockMvc.perform(get("/v1/process-configs")
-                .param("processType", ProcessType.SECURITY_ANALYSIS.toString())
+                .param("processType", ProcessType.SECURITY_ANALYSIS.name())
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -210,12 +210,14 @@ class ProcessConfigControllerTest {
     @Test
     void getAllSecurityAnalysisConfigsNotFound() throws Exception {
         when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
-            .thenReturn(Optional.empty());
+            .thenReturn(List.of());
 
         mockMvc.perform(get("/v1/process-configs")
-                .param("processType", ProcessType.SECURITY_ANALYSIS.toString())
+                .param("processType", ProcessType.SECURITY_ANALYSIS.name())
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound());
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json("[]"));
 
         verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
     }

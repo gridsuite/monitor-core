@@ -19,11 +19,6 @@ public record SecurityAnalysisConfig(
     List<UUID> modificationUuids
 ) implements ProcessConfig {
     @Override
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;
     }

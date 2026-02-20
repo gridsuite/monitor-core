@@ -13,10 +13,16 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public record SecurityAnalysisConfig(
+    UUID id,
     UUID parametersUuid,
     List<String> contingencies,
     List<UUID> modificationUuids
 ) implements ProcessConfig {
+    @Override
+    public UUID getId() {
+        return id;
+    }
+
     @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;

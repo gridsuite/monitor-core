@@ -20,6 +20,6 @@ import java.util.UUID;
  */
 @Repository
 public interface ProcessConfigRepository extends JpaRepository<AbstractProcessConfigEntity, UUID> {
-    @Query("SELECT e FROM AbstractProcessConfigEntity e WHERE TYPE(e) = :processType ORDER BY e.lastModificationDate DESC")
-    List<AbstractProcessConfigEntity> findAllByProcessTypeOrderByLastModificationDateDesc(@Param("processType") Class<?> processType);
+    @Query("SELECT e FROM AbstractProcessConfigEntity e WHERE TYPE(e) = :processType")
+    List<AbstractProcessConfigEntity> findAllByProcessType(@Param("processType") Class<?> processType);
 }

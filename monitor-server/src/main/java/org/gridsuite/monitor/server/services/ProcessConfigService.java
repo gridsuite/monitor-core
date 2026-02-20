@@ -81,7 +81,7 @@ public class ProcessConfigService {
             case SECURITY_ANALYSIS -> SecurityAnalysisConfigEntity.class;
         };
 
-        List<AbstractProcessConfigEntity> processConfigList = processConfigRepository.findAllByProcessTypeOrderByLastModificationDateDesc(entityTypeClass);
+        List<AbstractProcessConfigEntity> processConfigList = processConfigRepository.findAllByProcessType(entityTypeClass);
         return processConfigList.isEmpty()
             ? Optional.empty()
             : Optional.of(processConfigList.stream().map(entity ->

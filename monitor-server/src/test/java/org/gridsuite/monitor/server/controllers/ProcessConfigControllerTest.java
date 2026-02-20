@@ -183,15 +183,13 @@ class ProcessConfigControllerTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID()),
-                "user1", Instant.now().minusSeconds(120), Instant.now(), "user2"
+                List.of(UUID.randomUUID(), UUID.randomUUID())
             ),
             new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 List.of("contingency3", "contingency4"),
-                List.of(UUID.randomUUID()),
-                "user1", Instant.now().minusSeconds(60), Instant.now().plusSeconds(30), "user2"
+                List.of(UUID.randomUUID())
             )
         );
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);

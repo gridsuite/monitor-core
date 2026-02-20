@@ -42,7 +42,7 @@ class S3RestServiceTest {
         );
 
         byte[] zipBytes = s3RestService.buildZip(
-            "executionId1/",
+            "executionId1",
             keys,
             key -> new ByteArrayInputStream(fakeData.get(key).getBytes())
         );
@@ -109,7 +109,7 @@ class S3RestServiceTest {
                 )
             ));
 
-        byte[] zipBytes = s3RestService.downloadDirectoryAsZip("executionId1/");
+        byte[] zipBytes = s3RestService.downloadDirectoryAsZip("executionId1");
 
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry = zis.getNextEntry();

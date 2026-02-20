@@ -50,7 +50,7 @@ public class S3RestService {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
             for (String fileS3Key : filesS3Keys) {
-                String zipEntryName = fileS3Key.substring(directoryKey.length());
+                String zipEntryName = fileS3Key.substring(directoryKey.length() + 1);
                 zipOutputStream.putNextEntry(new ZipEntry(zipEntryName));
                 try (InputStream in = s3ObjectFetcher.apply(fileS3Key)) {
                     in.transferTo(zipOutputStream);

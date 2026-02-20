@@ -6,12 +6,15 @@
  */
 package org.gridsuite.monitor.commons;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
+@JsonIgnoreProperties(value = "id", allowGetters = true)
 public record SecurityAnalysisConfig(
     UUID id,
     UUID parametersUuid,

@@ -31,6 +31,9 @@ public class S3RestService {
         this.bucketName = bucketName;
     }
 
+    /**
+     * We did not use downloadDirectory from s3 methods here because it downloads all files on device directly instead of letting us redirect the stream into zip stream
+     */
     public byte[] downloadDirectoryAsZip(String directoryKey) throws IOException {
         List<String> filesKeys = getFilesKeysInDirectory(directoryKey);
 

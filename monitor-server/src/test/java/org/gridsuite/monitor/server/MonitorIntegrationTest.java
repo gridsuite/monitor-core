@@ -79,6 +79,9 @@ class MonitorIntegrationTest {
     @MockitoBean
     private ResultService resultService;
 
+    @MockitoBean
+    private S3RestService s3RestService;
+
     private UUID caseUuid;
 
     private String userId;

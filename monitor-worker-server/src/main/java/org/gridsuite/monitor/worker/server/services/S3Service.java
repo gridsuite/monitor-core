@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.gridsuite.monitor.worker.server.services;
 
 import org.slf4j.Logger;
@@ -17,6 +23,9 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
+ */
 @Service
 public class S3Service {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Service.class);
@@ -36,7 +45,7 @@ public class S3Service {
         Path compressedDebugFile = null;
 
         try {
-            debugFile = Files.createTempFile(tempDir, fileName, ".xiidm");
+            debugFile = Files.createTempFile(tempDir, fileName, ".temp");
             compressedDebugFile = Files.createTempFile(tempDir, fileName, ".gz");
 
             writer.accept(debugFile);

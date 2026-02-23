@@ -93,7 +93,7 @@ class ProcessExecutionServiceTest {
         UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, false);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
         when(process.defineSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
@@ -142,7 +142,7 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         RuntimeException processException = new RuntimeException("Process execution failed");
         doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, false);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
 
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
@@ -161,7 +161,7 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         when(processConfig.processType()).thenReturn(null);
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, false);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null);
 
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
                 .isInstanceOf(IllegalArgumentException.class)

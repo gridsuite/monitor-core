@@ -8,7 +8,7 @@ package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.commons.utils.S3PathUtils;
+import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
@@ -19,9 +19,6 @@ import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -59,6 +56,9 @@ class MonitorServiceTest {
     @Mock
     private S3RestService s3RestService;
 
+    @Mock
+    private S3PathResolver s3PathResolver;
+
     @InjectMocks
     private MonitorService monitorService;
 
@@ -79,18 +79,12 @@ class MonitorServiceTest {
         );
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void executeProcessCreateExecutionAndSendNotification(boolean isDebug) {
-        UUID expectedExecutionId = UUID.randomUUID();
-        when(executionRepository.save(any(ProcessExecutionEntity.class)))
-                .thenAnswer(invocation -> {
-                    ProcessExecutionEntity entity = invocation.getArgument(0);
-                    entity.setId(expectedExecutionId); // mock id generation
-                    return entity;
-                });
+    @Test
+    void executeProcessCreateExecutionAndSendNotification() {
+        String debugFileLocation = "debug/file/location";
+        when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
+        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, true);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
@@ -105,9 +99,10 @@ class MonitorServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
-                isDebug,
-                result
+                result,
+                debugFileLocation
         );
+        verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
     }
 
     @Test
@@ -154,62 +149,6 @@ class MonitorServiceTest {
         assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
         assertThat(execution.getStartedAt()).isEqualTo(startedAt);
         assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
-        verify(executionRepository).save(execution);
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = ProcessStatus.class, names = {"COMPLETED", "FAILED"})
-    void updateExecutionStatusWithDebugOnAndProcessStatusDoneShouldUpdateDebugLocation(ProcessStatus processStatus) {
-        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-            .id(executionId)
-            .type(ProcessType.SECURITY_ANALYSIS.name())
-            .caseUuid(caseUuid)
-            .userId(userId)
-            .status(ProcessStatus.RUNNING)
-            .scheduledAt(Instant.now())
-            .isDebug(true)
-            .build();
-        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        String envName = "production-env";
-        Instant startedAt = Instant.now().minusSeconds(60);
-        Instant completedAt = Instant.now();
-
-        monitorService.updateExecutionStatus(executionId, processStatus, envName, startedAt, completedAt);
-
-        verify(executionRepository).findById(executionId);
-        // assert standard fields
-        assertThat(execution.getStatus()).isEqualTo(processStatus);
-        assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
-        assertThat(execution.getStartedAt()).isEqualTo(startedAt);
-        assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
-
-        // assert debug location field
-        assertThat(execution.getDebugFileLocation()).isEqualTo(S3PathUtils.toDebugLocation(envName, ProcessType.SECURITY_ANALYSIS.name(), executionId));
-        verify(executionRepository).save(execution);
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = ProcessStatus.class, names = {"RUNNING", "SCHEDULED"})
-    void updateExecutionStatusWithDebugOnAndProcessStatusNotDoneShouldNotUpdateDebugLocation(ProcessStatus processStatus) {
-        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-            .id(executionId)
-            .type(ProcessType.SECURITY_ANALYSIS.name())
-            .caseUuid(caseUuid)
-            .userId(userId)
-            .status(ProcessStatus.RUNNING)
-            .scheduledAt(Instant.now())
-            .isDebug(true)
-            .build();
-        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        String envName = "production-env";
-        Instant startedAt = Instant.now().minusSeconds(60);
-        Instant completedAt = Instant.now();
-
-        monitorService.updateExecutionStatus(executionId, processStatus, envName, startedAt, completedAt);
-
-        verify(executionRepository).findById(executionId);
-        // assert debug location field
-        assertThat(execution.getDebugFileLocation()).isNull();
         verify(executionRepository).save(execution);
     }
 
@@ -639,7 +578,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void getNotExistingDebugInfo() {
+    void getNotExistingExecutionDebugInfo() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
         Optional<byte[]> result = monitorService.getDebugInfos(executionId);
@@ -668,5 +607,19 @@ class MonitorServiceTest {
 
         verify(executionRepository).findById(executionId);
         verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
+    }
+
+    @Test
+    void getExecutionWithoutDebugInfo() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<byte[]> result = monitorService.getDebugInfos(executionId);
+
+        assertThat(result).isEmpty();
+
+        verify(executionRepository).findById(executionId);
+        verifyNoInteractions(s3RestService);
     }
 }

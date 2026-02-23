@@ -55,7 +55,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
         if (CollectionUtils.isNotEmpty(modificationIds)) {
             applyModifications(modificationIds, network, context.getReportInfos().reportNode());
         }
-        if (context.isDebug()) {
+        if (context.getDebugFileLocation() != null) {
             try {
                 exportUpdatedNetworkToS3(context);
             } catch (IOException e) {

@@ -27,7 +27,6 @@ import java.util.UUID;
 public class ProcessExecutionEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column
@@ -54,9 +53,6 @@ public class ProcessExecutionEntity {
 
     @Column
     private String userId;
-
-    @Column
-    private boolean isDebug;
 
     @Column
     private String debugFileLocation;

@@ -9,15 +9,15 @@ package org.gridsuite.monitor.server.services;
 import org.gridsuite.monitor.commons.ProcessRunMessage;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.stream.function.StreamBridge;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.argThat;
@@ -54,10 +54,9 @@ class NotificationServiceTest {
         );
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void sendProcessRunMessage(boolean isDebug) {
-        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, isDebug, executionId);
+    @Test
+    void sendProcessRunMessage() {
+        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, "debug/file/location");
 
         verify(publisher).send(
                 eq("publishRunSecurityAnalysis-out-0"),
@@ -65,7 +64,7 @@ class NotificationServiceTest {
                         message.executionId().equals(executionId) &&
                         message.caseUuid().equals(caseUuid) &&
                         message.config().equals(securityAnalysisConfig) &&
-                        message.isDebug() == isDebug)
+                        Objects.equals(message.debugFileLocation(), "debug/file/location"))
         );
     }
 }

@@ -14,7 +14,6 @@ import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.*;
@@ -107,13 +106,10 @@ class ApplyModificationsStepTest {
         doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
         // --- mock data specific to debug behaviour ---
-        when(stepContext.isDebug()).thenReturn(true);
-        when(stepContext.getExecutionEnvironment()).thenReturn("execution_env");
-        UUID processExecutionId = UUID.randomUUID();
-        when(stepContext.getProcessExecutionId()).thenReturn(processExecutionId);
+        String debugFileLocation = "debug/file/location";
+        when(stepContext.getDebugFileLocation()).thenReturn(debugFileLocation);
         when(stepContext.getProcessStepType()).thenReturn(CommonStepType.APPLY_MODIFICATIONS);
         when(stepContext.getStepOrder()).thenReturn(7);
-        when(config.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
 
         // -- execute method
         applyModificationsStep.execute(stepContext);
@@ -125,7 +121,7 @@ class ApplyModificationsStepTest {
         ArgumentCaptor<ThrowingConsumer<Path>> networkWriterCapture = ArgumentCaptor.forClass(ThrowingConsumer.class);
 
         verify(s3Service).exportCompressedToS3(
-            eq("execution_env_debug/process/SECURITY_ANALYSIS/" + processExecutionId + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz"),
+            eq(debugFileLocation + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz"),
             eq("debug.xiidm.gz"),
             networkWriterCapture.capture()
         );

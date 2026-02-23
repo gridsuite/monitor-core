@@ -22,8 +22,6 @@ import java.util.zip.ZipOutputStream;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 public class S3RestService {
-    public static final String METADATA_FILE_NAME = "file-name";
-
     private final S3Client s3Client;
 
     private final String bucketName;

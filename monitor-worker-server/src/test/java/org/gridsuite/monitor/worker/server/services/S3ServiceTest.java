@@ -6,6 +6,8 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.iidm.network.Network;
+import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,11 +47,16 @@ class S3ServiceTest {
     @Test
     void testPathIsCompressedBeforeUploading() throws Exception {
         // --- Inputs ---
+        Network network = EurostagTutorialExample1Factory.create();
         String s3Key = "s3Key";
-        String fileName = "fileName";
-        String dataToCompress = "dataToCompress";
+        String fileNamePrefix = "fileName";
+        String fileNameSuffix = ".xiidm";
         ThrowingConsumer<Path> writer =
-            path -> Files.writeString(path, dataToCompress);
+            path -> network.write("XIIDM", null, path);
+
+        // write network directly in expectedFile.xiidm for later assertions
+        Path expectedFilePath = testDir.resolve("expectedFile.xiidm");
+        network.write("XIIDM", null, expectedFilePath);
 
         // Since temp files are deleted after "uploadFile", make a copy of the compressed file to assert its content
         Path capturedCopy = Files.createTempFile(testDir, "test-copy", ".gz");
@@ -61,13 +68,14 @@ class S3ServiceTest {
             .uploadFile(any(Path.class), anyString(), anyString());
 
         // --- Method invocation ---
-        s3Service.exportCompressedToS3(s3Key, fileName, writer);
+        s3Service.exportCompressedToS3(s3Key, fileNamePrefix, fileNameSuffix, writer);
 
         // --- Assertions ---
-        verify(s3RestService).uploadFile(any(), eq(s3Key), eq(fileName));
+        verify(s3RestService).uploadFile(any(), eq(s3Key), eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz")));
         try (InputStream in = new GZIPInputStream(Files.newInputStream(capturedCopy))) {
             String uncompressedContent = new String(in.readAllBytes(), UTF_8);
-            assertThat(uncompressedContent).isEqualTo(dataToCompress);
+            assertThat(uncompressedContent).isNotNull();
+            assertThat(uncompressedContent).isEqualTo(Files.readString(expectedFilePath));
         }
     }
 
@@ -77,7 +85,8 @@ class S3ServiceTest {
         AtomicReference<Path> debugFileToUplad = new AtomicReference<>();
         AtomicReference<Path> debugTempDir = new AtomicReference<>();
         String s3Key = "s3Key";
-        String fileName = "fileName";
+        String fileNamePrefix = "fileName";
+        String fileNameSuffix = ".test";
 
         ThrowingConsumer<Path> writer = path -> {
             debugFileToUplad.set(path);
@@ -86,14 +95,14 @@ class S3ServiceTest {
         };
 
         // --- Method invocation ---
-        s3Service.exportCompressedToS3(s3Key, fileName, writer);
+        s3Service.exportCompressedToS3(s3Key, fileNamePrefix, fileNameSuffix, writer);
 
         // --- Assertions ---
         ArgumentCaptor<Path> compressedDebugFileToUploadCaptor = ArgumentCaptor.forClass(Path.class);
         verify(s3RestService).uploadFile(
             compressedDebugFileToUploadCaptor.capture(),
             eq(s3Key),
-            eq(fileName)
+            eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz"))
         );
         Path compressedDebugFileToUpload = compressedDebugFileToUploadCaptor.getValue();
 

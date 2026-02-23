@@ -35,7 +35,8 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     private final S3Service s3Service;
     private final FilterService filterService;
 
-    private static final String DEBUG_FILENAME = "debug.xiidm.gz";
+    private static final String DEBUG_FILENAME_PREFIX = "debug";
+    private static final String DEBUG_FILENAME_SUFFIX = ".xiidm";
 
     public ApplyModificationsStep(NetworkModificationService networkModificationService,
                                   NetworkModificationRestService networkModificationRestService,
@@ -66,8 +67,9 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
         s3Service.exportCompressedToS3(
-            getDebugFilePath(context, DEBUG_FILENAME),
-            DEBUG_FILENAME,
+            getDebugFilePath(context, String.join("", DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX, ".gz")),
+            DEBUG_FILENAME_PREFIX,
+            DEBUG_FILENAME_SUFFIX,
             networkFile -> context.getNetwork().write("XIIDM", null, networkFile)
         );
     }

@@ -122,11 +122,12 @@ class ApplyModificationsStepTest {
 
         verify(s3Service).exportCompressedToS3(
             eq(debugFileLocation + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz"),
-            eq("debug.xiidm.gz"),
+            eq("debug"),
+            eq(".xiidm"), // very important - file suffix is very important when using network.write(...)
             networkWriterCapture.capture()
         );
 
-        // --- assert network has been written to export method ---
+        // --- assert networkWriterCapture.get() is actually calling network.write() ---
         Path mockedPath = mock(Path.class);
         ThrowingConsumer<Path> networkWriter = networkWriterCapture.getValue();
 

@@ -35,7 +35,7 @@ public class S3Service {
         this.s3RestService = s3RestService;
     }
 
-    public void exportCompressedToS3(String s3Key, String fileName, ThrowingConsumer<Path> writer) throws IOException {
+    public void exportCompressedToS3(String s3Key, String fileNamePrefix, String fileNameSuffix, ThrowingConsumer<Path> writer) throws IOException {
         FileAttribute<Set<PosixFilePermission>> attrs =
             PosixFilePermissions.asFileAttribute(
                 PosixFilePermissions.fromString("rwx------"));
@@ -43,8 +43,8 @@ public class S3Service {
         Path tempDir = Files.createTempDirectory("process-debug", attrs);
 
         try {
-            Path debugFile = Files.createTempFile(tempDir, fileName, ".temp");
-            Path compressedDebugFile = Files.createTempFile(tempDir, fileName, ".gz");
+            Path debugFile = Files.createTempFile(tempDir, fileNamePrefix, fileNameSuffix);
+            Path compressedDebugFile = Files.createTempFile(tempDir, String.join("", fileNamePrefix, fileNameSuffix), ".gz");
 
             writer.accept(debugFile);
 
@@ -53,7 +53,7 @@ public class S3Service {
                 in.transferTo(out);
             }
 
-            s3RestService.uploadFile(compressedDebugFile, s3Key, fileName);
+            s3RestService.uploadFile(compressedDebugFile, s3Key, String.join("", fileNamePrefix, fileNameSuffix, ".gz"));
         } finally {
             try {
                 if (Files.exists(tempDir)) {

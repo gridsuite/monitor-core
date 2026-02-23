@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.gridsuite.monitor.worker.server.services;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +28,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
+/**
+ * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
+ */
 @ExtendWith(MockitoExtension.class)
 class S3RestServiceTest {
     @Mock

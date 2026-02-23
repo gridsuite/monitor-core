@@ -100,7 +100,6 @@ class MonitorIntegrationTest {
         // Start process execution
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
@@ -239,7 +238,6 @@ class MonitorIntegrationTest {
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
                 List.of(modificationUuid)
@@ -247,27 +245,26 @@ class MonitorIntegrationTest {
         UUID configId = configService.createProcessConfig(securityAnalysisConfig);
         assertThat(processConfigRepository.findById(configId)).isNotEmpty();
 
-        Optional<ProcessConfig> config = configService.getProcessConfig(configId);
+        Optional<PersistedProcessConfig> config = configService.getProcessConfig(configId);
         assertThat(config).isNotEmpty();
-        assertThat(config.get()).usingRecursiveComparison().ignoringFields("id").isEqualTo(securityAnalysisConfig);
+        assertThat(config.get().processConfig()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
 
         UUID updatedParametersUuid = UUID.randomUUID();
         UUID updatedModificationUuid = UUID.randomUUID();
         SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
                 updatedParametersUuid,
                 List.of("contingency3", "contingency4"),
                 List.of(updatedModificationUuid)
         );
         boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
         assertThat(updated).isTrue();
-        Optional<ProcessConfig> updatedConfig = configService.getProcessConfig(configId);
+        Optional<PersistedProcessConfig> updatedConfig = configService.getProcessConfig(configId);
         assertThat(updatedConfig).isNotEmpty();
-        assertThat(updatedConfig.get()).usingRecursiveComparison().ignoringFields("id").isEqualTo(updatedSecurityAnalysisConfig);
+        assertThat(updatedConfig.get().processConfig()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
 
         boolean deleted = configService.deleteProcessConfig(configId);
         assertThat(deleted).isTrue();
-        Optional<ProcessConfig> deletedConfig = configService.getProcessConfig(configId);
+        Optional<PersistedProcessConfig> deletedConfig = configService.getProcessConfig(configId);
         assertThat(deletedConfig).isEmpty();
     }
 
@@ -276,7 +273,6 @@ class MonitorIntegrationTest {
         UUID parametersUuid1 = UUID.randomUUID();
         UUID modificationUuid1 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
             parametersUuid1,
             List.of("contingency1", "contingency2"),
             List.of(modificationUuid1)
@@ -287,7 +283,6 @@ class MonitorIntegrationTest {
         UUID parametersUuid2 = UUID.randomUUID();
         UUID modificationUuid2 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
             parametersUuid2,
             List.of("contingency3", "contingency4"),
             List.of(modificationUuid2)
@@ -295,37 +290,40 @@ class MonitorIntegrationTest {
         UUID configId2 = configService.createProcessConfig(securityAnalysisConfig2);
         assertThat(processConfigRepository.findById(configId2)).isNotEmpty();
 
-        List<ProcessConfig> processConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        List<PersistedProcessConfig> processConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(processConfigs).hasSize(2);
 
-        SecurityAnalysisConfig retrievedConfig1 = (SecurityAnalysisConfig) processConfigs.stream()
+        PersistedProcessConfig retrievedConfig1 = processConfigs.stream()
             .filter(c -> c.id().equals(configId1))
             .findFirst()
             .orElseThrow();
-        SecurityAnalysisConfig retrievedConfig2 = (SecurityAnalysisConfig) processConfigs.stream()
+        SecurityAnalysisConfig retrievedSecurityAnalysisConfig1 = (SecurityAnalysisConfig) retrievedConfig1.processConfig();
+
+        PersistedProcessConfig retrievedConfig2 = processConfigs.stream()
             .filter(c -> c.id().equals(configId2))
             .findFirst()
             .orElseThrow();
+        SecurityAnalysisConfig retrievedSecurityAnalysisConfig2 = (SecurityAnalysisConfig) retrievedConfig2.processConfig();
 
-        assertThat(retrievedConfig1.parametersUuid()).isEqualTo(parametersUuid1);
-        assertThat(retrievedConfig1.contingencies()).isEqualTo(List.of("contingency1", "contingency2"));
-        assertThat(retrievedConfig1.modificationUuids()).isEqualTo(List.of(modificationUuid1));
+        assertThat(retrievedSecurityAnalysisConfig1.parametersUuid()).isEqualTo(parametersUuid1);
+        assertThat(retrievedSecurityAnalysisConfig1.contingencies()).isEqualTo(List.of("contingency1", "contingency2"));
+        assertThat(retrievedSecurityAnalysisConfig1.modificationUuids()).isEqualTo(List.of(modificationUuid1));
 
-        assertThat(retrievedConfig2.parametersUuid()).isEqualTo(parametersUuid2);
-        assertThat(retrievedConfig2.contingencies()).isEqualTo(List.of("contingency3", "contingency4"));
-        assertThat(retrievedConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
+        assertThat(retrievedSecurityAnalysisConfig2.parametersUuid()).isEqualTo(parametersUuid2);
+        assertThat(retrievedSecurityAnalysisConfig2.contingencies()).isEqualTo(List.of("contingency3", "contingency4"));
+        assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
         boolean deleted = configService.deleteProcessConfig(configId1);
         assertThat(deleted).isTrue();
 
-        List<ProcessConfig> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        List<PersistedProcessConfig> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(remainingConfigs).hasSize(1);
-        assertThat(remainingConfigs.get(0).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+        assertThat(remainingConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
         boolean deletedSecond = configService.deleteProcessConfig(configId2);
         assertThat(deletedSecond).isTrue();
 
-        List<ProcessConfig> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        List<PersistedProcessConfig> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(noConfigs).isEmpty();
     }
 }

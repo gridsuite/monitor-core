@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
@@ -58,9 +59,9 @@ public class ProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was returned"),
         @ApiResponse(responseCode = "404", description = "process config was not found")})
-    public ResponseEntity<ProcessConfig> getProcessConfig(
+    public ResponseEntity<PersistedProcessConfig> getProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
-        Optional<ProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
+        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
         return processConfig.map(config -> ResponseEntity.ok().body(config)).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -93,9 +94,9 @@ public class ProcessConfigController {
     @Operation(summary = "Get all process configs of a given type")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "The process configs of the given type were returned")})
-    public ResponseEntity<List<ProcessConfig>> getProcessConfigs(
+    public ResponseEntity<List<PersistedProcessConfig>> getProcessConfigs(
         @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
-        List<ProcessConfig> processConfigs = processConfigService.getProcessConfigs(processType);
+        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(processType);
         return ResponseEntity.ok().body(processConfigs);
     }
 }

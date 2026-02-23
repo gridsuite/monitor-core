@@ -47,7 +47,6 @@ class NotificationServiceTest {
         executionId = UUID.randomUUID();
 
         securityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
                 parametersUuid,
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID())

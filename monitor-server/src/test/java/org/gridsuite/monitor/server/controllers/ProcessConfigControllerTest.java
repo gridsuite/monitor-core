@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
@@ -53,7 +54,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID())
         );
@@ -74,12 +74,11 @@ class ProcessConfigControllerTest {
     @Test
     void getSecurityAnalysisConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
+        PersistedProcessConfig securityAnalysisConfig = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
-        );
+        ));
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -113,7 +112,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
         );
@@ -133,7 +131,6 @@ class ProcessConfigControllerTest {
     void updateSecurityAnalysisConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
@@ -178,19 +175,17 @@ class ProcessConfigControllerTest {
 
     @Test
     void getAllSecurityAnalysisConfigs() throws Exception {
-        List<ProcessConfig> securityAnalysisConfigs = List.of(
-            new SecurityAnalysisConfig(
-                UUID.randomUUID(),
+        List<PersistedProcessConfig> securityAnalysisConfigs = List.of(
+            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID())
-            ),
-            new SecurityAnalysisConfig(
-                UUID.randomUUID(),
+            )),
+            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of("contingency3", "contingency4"),
                 List.of(UUID.randomUUID())
-            )
+            ))
         );
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);
 

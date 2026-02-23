@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.commons;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -24,9 +23,6 @@ import java.util.UUID;
     @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
 })
 public interface ProcessConfig {
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    UUID id();
-
     ProcessType processType();
 
     List<UUID> modificationUuids();

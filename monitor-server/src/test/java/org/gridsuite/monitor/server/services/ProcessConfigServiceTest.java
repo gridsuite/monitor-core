@@ -6,12 +6,13 @@
  */
 package org.gridsuite.monitor.server.services;
 
-import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
+import org.gridsuite.monitor.server.repositories.SecurityAnalysisConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,9 @@ import static org.mockito.Mockito.when;
 class ProcessConfigServiceTest {
 
     @Mock
+    private SecurityAnalysisConfigRepository securityAnalysisConfigRepository;
+
+    @Mock
     private ProcessConfigRepository processConfigRepository;
 
     @InjectMocks
@@ -49,7 +53,6 @@ class ProcessConfigServiceTest {
     void setUp() {
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID())
         );
@@ -58,7 +61,7 @@ class ProcessConfigServiceTest {
     @Test
     void createSecurityAnalysisConfig() {
         UUID expectedProcessConfigId = UUID.randomUUID();
-        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
+        when(securityAnalysisConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
             .thenAnswer(invocation -> {
                 SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
                 entity.setId(expectedProcessConfigId);
@@ -69,7 +72,7 @@ class ProcessConfigServiceTest {
         assertThat(result).isEqualTo(expectedProcessConfigId);
 
         ArgumentCaptor<SecurityAnalysisConfigEntity> captor = ArgumentCaptor.forClass(SecurityAnalysisConfigEntity.class);
-        verify(processConfigRepository).save(captor.capture());
+        verify(securityAnalysisConfigRepository).save(captor.capture());
 
         SecurityAnalysisConfigEntity savedEntity = captor.getValue();
         assertThat(savedEntity.getId()).isEqualTo(expectedProcessConfigId);
@@ -86,10 +89,10 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
 
-        Optional<ProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
+        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
         verify(processConfigRepository).findById(processConfigId);
         assertThat(processConfig).isPresent();
-        assertThat(processConfig.get()).usingRecursiveComparison().ignoringFields("id").isEqualTo(securityAnalysisConfig);
+        assertThat(processConfig.get().processConfig()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
     }
 
     @Test
@@ -98,7 +101,7 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
 
-        Optional<ProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
+        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigId);
         verify(processConfigRepository).findById(processConfigId);
         assertThat(processConfig).isEmpty();
     }
@@ -109,7 +112,6 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
                 UUID.randomUUID(),
                 List.of("contingency3", "contingency4", "contingency5"),
                 List.of(UUID.randomUUID())
@@ -122,9 +124,9 @@ class ProcessConfigServiceTest {
 
         verify(processConfigRepository).findById(processConfigId);
 
-        Optional<ProcessConfig> processConfigUpdated = processConfigService.getProcessConfig(processConfigId);
+        Optional<PersistedProcessConfig> processConfigUpdated = processConfigService.getProcessConfig(processConfigId);
         assertThat(processConfigUpdated).isPresent();
-        assertThat(processConfigUpdated.get()).usingRecursiveComparison().ignoringFields("id").isEqualTo(newSecurityAnalysisConfig);
+        assertThat(processConfigUpdated.get().processConfig()).usingRecursiveComparison().isEqualTo(newSecurityAnalysisConfig);
     }
 
     @Test
@@ -134,7 +136,6 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
                 UUID.randomUUID(),
                 List.of("contingency1"),
                 List.of(UUID.randomUUID())
@@ -174,27 +175,27 @@ class ProcessConfigServiceTest {
 
     @Test
     void getSecurityAnalysisConfigs() {
-        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(UUID.randomUUID(), UUID.randomUUID(), List.of("contingency1", "contingency2"), List.of(UUID.randomUUID()));
+        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency1", "contingency2"), List.of(UUID.randomUUID()));
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity1 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig1);
-        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), UUID.randomUUID(), List.of("contingency3", "contingency4"), List.of(UUID.randomUUID()));
+        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency3", "contingency4"), List.of(UUID.randomUUID()));
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity2 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig2);
 
-        when(processConfigRepository.findAllByProcessType(SecurityAnalysisConfigEntity.class))
+        when(securityAnalysisConfigRepository.findAll())
             .thenReturn(List.of(securityAnalysisConfigEntity1, securityAnalysisConfigEntity2));
 
-        List<ProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
-        verify(processConfigRepository).findAllByProcessType(SecurityAnalysisConfigEntity.class);
+        verify(securityAnalysisConfigRepository).findAll();
         assertThat(processConfigs).hasSize(2);
-        assertThat(processConfigs.get(0).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
-        assertThat(processConfigs.get(1).processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+        assertThat(processConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+        assertThat(processConfigs.get(1).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
-        SecurityAnalysisConfig resSecurityAnalysisConfig1 = (SecurityAnalysisConfig) processConfigs.get(0);
+        SecurityAnalysisConfig resSecurityAnalysisConfig1 = (SecurityAnalysisConfig) processConfigs.get(0).processConfig();
         assertThat(resSecurityAnalysisConfig1.parametersUuid()).isEqualTo(securityAnalysisConfig1.parametersUuid());
         assertThat(resSecurityAnalysisConfig1.contingencies()).isEqualTo(securityAnalysisConfig1.contingencies());
         assertThat(resSecurityAnalysisConfig1.modificationUuids()).isEqualTo(securityAnalysisConfig1.modificationUuids());
 
-        SecurityAnalysisConfig resSecurityAnalysisConfig2 = (SecurityAnalysisConfig) processConfigs.get(1);
+        SecurityAnalysisConfig resSecurityAnalysisConfig2 = (SecurityAnalysisConfig) processConfigs.get(1).processConfig();
         assertThat(resSecurityAnalysisConfig2.parametersUuid()).isEqualTo(securityAnalysisConfig2.parametersUuid());
         assertThat(resSecurityAnalysisConfig2.contingencies()).isEqualTo(securityAnalysisConfig2.contingencies());
         assertThat(resSecurityAnalysisConfig2.modificationUuids()).isEqualTo(securityAnalysisConfig2.modificationUuids());
@@ -202,11 +203,11 @@ class ProcessConfigServiceTest {
 
     @Test
     void getSecurityAnalysisConfigsNotFound() {
-        when(processConfigRepository.findAllByProcessType(SecurityAnalysisConfigEntity.class)).thenReturn(List.of());
+        when(securityAnalysisConfigRepository.findAll()).thenReturn(List.of());
 
-        List<ProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
-        verify(processConfigRepository).findAllByProcessType(SecurityAnalysisConfigEntity.class);
+        verify(securityAnalysisConfigRepository).findAll();
         assertThat(processConfigs).isEmpty();
     }
 }

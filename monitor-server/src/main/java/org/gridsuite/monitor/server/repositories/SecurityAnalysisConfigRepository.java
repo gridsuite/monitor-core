@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.server.entities.AbstractProcessConfigEntity;
+import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,5 +16,5 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Repository
-public interface ProcessConfigRepository extends JpaRepository<AbstractProcessConfigEntity, UUID> {
+public interface SecurityAnalysisConfigRepository extends JpaRepository<SecurityAnalysisConfigEntity, UUID> {
 }

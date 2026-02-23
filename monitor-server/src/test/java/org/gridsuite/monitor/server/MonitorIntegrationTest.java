@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.*;
+import org.gridsuite.monitor.server.config.MinioContainerConfig;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
@@ -47,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = {MonitorServerApplication.class, TestChannelBinderConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @AutoConfigureMockMvc
-class MonitorIntegrationTest {
+class MonitorIntegrationTest implements MinioContainerConfig {
 
     @Autowired
     private MonitorService monitorService;

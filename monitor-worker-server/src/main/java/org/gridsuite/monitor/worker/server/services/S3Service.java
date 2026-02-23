@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,12 +42,10 @@ public class S3Service {
                 PosixFilePermissions.fromString("rwx------"));
 
         Path tempDir = Files.createTempDirectory("process-debug", attrs);
-        Path debugFile = null;
-        Path compressedDebugFile = null;
 
         try {
-            debugFile = Files.createTempFile(tempDir, fileName, ".temp");
-            compressedDebugFile = Files.createTempFile(tempDir, fileName, ".gz");
+            Path debugFile = Files.createTempFile(tempDir, fileName, ".temp");
+            Path compressedDebugFile = Files.createTempFile(tempDir, fileName, ".gz");
 
             writer.accept(debugFile);
 
@@ -57,27 +56,13 @@ public class S3Service {
 
             s3RestService.uploadFile(compressedDebugFile, s3Key, fileName);
         } finally {
-            if (tempDir != null) {
-                deleteDirectoryRecursively(tempDir);
+            try {
+                if (Files.exists(tempDir)) {
+                    FileUtils.deleteDirectory(tempDir.toFile());
+                }
+            } catch (IOException e) {
+                LOGGER.error("Error cleaning up temporary debug directory: {}", tempDir, e);
             }
-        }
-    }
-
-    private void deleteDirectoryRecursively(Path directoryPath) throws IOException {
-        if (directoryPath == null || !Files.exists(directoryPath)) {
-            return;
-        }
-
-        try (var walk = Files.walk(directoryPath)) {
-            walk.sorted(Comparator.reverseOrder())
-                .forEach(path -> {
-                    try {
-                        Files.deleteIfExists(path);
-                    } catch (IOException e) {
-                        // TODO: should we throw if temp files deletion fails ?
-                        LOGGER.warn("Error deleting file {}", path, e);
-                    }
-                });
         }
     }
 }

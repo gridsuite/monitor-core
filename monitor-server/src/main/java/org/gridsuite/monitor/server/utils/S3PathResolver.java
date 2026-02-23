@@ -18,7 +18,7 @@ import java.util.UUID;
 public final class S3PathResolver {
     private final String s3RootPath;
 
-    public S3PathResolver(@Value("${powsybl-ws.s3.subpath.prefix:}") String s3RootPath) {
+    public S3PathResolver(@Value("${powsybl-ws.s3.subpath.prefix:}${debug-subpath:debug}") String s3RootPath) {
         this.s3RootPath = s3RootPath;
     }
 
@@ -30,6 +30,6 @@ public final class S3PathResolver {
      */
     public String toDebugLocation(String processType, UUID executionId) {
         String s3Delimiter = "/";
-        return String.join(s3Delimiter, s3RootPath + "_debug", "process", processType, executionId.toString());
+        return String.join(s3Delimiter, s3RootPath, "process", processType, executionId.toString());
     }
 }

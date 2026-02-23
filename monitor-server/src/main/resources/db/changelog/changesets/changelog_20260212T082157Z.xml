@@ -5,11 +5,4 @@
             <column name="debug_file_location" type="varchar(255)"/>
         </addColumn>
     </changeSet>
-    <changeSet author="lesaulnierkev (generated)" id="1770884531328-2">
-        <addColumn tableName="process_execution">
-            <column name="is_debug" type="boolean" defaultValueBoolean="false">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
-    </changeSet>
 </databaseChangeLog>

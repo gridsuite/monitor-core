@@ -7,18 +7,26 @@
 package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.server.dto.ReportLog;
-import org.gridsuite.monitor.server.dto.ReportPage;
-import org.gridsuite.monitor.server.dto.Severity;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.commons.api.types.message.MessageType;
+import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
+import org.gridsuite.monitor.commons.api.types.result.ResultType;
+import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.dto.report.ReportLog;
+import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.messaging.ConsumerService;
-import org.gridsuite.monitor.server.services.ProcessConfigService;
-import org.gridsuite.monitor.server.services.external.client.ReportRestClient;
-import org.gridsuite.monitor.server.services.internal.MonitorService;
-import org.gridsuite.monitor.server.services.internal.ResultService;
+import org.gridsuite.monitor.server.messaging.ConsumerService;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.client.ReportRestClient;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +62,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MonitorIntegrationTest {
 
     @Autowired
-    private MonitorService monitorService;
+    private ProcessExecutionService processExecutionService;
 
     @Autowired
     private ProcessConfigService configService;
@@ -102,7 +110,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);

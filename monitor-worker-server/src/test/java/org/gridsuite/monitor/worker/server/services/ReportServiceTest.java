@@ -9,8 +9,9 @@ package org.gridsuite.monitor.worker.server.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.commons.report.ReportNode;
+import org.gridsuite.monitor.worker.server.client.ReportRestClient;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
-import org.gridsuite.monitor.worker.server.dto.ReportInfos;
+import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,15 +32,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@RestClientTest(ReportService.class)
-@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportService.class})
+@RestClientTest(ReportRestClient.class)
+@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestClient.class})
 class ReportServiceTest {
 
     private static final UUID REPORT_UUID = UUID.randomUUID();
     private static final UUID REPORT_ERROR_UUID = UUID.randomUUID();
 
     @Autowired
-    private ReportService reportService;
+    private ReportRestClient reportRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -67,7 +68,7 @@ class ReportServiceTest {
                 .andRespond(MockRestResponseCreators.withSuccess());
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, reportNode);
-        assertThatNoException().isThrownBy(() -> reportService.sendReport(reportInfos));
+        assertThatNoException().isThrownBy(() -> reportRestClient.sendReport(reportInfos));
     }
 
     @Test
@@ -82,6 +83,6 @@ class ReportServiceTest {
                 .andRespond(MockRestResponseCreators.withServerError());
 
         ReportInfos reportInfos = new ReportInfos(REPORT_ERROR_UUID, reportNode);
-        assertThatThrownBy(() -> reportService.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> reportRestClient.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
     }
 }

@@ -6,13 +6,12 @@
  */
 package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 
-import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
-import org.gridsuite.monitor.worker.server.core.ProcessStep;
+import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.processes.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.steps.SecurityAnalysisRunComputationStep;
-import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,9 +29,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class SecurityAnalysisProcessTest {
 
     @Mock
-    private StepExecutionService<SecurityAnalysisConfig> stepExecutionService;
-
-    @Mock
     private LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
 
     @Mock
@@ -46,7 +42,6 @@ class SecurityAnalysisProcessTest {
     @BeforeEach
     void setUp() {
         process = new SecurityAnalysisProcess(
-            stepExecutionService,
             loadNetworkStep,
             applyModificationsStep,
             runComputationStep

@@ -12,6 +12,7 @@ import org.gridsuite.filter.utils.FilterServiceUtils;
 import org.gridsuite.modification.IFilterService;
 import org.gridsuite.modification.dto.FilterEquipments;
 import org.gridsuite.modification.dto.IdentifiableAttributes;
+import org.gridsuite.monitor.worker.server.client.FilterRestClient;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,14 +28,15 @@ import java.util.stream.Stream;
  */
 @Service
 public class FilterService implements IFilterService {
-    private final FilterRestService filterRestService;
+    private final FilterRestClient filterRestClient;
 
-    public FilterService(FilterRestService filterRestService) {
-        this.filterRestService = filterRestService;
+    public FilterService(FilterRestClient filterRestClient) {
+        this.filterRestClient = filterRestClient;
     }
 
+    @Override
     public List<AbstractFilter> getFilters(List<UUID> filtersUuids) {
-        return filterRestService.getFilters(filtersUuids);
+        return filterRestClient.getFilters(filtersUuids);
     }
 
     public Stream<org.gridsuite.filter.identifierlistfilter.FilterEquipments> exportFilters(List<UUID> filtersUuids, Network network) {

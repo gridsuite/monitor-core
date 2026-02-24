@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
-import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>

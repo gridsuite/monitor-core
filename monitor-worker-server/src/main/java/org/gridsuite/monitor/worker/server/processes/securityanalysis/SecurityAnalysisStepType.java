@@ -8,7 +8,7 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.gridsuite.monitor.worker.server.core.ProcessStepType;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>

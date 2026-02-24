@@ -6,8 +6,10 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ProcessRunMessage;
+import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.api.types.message.ProcessRunMessage;
+import org.gridsuite.monitor.worker.server.messaging.ConsumerService;
+import org.gridsuite.monitor.worker.server.processes.orchestrator.ProcessExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

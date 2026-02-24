@@ -7,16 +7,16 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.StepStatus;
-import org.gridsuite.monitor.commons.ProcessStatus;
-import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.ReportLog;
-import org.gridsuite.monitor.server.dto.ReportPage;
-import org.gridsuite.monitor.server.dto.Severity;
-import org.gridsuite.monitor.server.services.internal.MonitorService;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.dto.report.ReportLog;
+import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -52,7 +52,7 @@ class MonitorControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private MonitorService monitorService;
+    private ProcessExecutionService processExecutionService;
 
     @Test
     void executeSecurityAnalysisShouldReturnExecutionId() throws Exception {
@@ -66,7 +66,7 @@ class MonitorControllerTest {
                 List.of(modificationUuid)
         );
 
-        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))
+        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class)))
                 .thenReturn(executionId);
 
         mockMvc.perform(post("/v1/execute/security-analysis")
@@ -78,7 +78,7 @@ class MonitorControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class));
+        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class));
     }
 
     @Test
@@ -90,7 +90,7 @@ class MonitorControllerTest {
         ReportPage reportPage1 = new ReportPage(1, reportLogs1, 100, 10);
         List<ReportLog> reportLogs2 = List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID()));
         ReportPage reportPage2 = new ReportPage(2, reportLogs2, 200, 20);
-        when(monitorService.getReports(executionId))
+        when(processExecutionService.getReports(executionId))
                 .thenReturn(List.of(reportPage1, reportPage2));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
@@ -115,7 +115,7 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$[1].totalElements").value(200))
                 .andExpect(jsonPath("$[1].totalPages").value(20));
 
-        verify(monitorService).getReports(executionId);
+        verify(processExecutionService).getReports(executionId);
     }
 
     @Test
@@ -123,7 +123,7 @@ class MonitorControllerTest {
         UUID executionId = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
-        when(monitorService.getResults(executionId))
+        when(processExecutionService.getResults(executionId))
                 .thenReturn(List.of(result1, result2));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
@@ -133,7 +133,7 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$[0]").value(result1))
                 .andExpect(jsonPath("$[1]").value(result2));
 
-        verify(monitorService).getResults(executionId);
+        verify(processExecutionService).getResults(executionId);
     }
 
     @Test
@@ -144,7 +144,7 @@ class MonitorControllerTest {
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 
-        when(monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS)).thenReturn(processExecutionList);
+        when(processExecutionService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS)).thenReturn(processExecutionList);
 
         mockMvc.perform(get("/v1/executions?processType=SECURITY_ANALYSIS").accept(MediaType.APPLICATION_JSON_VALUE).header("userId", "user1,user2,user3"))
             .andExpect(status().isOk())
@@ -152,7 +152,7 @@ class MonitorControllerTest {
             .andExpect(jsonPath("$", hasSize(3)))
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
-        verify(monitorService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+        verify(processExecutionService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -163,7 +163,7 @@ class MonitorControllerTest {
         ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
         List<ProcessExecutionStep> processExecutionStepList = List.of(processExecutionStep1, processExecutionStep2, processExecutionStep3);
 
-        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));
+        when(processExecutionService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));
 
         mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
             .andExpect(status().isOk())
@@ -171,41 +171,41 @@ class MonitorControllerTest {
             .andExpect(jsonPath("$", hasSize(3)))
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionStepList)));
 
-        verify(monitorService).getStepsInfos(executionId);
+        verify(processExecutionService).getStepsInfos(executionId);
     }
 
     @Test
     void getStepsInfosShouldReturn404WhenExecutionNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.empty());
+        when(processExecutionService.getStepsInfos(executionId)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
             .andExpect(status().isNotFound());
 
-        verify(monitorService).getStepsInfos(executionId);
+        verify(processExecutionService).getStepsInfos(executionId);
     }
 
     @Test
     void deleteExecutionShouldReturnTrue() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(monitorService.deleteExecution(executionId))
+        when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Boolean.TRUE);
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
 
-        verify(monitorService).deleteExecution(executionId);
+        verify(processExecutionService).deleteExecution(executionId);
     }
 
     @Test
     void deleteExecutionShouldReturnFalse() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(monitorService.deleteExecution(executionId))
+        when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Boolean.FALSE);
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());
 
-        verify(monitorService).deleteExecution(executionId);
+        verify(processExecutionService).deleteExecution(executionId);
     }
 }

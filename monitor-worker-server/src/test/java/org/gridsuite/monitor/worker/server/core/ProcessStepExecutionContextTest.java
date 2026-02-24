@@ -7,8 +7,11 @@
 package org.gridsuite.monitor.worker.server.core;
 
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
+import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

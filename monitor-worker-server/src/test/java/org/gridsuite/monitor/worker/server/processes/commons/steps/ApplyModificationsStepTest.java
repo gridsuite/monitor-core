@@ -13,11 +13,11 @@ import org.gridsuite.modification.dto.AttributeModification;
 import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
-import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.dto.ReportInfos;
+import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.FilterService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationRestService;
+import org.gridsuite.monitor.worker.server.client.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class ApplyModificationsStepTest {
     private NetworkModificationService networkModificationService;
 
     @Mock
-    private NetworkModificationRestService networkModificationRestService;
+    private NetworkModificationRestClient networkModificationRestClient;
 
     @Mock
     private FilterService filterService;
@@ -62,7 +62,7 @@ class ApplyModificationsStepTest {
 
     @BeforeEach
     void setUp() {
-        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, filterService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, filterService);
         when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         when(stepContext.getConfig()).thenReturn(config);
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
@@ -81,11 +81,11 @@ class ApplyModificationsStepTest {
 
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
-        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(modificationInfos);
+        when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(modificationInfos);
         doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
         applyModificationsStep.execute(stepContext);
-        verify(networkModificationRestService).getModifications(any(List.class));
+        verify(networkModificationRestClient).getModifications(any(List.class));
         verify(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
     }
 }

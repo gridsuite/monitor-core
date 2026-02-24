@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
-import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>

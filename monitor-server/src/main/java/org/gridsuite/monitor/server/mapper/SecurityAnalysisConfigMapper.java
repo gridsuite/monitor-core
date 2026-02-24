@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
-import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>

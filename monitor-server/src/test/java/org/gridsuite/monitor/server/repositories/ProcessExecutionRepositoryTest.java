@@ -6,11 +6,11 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.commons.ProcessStatus;
-import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.StepStatus;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
-import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

@@ -8,9 +8,9 @@ package org.gridsuite.monitor.worker.server.processes.commons.steps;
 
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
-import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
+import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
+import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.springframework.stereotype.Component;
 

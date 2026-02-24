@@ -6,13 +6,11 @@
  */
 package org.gridsuite.monitor.commons.steps;
 
-import org.gridsuite.monitor.commons.ReportInfos;
-
 /**
  * @author Mohamed Ben-rejeb <mohamed.ben-rejeb at rte-france.com>
  */
 @FunctionalInterface
-public interface ReportPublisher {
+public interface ReportPublisher<R> {
 
-    void sendReport(ReportInfos reportInfos);
+    void sendReport(R reportInfos);
 }

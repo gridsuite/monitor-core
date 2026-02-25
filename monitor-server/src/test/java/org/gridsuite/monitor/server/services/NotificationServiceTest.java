@@ -55,14 +55,16 @@ class NotificationServiceTest {
 
     @Test
     void sendProcessRunMessage() {
-        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId);
+        String debugFileLocation = "debug/file/location";
+        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, debugFileLocation);
 
         verify(publisher).send(
                 eq("publishRunSecurityAnalysis-out-0"),
                 argThat((ProcessRunMessage<?> message) ->
                         message.executionId().equals(executionId) &&
                         message.caseUuid().equals(caseUuid) &&
-                        message.config().equals(securityAnalysisConfig))
+                        message.config().equals(securityAnalysisConfig) &&
+                        message.debugFileLocation().equals(debugFileLocation))
         );
     }
 }

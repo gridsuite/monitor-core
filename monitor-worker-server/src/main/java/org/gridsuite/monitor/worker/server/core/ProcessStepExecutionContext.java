@@ -67,6 +67,10 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
         return processContext.getNetwork();
     }
 
+    public String getDebugFileLocation() {
+        return processContext.getDebugFileLocation();
+    }
+
     public void setNetwork(Network network) {
         processContext.setNetwork(network);
     }

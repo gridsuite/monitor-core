@@ -7,6 +7,10 @@ spring:
       dialect: org.hibernate.dialect.H2Dialect
       hibernate.format_sql: true
       hibernate.generate_statistics: true
+  cloud:
+    aws:
+      region:
+        static: test
 
 logging:
   level:

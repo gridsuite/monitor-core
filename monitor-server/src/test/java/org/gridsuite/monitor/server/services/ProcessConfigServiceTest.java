@@ -400,7 +400,7 @@ class ProcessConfigServiceTest {
     }
 
     @Test
-    void compareProcessConfigsShouldReturnEmptyWhenOnConfigNotFound() {
+    void compareProcessConfigsShouldReturnEmptyWhenOneConfigNotFound() {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
 

@@ -20,8 +20,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Configuration
 public class S3Configuration {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Configuration.class);
-    @Value("${spring.cloud.aws.bucket:ws-bucket}")
-    private String bucketName;
+    private final String bucketName;
+
+    public S3Configuration(@Value("${spring.cloud.aws.bucket:ws-bucket}") String bucketName) {
+        this.bucketName = bucketName;
+    }
 
     @SuppressWarnings("checkstyle:MethodName")
     @Bean

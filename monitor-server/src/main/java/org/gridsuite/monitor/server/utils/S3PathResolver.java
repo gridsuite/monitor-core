@@ -7,14 +7,14 @@
 package org.gridsuite.monitor.server.utils;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-@Service
+@Component
 public final class S3PathResolver {
     private final String s3RootPath;
 

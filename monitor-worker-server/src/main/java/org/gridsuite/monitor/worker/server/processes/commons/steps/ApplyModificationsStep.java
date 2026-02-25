@@ -15,6 +15,7 @@ import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.services.*;
+import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -67,7 +68,11 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
         s3Service.exportCompressedToS3(
-            getDebugFilePath(context, String.join("", DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX, ".gz")),
+            S3PathResolver.getProcessStepDebugFilePath(
+                context.getDebugFileLocation(),
+                context.getProcessStepType().getName(),
+                context.getStepOrder(),
+                String.join("", DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX, ".gz")),
             DEBUG_FILENAME_PREFIX,
             DEBUG_FILENAME_SUFFIX,
             networkFile -> context.getNetwork().write("XIIDM", null, networkFile)

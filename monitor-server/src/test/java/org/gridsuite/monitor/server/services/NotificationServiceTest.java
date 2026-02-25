@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.stream.function.StreamBridge;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.argThat;
@@ -56,7 +55,8 @@ class NotificationServiceTest {
 
     @Test
     void sendProcessRunMessage() {
-        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, "debug/file/location");
+        String debugFileLocation = "debug/file/location";
+        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, debugFileLocation);
 
         verify(publisher).send(
                 eq("publishRunSecurityAnalysis-out-0"),
@@ -64,7 +64,7 @@ class NotificationServiceTest {
                         message.executionId().equals(executionId) &&
                         message.caseUuid().equals(caseUuid) &&
                         message.config().equals(securityAnalysisConfig) &&
-                        Objects.equals(message.debugFileLocation(), "debug/file/location"))
+                        message.debugFileLocation().equals(debugFileLocation))
         );
     }
 }

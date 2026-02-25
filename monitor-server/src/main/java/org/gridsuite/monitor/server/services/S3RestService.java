@@ -51,6 +51,11 @@ public class S3RestService {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
             for (String fileS3Key : filesS3Keys) {
+                if (fileS3Key.endsWith("/")) {
+                    // s3 files with key endpoint with "/" are most of the time DIROBJ, empty s3 objects that simulate directory for users
+                    // we ignore them here to prevent errors
+                    continue;
+                }
                 String zipEntryName = fileS3Key.substring(directoryKey.length() + 1);
                 zipOutputStream.putNextEntry(new ZipEntry(zipEntryName));
                 try (InputStream in = s3ObjectFetcher.apply(fileS3Key)) {

@@ -24,12 +24,4 @@ public abstract class AbstractProcessStep<C extends ProcessConfig> implements Pr
         this.type = type;
         this.id = UUID.randomUUID();
     }
-
-    protected String getDebugFilePath(ProcessStepExecutionContext<C> context, String fileName) {
-        String s3Delimiter = "/";
-        return String.join(s3Delimiter,
-            context.getDebugFileLocation(),
-            context.getProcessStepType().getName() + "_" + context.getStepOrder(),
-            fileName);
-    }
 }

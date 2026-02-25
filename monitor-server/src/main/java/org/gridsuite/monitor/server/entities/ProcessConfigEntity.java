@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.entities;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,12 +32,15 @@ import org.gridsuite.monitor.commons.ProcessType;
 import java.util.List;
 import java.util.UUID;
 
+import static jakarta.persistence.DiscriminatorType.STRING;
+
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Entity
 @Table(name = "process_config")
 @Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "process_type", discriminatorType = STRING)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -56,7 +60,7 @@ public class ProcessConfigEntity {
     private List<UUID> modificationUuids;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "process_type")
+    @Column(name = "process_type", insertable = false, updatable = false)
     private ProcessType processType;
 }
 

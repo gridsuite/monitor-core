@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.entities;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,6 +30,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "security_analysis_config")
+@DiscriminatorValue("SECURITY_ANALYSIS")
 @PrimaryKeyJoinColumn(foreignKey = @ForeignKey(name = "securityAnalysisConfig_id_fk_constraint"))
 @NoArgsConstructor
 @AllArgsConstructor

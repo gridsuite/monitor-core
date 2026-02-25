@@ -6,11 +6,13 @@
  */
 package org.gridsuite.monitor.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
@@ -21,11 +23,9 @@ import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -37,29 +37,40 @@ public class MonitorService {
     private final NotificationService notificationService;
     private final ReportService reportService;
     private final ResultService resultService;
+    private final S3RestService s3RestService;
+    private final S3PathResolver s3PathResolver;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
                           ReportService reportService,
-                          ResultService resultService) {
+                          ResultService resultService,
+                          S3RestService s3RestService,
+                          S3PathResolver s3PathResolver) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.reportService = reportService;
         this.resultService = resultService;
+        this.s3RestService = s3RestService;
+        this.s3PathResolver = s3PathResolver;
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, boolean isDebug) {
+        UUID executionId = UUID.randomUUID();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
             .type(processConfig.processType().name())
             .caseUuid(caseUuid)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
             .userId(userId)
             .build();
+        if (isDebug) {
+            execution.setDebugFileLocation(s3PathResolver.toDebugLocation(processConfig.processType().name(), executionId));
+        }
         executionRepository.save(execution);
 
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId());
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), execution.getDebugFileLocation());
 
         return execution.getId();
     }
@@ -169,6 +180,20 @@ public class MonitorService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public Optional<byte[]> getDebugInfos(UUID executionId) {
+        return executionRepository.findById(executionId)
+            .map(ProcessExecutionEntity::getDebugFileLocation)
+            .filter(Objects::nonNull)
+            .map(debugFileLocation -> {
+                try {
+                    return s3RestService.downloadDirectoryAsZip(debugFileLocation);
+                } catch (IOException e) {
+                    throw new PowsyblException("An error occurred while downloading debug files", e);
+                }
+            });
+    }
+
     private List<ResultInfos> getResultInfos(UUID executionId) {
         return executionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
@@ -236,7 +261,7 @@ public class MonitorService {
         String bindingName = switch (processConfig.processType()) {
             case SECURITY_ANALYSIS -> "publishRunSecurityAnalysisUsingServers-out-0";
         };
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), bindingName);
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), null, bindingName);
 
         return execution.getId();
     }

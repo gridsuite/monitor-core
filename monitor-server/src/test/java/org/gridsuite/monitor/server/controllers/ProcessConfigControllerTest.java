@@ -7,7 +7,9 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.junit.jupiter.api.Test;
@@ -72,11 +74,11 @@ class ProcessConfigControllerTest {
     @Test
     void getSecurityAnalysisConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
+        PersistedProcessConfig securityAnalysisConfig = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
             UUID.randomUUID(),
             List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID())
-        );
+        ));
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -169,5 +171,49 @@ class ProcessConfigControllerTest {
             .andExpect(status().isNotFound());
 
         verify(processConfigService).deleteProcessConfig(any(UUID.class));
+    }
+
+    @Test
+    void getAllSecurityAnalysisConfigs() throws Exception {
+        List<PersistedProcessConfig> securityAnalysisConfigs = List.of(
+            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
+                UUID.randomUUID(),
+                List.of("contingency1", "contingency2"),
+                List.of(UUID.randomUUID(), UUID.randomUUID())
+            )),
+            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
+                UUID.randomUUID(),
+                List.of("contingency3", "contingency4"),
+                List.of(UUID.randomUUID())
+            ))
+        );
+        String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);
+
+        when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
+            .thenReturn(securityAnalysisConfigs);
+
+        mockMvc.perform(get("/v1/process-configs")
+                .param("processType", ProcessType.SECURITY_ANALYSIS.name())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(expectedJson));
+
+        verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getAllSecurityAnalysisConfigsNotFound() throws Exception {
+        when(processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS))
+            .thenReturn(List.of());
+
+        mockMvc.perform(get("/v1/process-configs")
+                .param("processType", ProcessType.SECURITY_ANALYSIS.name())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json("[]"));
+
+        verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
     }
 }

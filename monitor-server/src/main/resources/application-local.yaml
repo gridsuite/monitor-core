@@ -21,3 +21,5 @@ gridsuite:
       base-uri: http://localhost:5023
     network-modification-server:
        base-uri: http://localhost:5007
+    state-estimation-server:
+      base-uri: http://localhost:6040

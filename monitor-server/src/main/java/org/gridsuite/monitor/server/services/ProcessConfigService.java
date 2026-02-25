@@ -10,10 +10,10 @@ import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
-import org.gridsuite.monitor.server.repositories.SecurityAnalysisConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,19 +27,16 @@ import java.util.UUID;
 @Service
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
-    private final SecurityAnalysisConfigRepository securityAnalysisConfigRepository;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository,
-                                SecurityAnalysisConfigRepository securityAnalysisConfigRepository) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository) {
         this.processConfigRepository = processConfigRepository;
-        this.securityAnalysisConfigRepository = securityAnalysisConfigRepository;
     }
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
         switch (processConfig) {
             case SecurityAnalysisConfig sac -> {
-                return securityAnalysisConfigRepository.save(SecurityAnalysisConfigMapper.toEntity(sac)).getId();
+                return processConfigRepository.save(SecurityAnalysisConfigMapper.toEntity(sac)).getId();
             }
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         }
@@ -49,7 +46,7 @@ public class ProcessConfigService {
     public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
         return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
             case SecurityAnalysisConfigEntity sae -> Optional.of(SecurityAnalysisConfigMapper.toDto(sae));
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         });
     }
 
@@ -57,8 +54,8 @@ public class ProcessConfigService {
     public boolean updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
-                if (entity.getType() != processConfig.processType()) {
-                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getType());
+                if (entity.getProcessType() != processConfig.processType()) {
+                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
@@ -81,8 +78,10 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return switch (processType) {
-            case SECURITY_ANALYSIS -> securityAnalysisConfigRepository.findAll().stream().map(SecurityAnalysisConfigMapper::toDto).toList();
-        };
+        List<ProcessConfigEntity> processConfigs = processConfigRepository.findAllByProcessType(processType);
+        return processConfigs.stream().map(entity -> switch (entity) {
+            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
+        }).toList();
     }
 }

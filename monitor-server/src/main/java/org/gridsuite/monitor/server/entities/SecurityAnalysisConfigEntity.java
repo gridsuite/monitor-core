@@ -8,7 +8,6 @@ package org.gridsuite.monitor.server.entities;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,7 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.gridsuite.monitor.commons.ProcessType;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,13 +29,12 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "security_analysis_config")
-@DiscriminatorValue("SECURITY_ANALYSIS")
 @PrimaryKeyJoinColumn(foreignKey = @ForeignKey(name = "securityAnalysisConfig_id_fk_constraint"))
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
+public class SecurityAnalysisConfigEntity extends ProcessConfigEntity {
     @Column(name = "parameters_uuid")
     private UUID parametersUuid;
 
@@ -48,13 +45,4 @@ public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
     @Column(name = "contingency")
     @OrderColumn(name = "pos_contingencies")
     private List<String> contingencies;
-
-    @Override
-    public ProcessType getType() {
-        return ProcessType.SECURITY_ANALYSIS;
-    }
 }
-
-
-
-

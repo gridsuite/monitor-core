@@ -12,7 +12,6 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
-import org.gridsuite.monitor.server.repositories.SecurityAnalysisConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,10 +36,6 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class ProcessConfigServiceTest {
-
-    @Mock
-    private SecurityAnalysisConfigRepository securityAnalysisConfigRepository;
-
     @Mock
     private ProcessConfigRepository processConfigRepository;
 
@@ -61,7 +56,7 @@ class ProcessConfigServiceTest {
     @Test
     void createSecurityAnalysisConfig() {
         UUID expectedProcessConfigId = UUID.randomUUID();
-        when(securityAnalysisConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
+        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
             .thenAnswer(invocation -> {
                 SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
                 entity.setId(expectedProcessConfigId);
@@ -72,11 +67,11 @@ class ProcessConfigServiceTest {
         assertThat(result).isEqualTo(expectedProcessConfigId);
 
         ArgumentCaptor<SecurityAnalysisConfigEntity> captor = ArgumentCaptor.forClass(SecurityAnalysisConfigEntity.class);
-        verify(securityAnalysisConfigRepository).save(captor.capture());
+        verify(processConfigRepository).save(captor.capture());
 
         SecurityAnalysisConfigEntity savedEntity = captor.getValue();
         assertThat(savedEntity.getId()).isEqualTo(expectedProcessConfigId);
-        assertThat(savedEntity.getType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
+        assertThat(savedEntity.getProcessType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
         assertThat(savedEntity.getParametersUuid()).isEqualTo(securityAnalysisConfig.parametersUuid());
         assertThat(savedEntity.getContingencies()).isEqualTo(securityAnalysisConfig.contingencies());
         assertThat(savedEntity.getModificationUuids()).isEqualTo(securityAnalysisConfig.modificationUuids());
@@ -180,12 +175,12 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of("contingency3", "contingency4"), List.of(UUID.randomUUID()));
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity2 = SecurityAnalysisConfigMapper.toEntity(securityAnalysisConfig2);
 
-        when(securityAnalysisConfigRepository.findAll())
+        when(processConfigRepository.findAllByProcessType(ProcessType.SECURITY_ANALYSIS))
             .thenReturn(List.of(securityAnalysisConfigEntity1, securityAnalysisConfigEntity2));
 
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
-        verify(securityAnalysisConfigRepository).findAll();
+        verify(processConfigRepository).findAllByProcessType(ProcessType.SECURITY_ANALYSIS);
         assertThat(processConfigs).hasSize(2);
         assertThat(processConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
         assertThat(processConfigs.get(1).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
@@ -203,11 +198,11 @@ class ProcessConfigServiceTest {
 
     @Test
     void getSecurityAnalysisConfigsNotFound() {
-        when(securityAnalysisConfigRepository.findAll()).thenReturn(List.of());
+        when(processConfigRepository.findAllByProcessType(ProcessType.SECURITY_ANALYSIS)).thenReturn(List.of());
 
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
-        verify(securityAnalysisConfigRepository).findAll();
+        verify(processConfigRepository).findAllByProcessType(ProcessType.SECURITY_ANALYSIS);
         assertThat(processConfigs).isEmpty();
     }
 }

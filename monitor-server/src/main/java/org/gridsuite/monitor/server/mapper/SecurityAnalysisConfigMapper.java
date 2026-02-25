@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.mapper;
 
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 
@@ -17,6 +18,7 @@ import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 public class SecurityAnalysisConfigMapper {
     public static SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto) {
         SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity();
+        entity.setProcessType(ProcessType.SECURITY_ANALYSIS);
         update(entity, dto);
         return entity;
     }

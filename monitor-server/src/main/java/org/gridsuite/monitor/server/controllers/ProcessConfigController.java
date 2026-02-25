@@ -16,6 +16,7 @@ import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -113,7 +114,7 @@ public class ProcessConfigController {
 
         try {
             Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
-            return comparison.map(c -> ResponseEntity.ok().body(c)).orElseGet(() -> ResponseEntity.notFound().build());
+            return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }

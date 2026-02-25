@@ -104,6 +104,7 @@ public class MonitorService {
                     existingStep.setResultId(stepEntity.getResultId());
                     existingStep.setResultType(stepEntity.getResultType());
                     existingStep.setReportId(stepEntity.getReportId());
+                    existingStep.setResultCaseId(stepEntity.getResultCaseId());
                 },
                 () -> steps.add(stepEntity));
     }
@@ -139,6 +140,7 @@ public class MonitorService {
                 .reportId(processExecutionStep.getReportId())
                 .startedAt(processExecutionStep.getStartedAt())
                 .completedAt(processExecutionStep.getCompletedAt())
+                .resultCaseId(processExecutionStep.getResultCaseId())
                 .build();
     }
 

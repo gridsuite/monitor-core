@@ -92,9 +92,9 @@ public class ConsumerServiceUsingServers {
 
             monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, Instant.now(), null);
             monitorService.updateStepStatus(executionId,
-                new ProcessExecutionStep(applyModificationsStepId, "APPLY_MODIFICATIONS", 0, StepStatus.RUNNING, null, null, null, Instant.now(), null));
+                new ProcessExecutionStep(applyModificationsStepId, "APPLY_MODIFICATIONS", 0, StepStatus.RUNNING, null, null, null, Instant.now(), null, null));
             monitorService.updateStepStatus(executionId,
-                new ProcessExecutionStep(securityAnalysisStepId, "SECURITY_ANALYSIS", 1, StepStatus.SCHEDULED, null, null, null, null, null));
+                new ProcessExecutionStep(securityAnalysisStepId, "SECURITY_ANALYSIS", 1, StepStatus.SCHEDULED, null, null, null, null, null, null));
 
             // call network-modification-server to apply modifications
             networkModificationRestService.applyModifications(caseUuid, executionId, modificationUuids);
@@ -111,6 +111,7 @@ public class ConsumerServiceUsingServers {
             UUID executionId = caseResultInfos.getExecutionUuid();
             String stepType = caseResultInfos.getStepType();
             UUID reportUuid = caseResultInfos.getReportUuid();
+
             StepStatus stepStatus = StepStatus.valueOf(caseResultInfos.getStatus());
 
             ProcessExecutionContext processExecutionContext = processExecutionContexts.get(executionId);
@@ -120,11 +121,11 @@ public class ConsumerServiceUsingServers {
             }
 
             monitorService.updateStepStatus(executionId,
-                new ProcessExecutionStep(processExecutionContext.applyModificationsStepId(), stepType, 0, stepStatus, null, null, reportUuid, null, Instant.now()));
+                new ProcessExecutionStep(processExecutionContext.applyModificationsStepId(), stepType, 0, stepStatus, null, null, reportUuid, null, Instant.now(), caseResultUuid));
             monitorService.updateStepStatus(executionId,
                 new ProcessExecutionStep(processExecutionContext.securityAnalysisStepId(), "SECURITY_ANALYSIS", 1,
                     stepStatus == StepStatus.COMPLETED ? StepStatus.RUNNING : StepStatus.SKIPPED,
-                    null, null, null, Instant.now(), null));
+                    null, null, null, Instant.now(), null, null));
 
             if (stepStatus == StepStatus.COMPLETED) {
                 // call security-analysis-server to run security analysis
@@ -146,6 +147,7 @@ public class ConsumerServiceUsingServers {
             UUID reportUuid = caseResultInfos.getReportUuid();
             UUID resultUuid = caseResultInfos.getResultUuid();
             StepStatus stepStatus = StepStatus.valueOf(caseResultInfos.getStatus());
+            UUID caseResultUuid = caseResultInfos.getCaseResultUuid();
 
             ProcessExecutionContext processExecutionContext = processExecutionContexts.get(executionId);
             if (processExecutionContext == null) {
@@ -154,7 +156,7 @@ public class ConsumerServiceUsingServers {
             }
 
             monitorService.updateStepStatus(executionId,
-                new ProcessExecutionStep(processExecutionContext.securityAnalysisStepId(), stepType, 1, stepStatus, resultUuid, ResultType.SECURITY_ANALYSIS, reportUuid, null, Instant.now()));
+                new ProcessExecutionStep(processExecutionContext.securityAnalysisStepId(), stepType, 1, stepStatus, resultUuid, ResultType.SECURITY_ANALYSIS, reportUuid, null, Instant.now(), caseResultUuid));
             monitorService.updateExecutionStatus(executionId,
                 stepStatus == StepStatus.COMPLETED ? ProcessStatus.COMPLETED : ProcessStatus.FAILED,
                 null, null, Instant.now());

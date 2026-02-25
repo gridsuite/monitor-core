@@ -4,6 +4,10 @@ server:
 spring:
   rabbitmq:
     addresses: localhost
+  cloud:
+    aws:
+      s3:
+        endpoint: http://localhost:19000
 
 powsybl-ws:
   database:

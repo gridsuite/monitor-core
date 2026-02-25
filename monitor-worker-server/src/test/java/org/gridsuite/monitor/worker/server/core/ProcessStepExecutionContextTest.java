@@ -49,6 +49,7 @@ class ProcessStepExecutionContextTest {
         when(processContext.getCaseUuid()).thenReturn(caseUuid);
         when(processContext.getNetwork()).thenReturn(network);
         when(processContext.getConfig()).thenReturn(config);
+        when(processContext.getDebugFileLocation()).thenReturn("debug/file/location");
 
         ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepExecutionId, stepOrder);
 
@@ -64,6 +65,7 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
         assertThat(stepContext.getCaseUuid()).isEqualTo(caseUuid);
         assertThat(stepContext.getNetwork()).isEqualTo(network);
+        assertThat(stepContext.getDebugFileLocation()).isEqualTo(processContext.getDebugFileLocation());
     }
 
     @Test

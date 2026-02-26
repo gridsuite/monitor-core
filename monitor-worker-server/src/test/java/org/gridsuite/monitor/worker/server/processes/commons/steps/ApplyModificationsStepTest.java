@@ -13,7 +13,7 @@ import org.gridsuite.modification.dto.AttributeModification;
 import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
-import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.ModifyingProcessConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.*;
@@ -27,6 +27,7 @@ import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,30 +55,27 @@ class ApplyModificationsStepTest {
     private S3Service s3Service;
 
     @Mock
-    private ProcessConfig config;
+    private ModifyingProcessConfig config;
 
-    private ApplyModificationsStep<ProcessConfig> applyModificationsStep;
+    private ApplyModificationsStep<ModifyingProcessConfig> applyModificationsStep;
 
     @Mock
-    private ProcessStepExecutionContext<ProcessConfig> stepContext;
+    private ProcessStepExecutionContext<ModifyingProcessConfig> stepContext;
 
     private static final UUID MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
-        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         when(stepContext.getConfig()).thenReturn(config);
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
-                .withResourceBundles("i18n.reports")
-                .withMessageTemplate("test")
-                .build());
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
     }
 
     @Test
-    void executeApplyModifications() {
+    void executeApplyModificationsWhenModificationUuidsNotEmpty() {
+        setUpReportInfos();
+        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         String stepType = applyModificationsStep.getType().getName();
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
@@ -94,7 +92,21 @@ class ApplyModificationsStepTest {
     }
 
     @Test
+    void executeDoesNothingWhenModificationUuidsEmpty() {
+        when(config.modificationUuids()).thenReturn(Collections.emptyList());
+
+        applyModificationsStep.execute(stepContext);
+
+        verifyNoInteractions(networkModificationService);
+        verifyNoInteractions(networkModificationRestService);
+        verifyNoInteractions(filterService);
+        verifyNoInteractions(s3Service);
+    }
+
+    @Test
     void executeApplyModificationsDebugOn() throws IOException {
+        setUpReportInfos();
+        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         String stepType = applyModificationsStep.getType().getName();
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
@@ -134,5 +146,13 @@ class ApplyModificationsStepTest {
         networkWriter.accept(mockedPath);
 
         verify(network).write("XIIDM", null, mockedPath);
+    }
+
+    private void setUpReportInfos() {
+        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build());
+        when(stepContext.getReportInfos()).thenReturn(reportInfos);
     }
 }

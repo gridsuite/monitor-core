@@ -21,7 +21,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.gridsuite.monitor.commons.ProcessType;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +36,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
+public class SecurityAnalysisConfigEntity extends ProcessConfigEntity {
     @Column(name = "parameters_uuid")
     private UUID parametersUuid;
 
@@ -51,13 +50,4 @@ public class SecurityAnalysisConfigEntity extends AbstractProcessConfigEntity {
 
     @Column(name = "loadflow_parameters_uuid")
     private UUID loadflowParametersUuid;
-
-    @Override
-    public ProcessType getType() {
-        return ProcessType.SECURITY_ANALYSIS;
-    }
 }
-
-
-
-

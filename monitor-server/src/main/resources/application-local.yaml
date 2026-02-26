@@ -4,6 +4,10 @@ server:
 spring:
   rabbitmq:
     addresses: localhost
+  cloud:
+    aws:
+      s3:
+        endpoint: http://localhost:19000
 
 powsybl-ws:
   database:
@@ -15,3 +19,5 @@ gridsuite:
       base-uri: http://localhost:5028
     security-analysis-server:
       base-uri: http://localhost:5023
+    state-estimation-server:
+      base-uri: http://localhost:6040

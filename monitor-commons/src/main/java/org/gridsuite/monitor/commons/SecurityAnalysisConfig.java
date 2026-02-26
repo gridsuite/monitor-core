@@ -16,8 +16,7 @@ public record SecurityAnalysisConfig(
     UUID parametersUuid,
     List<String> contingencies,
     List<UUID> modificationUuids,
-    UUID loadflowParametersUuid
-) implements ProcessConfig {
+    UUID loadflowParametersUuid) implements ModifyingProcessConfig {
 
     @Override
     public ProcessType processType() {

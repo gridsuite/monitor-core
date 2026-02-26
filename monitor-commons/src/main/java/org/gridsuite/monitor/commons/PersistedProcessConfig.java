@@ -6,10 +6,13 @@
  */
 package org.gridsuite.monitor.commons;
 
+import java.util.UUID;
+
 /**
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-public enum ResultType {
-    SECURITY_ANALYSIS,
-    STATE_ESTIMATION
+public record PersistedProcessConfig(
+    UUID id,
+    ProcessConfig processConfig
+) {
 }

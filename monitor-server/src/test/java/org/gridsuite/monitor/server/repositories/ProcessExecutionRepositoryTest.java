@@ -39,6 +39,7 @@ class ProcessExecutionRepositoryTest {
     @Test
     void stepsShouldBeOrderedByStepOrder() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+                .id(UUID.randomUUID())
                 .type("SECURITY_ANALYSIS")
                 .caseUuid(UUID.randomUUID())
                 .status(ProcessStatus.RUNNING)
@@ -86,6 +87,7 @@ class ProcessExecutionRepositoryTest {
         Instant startedAt1 = Instant.now().minusSeconds(30);
         Instant completedAt1 = Instant.now();
         ProcessExecutionEntity execution1 = ProcessExecutionEntity.builder()
+            .id(UUID.randomUUID())
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case1Uuid)
             .status(ProcessStatus.COMPLETED)
@@ -100,6 +102,7 @@ class ProcessExecutionRepositoryTest {
         Instant scheduledAt2 = Instant.now().minusSeconds(90);
         Instant startedAt2 = Instant.now().minusSeconds(20);
         ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
+            .id(UUID.randomUUID())
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case2Uuid)
             .status(ProcessStatus.RUNNING)
@@ -112,6 +115,7 @@ class ProcessExecutionRepositoryTest {
         UUID case3Uuid = UUID.randomUUID();
         Instant scheduledAt3 = Instant.now().minusSeconds(90);
         ProcessExecutionEntity execution3 = ProcessExecutionEntity.builder()
+            .id(UUID.randomUUID())
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case3Uuid)
             .status(ProcessStatus.SCHEDULED)

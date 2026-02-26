@@ -61,24 +61,31 @@ public class ProcessExecutionService {
         );
 
         try {
-            List<ProcessStep<T>> steps = process.defineSteps();
-            notificationService.updateStepsStatuses(context.getExecutionId(),
-                IntStream.range(0, steps.size())
-                    .mapToObj(i -> new ProcessExecutionStep(steps.get(i).getId(), steps.get(i).getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null))
-                    .toList());
+            initializeSteps(process, context);
+            executeSteps(process, context);
         } catch (Exception e) {
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
             throw e;
         }
+    }
 
-        try {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
-            process.execute(context);
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
-        } catch (Exception e) {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
-            throw e;
-        }
+    private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        List<ProcessStep<T>> steps = process.defineSteps();
+        notificationService.updateStepsStatuses(context.getExecutionId(),
+                IntStream.range(0, steps.size())
+                        .mapToObj(i -> ProcessExecutionStep.builder()
+                                .id(steps.get(i).getId())
+                                .stepType(steps.get(i).getType().getName())
+                                .stepOrder(i)
+                                .status(StepStatus.SCHEDULED)
+                                .build())
+                        .toList());
+    }
+
+    private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+        process.execute(context);
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
     }
 
     private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {

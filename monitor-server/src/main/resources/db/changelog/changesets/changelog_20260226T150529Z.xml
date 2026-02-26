@@ -1,0 +1,67 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="marutkam (generated)" id="1772118336307-1">
+        <createTable tableName="modifying_process_config">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="modifying_process_configPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-2">
+        <createTable tableName="modifying_process_config_modifications">
+            <column name="modifying_process_config_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="modifying_process_config_modificationsPK"/>
+            </column>
+            <column name="modification_uuid" type="UUID"/>
+            <column name="pos_modifications" type="INT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="modifying_process_config_modificationsPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="marutkam" id="1772118336307-2a">
+        <sql>
+            INSERT INTO modifying_process_config (id)
+            SELECT id FROM security_analysis_config
+        </sql>
+    </changeSet>
+    <changeSet author="marutkam" id="1772118336307-2b">
+        <sql>
+            INSERT INTO modifying_process_config_modifications
+                (modifying_process_config_id, modification_uuid, pos_modifications)
+            SELECT process_config_id, modification_uuid, pos_modifications
+            FROM process_config_modifications
+            WHERE process_config_id IN (SELECT id FROM security_analysis_config)
+        </sql>
+    </changeSet>
+    <changeSet author="marutkam" id="1772118336307-2c">
+        <preConditions onFail="HALT">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*)
+                FROM process_config_modifications pcm
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM security_analysis_config sac
+                    WHERE sac.id = pcm.process_config_id
+                )
+             </sqlCheck>
+        </preConditions>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-3">
+        <dropForeignKeyConstraint baseTableName="process_config_modifications" constraintName="AbstractProcessConfigEntity_modificationUuids_fk1"/>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-4">
+        <dropForeignKeyConstraint baseTableName="security_analysis_config" constraintName="securityAnalysisConfig_id_fk_constraint"/>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-5">
+        <dropTable tableName="process_config_modifications"/>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-6">
+        <addForeignKeyConstraint baseColumnNames="modifying_process_config_id" baseTableName="modifying_process_config_modifications" constraintName="AbstractModifyingProcessConfigEntity_modificationUuids_fk1" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="modifying_process_config" validate="true"/>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-7">
+        <addForeignKeyConstraint baseColumnNames="id" baseTableName="modifying_process_config" constraintName="FKmt65gd569dk94i8xc6du5bq7p" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772118336307-8">
+        <addForeignKeyConstraint baseColumnNames="id" baseTableName="security_analysis_config" constraintName="securityAnalysisConfig_id_fk_constraint" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="modifying_process_config" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

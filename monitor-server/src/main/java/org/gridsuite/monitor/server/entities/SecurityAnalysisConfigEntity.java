@@ -36,7 +36,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class SecurityAnalysisConfigEntity extends ProcessConfigEntity {
+public class SecurityAnalysisConfigEntity extends ModifyingProcessConfigEntity {
     @Column(name = "parameters_uuid")
     private UUID parametersUuid;
 

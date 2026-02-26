@@ -6,30 +6,23 @@
  */
 package org.gridsuite.monitor.server.entities;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
-import jakarta.persistence.ForeignKey;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.gridsuite.monitor.commons.ProcessType;
 
-import java.util.List;
 import java.util.UUID;
 
 import static jakarta.persistence.DiscriminatorType.STRING;
@@ -51,19 +44,7 @@ public class ProcessConfigEntity {
     @Column(name = "id")
     private UUID id;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "process_config_modifications",
-                    joinColumns = @JoinColumn(name = "process_config_id"),
-                    foreignKey = @ForeignKey(name = "AbstractProcessConfigEntity_modificationUuids_fk1"))
-    @Column(name = "modification_uuid")
-    @OrderColumn(name = "pos_modifications")
-    private List<UUID> modificationUuids;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "process_type", insertable = false, updatable = false)
     private ProcessType processType;
 }
-
-
-
-

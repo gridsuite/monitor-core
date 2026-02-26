@@ -2,6 +2,8 @@ spring:
   application:
     name: monitor-server
   cloud:
+    function:
+      definition: consumeMonitorUpdate;consumeRunUsingServers;consumeNetworkModifications;consumeSecurityAnalysis
     stream:
       bindings:
         publishRunSecurityAnalysis-out-0:
@@ -9,6 +11,15 @@ spring:
         consumeMonitorUpdate-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
           group: monitorUpdateGroup
+        publishRunSecurityAnalysisUsingServers-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.using.servers.run
+        consumeRunUsingServers-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.using.servers.run
+        consumeNetworkModifications-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}modifications.case.result
+        consumeSecurityAnalysis-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}sa.case.result
+      output-bindings: publishRunSecurityAnalysis-out-0;publishRunSecurityAnalysisUsingServers-out-0;
 
 powsybl-ws:
   database:

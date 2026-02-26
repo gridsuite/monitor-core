@@ -24,6 +24,7 @@ public class ProcessExecutionStepMapper {
             entity.getResultType(),
             entity.getReportId(),
             entity.getStartedAt(),
-            entity.getCompletedAt());
+            entity.getCompletedAt(),
+            entity.getResultCaseId());
     }
 }

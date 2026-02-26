@@ -54,4 +54,7 @@ public class ProcessExecutionStepEntity {
 
     @Column
     private Instant completedAt;
+
+    @Column
+    private UUID resultCaseId;
 }

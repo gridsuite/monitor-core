@@ -172,9 +172,9 @@ class MonitorControllerTest {
     @Test
     void getStepsInfos() throws Exception {
         UUID executionId = UUID.randomUUID();
-        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, UUID.randomUUID(), Instant.now(), null);
-        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(UUID.randomUUID(), "applyModifs", 1, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
-        ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, UUID.randomUUID(), Instant.now(), null, null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(UUID.randomUUID(), "applyModifs", 1, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null, null);
+        ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null, null);
         List<ProcessExecutionStep> processExecutionStepList = List.of(processExecutionStep1, processExecutionStep2, processExecutionStep3);
 
         when(monitorService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));

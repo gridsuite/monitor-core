@@ -64,7 +64,7 @@ public class ProcessExecutionService {
             List<ProcessStep<T>> steps = process.defineSteps();
             notificationService.updateStepsStatuses(context.getExecutionId(),
                 IntStream.range(0, steps.size())
-                    .mapToObj(i -> new ProcessExecutionStep(steps.get(i).getId(), steps.get(i).getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null))
+                    .mapToObj(i -> new ProcessExecutionStep(steps.get(i).getId(), steps.get(i).getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null, null))
                     .toList());
         } catch (Exception e) {
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);

@@ -470,8 +470,8 @@ class MonitorServiceTest {
 
         Optional<List<ProcessExecutionStep>> result = monitorService.getStepsInfos(executionUuid);
 
-        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, null, startedAt1, null);
-        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null, null);
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, null, startedAt1, null, null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null, null, null);
 
         assertThat(result).isPresent();
         assertThat(result.get()).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);

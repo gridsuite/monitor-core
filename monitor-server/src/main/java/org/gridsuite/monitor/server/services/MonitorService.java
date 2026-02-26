@@ -106,11 +106,16 @@ public class MonitorService {
                     existingStep.setStatus(stepEntity.getStatus());
                     existingStep.setStepType(stepEntity.getStepType());
                     existingStep.setStepOrder(stepEntity.getStepOrder());
-                    existingStep.setStartedAt(stepEntity.getStartedAt());
-                    existingStep.setCompletedAt(stepEntity.getCompletedAt());
+                    if (stepEntity.getStartedAt() != null) {
+                        existingStep.setStartedAt(stepEntity.getStartedAt());
+                    }
+                    if (stepEntity.getCompletedAt() != null) {
+                        existingStep.setCompletedAt(stepEntity.getCompletedAt());
+                    }
                     existingStep.setResultId(stepEntity.getResultId());
                     existingStep.setResultType(stepEntity.getResultType());
                     existingStep.setReportId(stepEntity.getReportId());
+                    existingStep.setResultCaseId(stepEntity.getResultCaseId());
                 },
                 () -> steps.add(stepEntity));
     }
@@ -146,6 +151,7 @@ public class MonitorService {
                 .reportId(processExecutionStep.getReportId())
                 .startedAt(processExecutionStep.getStartedAt())
                 .completedAt(processExecutionStep.getCompletedAt())
+                .resultCaseId(processExecutionStep.getResultCaseId())
                 .build();
     }
 
@@ -239,4 +245,25 @@ public class MonitorService {
         }
         return false;
     }
+
+    @Transactional
+    public UUID executeProcessUsingServers(UUID caseUuid, String userId, ProcessConfig processConfig) {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .type(processConfig.processType().name())
+            .caseUuid(caseUuid)
+            .status(ProcessStatus.SCHEDULED)
+            .scheduledAt(Instant.now())
+            .userId(userId)
+            .executionEnvName("using-servers-env")
+            .build();
+        executionRepository.save(execution);
+
+        String bindingName = switch (processConfig.processType()) {
+            case SECURITY_ANALYSIS -> "publishRunSecurityAnalysisUsingServers-out-0";
+        };
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), null, bindingName);
+
+        return execution.getId();
+    }
+
 }

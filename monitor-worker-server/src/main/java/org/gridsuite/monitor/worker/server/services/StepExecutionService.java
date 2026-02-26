@@ -36,7 +36,8 @@ public class StepExecutionService<C extends ProcessConfig> {
                 null,
                 null,
                 context.getStartedAt(),
-                Instant.now()
+                Instant.now(),
+                null
         );
         notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
     }
@@ -51,6 +52,7 @@ public class StepExecutionService<C extends ProcessConfig> {
             null,
             context.getReportInfos().reportUuid(),
             context.getStartedAt(),
+            null,
             null
         );
         notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
@@ -75,7 +77,8 @@ public class StepExecutionService<C extends ProcessConfig> {
             context.getResultInfos() != null ? context.getResultInfos().resultType() : null,
             context.getReportInfos().reportUuid(),
             context.getStartedAt(),
-            Instant.now()
+            Instant.now(),
+            null
         );
         notificationService.updateStepStatus(context.getProcessExecutionId(), updated);
     }

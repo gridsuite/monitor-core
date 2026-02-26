@@ -10,16 +10,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ * @author Kamil MARUT {@literal <kamil.marut at rte-france.com>}
  */
-public record SecurityAnalysisConfig(
-    UUID parametersUuid,
-    List<String> contingencies,
-    List<UUID> modificationUuids
-) implements ModifyingProcessConfig {
+public interface ModifyingProcessConfig extends ProcessConfig {
 
-    @Override
-    public ProcessType processType() {
-        return ProcessType.SECURITY_ANALYSIS;
-    }
+    List<UUID> modificationUuids();
+
 }

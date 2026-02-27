@@ -94,11 +94,11 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
-        when(process.defineSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
+        when(process.getSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
 
-        verify(process, times(1)).defineSteps();
+        verify(process, times(1)).getSteps();
         verify(notificationService, times(1)).updateStepsStatuses(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&

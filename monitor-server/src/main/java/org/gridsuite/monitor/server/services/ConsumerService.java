@@ -53,27 +53,21 @@ public class ConsumerService {
             UUID executionId = UUID.fromString(executionIdStr);
 
             switch (messageType) {
-                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message);
-                case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, message);
-                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, message);
+                case EXECUTION_UPDATE -> handleExecutionUpdate(executionId, message);
+                case STEPS_UPSERT -> handleStepsUpsert(executionId, message);
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
             }
         };
     }
 
-    private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
+    private void handleExecutionUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
-        monitorService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getStartedAt(), payload.getCompletedAt());
+        monitorService.updateExecution(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getStartedAt(), payload.getCompletedAt());
     }
 
-    private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
-        ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        monitorService.updateStepStatus(executionId, processExecutionStep);
-    }
-
-    private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
+    private void handleStepsUpsert(UUID executionId, Message<String> message) {
         List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
-        monitorService.updateStepsStatuses(executionId, processExecutionSteps);
+        monitorService.upsertSteps(executionId, processExecutionSteps);
     }
 
     private <T> T parsePayload(String payload, Class<T> clazz) {

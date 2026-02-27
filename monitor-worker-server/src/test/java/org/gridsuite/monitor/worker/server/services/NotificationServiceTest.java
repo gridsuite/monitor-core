@@ -42,17 +42,17 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldSendExecutionStatusUpdateMessage() {
+    void sendExecutionShouldSendExecutionUpdateMessage() {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStatusUpdate payload = new ProcessExecutionStatusUpdate();
 
-        notificationService.updateExecutionStatus(executionId, payload);
+        notificationService.sendExecution(executionId, payload);
 
         verify(streamBridge).send(
                 eq("publishMonitorUpdate-out-0"),
                 argThat((Message<?> message) -> {
                     assertThat(message.getPayload()).isSameAs(payload);
-                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE);
+                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_UPDATE);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
                     return true;
                 })
@@ -60,35 +60,17 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateStepStatusShouldSendStepStatusUpdateMessage() {
-        UUID executionId = UUID.randomUUID();
-        ProcessExecutionStep payload = new ProcessExecutionStep();
-
-        notificationService.updateStepStatus(executionId, payload);
-
-        verify(streamBridge).send(
-                eq("publishMonitorUpdate-out-0"),
-                argThat((Message<?> message) -> {
-                    assertThat(message.getPayload()).isSameAs(payload);
-                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE);
-                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
-                    return true;
-                })
-        );
-    }
-
-    @Test
-    void updateStepsStatusesShouldSendStepStatusUpdateMessage() {
+    void notifyStepsShouldSendStepsUpsertMessage() {
         UUID executionId = UUID.randomUUID();
         List<ProcessExecutionStep> payload = List.of(new ProcessExecutionStep(), new ProcessExecutionStep());
 
-        notificationService.updateStepsStatuses(executionId, payload);
+        notificationService.notifySteps(executionId, payload);
 
         verify(streamBridge).send(
             eq("publishMonitorUpdate-out-0"),
             argThat((Message<?> message) -> {
                 assertThat(message.getPayload()).isSameAs(payload);
-                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE);
+                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_UPSERT);
                 assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
                 return true;
             })

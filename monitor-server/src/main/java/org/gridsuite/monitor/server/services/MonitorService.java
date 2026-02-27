@@ -76,7 +76,7 @@ public class MonitorService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
+    public void updateExecution(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {
@@ -116,16 +116,7 @@ public class MonitorService {
     }
 
     @Transactional
-    public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
-        executionRepository.findById(executionId).ifPresent(execution -> {
-            ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
-            updateStep(execution, stepEntity);
-            executionRepository.save(execution);
-        });
-    }
-
-    @Transactional
-    public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+    public void upsertSteps(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {
                 ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);

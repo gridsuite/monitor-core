@@ -106,7 +106,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldUpdateStatusOnly() {
+    void updateExecutionShouldUpdateStatusOnly() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -117,7 +117,7 @@ class MonitorServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null, null);
+        monitorService.updateExecution(executionId, ProcessStatus.RUNNING, null, null, null);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
@@ -128,7 +128,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldUpdateAllFields() {
+    void updateExecutionShouldUpdateAllFields() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -142,7 +142,7 @@ class MonitorServiceTest {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, startedAt, completedAt);
+        monitorService.updateExecution(executionId, ProcessStatus.COMPLETED, envName, startedAt, completedAt);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
@@ -153,17 +153,17 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldHandleExecutionNotFound() {
+    void updateExecutionShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now());
+        monitorService.updateExecution(executionId, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now());
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());
     }
 
     @Test
-    void updateStepStatusShouldAddNewStep() {
+    void upsertStepShouldAddNewStep() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -187,7 +187,7 @@ class MonitorServiceTest {
                 .startedAt(startedAt)
                 .build();
 
-        monitorService.updateStepStatus(executionId, processExecutionStep);
+        monitorService.upsertSteps(executionId, List.of(processExecutionStep));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -203,7 +203,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateStepStatusShouldUpdateExistingStep() {
+    void upsertStepShouldUpdateExistingStep() {
         UUID stepId = UUID.randomUUID();
         UUID originalResultId = UUID.randomUUID();
         UUID newResultId = UUID.randomUUID();
@@ -237,7 +237,7 @@ class MonitorServiceTest {
                 .completedAt(completedAt)
                 .build();
 
-        monitorService.updateStepStatus(executionId, updateDto);
+        monitorService.upsertSteps(executionId, List.of(updateDto));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -253,7 +253,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateStepsStatusesShouldUpdateExistingSteps() {
+    void upsertStepsShouldUpdateExistingSteps() {
         UUID stepId1 = UUID.randomUUID();
         UUID stepId2 = UUID.randomUUID();
         UUID originalResultId1 = UUID.randomUUID();
@@ -310,7 +310,7 @@ class MonitorServiceTest {
             .startedAt(startedAt2)
             .completedAt(completedAt2)
             .build();
-        monitorService.updateStepsStatuses(executionId, List.of(updateDto1, updateDto2));
+        monitorService.upsertSteps(executionId, List.of(updateDto1, updateDto2));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(2);

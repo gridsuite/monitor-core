@@ -10,7 +10,6 @@ package org.gridsuite.monitor.commons;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public enum MessageType {
-    EXECUTION_STATUS_UPDATE,
-    STEP_STATUS_UPDATE,
-    STEPS_STATUSES_UPDATE,
+    EXECUTION_UPDATE,
+    STEPS_UPSERT,
 }

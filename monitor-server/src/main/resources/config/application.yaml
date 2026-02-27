@@ -6,6 +6,8 @@ spring:
       bindings:
         publishRunSecurityAnalysis-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
+        publishRunSnapshotRefiner-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}snapshot_refiner.run
         consumeMonitorUpdate-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
           group: monitorUpdateGroup

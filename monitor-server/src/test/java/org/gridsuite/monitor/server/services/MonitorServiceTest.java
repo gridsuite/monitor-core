@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.*;
+import org.gridsuite.monitor.commons.SnapshotRefinerConfig;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
@@ -19,6 +20,9 @@ import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -62,34 +67,48 @@ class MonitorServiceTest {
     @InjectMocks
     private MonitorService monitorService;
 
-    private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;
     private UUID executionId;
     private String userId;
+
+    private static Stream<Arguments> provideProcessConfig() {
+        return Stream.of(
+                Arguments.of(
+                    new SecurityAnalysisConfig(
+                        UUID.randomUUID(),
+                        List.of("contingency1", "contingency2"),
+                        List.of(UUID.randomUUID())
+                    )
+                ),
+                Arguments.of(
+                        new SnapshotRefinerConfig(
+                            Optional.of(UUID.randomUUID()),
+                            Optional.of(UUID.randomUUID())
+                        )
+                )
+        );
+    }
 
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         userId = "user1";
-        securityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID())
-        );
     }
 
-    @Test
-    void executeProcessCreateExecutionAndSendNotification() {
+    @ParameterizedTest
+    @MethodSource("provideProcessConfig")
+    void executeProcessCreateWithDebugExecutionSendNotificationAndSetsDebugLocation(ProcessConfig processConfig) {
         String debugFileLocation = "debug/file/location";
-        when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
+        String processName = processConfig.processType().name();
+        when(s3PathResolver.toDebugLocation(eq(processName), any(UUID.class))).thenReturn(debugFileLocation);
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, true);
+        UUID result = monitorService.executeProcess(caseUuid, userId, processConfig, true);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
-                        ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
+                        processName.equals(execution.getType()) &&
                         caseUuid.equals(execution.getCaseUuid()) &&
                         userId.equals(execution.getUserId()) &&
                         ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
@@ -98,11 +117,36 @@ class MonitorServiceTest {
         ));
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
-                securityAnalysisConfig,
+                processConfig,
                 result,
                 debugFileLocation
         );
-        verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
+        verify(s3PathResolver).toDebugLocation(eq(processName), any(UUID.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideProcessConfig")
+    void executeProcessCreateWithoutDebugExecutionSendNotification(ProcessConfig processConfig) {
+        UUID result = monitorService.executeProcess(caseUuid, userId, processConfig, false);
+        String processName = processConfig.processType().name();
+
+        assertThat(result).isNotNull();
+        verify(executionRepository).save(argThat(execution ->
+                execution.getId() != null &&
+                processName.equals(execution.getType()) &&
+                caseUuid.equals(execution.getCaseUuid()) &&
+                userId.equals(execution.getUserId()) &&
+                ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
+                execution.getScheduledAt() != null &&
+                execution.getStartedAt() == null
+        ));
+        verify(notificationService).sendProcessRunMessage(
+                caseUuid,
+                processConfig,
+                result,
+                null
+        );
+        verifyNoInteractions(s3PathResolver);
     }
 
     @Test

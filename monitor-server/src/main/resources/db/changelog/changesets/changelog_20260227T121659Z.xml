@@ -1,0 +1,15 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="marutkam (generated)" id="1772194627896-1">
+        <createTable tableName="snapshot_refiner_config">
+            <column name="load_flow_parameters_uuid" type="UUID"/>
+            <column name="state_estimation_parameters_uuid" type="UUID"/>
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="snapshot_refiner_configPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="marutkam (generated)" id="1772194627896-2">
+        <addForeignKeyConstraint baseColumnNames="id" baseTableName="snapshot_refiner_config" constraintName="FK67w3juavfslu2j4a54fotbs3s" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

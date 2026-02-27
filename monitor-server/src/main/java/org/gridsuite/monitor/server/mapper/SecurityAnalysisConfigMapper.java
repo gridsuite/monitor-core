@@ -26,7 +26,6 @@ public class SecurityAnalysisConfigMapper {
     public static PersistedProcessConfig toDto(SecurityAnalysisConfigEntity entity) {
         return new PersistedProcessConfig(entity.getId(), new SecurityAnalysisConfig(
             entity.getParametersUuid(),
-            entity.getContingencies(),
             entity.getModificationUuids(),
             entity.getLoadflowParametersUuid()
         ));
@@ -34,7 +33,6 @@ public class SecurityAnalysisConfigMapper {
 
     public static void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto) {
         entity.setParametersUuid(dto.parametersUuid());
-        entity.setContingencies(dto.contingencies());
         entity.setModificationUuids(dto.modificationUuids());
         entity.setLoadflowParametersUuid(dto.loadflowParametersUuid());
     }

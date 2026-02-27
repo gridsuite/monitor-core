@@ -1,7 +1,14 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +24,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ */
 @Service
-public class SecurityAnalysisService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisService.class);
+public class SecurityAnalysisRestService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisRestService.class);
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -32,7 +42,7 @@ public class SecurityAnalysisService {
         return this.securityAnalysisServerBaseUri + DELIMITER + SA_API_VERSION + DELIMITER;
     }
 
-    public SecurityAnalysisService(
+    public SecurityAnalysisRestService(
         RestTemplateBuilder restTemplateBuilder,
         @Value("${gridsuite.services.security-analysis-server.base-uri:http://security-analysis-server/}") String securityAnalysisServerBaseUri) {
         this.securityAnalysisServerBaseUri = securityAnalysisServerBaseUri;
@@ -50,5 +60,15 @@ public class SecurityAnalysisService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         restTemplate.exchange(getSecurityAnalysisServerBaseUri() + path, HttpMethod.POST, new HttpEntity<>(result, headers), Void.class);
+    }
+
+    public SecurityAnalysisParametersValues getParameters(UUID parametersUUid) {
+        LOGGER.info("Get security analysis parameters {}", parametersUUid);
+
+        var path = securityAnalysisServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + SA_API_VERSION + DELIMITER + "parameters/{uuid}")
+            .buildAndExpand(parametersUUid)
+            .toUriString();
+
+        return restTemplate.getForObject(path, SecurityAnalysisParametersValues.class);
     }
 }

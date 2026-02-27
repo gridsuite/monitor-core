@@ -11,18 +11,20 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.services.MonitorService;
+import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -34,23 +36,31 @@ import java.util.UUID;
 public class MonitorController {
 
     private final MonitorService monitorService;
+    private final ProcessConfigService processConfigService;
 
     public static final String HEADER_USER_ID = "userId";
 
-    public MonitorController(MonitorService monitorService) {
+    public MonitorController(MonitorService monitorService,
+                             ProcessConfigService processConfigService) {
         this.monitorService = monitorService;
+        this.processConfigService = processConfigService;
     }
 
     @PostMapping("/execute/security-analysis")
     @Operation(summary = "Execute a security analysis process")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
-            @RequestParam UUID caseUuid,
+            @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
+            @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
-            @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
-        return ResponseEntity.ok(executionId);
+        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
+        if (processConfig.isPresent()) {
+            UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfig.get().processConfig(), isDebug);
+            return ResponseEntity.ok(executionId);
+        } else {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/executions/{executionId}/reports")

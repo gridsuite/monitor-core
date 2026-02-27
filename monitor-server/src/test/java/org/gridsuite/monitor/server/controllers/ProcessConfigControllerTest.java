@@ -54,7 +54,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID()),
                 UUID.randomUUID()
         );
@@ -77,7 +76,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         PersistedProcessConfig securityAnalysisConfig = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID()),
             UUID.randomUUID()
         ));
@@ -115,7 +113,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID()),
             UUID.randomUUID()
         );
@@ -136,7 +133,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
             List.of(UUID.randomUUID(), UUID.randomUUID()),
             UUID.randomUUID()
         );
@@ -183,13 +179,11 @@ class ProcessConfigControllerTest {
         List<PersistedProcessConfig> securityAnalysisConfigs = List.of(
             new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID()),
                 UUID.randomUUID()
             )),
             new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency3", "contingency4"),
                 List.of(UUID.randomUUID()),
                 UUID.randomUUID()
             ))

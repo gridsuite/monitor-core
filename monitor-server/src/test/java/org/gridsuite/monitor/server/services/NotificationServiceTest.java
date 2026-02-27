@@ -50,7 +50,6 @@ class NotificationServiceTest {
 
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID(), UUID.randomUUID()),
                 loadflowParametersUuid
         );

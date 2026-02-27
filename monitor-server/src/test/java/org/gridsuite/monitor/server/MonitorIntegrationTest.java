@@ -99,7 +99,6 @@ class MonitorIntegrationTest {
         // Start process execution
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()),
                 UUID.randomUUID());
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
@@ -240,7 +239,6 @@ class MonitorIntegrationTest {
         UUID loadflowparametersUuid = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of("contingency1", "contingency2"),
                 List.of(modificationUuid),
                 loadflowparametersUuid
 
@@ -257,7 +255,6 @@ class MonitorIntegrationTest {
         UUID updatedLoadflowParametersUuid = UUID.randomUUID();
         SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 updatedParametersUuid,
-                List.of("contingency3", "contingency4"),
                 List.of(updatedModificationUuid),
                 updatedLoadflowParametersUuid
         );
@@ -280,7 +277,6 @@ class MonitorIntegrationTest {
         UUID modificationUuid1 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
             parametersUuid1,
-            List.of("contingency1", "contingency2"),
             List.of(modificationUuid1),
             loadFlowParametersUuid1
         );
@@ -292,7 +288,6 @@ class MonitorIntegrationTest {
         UUID modificationUuid2 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
             parametersUuid2,
-            List.of("contingency3", "contingency4"),
             List.of(modificationUuid2),
             loadFlowParametersUuid2
         );
@@ -316,12 +311,10 @@ class MonitorIntegrationTest {
 
         assertThat(retrievedSecurityAnalysisConfig1.parametersUuid()).isEqualTo(parametersUuid1);
         assertThat(retrievedSecurityAnalysisConfig1.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid1);
-        assertThat(retrievedSecurityAnalysisConfig1.contingencies()).isEqualTo(List.of("contingency1", "contingency2"));
         assertThat(retrievedSecurityAnalysisConfig1.modificationUuids()).isEqualTo(List.of(modificationUuid1));
 
         assertThat(retrievedSecurityAnalysisConfig2.parametersUuid()).isEqualTo(parametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
-        assertThat(retrievedSecurityAnalysisConfig2.contingencies()).isEqualTo(List.of("contingency3", "contingency4"));
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
         boolean deleted = configService.deleteProcessConfig(configId1);

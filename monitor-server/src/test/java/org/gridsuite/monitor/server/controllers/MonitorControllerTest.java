@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.StepStatus;
@@ -17,6 +18,7 @@ import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.services.MonitorService;
+import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -37,6 +39,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -59,6 +62,9 @@ class MonitorControllerTest {
     @MockitoBean
     private MonitorService monitorService;
 
+    @MockitoBean
+    private ProcessConfigService processConfigService;
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @NullSource
@@ -68,23 +74,25 @@ class MonitorControllerTest {
         UUID modificationUuid = UUID.randomUUID();
         UUID executionId = UUID.randomUUID();
         UUID loadflowParametersUuid = UUID.randomUUID();
+        UUID processConfigUuid = UUID.randomUUID();
 
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of("contingency1", "contingency2"),
                 List.of(modificationUuid),
                 loadflowParametersUuid
         );
+        PersistedProcessConfig persistedProcessConfig = new PersistedProcessConfig(processConfigUuid, config);
+
         boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
+        when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
         when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue)))
                 .thenReturn(executionId);
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
             .param("caseUuid", caseUuid.toString())
-            .header("userId", "user1")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(config));
+            .param("processConfigUuid", processConfigUuid.toString())
+            .header("userId", "user1");
 
         if (isDebug != null) {
             request.param("isDebug", isDebug.toString());
@@ -96,6 +104,25 @@ class MonitorControllerTest {
             .andExpect(jsonPath("$").value(executionId.toString()));
 
         verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue));
+    }
+
+    @Test
+    void executeSecurityAnalysisWithConfigNotFoundShouldReturnError() throws Exception {
+        UUID caseUuid = UUID.randomUUID();
+        UUID processConfigUuid = UUID.randomUUID();
+
+        when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
+            .param("caseUuid", caseUuid.toString())
+            .param("processConfigUuid", processConfigUuid.toString())
+            .header("userId", "user1");
+
+        mockMvc.perform(request)
+            .andExpect(status().isInternalServerError());
+
+        verify(processConfigService).getProcessConfig(processConfigUuid);
+        verify(monitorService, never()).executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), any(Boolean.class));
     }
 
     @Test

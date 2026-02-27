@@ -14,7 +14,6 @@ import java.util.UUID;
  */
 public record SecurityAnalysisConfig(
     UUID parametersUuid,
-    List<String> contingencies,
     List<UUID> modificationUuids,
     UUID loadflowParametersUuid) implements ModifyingProcessConfig {
 

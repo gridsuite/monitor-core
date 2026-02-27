@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
@@ -21,6 +20,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,17 +70,19 @@ class StepExecutionServiceTest {
 
         verify(processStep).execute(context);
         verify(reportService).sendReport(any(ReportInfos.class));
-        verify(notificationService, times(2)).notifyStep(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).notifySteps(eq(executionId), any(List.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
-                step.getStatus() == StepStatus.RUNNING &&
-                        "TEST_STEP".equals(step.getStepType()) &&
-                        stepOrder == step.getStepOrder()
-        ));
-        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
-                step.getStatus() == StepStatus.COMPLETED &&
-                        step.getCompletedAt() != null
-        ));
+        inOrder.verify(notificationService).notifySteps(eq(executionId), argThat(steps -> {
+            var step = steps.get(0);
+            return step.getStatus() == StepStatus.RUNNING &&
+                    "TEST_STEP".equals(step.getStepType()) &&
+                    stepOrder == step.getStepOrder();
+        }));
+        inOrder.verify(notificationService).notifySteps(eq(executionId), argThat(steps -> {
+            var step = steps.get(0);
+            return step.getStatus() == StepStatus.COMPLETED &&
+                    step.getCompletedAt() != null;
+        }));
     }
 
     @Test
@@ -99,17 +101,19 @@ class StepExecutionServiceTest {
             () -> stepExecutionService.executeStep(context, processStep)
         );
         assertEquals("Step execution failed", thrownException.getMessage());
-        verify(notificationService, times(2)).notifyStep(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).notifySteps(eq(executionId), any(List.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
-                step.getStatus() == StepStatus.RUNNING &&
-                        "FAILING_STEP".equals(step.getStepType()) &&
-                        stepOrder == step.getStepOrder()
-        ));
-        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
-                step.getStatus() == StepStatus.FAILED &&
-                        step.getCompletedAt() != null
-        ));
+        inOrder.verify(notificationService).notifySteps(eq(executionId), argThat(steps -> {
+            var step = steps.get(0);
+            return step.getStatus() == StepStatus.RUNNING &&
+                    "FAILING_STEP".equals(step.getStepType()) &&
+                    stepOrder == step.getStepOrder();
+        }));
+        inOrder.verify(notificationService).notifySteps(eq(executionId), argThat(steps -> {
+            var step = steps.get(0);
+            return step.getStatus() == StepStatus.FAILED &&
+                    step.getCompletedAt() != null;
+        }));
         // Verify report was NOT sent on failure
         verify(reportService, never()).sendReport(any(ReportInfos.class));
     }
@@ -127,11 +131,12 @@ class StepExecutionServiceTest {
         verify(processStep, never()).execute(any());
         // Verify report was NOT sent on skip
         verify(reportService, never()).sendReport(any(ReportInfos.class));
-        verify(notificationService).notifyStep(eq(executionId), argThat(step ->
-                step.getStatus() == StepStatus.SKIPPED &&
-                        "SKIPPED_STEP".equals(step.getStepType()) &&
-                        step.getStepOrder() == 3
-        ));
+        verify(notificationService).notifySteps(eq(executionId), argThat(steps -> {
+            var step = steps.get(0);
+            return step.getStatus() == StepStatus.SKIPPED &&
+                    "SKIPPED_STEP".equals(step.getStepType()) &&
+                    step.getStepOrder() == 3;
+        }));
     }
 
     private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID reportUuid, int stepOrder) {

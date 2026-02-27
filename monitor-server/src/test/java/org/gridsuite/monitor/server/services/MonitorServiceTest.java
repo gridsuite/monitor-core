@@ -187,7 +187,7 @@ class MonitorServiceTest {
                 .startedAt(startedAt)
                 .build();
 
-        monitorService.upsertStep(executionId, processExecutionStep);
+        monitorService.upsertSteps(executionId, List.of(processExecutionStep));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -237,7 +237,7 @@ class MonitorServiceTest {
                 .completedAt(completedAt)
                 .build();
 
-        monitorService.upsertStep(executionId, updateDto);
+        monitorService.upsertSteps(executionId, List.of(updateDto));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);

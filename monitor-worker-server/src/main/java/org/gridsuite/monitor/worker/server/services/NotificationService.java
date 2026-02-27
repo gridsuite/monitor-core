@@ -54,14 +54,6 @@ public class NotificationService {
         );
     }
 
-    public void notifyStep(UUID executionId, ProcessExecutionStep processExecutionStep) {
-        sendMonitorUpdate(
-                executionId,
-                MessageType.STEP_UPSERT,
-                processExecutionStep
-        );
-    }
-
     public void notifySteps(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         sendMonitorUpdate(
             executionId,

@@ -78,7 +78,7 @@ class ConsumerServiceTest {
                 startedAt,
                 completedAt
         );
-        verify(monitorService, never()).upsertStep(any(), any());
+        verify(monitorService, never()).upsertSteps(any(), any());
     }
 
     @Test
@@ -96,7 +96,7 @@ class ConsumerServiceTest {
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
         verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
-        verify(monitorService, never()).upsertStep(any(), any());
+        verify(monitorService, never()).upsertSteps(any(), any());
     }
 
     @Test
@@ -115,29 +115,6 @@ class ConsumerServiceTest {
 
         verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
         verify(monitorService, never()).upsertSteps(any(), any());
-    }
-
-    @Test
-    void consumeProcessExecutionStepUpdateMessage() throws JsonProcessingException {
-        UUID executionId = UUID.randomUUID();
-        UUID stepId = UUID.randomUUID();
-        ProcessExecutionStep stepUpdate = ProcessExecutionStep.builder()
-                .id(stepId)
-                .stepType("LOAD_FLOW")
-                .status(StepStatus.RUNNING)
-                .startedAt(Instant.now())
-                .build();
-        String payload = objectMapper.writeValueAsString(stepUpdate);
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_UPSERT.toString());
-        headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
-        Message<String> message = new GenericMessage<>(payload, headers);
-        Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
-
-        consumer.accept(message);
-
-        verify(monitorService).upsertStep(eq(executionId), any(ProcessExecutionStep.class));
-        verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -167,7 +144,6 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(monitorService).upsertSteps(eq(executionId), any(List.class));
-        verify(monitorService, never()).upsertStep(any(), any());
         verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
     }
 }

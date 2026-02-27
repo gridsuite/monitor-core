@@ -116,15 +116,6 @@ public class MonitorService {
     }
 
     @Transactional
-    public void upsertStep(UUID executionId, ProcessExecutionStep processExecutionStep) {
-        executionRepository.findById(executionId).ifPresent(execution -> {
-            ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
-            updateStep(execution, stepEntity);
-            executionRepository.save(execution);
-        });
-    }
-
-    @Transactional
     public void upsertSteps(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {

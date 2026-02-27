@@ -15,6 +15,7 @@ import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -35,7 +36,7 @@ public class StepExecutionService<C extends ProcessConfig> {
                 .startedAt(context.getStartedAt())
                 .completedAt(Instant.now())
                 .build();
-        notificationService.notifyStep(context.getProcessExecutionId(), executionStep);
+        notificationService.notifySteps(context.getProcessExecutionId(), List.of(executionStep));
     }
 
     public void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
@@ -47,7 +48,7 @@ public class StepExecutionService<C extends ProcessConfig> {
                 .reportId(context.getReportInfos().reportUuid())
                 .startedAt(context.getStartedAt())
                 .build();
-        notificationService.notifyStep(context.getProcessExecutionId(), executionStep);
+        notificationService.notifySteps(context.getProcessExecutionId(), List.of(executionStep));
 
         try {
             step.execute(context);
@@ -71,6 +72,6 @@ public class StepExecutionService<C extends ProcessConfig> {
                 .startedAt(context.getStartedAt())
                 .completedAt(Instant.now())
                 .build();
-        notificationService.notifyStep(context.getProcessExecutionId(), updated);
+        notificationService.notifySteps(context.getProcessExecutionId(), List.of(updated));
     }
 }

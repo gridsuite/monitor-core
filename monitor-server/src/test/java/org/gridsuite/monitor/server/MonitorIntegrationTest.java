@@ -128,7 +128,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, step0, MessageType.STEP_UPSERT);
+        sendMessage(executionId, List.of(step0), MessageType.STEPS_UPSERT);
 
         // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
@@ -145,7 +145,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, step1, MessageType.STEP_UPSERT);
+        sendMessage(executionId, List.of(step1), MessageType.STEPS_UPSERT);
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId).orElse(null);

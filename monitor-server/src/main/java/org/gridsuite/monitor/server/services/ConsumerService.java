@@ -54,7 +54,6 @@ public class ConsumerService {
 
             switch (messageType) {
                 case EXECUTION_UPDATE -> handleExecutionUpdate(executionId, message);
-                case STEP_UPSERT -> handleStepUpsert(executionId, message);
                 case STEPS_UPSERT -> handleStepsUpsert(executionId, message);
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
             }
@@ -64,11 +63,6 @@ public class ConsumerService {
     private void handleExecutionUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
         monitorService.updateExecution(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getStartedAt(), payload.getCompletedAt());
-    }
-
-    private void handleStepUpsert(UUID executionId, Message<String> message) {
-        ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        monitorService.upsertStep(executionId, processExecutionStep);
     }
 
     private void handleStepsUpsert(UUID executionId, Message<String> message) {

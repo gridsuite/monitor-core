@@ -27,32 +27,26 @@ public class StepExecutionService<C extends ProcessConfig> {
     private final ReportService reportService;
 
     public void skipStep(ProcessStepExecutionContext<?> context, ProcessStep<?> step) {
-        ProcessExecutionStep executionStep = new ProcessExecutionStep(
-                context.getStepExecutionId(),
-                step.getType().getName(),
-                context.getStepOrder(),
-                StepStatus.SKIPPED,
-                null,
-                null,
-                null,
-                context.getStartedAt(),
-                Instant.now()
-        );
+        ProcessExecutionStep executionStep = ProcessExecutionStep.builder()
+                .id(context.getStepExecutionId())
+                .stepType(step.getType().getName())
+                .stepOrder(context.getStepOrder())
+                .status(StepStatus.SKIPPED)
+                .startedAt(context.getStartedAt())
+                .completedAt(Instant.now())
+                .build();
         notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
     }
 
     public void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        ProcessExecutionStep executionStep = new ProcessExecutionStep(
-            context.getStepExecutionId(),
-            step.getType().getName(),
-            context.getStepOrder(),
-            StepStatus.RUNNING,
-            null,
-            null,
-            context.getReportInfos().reportUuid(),
-            context.getStartedAt(),
-            null
-        );
+        ProcessExecutionStep executionStep = ProcessExecutionStep.builder()
+                .id(context.getStepExecutionId())
+                .stepType(step.getType().getName())
+                .stepOrder(context.getStepOrder())
+                .status(StepStatus.RUNNING)
+                .reportId(context.getReportInfos().reportUuid())
+                .startedAt(context.getStartedAt())
+                .build();
         notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
 
         try {
@@ -66,17 +60,17 @@ public class StepExecutionService<C extends ProcessConfig> {
     }
 
     private void updateStepStatus(ProcessStepExecutionContext<?> context, StepStatus status, ProcessStep<?> step) {
-        ProcessExecutionStep updated = new ProcessExecutionStep(
-            context.getStepExecutionId(),
-            step.getType().getName(),
-            context.getStepOrder(),
-            status,
-            context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null,
-            context.getResultInfos() != null ? context.getResultInfos().resultType() : null,
-            context.getReportInfos().reportUuid(),
-            context.getStartedAt(),
-            Instant.now()
-        );
+        ProcessExecutionStep updated = ProcessExecutionStep.builder()
+                .id(context.getStepExecutionId())
+                .stepType(step.getType().getName())
+                .stepOrder(context.getStepOrder())
+                .status(status)
+                .resultId(context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null)
+                .resultType(context.getResultInfos() != null ? context.getResultInfos().resultType() : null)
+                .reportId(context.getReportInfos().reportUuid())
+                .startedAt(context.getStartedAt())
+                .completedAt(Instant.now())
+                .build();
         notificationService.updateStepStatus(context.getProcessExecutionId(), updated);
     }
 }

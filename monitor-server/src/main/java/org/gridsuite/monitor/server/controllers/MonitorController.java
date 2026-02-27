@@ -11,12 +11,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
-import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,9 +46,10 @@ public class MonitorController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @RequestParam UUID caseUuid,
+            @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
         return ResponseEntity.ok(executionId);
     }
 
@@ -80,6 +83,22 @@ public class MonitorController {
         @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         return processExecutionService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/executions/{executionId}/debug-infos")
+    @Operation(summary = "Get execution debug file")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Debug file downloaded"),
+        @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    public ResponseEntity<byte[]> getDebugInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return processExecutionService.getDebugInfos(executionId)
+            .map(bytes -> ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"archive.zip\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(bytes.length)
+                .body(bytes))
             .orElseGet(() -> ResponseEntity.notFound().build());
     }
 

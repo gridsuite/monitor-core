@@ -41,7 +41,7 @@ public interface Process<C extends ProcessConfig> {
      *
      * @return ordered process steps
      */
-    List<ProcessStep<C>> defineSteps();
+    List<ProcessStep<C>> getSteps();
 
     /**
      * Hook invoked by the orchestrator when a step throws during execution.

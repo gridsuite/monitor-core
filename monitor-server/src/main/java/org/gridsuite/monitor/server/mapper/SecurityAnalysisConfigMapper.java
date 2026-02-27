@@ -6,7 +6,9 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 
 /**
@@ -16,16 +18,17 @@ import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfi
 public class SecurityAnalysisConfigMapper {
     public static SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto) {
         SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity();
+        entity.setProcessType(ProcessType.SECURITY_ANALYSIS);
         update(entity, dto);
         return entity;
     }
 
-    public static SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity entity) {
-        return new SecurityAnalysisConfig(
+    public static PersistedProcessConfig toDto(SecurityAnalysisConfigEntity entity) {
+        return new PersistedProcessConfig(entity.getId(), new SecurityAnalysisConfig(
             entity.getParametersUuid(),
             entity.getContingencies(),
             entity.getModificationUuids()
-        );
+        ));
     }
 
     public static void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto) {

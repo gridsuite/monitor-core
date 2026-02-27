@@ -27,7 +27,6 @@ import java.util.UUID;
 public class ProcessExecutionEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column
@@ -54,6 +53,9 @@ public class ProcessExecutionEntity {
 
     @Column
     private String userId;
+
+    @Column
+    private String debugFileLocation;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "execution_id", foreignKey = @ForeignKey(name = "processExecutionStep_processExecution_fk"))

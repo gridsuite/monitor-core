@@ -10,9 +10,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 
-import java.util.List;
-import java.util.UUID;
-
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -26,5 +23,4 @@ import java.util.UUID;
 public interface ProcessConfig {
     ProcessType processType();
 
-    List<UUID> modificationUuids();
 }

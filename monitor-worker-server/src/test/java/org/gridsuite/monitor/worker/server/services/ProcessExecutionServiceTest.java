@@ -67,6 +67,9 @@ class ProcessExecutionServiceTest {
     private FilterService filterService;
 
     @Mock
+    private S3Service s3Service;
+
+    @Mock
     ReportRestClient reportRestClient;
 
     @Mock
@@ -91,7 +94,7 @@ class ProcessExecutionServiceTest {
         processExecutionService = new ProcessExecutionService(processList, stepExecutor, notificationService, EXECUTION_ENV_NAME);
 
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
-        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, filterService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, s3Service, filterService);
         runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient);
     }
 
@@ -101,12 +104,12 @@ class ProcessExecutionServiceTest {
         UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         // doNothing().when(processExecutionService).executeSteps(process, any(ProcessExecutionContext.class));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
-        when(process.defineSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        when(process.getSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
 
-        verify(process, times(2)).defineSteps();
+        verify(process, times(2)).getSteps();
         verify(notificationService, times(1)).updateStepsStatuses(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&
@@ -152,7 +155,7 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         RuntimeException processException = new RuntimeException("Process execution failed");
         //doThrow(processException).when(processExecutionService).executeSteps(eq(process), any(ProcessExecutionContext.class));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
 
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
@@ -172,7 +175,7 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         when(processConfig.processType()).thenReturn(null);
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null);
 
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
                 .isInstanceOf(IllegalArgumentException.class)

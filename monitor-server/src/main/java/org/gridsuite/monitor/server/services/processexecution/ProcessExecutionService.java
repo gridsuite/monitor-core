@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processexecution;
 
+import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
@@ -20,15 +21,15 @@ import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.services.S3RestService;
 import org.gridsuite.monitor.server.services.result.ResultService;
+import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -40,29 +41,40 @@ public class ProcessExecutionService {
     private final NotificationService notificationService;
     private final ReportRestClient reportRestClient;
     private final ResultService resultService;
+    private final S3RestService s3RestService;
+    private final S3PathResolver s3PathResolver;
 
     public ProcessExecutionService(ProcessExecutionRepository executionRepository,
                                    NotificationService notificationService,
                                    ReportRestClient reportRestClient,
-                                   ResultService resultService) {
+                                   ResultService resultService,
+                                   S3RestService s3RestService,
+                                   S3PathResolver s3PathResolver) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.reportRestClient = reportRestClient;
         this.resultService = resultService;
+        this.s3RestService = s3RestService;
+        this.s3PathResolver = s3PathResolver;
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, boolean isDebug) {
+        UUID executionId = UUID.randomUUID();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-                .type(processConfig.processType().name())
-                .caseUuid(caseUuid)
-                .status(ProcessStatus.SCHEDULED)
-                .scheduledAt(Instant.now())
-                .userId(userId)
-                .build();
+            .id(executionId)
+            .type(processConfig.processType().name())
+            .caseUuid(caseUuid)
+            .status(ProcessStatus.SCHEDULED)
+            .scheduledAt(Instant.now())
+            .userId(userId)
+            .build();
+        if (isDebug) {
+            execution.setDebugFileLocation(s3PathResolver.toDebugLocation(processConfig.processType().name(), executionId));
+        }
         executionRepository.save(execution);
 
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId());
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), execution.getDebugFileLocation());
 
         return execution.getId();
     }
@@ -164,6 +176,20 @@ public class ProcessExecutionService {
         return resultInfos.stream()
                 .map(resultService::getResult)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<byte[]> getDebugInfos(UUID executionId) {
+        return executionRepository.findById(executionId)
+            .map(ProcessExecutionEntity::getDebugFileLocation)
+            .filter(Objects::nonNull)
+            .map(debugFileLocation -> {
+                try {
+                    return s3RestService.downloadDirectoryAsZip(debugFileLocation);
+                } catch (IOException e) {
+                    throw new PowsyblException("An error occurred while downloading debug files", e);
+                }
+            });
     }
 
     private List<ResultInfos> getResultInfos(UUID executionId) {

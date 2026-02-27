@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.commons.api.types.processconfig;
 
+import org.gridsuite.monitor.commons.ModifyingProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public record SecurityAnalysisConfig(
     UUID parametersUuid,
     List<String> contingencies,
     List<UUID> modificationUuids
-) implements ProcessConfig {
+) implements ModifyingProcessConfig {
 
     @Override
     public ProcessType processType() {

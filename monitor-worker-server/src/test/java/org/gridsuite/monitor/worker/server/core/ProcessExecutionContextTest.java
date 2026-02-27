@@ -41,18 +41,19 @@ class ProcessExecutionContextTest {
         UUID caseUuid = UUID.randomUUID();
         String envName = "test-env";
 
-        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(executionId, caseUuid, config, envName);
+        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(executionId, caseUuid, config, envName, null);
 
         assertThat(processContext.getConfig()).isEqualTo(config);
         assertThat(processContext.getExecutionId()).isEqualTo(executionId);
         assertThat(processContext.getCaseUuid()).isEqualTo(caseUuid);
         assertThat(processContext.getExecutionEnvName()).isEqualTo(envName);
         assertThat(processContext.getNetwork()).isNull();
+        assertThat(processContext.getDebugFileLocation()).isNull();
     }
 
     @Test
     void shouldSetAndGetNetwork() {
-        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), UUID.randomUUID(), config, "test-env");
+        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), UUID.randomUUID(), config, "test-env", null);
 
         processContext.setNetwork(network);
 
@@ -61,7 +62,7 @@ class ProcessExecutionContextTest {
 
     @Test
     void shouldCreateStepContext() {
-        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), UUID.randomUUID(), config, "test-env");
+        ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), UUID.randomUUID(), config, "test-env", null);
         ProcessStep<ProcessConfig> step = mock(ProcessStep.class);
         ProcessStepType stepType = mock(ProcessStepType.class);
         when(stepType.getName()).thenReturn("test-step");

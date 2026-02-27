@@ -38,7 +38,7 @@ public class SecurityAnalysisProcess extends AbstractProcess<SecurityAnalysisCon
     }
 
     @Override
-    public List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
+    protected List<ProcessStep<SecurityAnalysisConfig>> defineSteps() {
         return List.of(
             loadNetworkStep,
             applyModificationsStep,

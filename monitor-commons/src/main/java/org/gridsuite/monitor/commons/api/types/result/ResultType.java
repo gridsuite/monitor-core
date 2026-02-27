@@ -11,4 +11,5 @@ package org.gridsuite.monitor.commons.api.types.result;
  */
 public enum ResultType {
     SECURITY_ANALYSIS,
+    STATE_ESTIMATION
 }

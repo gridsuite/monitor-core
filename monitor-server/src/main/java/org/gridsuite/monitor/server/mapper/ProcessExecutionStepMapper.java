@@ -15,15 +15,16 @@ import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionSt
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class ProcessExecutionStepMapper {
     public static ProcessExecutionStep toDto(ProcessExecutionStepEntity entity) {
-        return new ProcessExecutionStep(
-            entity.getId(),
-            entity.getStepType(),
-            entity.getStepOrder(),
-            entity.getStatus(),
-            entity.getResultId(),
-            entity.getResultType(),
-            entity.getReportId(),
-            entity.getStartedAt(),
-            entity.getCompletedAt());
+        return ProcessExecutionStep.builder()
+                .id(entity.getId())
+                .stepType(entity.getStepType())
+                .stepOrder(entity.getStepOrder())
+                .status(entity.getStatus())
+                .resultId(entity.getResultId())
+                .resultType(entity.getResultType())
+                .reportId(entity.getReportId())
+                .startedAt(entity.getStartedAt())
+                .completedAt(entity.getCompletedAt())
+                .build();
     }
 }

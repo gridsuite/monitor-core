@@ -6,15 +6,18 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,19 +34,19 @@ public class ProcessConfigService {
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
-        AbstractProcessConfigEntity entity = switch (processConfig) {
-            case SecurityAnalysisConfig sac -> SecurityAnalysisConfigMapper.toEntity(sac);
+        switch (processConfig) {
+            case SecurityAnalysisConfig sac -> {
+                return processConfigRepository.save(SecurityAnalysisConfigMapper.toEntity(sac)).getId();
+            }
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
-        };
-        return processConfigRepository.save(entity).getId();
+        }
     }
 
     @Transactional(readOnly = true)
-    public Optional<ProcessConfig> getProcessConfig(UUID processConfigUuid) {
+    public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
         return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
-            case SecurityAnalysisConfigEntity sae ->
-                Optional.of((ProcessConfig) SecurityAnalysisConfigMapper.toDto(sae));
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getType());
+            case SecurityAnalysisConfigEntity sae -> Optional.of(SecurityAnalysisConfigMapper.toDto(sae));
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         });
     }
 
@@ -51,8 +54,8 @@ public class ProcessConfigService {
     public boolean updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
-                if (entity.getType() != processConfig.processType()) {
-                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getType());
+                if (entity.getProcessType() != processConfig.processType()) {
+                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
@@ -71,5 +74,14 @@ public class ProcessConfigService {
             return true;
         }
         return false;
+    }
+
+    @Transactional(readOnly = true)
+    public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
+        List<ProcessConfigEntity> processConfigs = processConfigRepository.findAllByProcessType(processType);
+        return processConfigs.stream().map(entity -> switch (entity) {
+            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
+        }).toList();
     }
 }

@@ -11,11 +11,11 @@ import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.*;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
+import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
+import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
-import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
-import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
-import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -59,32 +59,40 @@ public class ProcessExecutionService implements ProcessExecutor {
             runMessage.executionId(),
             runMessage.caseUuid(),
             runMessage.config(),
-            executionEnvName
+            executionEnvName,
+            runMessage.debugFileLocation()
         );
 
         try {
-            List<ProcessStep<T>> steps = process.defineSteps();
-            notificationService.updateStepsStatuses(context.getExecutionId(),
-                IntStream.range(0, steps.size())
-                    .mapToObj(i -> new ProcessExecutionStep(steps.get(i).getId(), steps.get(i).getType().getName(), i, StepStatus.SCHEDULED, null, null, null, null, null))
-                    .toList());
-        } catch (Exception e) {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
-            throw e;
-        }
-
-        try {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+            initializeSteps(process, context);
             executeSteps(process, context);
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
         } catch (Exception e) {
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
             throw e;
         }
     }
 
-    public <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        List<ProcessStep<T>> steps = process.defineSteps();
+    private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        List<ProcessStep<T>> steps = process.getSteps();
+        notificationService.updateStepsStatuses(context.getExecutionId(),
+                IntStream.range(0, steps.size())
+                        .mapToObj(i -> ProcessExecutionStep.builder()
+                                .id(steps.get(i).getId())
+                                .stepType(steps.get(i).getType().getName())
+                                .stepOrder(i)
+                                .status(StepStatus.SCHEDULED)
+                                .build())
+                        .toList());
+    }
+
+    private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+        doExecuteSteps(process, context);
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
+    }
+
+    private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        List<ProcessStep<T>> steps = process.getSteps();
         boolean skipRemaining = false;
 
         for (int i = 0; i < steps.size(); i++) {

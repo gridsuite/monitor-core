@@ -6,23 +6,26 @@
  */
 package org.gridsuite.monitor.server.services.processexecution;
 
-import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
-import org.gridsuite.monitor.commons.api.types.result.ResultType;
+import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
+import org.gridsuite.monitor.commons.api.types.result.ResultType;
+import org.gridsuite.monitor.server.client.ReportRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
-import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.client.ReportRestClient;
 import org.gridsuite.monitor.server.messaging.NotificationService;
+import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.services.S3RestService;
 import org.gridsuite.monitor.server.services.result.ResultService;
+import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +33,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +41,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -57,6 +62,12 @@ class ProcessExecutionServiceTest {
 
     @Mock
     private ResultService resultService;
+
+    @Mock
+    private S3RestService s3RestService;
+
+    @Mock
+    private S3PathResolver s3PathResolver;
 
     @InjectMocks
     private ProcessExecutionService processExecutionService;
@@ -80,15 +91,10 @@ class ProcessExecutionServiceTest {
 
     @Test
     void executeProcessCreateExecutionAndSendNotification() {
-        UUID expectedExecutionId = UUID.randomUUID();
-        when(executionRepository.save(any(ProcessExecutionEntity.class)))
-                .thenAnswer(invocation -> {
-                    ProcessExecutionEntity entity = invocation.getArgument(0);
-                    entity.setId(expectedExecutionId); // mock id generation
-                    return entity;
-                });
+        String debugFileLocation = "debug/file/location";
+        when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
 
-        UUID result = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID result = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig, true);
 
         assertThat(result).isNotNull();
         verify(executionRepository).save(argThat(execution ->
@@ -103,8 +109,10 @@ class ProcessExecutionServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
-                result
+                result,
+                debugFileLocation
         );
+        verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
     }
 
     @Test
@@ -559,5 +567,69 @@ class ProcessExecutionServiceTest {
         verifyNoInteractions(reportRestClient);
         verifyNoInteractions(resultService);
         verify(executionRepository, never()).deleteById(executionId);
+    }
+
+    @Test
+    void getExistingDebugInfo() throws Exception {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setDebugFileLocation("debug/file/location");
+        byte[] expectedBytes = "zip-content".getBytes();
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+        when(s3RestService.downloadDirectoryAsZip("debug/file/location")).thenReturn(expectedBytes);
+
+        Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
+
+        assertThat(result).isPresent();
+        assertThat(expectedBytes).isEqualTo(result.get());
+
+        verify(executionRepository).findById(executionId);
+        verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
+    }
+
+    @Test
+    void getNotExistingExecutionDebugInfo() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
+
+        assertThat(result).isEmpty();
+
+        verify(executionRepository).findById(executionId);
+        verifyNoInteractions(s3RestService);
+    }
+
+    @Test
+    void getExistingDebugInfoError() throws Exception {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setDebugFileLocation("debug/file/location");
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        when(s3RestService.downloadDirectoryAsZip("debug/file/location")).thenThrow(new IOException("S3 error"));
+
+        PowsyblException exception = assertThrows(
+            PowsyblException.class,
+            () -> processExecutionService.getDebugInfos(executionId)
+        );
+
+        assertThat(exception.getMessage()).contains("An error occurred while downloading debug files");
+
+        verify(executionRepository).findById(executionId);
+        verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
+    }
+
+    @Test
+    void getExecutionWithoutDebugInfo() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
+
+        assertThat(result).isEmpty();
+
+        verify(executionRepository).findById(executionId);
+        verifyNoInteractions(s3RestService);
     }
 }

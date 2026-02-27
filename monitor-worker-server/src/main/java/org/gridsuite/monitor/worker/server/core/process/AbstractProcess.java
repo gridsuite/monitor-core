@@ -13,6 +13,9 @@ import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Base class for {@link Process} implementations.
  * <p>
@@ -41,6 +44,13 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
 
     protected AbstractProcess(ProcessType processType) {
         this.processType = processType;
+    }
+
+    protected abstract List<ProcessStep<C>> defineSteps();
+
+    @Override
+    public List<ProcessStep<C>> getSteps() {
+        return Collections.unmodifiableList(defineSteps());
     }
 
     /**

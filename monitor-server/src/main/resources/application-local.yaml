@@ -19,3 +19,5 @@ gridsuite:
       base-uri: http://localhost:5028
     security-analysis-server:
       base-uri: http://localhost:5023
+    state-estimation-server:
+      base-uri: http://localhost:6040

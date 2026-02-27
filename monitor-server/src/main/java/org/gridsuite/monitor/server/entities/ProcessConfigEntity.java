@@ -11,6 +11,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -43,7 +45,7 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @AllArgsConstructor
 @Getter
 @Setter
-public abstract class AbstractProcessConfigEntity {
+public class ProcessConfigEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id")
@@ -57,7 +59,9 @@ public abstract class AbstractProcessConfigEntity {
     @OrderColumn(name = "pos_modifications")
     private List<UUID> modificationUuids;
 
-    public abstract ProcessType getType();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "process_type", insertable = false, updatable = false)
+    private ProcessType processType;
 }
 
 

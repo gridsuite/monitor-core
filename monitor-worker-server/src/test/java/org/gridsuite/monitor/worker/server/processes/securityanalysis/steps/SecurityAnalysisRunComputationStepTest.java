@@ -20,6 +20,7 @@ import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.Conti
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.gridsuite.monitor.worker.server.services.ActionsRestService;
+import org.gridsuite.monitor.worker.server.services.FilterRestService;
 import org.gridsuite.monitor.worker.server.services.LoadFlowRestService;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisRestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,9 @@ class SecurityAnalysisRunComputationStepTest {
     private ActionsRestService actionsRestService;
 
     @Mock
+    private FilterRestService filterRestService;
+
+    @Mock
     private ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext;
 
     @Mock
@@ -66,11 +70,12 @@ class SecurityAnalysisRunComputationStepTest {
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, loadFlowRestService, actionsRestService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, loadFlowRestService, actionsRestService, filterRestService);
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.parametersUuid()).thenReturn(PARAMS_UUID);
         when(config.loadflowParametersUuid()).thenReturn(LOADFLOW_PARAMS_UUID);
+        when(stepContext.getUserId()).thenReturn("user1");
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -84,7 +89,7 @@ class SecurityAnalysisRunComputationStepTest {
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
         when(loadFlowRestService.getParameters(LOADFLOW_PARAMS_UUID)).thenReturn(new LoadFlowParametersInfos(null, null, new LoadFlowParameters(), null, null, null));
-        when(securityAnalysisRestService.getParameters(PARAMS_UUID)).thenReturn(new SecurityAnalysisParametersValues("OpenLoadFlow", 1, 0.5, 2, 0.7, 1,
+        when(securityAnalysisRestService.getParameters(PARAMS_UUID, "user1")).thenReturn(new SecurityAnalysisParametersValues("OpenLoadFlow", 1, 0.5, 2, 0.7, 1,
             List.of(new ContingencyListsInfos(List.of(new IdNameInfos(UUID.randomUUID(), "name")), "desc", true)), null));
 
         runComputationStep.execute(stepContext);
@@ -93,7 +98,7 @@ class SecurityAnalysisRunComputationStepTest {
         assertEquals("RUN_SA_COMPUTATION", stepType);
 
         verify(loadFlowRestService).getParameters(LOADFLOW_PARAMS_UUID);
-        verify(securityAnalysisRestService).getParameters(PARAMS_UUID);
+        verify(securityAnalysisRestService).getParameters(PARAMS_UUID, "user1");
         verify(securityAnalysisRestService).saveResult(
                 any(UUID.class),
                 any(SecurityAnalysisResult.class)

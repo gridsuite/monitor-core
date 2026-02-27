@@ -7,6 +7,7 @@
 
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.actions.dto.contingency.PersistentContingencyList;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -55,7 +57,15 @@ public class ActionsRestService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<List<UUID>> httpEntity = new HttpEntity<>(contingenciesUuids, headers);
 
-        ResponseEntity<List<PersistentContingencyList>> response = actionsServerRest.exchange(path, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<>() { });
-        return response.getBody() != null ? response.getBody() : List.of();
+        try {
+            ResponseEntity<List<PersistentContingencyList>> response = actionsServerRest.exchange(path, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<>() { });
+            List<PersistentContingencyList> contingencyLists = response.getBody();
+            if (contingencyLists == null) {
+                throw new PowsyblException("Failed to retrieve persistent contingency lists for UUIDs: " + contingenciesUuids);
+            }
+            return contingencyLists;
+        } catch (RestClientException e) {
+            throw new PowsyblException("Error retrieving persistent contingency lists for UUIDs: " + contingenciesUuids + " - " + e.getMessage(), e);
+        }
     }
 }

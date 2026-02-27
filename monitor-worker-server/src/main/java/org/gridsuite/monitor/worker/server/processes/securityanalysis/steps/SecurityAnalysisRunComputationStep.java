@@ -6,13 +6,16 @@
  */
 package org.gridsuite.monitor.worker.server.processes.securityanalysis.steps;
 
+import com.powsybl.commons.report.ReportNode;
+import com.powsybl.commons.report.TypedValue;
 import com.powsybl.contingency.Contingency;
-import com.powsybl.contingency.list.ContingencyList;
 import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisRunParameters;
+import org.gridsuite.actions.ContingencyListEvaluator;
 import org.gridsuite.actions.dto.contingency.PersistentContingencyList;
+import org.gridsuite.actions.dto.evaluation.ContingencyInfos;
 import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
@@ -23,7 +26,9 @@ import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.Conti
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
+import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.ActionsRestService;
+import org.gridsuite.monitor.worker.server.services.FilterRestService;
 import org.gridsuite.monitor.worker.server.services.LoadFlowRestService;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisRestService;
 import org.springframework.stereotype.Component;
@@ -42,23 +47,66 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
     private final SecurityAnalysisRestService securityAnalysisRestService;
     private final LoadFlowRestService loadFlowRestService;
     private final ActionsRestService actionsRestService;
+    private final FilterRestService filterRestService;
 
     public SecurityAnalysisRunComputationStep(SecurityAnalysisRestService securityAnalysisRestService,
                                               LoadFlowRestService loadFlowRestService,
-                                              ActionsRestService actionsRestService) {
+                                              ActionsRestService actionsRestService,
+                                              FilterRestService filterRestService) {
         super(SecurityAnalysisStepType.RUN_SA_COMPUTATION);
         this.securityAnalysisRestService = securityAnalysisRestService;
         this.loadFlowRestService = loadFlowRestService;
         this.actionsRestService = actionsRestService;
+        this.filterRestService = filterRestService;
     }
 
     @Override
     public void execute(ProcessStepExecutionContext<SecurityAnalysisConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 
-        SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestService.getParameters(context.getConfig().parametersUuid());
-        LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestService.getParameters(context.getConfig().loadflowParametersUuid());
+        ReportNode reportNode = context.getReportInfos().reportNode();
+        try {
+            SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestService.getParameters(context.getConfig().parametersUuid(), context.getUserId());
+            LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestService.getParameters(context.getConfig().loadflowParametersUuid());
 
+            SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues);
+
+            List<ContingencyListsInfos> contingencyListInfos = securityAnalysisParametersValues.getContingencyListsInfos();
+            List<UUID> contingenciesListUuids = contingencyListInfos != null ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList() : List.of();
+            List<PersistentContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
+
+            List<Contingency> contingencyList = new ArrayList<>();
+            ContingencyListEvaluator contingencyListEvaluator = new ContingencyListEvaluator(filterRestService);
+
+            persistentContingencyLists.forEach(persistentContingencyList -> {
+                List<Contingency> contingencies = contingencyListEvaluator.evaluateContingencyList(persistentContingencyList, context.getNetwork())
+                    .stream()
+                    .map(ContingencyInfos::getContingency)
+                    .filter(Objects::nonNull)
+                    .toList();
+                contingencyList.addAll(contingencies);
+            });
+
+            SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
+                .setSecurityAnalysisParameters(securityAnalysisParameters)
+                .setReportNode(reportNode);
+            SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), contingencyList, runParameters);
+
+            ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
+            securityAnalysisRestService.saveResult(resultInfos.resultUUID(), saReport.getResult());
+            context.setResultInfos(resultInfos);
+        } catch (Exception e) {
+            reportNode.newReportNode()
+                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
+                .withMessageTemplate("monitor.worker.server.securityanalysis.step.error")
+                .withUntypedValue("errorMessage", e.getMessage())
+                .withSeverity(TypedValue.ERROR_SEVERITY)
+                .add();
+            throw e;
+        }
+    }
+
+    private static SecurityAnalysisParameters buildSecurityAnalysisParameters(LoadFlowParametersInfos loadFlowParametersInfos, SecurityAnalysisParametersValues securityAnalysisParametersValues) {
         SecurityAnalysisParameters securityAnalysisParameters = new SecurityAnalysisParameters();
         securityAnalysisParameters.setLoadFlowParameters(loadFlowParametersInfos.getCommonParameters());
         SecurityAnalysisParameters.IncreasedViolationsParameters increasedViolationsParameters =
@@ -69,23 +117,6 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
                 securityAnalysisParametersValues.getHighVoltageProportionalThreshold(),
                 securityAnalysisParametersValues.getFlowProportionalThreshold());
         securityAnalysisParameters.setIncreasedViolationsParameters(increasedViolationsParameters);
-
-        List<ContingencyListsInfos> contingencyListInfos = securityAnalysisParametersValues.getContingencyListsInfos();
-        List<UUID> contingenciesListUuids = contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList();
-        List<PersistentContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
-        List<Contingency> contingencyList = new ArrayList<>();
-        persistentContingencyLists.forEach(persistentContingencyList -> {
-            ContingencyList contingencies = persistentContingencyList.toPowsyblContingencyList(context.getNetwork());
-            contingencyList.addAll(contingencies.getContingencies(context.getNetwork()));
-        });
-
-        SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
-            .setSecurityAnalysisParameters(securityAnalysisParameters)
-            .setReportNode(context.getReportInfos().reportNode());
-        SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), contingencyList, runParameters);
-
-        ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-        securityAnalysisRestService.saveResult(resultInfos.resultUUID(), saReport.getResult());
-        context.setResultInfos(resultInfos);
+        return securityAnalysisParameters;
     }
 }

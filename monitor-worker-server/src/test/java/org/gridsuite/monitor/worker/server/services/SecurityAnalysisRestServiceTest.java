@@ -2,6 +2,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
@@ -90,7 +91,7 @@ class SecurityAnalysisRestServiceTest {
             throw new RuntimeException(e);
         }
 
-        SecurityAnalysisParametersValues result = securityAnalysisRestService.getParameters(PARAMETERS_UUID);
+        SecurityAnalysisParametersValues result = securityAnalysisRestService.getParameters(PARAMETERS_UUID, "user1");
 
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedParameters);
     }
@@ -102,7 +103,8 @@ class SecurityAnalysisRestServiceTest {
                 "http://security-analysis-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestService.getParameters(PARAMETERS_ERROR_UUID))
-            .isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> securityAnalysisRestService.getParameters(PARAMETERS_ERROR_UUID, "user1"))
+            .isInstanceOf(PowsyblException.class)
+            .hasMessageContaining("Error retrieving security analysis parameters");
     }
 }

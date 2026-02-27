@@ -6,9 +6,14 @@
         </addColumn>
     </changeSet>
     <changeSet author="lecuyerfra (generated)" id="1772187083119-2">
-        <dropForeignKeyConstraint baseTableName="SECURITY_ANALYSIS_CONTINGENCIES" constraintName="SECURITYANALYSISCONFIGENTITY_CONTINGENCIES_FK1"/>
+        <dropForeignKeyConstraint baseTableName="security_analysis_contingencies" constraintName="SecurityAnalysisConfigEntity_contingencies_fk1"/>
     </changeSet>
     <changeSet author="lecuyerfra (generated)" id="1772187083119-3">
-        <dropTable tableName="SECURITY_ANALYSIS_CONTINGENCIES"/>
+        <dropTable tableName="security_analysis_contingencies"/>
+    </changeSet>
+    <changeSet author="lecuyerfra (generated)" id="1772187083119-4">
+        <addColumn tableName="process_execution">
+            <column name="process_config_id" type="uuid"/>
+        </addColumn>
     </changeSet>
 </databaseChangeLog>

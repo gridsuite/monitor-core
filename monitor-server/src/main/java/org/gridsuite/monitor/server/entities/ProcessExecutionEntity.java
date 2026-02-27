@@ -36,6 +36,9 @@ public class ProcessExecutionEntity {
     private UUID caseUuid;
 
     @Column
+    private UUID processConfigId;
+
+    @Column
     @Enumerated(EnumType.STRING)
     private ProcessStatus status;
 

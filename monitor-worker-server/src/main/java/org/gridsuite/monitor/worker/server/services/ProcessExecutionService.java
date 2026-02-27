@@ -57,7 +57,8 @@ public class ProcessExecutionService {
             runMessage.caseUuid(),
             runMessage.config(),
             executionEnvName,
-            runMessage.debugFileLocation()
+            runMessage.debugFileLocation(),
+            runMessage.userId()
         );
 
         try {

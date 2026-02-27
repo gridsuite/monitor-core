@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
-import org.springframework.web.client.HttpServerErrorException;
 
 import java.util.UUID;
 
@@ -77,6 +77,7 @@ class LoadFlowRestServiceTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> loadFlowRestService.getParameters(PARAMETERS_ERROR_UUID))
-            .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+            .isInstanceOf(PowsyblException.class)
+            .hasMessageContaining("Error retrieving loadflow parameters");
     }
 }

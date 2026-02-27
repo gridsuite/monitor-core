@@ -26,13 +26,15 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
     private Network network;
     private final String executionEnvName;
     private final String debugFileLocation;
+    private final String userId;
 
-    public ProcessExecutionContext(UUID executionId, UUID caseUuid, C config, String executionEnvName, String debugFileLocation) {
+    public ProcessExecutionContext(UUID executionId, UUID caseUuid, C config, String executionEnvName, String debugFileLocation, String userId) {
         this.executionId = executionId;
         this.caseUuid = caseUuid;
         this.config = config;
         this.executionEnvName = executionEnvName;
         this.debugFileLocation = debugFileLocation;
+        this.userId = userId;
     }
 
     public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step, int stepOrder) {

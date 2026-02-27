@@ -48,7 +48,8 @@ public class MonitorController {
 
     @PostMapping("/execute/security-analysis")
     @Operation(summary = "Execute a security analysis process")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started"),
+                           @ApiResponse(responseCode = "404", description = "Process config was not found")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
@@ -56,10 +57,10 @@ public class MonitorController {
             @RequestHeader(HEADER_USER_ID) String userId) {
         Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
         if (processConfig.isPresent()) {
-            UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfig.get().processConfig(), isDebug);
+            UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfig.get().processConfig(), processConfig.get().id(), isDebug);
             return ResponseEntity.ok(executionId);
         } else {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.notFound().build();
         }
     }
 

@@ -71,6 +71,9 @@ class ProcessExecutionServiceTest {
     @Mock
     private ActionsRestService actionsRestService;
 
+    @Mock
+    private FilterRestService filterRestService;
+
     private ProcessExecutionService processExecutionService;
 
     private LoadNetworkStep<ProcessConfig> loadNetworkStep;
@@ -90,16 +93,17 @@ class ProcessExecutionServiceTest {
 
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, loadFlowRestService, actionsRestService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, loadFlowRestService, actionsRestService, filterRestService);
     }
 
     @Test
     void executeProcessShouldCompleteSuccessfullyWhenProcessExecutesWithoutError() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        String userId = "user1";
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         doNothing().when(process).execute(any(ProcessExecutionContext.class));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null, userId);
         when(process.getSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
@@ -125,7 +129,8 @@ class ProcessExecutionServiceTest {
                 context.getExecutionId().equals(executionId) &&
                         context.getCaseUuid().equals(caseUuid) &&
                         context.getConfig().equals(processConfig) &&
-                        context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
+                        context.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
+                        context.getUserId().equals(userId)
         ));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
@@ -148,7 +153,7 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         RuntimeException processException = new RuntimeException("Process execution failed");
         doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null, "user1");
 
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
@@ -167,7 +172,7 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         when(processConfig.processType()).thenReturn(null);
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null, "user1");
 
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
                 .isInstanceOf(IllegalArgumentException.class)

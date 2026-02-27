@@ -54,7 +54,7 @@ public class NotificationService {
         );
     }
 
-    public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
+    public void notifyStep(UUID executionId, ProcessExecutionStep processExecutionStep) {
         sendMonitorUpdate(
                 executionId,
                 MessageType.STEP_STATUS_UPDATE,
@@ -62,7 +62,7 @@ public class NotificationService {
         );
     }
 
-    public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+    public void notifySteps(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         sendMonitorUpdate(
             executionId,
             MessageType.STEPS_STATUSES_UPDATE,

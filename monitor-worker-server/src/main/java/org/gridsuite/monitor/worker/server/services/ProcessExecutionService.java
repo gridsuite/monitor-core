@@ -71,7 +71,7 @@ public class ProcessExecutionService {
 
     private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
         List<ProcessStep<T>> steps = process.getSteps();
-        notificationService.updateStepsStatuses(context.getExecutionId(),
+        notificationService.notifySteps(context.getExecutionId(),
                 IntStream.range(0, steps.size())
                         .mapToObj(i -> ProcessExecutionStep.builder()
                                 .id(steps.get(i).getId())

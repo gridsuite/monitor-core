@@ -60,11 +60,11 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateStepStatusShouldSendStepStatusUpdateMessage() {
+    void notifyStepShouldSendStepStatusUpdateMessage() {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStep payload = new ProcessExecutionStep();
 
-        notificationService.updateStepStatus(executionId, payload);
+        notificationService.notifyStep(executionId, payload);
 
         verify(streamBridge).send(
                 eq("publishMonitorUpdate-out-0"),
@@ -78,11 +78,11 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateStepsStatusesShouldSendStepStatusUpdateMessage() {
+    void notifyStepsShouldSendStepStatusUpdateMessage() {
         UUID executionId = UUID.randomUUID();
         List<ProcessExecutionStep> payload = List.of(new ProcessExecutionStep(), new ProcessExecutionStep());
 
-        notificationService.updateStepsStatuses(executionId, payload);
+        notificationService.notifySteps(executionId, payload);
 
         verify(streamBridge).send(
             eq("publishMonitorUpdate-out-0"),

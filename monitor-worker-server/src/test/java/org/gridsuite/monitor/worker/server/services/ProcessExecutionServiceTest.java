@@ -99,7 +99,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.executeProcess(runMessage);
 
         verify(process, times(1)).getSteps();
-        verify(notificationService, times(1)).updateStepsStatuses(eq(executionId), argThat(steps ->
+        verify(notificationService, times(1)).notifySteps(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&
             steps.get(0).getId().equals(loadNetworkStep.getId()) &&

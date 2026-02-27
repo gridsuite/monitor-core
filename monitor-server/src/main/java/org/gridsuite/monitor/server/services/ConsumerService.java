@@ -68,12 +68,12 @@ public class ConsumerService {
 
     private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
         ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        monitorService.updateStepStatus(executionId, processExecutionStep);
+        monitorService.upsertStep(executionId, processExecutionStep);
     }
 
     private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
         List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
-        monitorService.updateStepsStatuses(executionId, processExecutionSteps);
+        monitorService.upsertSteps(executionId, processExecutionSteps);
     }
 
     private <T> T parsePayload(String payload, Class<T> clazz) {

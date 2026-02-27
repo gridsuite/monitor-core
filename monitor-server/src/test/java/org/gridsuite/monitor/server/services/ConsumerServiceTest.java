@@ -78,11 +78,7 @@ class ConsumerServiceTest {
                 startedAt,
                 completedAt
         );
-        verify(monitorService, never()).updateStepStatus(any(), any());
-    }
-
-    @Test
-    void consumeMonitorUpdateThrowsOnInvalidJson() {
+        verify(monitorService, never()).upsertStep(any(), any());
         UUID executionId = UUID.randomUUID();
         String invalidPayload = "{invalid json}";
         Map<String, Object> headers = new HashMap<>();
@@ -96,7 +92,7 @@ class ConsumerServiceTest {
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
         verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
-        verify(monitorService, never()).updateStepStatus(any(), any());
+        verify(monitorService, never()).upsertStep(any(), any());
     }
 
     @Test
@@ -114,7 +110,7 @@ class ConsumerServiceTest {
             .hasMessageContaining("Failed to parse payload as java.util.List<org.gridsuite.monitor.commons.ProcessExecutionStep>");
 
         verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
-        verify(monitorService, never()).updateStepsStatuses(any(), any());
+        verify(monitorService, never()).upsertSteps(any(), any());
     }
 
     @Test
@@ -136,7 +132,7 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(monitorService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(monitorService).upsertStep(eq(executionId), any(ProcessExecutionStep.class));
         verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
     }
 
@@ -166,8 +162,8 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(monitorService).updateStepsStatuses(eq(executionId), any(List.class));
-        verify(monitorService, never()).updateStepStatus(any(), any());
+        verify(monitorService).upsertSteps(eq(executionId), any(List.class));
+        verify(monitorService, never()).upsertStep(any(), any());
         verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
     }
 }

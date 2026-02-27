@@ -35,7 +35,7 @@ public class StepExecutionService<C extends ProcessConfig> {
                 .startedAt(context.getStartedAt())
                 .completedAt(Instant.now())
                 .build();
-        notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
+        notificationService.notifyStep(context.getProcessExecutionId(), executionStep);
     }
 
     public void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
@@ -47,19 +47,19 @@ public class StepExecutionService<C extends ProcessConfig> {
                 .reportId(context.getReportInfos().reportUuid())
                 .startedAt(context.getStartedAt())
                 .build();
-        notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
+        notificationService.notifyStep(context.getProcessExecutionId(), executionStep);
 
         try {
             step.execute(context);
             reportService.sendReport(context.getReportInfos());
-            updateStepStatus(context, StepStatus.COMPLETED, step);
+            publishStep(context, StepStatus.COMPLETED, step);
         } catch (Exception e) {
-            updateStepStatus(context, StepStatus.FAILED, step);
+            publishStep(context, StepStatus.FAILED, step);
             throw e;
         }
     }
 
-    private void updateStepStatus(ProcessStepExecutionContext<?> context, StepStatus status, ProcessStep<?> step) {
+    private void publishStep(ProcessStepExecutionContext<?> context, StepStatus status, ProcessStep<?> step) {
         ProcessExecutionStep updated = ProcessExecutionStep.builder()
                 .id(context.getStepExecutionId())
                 .stepType(step.getType().getName())
@@ -71,6 +71,6 @@ public class StepExecutionService<C extends ProcessConfig> {
                 .startedAt(context.getStartedAt())
                 .completedAt(Instant.now())
                 .build();
-        notificationService.updateStepStatus(context.getProcessExecutionId(), updated);
+        notificationService.notifyStep(context.getProcessExecutionId(), updated);
     }
 }

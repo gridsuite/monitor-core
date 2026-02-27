@@ -163,7 +163,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateStepStatusShouldAddNewStep() {
+    void upsertStepShouldAddNewStep() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -187,7 +187,7 @@ class MonitorServiceTest {
                 .startedAt(startedAt)
                 .build();
 
-        monitorService.updateStepStatus(executionId, processExecutionStep);
+        monitorService.upsertStep(executionId, processExecutionStep);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -203,7 +203,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateStepStatusShouldUpdateExistingStep() {
+    void upsertStepShouldUpdateExistingStep() {
         UUID stepId = UUID.randomUUID();
         UUID originalResultId = UUID.randomUUID();
         UUID newResultId = UUID.randomUUID();
@@ -237,7 +237,7 @@ class MonitorServiceTest {
                 .completedAt(completedAt)
                 .build();
 
-        monitorService.updateStepStatus(executionId, updateDto);
+        monitorService.upsertStep(executionId, updateDto);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(1);
@@ -253,7 +253,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateStepsStatusesShouldUpdateExistingSteps() {
+    void upsertStepsShouldUpdateExistingSteps() {
         UUID stepId1 = UUID.randomUUID();
         UUID stepId2 = UUID.randomUUID();
         UUID originalResultId1 = UUID.randomUUID();
@@ -310,7 +310,7 @@ class MonitorServiceTest {
             .startedAt(startedAt2)
             .completedAt(completedAt2)
             .build();
-        monitorService.updateStepsStatuses(executionId, List.of(updateDto1, updateDto2));
+        monitorService.upsertSteps(executionId, List.of(updateDto1, updateDto2));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getSteps()).hasSize(2);

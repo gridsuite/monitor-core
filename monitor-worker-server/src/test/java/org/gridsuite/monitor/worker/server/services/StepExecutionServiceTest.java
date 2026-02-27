@@ -70,14 +70,14 @@ class StepExecutionServiceTest {
 
         verify(processStep).execute(context);
         verify(reportService).sendReport(any(ReportInfos.class));
-        verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).notifyStep(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "TEST_STEP".equals(step.getStepType()) &&
                         stepOrder == step.getStepOrder()
         ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.COMPLETED &&
                         step.getCompletedAt() != null
         ));
@@ -99,14 +99,14 @@ class StepExecutionServiceTest {
             () -> stepExecutionService.executeStep(context, processStep)
         );
         assertEquals("Step execution failed", thrownException.getMessage());
-        verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).notifyStep(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "FAILING_STEP".equals(step.getStepType()) &&
                         stepOrder == step.getStepOrder()
         ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).notifyStep(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
@@ -127,7 +127,7 @@ class StepExecutionServiceTest {
         verify(processStep, never()).execute(any());
         // Verify report was NOT sent on skip
         verify(reportService, never()).sendReport(any(ReportInfos.class));
-        verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        verify(notificationService).notifyStep(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.SKIPPED &&
                         "SKIPPED_STEP".equals(step.getStepType()) &&
                         step.getStepOrder() == 3

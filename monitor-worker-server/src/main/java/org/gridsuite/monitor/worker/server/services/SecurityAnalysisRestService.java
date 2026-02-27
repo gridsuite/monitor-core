@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @Service
 public class SecurityAnalysisRestService {

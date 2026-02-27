@@ -12,7 +12,7 @@ import org.gridsuite.filter.utils.FilterServiceUtils;
 import org.gridsuite.modification.IFilterService;
 import org.gridsuite.modification.dto.FilterEquipments;
 import org.gridsuite.modification.dto.IdentifiableAttributes;
-import org.gridsuite.monitor.worker.server.client.FilterRestClient;
+import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

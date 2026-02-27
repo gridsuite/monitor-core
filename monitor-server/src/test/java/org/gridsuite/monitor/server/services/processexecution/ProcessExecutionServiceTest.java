@@ -14,7 +14,7 @@ import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.api.types.result.ResultType;
-import org.gridsuite.monitor.server.client.ReportRestClient;
+import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;

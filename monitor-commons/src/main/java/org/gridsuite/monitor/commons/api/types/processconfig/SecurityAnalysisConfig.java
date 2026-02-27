@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.commons.api.types.processconfig;
 
-import org.gridsuite.monitor.commons.ModifyingProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 
 import java.util.List;

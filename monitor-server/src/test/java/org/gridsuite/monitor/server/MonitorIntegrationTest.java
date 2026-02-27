@@ -7,13 +7,14 @@
 package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.PersistedProcessConfig;
-import org.gridsuite.monitor.commons.api.types.message.MessageType;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.api.types.processconfig.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.api.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.*;
 import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.api.types.result.ResultType;
-import org.gridsuite.monitor.server.client.ReportRestClient;
+import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;

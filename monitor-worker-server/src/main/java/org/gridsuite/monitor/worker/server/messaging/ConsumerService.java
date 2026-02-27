@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.messaging;
 
 import lombok.RequiredArgsConstructor;
-import org.gridsuite.monitor.commons.api.types.message.ProcessRunMessage;
+import org.gridsuite.monitor.commons.api.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.springframework.context.annotation.Bean;

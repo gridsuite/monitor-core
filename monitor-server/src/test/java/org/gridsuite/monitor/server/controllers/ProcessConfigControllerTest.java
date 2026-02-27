@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.api.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;

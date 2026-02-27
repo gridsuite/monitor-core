@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.gridsuite.monitor.commons.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.api.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;

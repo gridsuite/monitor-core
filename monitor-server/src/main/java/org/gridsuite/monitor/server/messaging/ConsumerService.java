@@ -9,7 +9,7 @@ package org.gridsuite.monitor.server.messaging;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.api.types.message.MessageType;
+import org.gridsuite.monitor.commons.api.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;

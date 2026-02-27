@@ -1,6 +1,6 @@
 package org.gridsuite.monitor.worker.server.core.orchestrator;
 
-import org.gridsuite.monitor.commons.api.types.message.ProcessRunMessage;
+import org.gridsuite.monitor.commons.api.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
 
 /**

@@ -6,11 +6,11 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
-import org.gridsuite.monitor.commons.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.api.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
-import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
+import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.messaging;
 
-import org.gridsuite.monitor.commons.api.types.message.MessageType;
+import org.gridsuite.monitor.commons.api.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;

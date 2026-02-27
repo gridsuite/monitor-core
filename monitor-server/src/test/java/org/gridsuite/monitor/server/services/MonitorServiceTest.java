@@ -100,7 +100,8 @@ class MonitorServiceTest {
                 caseUuid,
                 securityAnalysisConfig,
                 result,
-                debugFileLocation
+                debugFileLocation,
+                userId
         );
         verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
     }

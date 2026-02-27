@@ -23,11 +23,11 @@ public class NotificationService {
 
     private final StreamBridge publisher;
 
-    public void sendProcessRunMessage(UUID caseUuid, ProcessConfig processConfig, UUID executionId, String debugFileLocation) {
+    public void sendProcessRunMessage(UUID caseUuid, ProcessConfig processConfig, UUID executionId, String debugFileLocation, String userId) {
         String bindingName = switch (processConfig.processType()) {
             case SECURITY_ANALYSIS -> "publishRunSecurityAnalysis-out-0";
         };
-        ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, debugFileLocation);
+        ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, debugFileLocation, userId);
         publisher.send(bindingName, message);
     }
 }

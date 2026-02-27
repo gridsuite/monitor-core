@@ -54,6 +54,7 @@ public class StepExecutionService<C extends ProcessConfig> {
             reportService.sendReport(context.getReportInfos());
             updateStepStatus(context, StepStatus.COMPLETED, step);
         } catch (Exception e) {
+            reportService.sendReport(context.getReportInfos());
             updateStepStatus(context, StepStatus.FAILED, step);
             throw e;
         }

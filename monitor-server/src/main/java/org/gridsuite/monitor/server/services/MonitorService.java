@@ -70,7 +70,7 @@ public class MonitorService {
         }
         executionRepository.save(execution);
 
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), execution.getDebugFileLocation());
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), execution.getDebugFileLocation(), execution.getUserId());
 
         return execution.getId();
     }

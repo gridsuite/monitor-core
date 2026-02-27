@@ -22,7 +22,8 @@ public record ProcessRunMessage<T extends ProcessConfig>(
         @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
     })
     T config,
-    String debugFileLocation
+    String debugFileLocation,
+    String userId
 ) {
     public ProcessType processType() {
         return config.processType();

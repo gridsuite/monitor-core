@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -62,13 +64,29 @@ public class SecurityAnalysisRestService {
         restTemplate.exchange(getSecurityAnalysisServerBaseUri() + path, HttpMethod.POST, new HttpEntity<>(result, headers), Void.class);
     }
 
-    public SecurityAnalysisParametersValues getParameters(UUID parametersUUid) {
-        LOGGER.info("Get security analysis parameters {}", parametersUUid);
+    public SecurityAnalysisParametersValues getParameters(UUID parametersUuid, String userId) {
+        LOGGER.info("Get security analysis parameters {}", parametersUuid);
+
+        if (parametersUuid == null) {
+            throw new PowsyblException("Security analysis parameters UUID is null !!");
+        }
 
         var path = securityAnalysisServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + SA_API_VERSION + DELIMITER + "parameters/{uuid}")
-            .buildAndExpand(parametersUUid)
+            .buildAndExpand(parametersUuid)
             .toUriString();
 
-        return restTemplate.getForObject(path, SecurityAnalysisParametersValues.class);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("userId", userId);
+            HttpEntity<?> requestEntity = new HttpEntity<>(headers);
+
+            SecurityAnalysisParametersValues parameters = restTemplate.exchange(path, HttpMethod.GET, requestEntity, SecurityAnalysisParametersValues.class).getBody();
+            if (parameters == null) {
+                throw new PowsyblException("Failed to retrieve security analysis parameters for UUID: " + parametersUuid);
+            }
+            return parameters;
+        } catch (RestClientException e) {
+            throw new PowsyblException("Error retrieving security analysis parameters for UUID: " + parametersUuid + " - " + e.getMessage(), e);
+        }
     }
 }

@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import lombok.Setter;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -42,10 +44,22 @@ public class LoadFlowRestService {
     public LoadFlowParametersInfos getParameters(UUID loadFlowParametersUuid) {
         LOGGER.info("Get loadflow parameters {}", loadFlowParametersUuid);
 
+        if (loadFlowParametersUuid == null) {
+            throw new PowsyblException("Loadflow parameters UUID is null !!");
+        }
+
         var path = loadFlowServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + LOADFLOW_API_VERSION + DELIMITER + "parameters/{uuid}")
             .buildAndExpand(loadFlowParametersUuid)
             .toUriString();
 
-        return restTemplate.getForObject(path, LoadFlowParametersInfos.class);
+        try {
+            LoadFlowParametersInfos parameters = restTemplate.getForObject(path, LoadFlowParametersInfos.class);
+            if (parameters == null) {
+                throw new PowsyblException("Failed to retrieve loadflow parameters for UUID: " + loadFlowParametersUuid);
+            }
+            return parameters;
+        } catch (RestClientException e) {
+            throw new PowsyblException("Error retrieving loadflow parameters for UUID: " + loadFlowParametersUuid + " - " + e.getMessage(), e);
+        }
     }
 }

@@ -64,14 +64,14 @@ class ConsumerServiceTest {
                 .build();
         String payload = objectMapper.writeValueAsString(statusUpdate);
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(payload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
 
         consumer.accept(message);
 
-        verify(monitorService).updateExecutionStatus(
+        verify(monitorService).updateExecution(
                 executionId,
                 ProcessStatus.RUNNING,
                 "env-1",
@@ -79,10 +79,14 @@ class ConsumerServiceTest {
                 completedAt
         );
         verify(monitorService, never()).upsertStep(any(), any());
+    }
+
+    @Test
+    void consumeMonitorUpdateThrowsOnInvalidJson() {
         UUID executionId = UUID.randomUUID();
         String invalidPayload = "{invalid json}";
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
@@ -91,16 +95,16 @@ class ConsumerServiceTest {
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
-        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
         verify(monitorService, never()).upsertStep(any(), any());
     }
 
     @Test
-    void consumeMonitorUpdateStepsStatusesThrowsOnInvalidJson() {
+    void consumeMonitorUpdateStepsUpsertThrowsOnInvalidJson() {
         UUID executionId = UUID.randomUUID();
         String invalidPayload = "{invalid json}";
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_UPSERT.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
@@ -109,7 +113,7 @@ class ConsumerServiceTest {
             .isInstanceOf(UncheckedIOException.class)
             .hasMessageContaining("Failed to parse payload as java.util.List<org.gridsuite.monitor.commons.ProcessExecutionStep>");
 
-        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
         verify(monitorService, never()).upsertSteps(any(), any());
     }
 
@@ -125,7 +129,7 @@ class ConsumerServiceTest {
                 .build();
         String payload = objectMapper.writeValueAsString(stepUpdate);
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_UPSERT.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(payload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
@@ -133,7 +137,7 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(monitorService).upsertStep(eq(executionId), any(ProcessExecutionStep.class));
-        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -155,7 +159,7 @@ class ConsumerServiceTest {
             .build();
         String payload = objectMapper.writeValueAsString(List.of(stepUpdate1, stepUpdate2));
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE.toString());
+        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_UPSERT.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
         Message<String> message = new GenericMessage<>(payload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
@@ -164,6 +168,6 @@ class ConsumerServiceTest {
 
         verify(monitorService).upsertSteps(eq(executionId), any(List.class));
         verify(monitorService, never()).upsertStep(any(), any());
-        verify(monitorService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(monitorService, never()).updateExecution(any(), any(), any(), any(), any());
     }
 }

@@ -106,7 +106,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldUpdateStatusOnly() {
+    void updateExecutionShouldUpdateStatusOnly() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -117,7 +117,7 @@ class MonitorServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null, null);
+        monitorService.updateExecution(executionId, ProcessStatus.RUNNING, null, null, null);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
@@ -128,7 +128,7 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldUpdateAllFields() {
+    void updateExecutionShouldUpdateAllFields() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -142,7 +142,7 @@ class MonitorServiceTest {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, startedAt, completedAt);
+        monitorService.updateExecution(executionId, ProcessStatus.COMPLETED, envName, startedAt, completedAt);
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
@@ -153,10 +153,10 @@ class MonitorServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldHandleExecutionNotFound() {
+    void updateExecutionShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        monitorService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now());
+        monitorService.updateExecution(executionId, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now());
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());

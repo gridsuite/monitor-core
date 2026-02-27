@@ -46,10 +46,10 @@ public class NotificationService {
         updatePublisher.send(PROCESS_UPDATE_BINDING, message);
     }
 
-    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate processExecutionStatusUpdate) {
+    public void sendExecution(UUID executionId, ProcessExecutionStatusUpdate processExecutionStatusUpdate) {
         sendMonitorUpdate(
                 executionId,
-                MessageType.EXECUTION_STATUS_UPDATE,
+                MessageType.EXECUTION_UPDATE,
                 processExecutionStatusUpdate
         );
     }
@@ -57,7 +57,7 @@ public class NotificationService {
     public void notifyStep(UUID executionId, ProcessExecutionStep processExecutionStep) {
         sendMonitorUpdate(
                 executionId,
-                MessageType.STEP_STATUS_UPDATE,
+                MessageType.STEP_UPSERT,
                 processExecutionStep
         );
     }
@@ -65,7 +65,7 @@ public class NotificationService {
     public void notifySteps(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         sendMonitorUpdate(
             executionId,
-            MessageType.STEPS_STATUSES_UPDATE,
+            MessageType.STEPS_UPSERT,
             processExecutionSteps
         );
     }

@@ -121,14 +121,14 @@ class ProcessExecutionServiceTest {
                         context.getConfig().equals(processConfig) &&
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
         ));
-        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
+        verify(notificationService, times(2)).sendExecution(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).sendExecution(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
                         update.getCompletedAt() == null
         ));
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).sendExecution(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.COMPLETED &&
                         update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
                         update.getCompletedAt() != null
@@ -147,12 +147,12 @@ class ProcessExecutionServiceTest {
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
         verify(process).execute(any(ProcessExecutionContext.class));
-        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
+        verify(notificationService, times(2)).sendExecution(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).sendExecution(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING
         ));
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).sendExecution(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.FAILED &&
                         update.getCompletedAt() != null
         ));

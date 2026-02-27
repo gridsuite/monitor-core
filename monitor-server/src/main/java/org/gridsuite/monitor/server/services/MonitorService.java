@@ -76,7 +76,7 @@ public class MonitorService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
+    public void updateExecution(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {

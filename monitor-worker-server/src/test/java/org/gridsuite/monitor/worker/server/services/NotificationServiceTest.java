@@ -42,17 +42,17 @@ class NotificationServiceTest {
     }
 
     @Test
-    void updateExecutionStatusShouldSendExecutionStatusUpdateMessage() {
+    void sendExecutionShouldSendExecutionUpdateMessage() {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStatusUpdate payload = new ProcessExecutionStatusUpdate();
 
-        notificationService.updateExecutionStatus(executionId, payload);
+        notificationService.sendExecution(executionId, payload);
 
         verify(streamBridge).send(
                 eq("publishMonitorUpdate-out-0"),
                 argThat((Message<?> message) -> {
                     assertThat(message.getPayload()).isSameAs(payload);
-                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE);
+                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_UPDATE);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
                     return true;
                 })
@@ -70,7 +70,7 @@ class NotificationServiceTest {
                 eq("publishMonitorUpdate-out-0"),
                 argThat((Message<?> message) -> {
                     assertThat(message.getPayload()).isSameAs(payload);
-                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE);
+                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEP_UPSERT);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
                     return true;
                 })
@@ -88,7 +88,7 @@ class NotificationServiceTest {
             eq("publishMonitorUpdate-out-0"),
             argThat((Message<?> message) -> {
                 assertThat(message.getPayload()).isSameAs(payload);
-                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE);
+                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_UPSERT);
                 assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
                 return true;
             })

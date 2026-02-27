@@ -64,7 +64,7 @@ public class ProcessExecutionService {
             initializeSteps(process, context);
             executeSteps(process, context);
         } catch (Exception e) {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
+            sendExecution(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
             throw e;
         }
     }
@@ -83,12 +83,12 @@ public class ProcessExecutionService {
     }
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+        sendExecution(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
         process.execute(context);
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
+        sendExecution(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
     }
 
-    private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {
+    private void sendExecution(UUID executionId, String envName, ProcessStatus status) {
         ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
             status,
             envName,
@@ -96,6 +96,6 @@ public class ProcessExecutionService {
             status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
         );
 
-        notificationService.updateExecutionStatus(executionId, processExecutionStatusUpdate);
+        notificationService.sendExecution(executionId, processExecutionStatusUpdate);
     }
 }

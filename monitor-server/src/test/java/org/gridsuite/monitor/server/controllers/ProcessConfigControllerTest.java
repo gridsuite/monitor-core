@@ -11,6 +11,8 @@ import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
+import org.gridsuite.monitor.server.dto.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -215,5 +217,122 @@ class ProcessConfigControllerTest {
             .andExpect(content().json("[]"));
 
         verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturnComparisonResult() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID parametersUuid = UUID.randomUUID();
+        List<UUID> modificationUuids = List.of(UUID.randomUUID());
+
+        ProcessConfigComparison comparison = new ProcessConfigComparison(
+            uuid1,
+            uuid2,
+            true,
+            List.of(
+                new ProcessConfigFieldComparison("modifications", true, modificationUuids, modificationUuids),
+                new ProcessConfigFieldComparison("securityAnalysisParameters", true, parametersUuid, parametersUuid),
+                new ProcessConfigFieldComparison("contingencies", true, List.of("contingency1"), List.of("contingency1"))
+            )
+        );
+
+        when(processConfigService.compareProcessConfigs(uuid1, uuid2))
+            .thenReturn(Optional.of(comparison));
+
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", uuid1.toString())
+                .param("uuid2", uuid2.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.processConfigUuid1").value(uuid1.toString()))
+            .andExpect(jsonPath("$.processConfigUuid2").value(uuid2.toString()))
+            .andExpect(jsonPath("$.identical").value(true))
+            .andExpect(jsonPath("$.differences").isArray())
+            .andExpect(jsonPath("$.differences.length()").value(3));
+
+        verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturnDifferences() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        List<UUID> modificationUuids1 = List.of(UUID.randomUUID());
+        List<UUID> modificationUuids2 = List.of(UUID.randomUUID());
+
+        ProcessConfigComparison comparison = new ProcessConfigComparison(
+            uuid1,
+            uuid2,
+            false,
+            List.of(
+                new ProcessConfigFieldComparison("modifications", false, modificationUuids1, modificationUuids2)
+            )
+        );
+
+        when(processConfigService.compareProcessConfigs(uuid1, uuid2))
+            .thenReturn(Optional.of(comparison));
+
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", uuid1.toString())
+                .param("uuid2", uuid2.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.identical").value(false))
+            .andExpect(jsonPath("$.differences[0].field").value("modifications"))
+            .andExpect(jsonPath("$.differences[0].identical").value(false));
+
+        verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturn404WhenConfigNotFound() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        when(processConfigService.compareProcessConfigs(uuid1, uuid2))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", uuid1.toString())
+                .param("uuid2", uuid2.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound());
+
+        verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturn400WhenDifferentTypes() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        when(processConfigService.compareProcessConfigs(any(), any()))
+            .thenThrow(new IllegalArgumentException("Cannot compare different process config types"));
+
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", uuid1.toString())
+                .param("uuid2", uuid2.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
+
+        verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturn400WhenMissingParameters() throws Exception {
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturn400WhenInvalidUUID() throws Exception {
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", "invalid-uuid")
+                .param("uuid2", UUID.randomUUID().toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
     }
 }

@@ -14,7 +14,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
 import org.gridsuite.monitor.server.services.ProcessConfigService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -98,5 +100,23 @@ public class ProcessConfigController {
         @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(processType);
         return ResponseEntity.ok().body(processConfigs);
+    }
+
+    @GetMapping(value = "/compare", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Compare 2 process configs")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Comparison result returned"),
+        @ApiResponse(responseCode = "404", description = "One or both process configs are not found"),
+        @ApiResponse(responseCode = "400", description = "Process configs are of different types")})
+    public ResponseEntity<ProcessConfigComparison> compareProcessConfigs(
+        @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
+        @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {
+
+        try {
+            Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
+            return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

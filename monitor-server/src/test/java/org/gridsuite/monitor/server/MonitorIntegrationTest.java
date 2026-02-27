@@ -7,14 +7,25 @@
 package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.server.dto.ReportLog;
-import org.gridsuite.monitor.server.dto.ReportPage;
-import org.gridsuite.monitor.server.dto.Severity;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.api.types.processconfig.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.api.types.messaging.MessageType;
+import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.api.types.processexecution.*;
+import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
+import org.gridsuite.monitor.commons.api.types.result.ResultType;
+import org.gridsuite.monitor.server.clients.ReportRestClient;
+import org.gridsuite.monitor.server.dto.report.ReportLog;
+import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.messaging.ConsumerService;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.*;
+import org.gridsuite.monitor.server.services.S3RestService;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MonitorIntegrationTest {
 
     @Autowired
-    private MonitorService monitorService;
+    private ProcessExecutionService processExecutionService;
 
     @Autowired
     private ProcessConfigService configService;
@@ -74,7 +85,7 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ReportService reportService;
+    private ReportRestClient reportRestClient;
 
     @MockitoBean
     private ResultService resultService;
@@ -101,7 +112,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
+        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
@@ -182,8 +193,8 @@ class MonitorIntegrationTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
         ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        when(reportService.getReport(reportId0)).thenReturn(reportPage0);
-        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestClient.getReport(reportId0)).thenReturn(reportPage0);
+        when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))

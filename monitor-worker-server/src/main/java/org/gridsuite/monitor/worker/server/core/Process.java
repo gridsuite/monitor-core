@@ -20,5 +20,5 @@ public interface Process<C extends ProcessConfig> {
 
     void execute(ProcessExecutionContext<C> context);
 
-    List<ProcessStep<C>> defineSteps();
+    List<ProcessStep<C>> getSteps();
 }

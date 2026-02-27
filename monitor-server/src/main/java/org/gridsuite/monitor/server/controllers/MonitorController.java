@@ -6,6 +6,9 @@
  */
 package org.gridsuite.monitor.server.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,9 +39,11 @@ public class MonitorController {
     private final MonitorService monitorService;
 
     public static final String HEADER_USER_ID = "userId";
+    private final ObjectMapper objectMapper;
 
-    public MonitorController(MonitorService monitorService) {
+    public MonitorController(MonitorService monitorService, ObjectMapper objectMapper) {
         this.monitorService = monitorService;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/execute/security-analysis")
@@ -64,9 +69,19 @@ public class MonitorController {
     @GetMapping("/executions/{executionId}/results")
     @Operation(summary = "Get results for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results")})
-    public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+    public ResponseEntity<List<JsonNode>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         List<String> results = monitorService.getResults(executionId);
-        return ResponseEntity.ok(results);
+
+        // To make it easier to view the results during monitoring development, we return a List<JsonNode>.
+        // Note that the return type can be changed later when developing the front end.
+        List<JsonNode> resultsJsonNode = results.stream().map(resultString -> {
+            try {
+                return objectMapper.readValue(resultString, JsonNode.class);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException(String.format("Unable to serialize result to JSON: %s", resultString), e);
+            }
+        }).toList();
+        return ResponseEntity.ok(resultsJsonNode);
     }
 
     @GetMapping("/executions")

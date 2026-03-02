@@ -19,9 +19,13 @@ import java.util.UUID;
  */
 public abstract class AbstractStepExecutor {
 
-    protected abstract StepStatusPublisher getStepStatusPublisher();
+    public AbstractStepExecutor() {
+        StepStatusPublisher stepStatusPublisher;
+        ReportPublisher reportPublisher;
+    }
 
-    protected abstract ReportPublisher getReportPublisher();
+    protected StepStatusPublisher stepStatusPublisher;
+    protected ReportPublisher reportPublisher;
 
     public void skipStep(
             UUID processExecutionId,
@@ -40,7 +44,7 @@ public abstract class AbstractStepExecutor {
                 null,
                 startedAt,
                 Instant.now());
-        getStepStatusPublisher().updateStepStatus(processExecutionId, executionStep);
+        stepStatusPublisher.updateStepStatus(processExecutionId, executionStep);
     }
 
     public void executeStep(
@@ -64,11 +68,11 @@ public abstract class AbstractStepExecutor {
                 reportUuid,
                 startedAt,
                 null);
-        getStepStatusPublisher().updateStepStatus(processExecutionId, executionStep);
+        stepStatusPublisher.updateStepStatus(processExecutionId, executionStep);
 
         try {
             stepExecution.run();
-            getReportPublisher().sendReport(reportInfos);
+            reportPublisher.sendReport(reportInfos);
             updateStepStatus(
                     processExecutionId,
                     stepExecutionId,
@@ -112,6 +116,6 @@ public abstract class AbstractStepExecutor {
                 reportUuid,
                 startedAt,
                 Instant.now());
-        getStepStatusPublisher().updateStepStatus(processExecutionId, updated);
+        stepStatusPublisher.updateStepStatus(processExecutionId, updated);
     }
 }

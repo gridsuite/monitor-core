@@ -14,11 +14,7 @@ import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.ConsumerService;
-import org.gridsuite.monitor.server.services.ProcessConfigService;
-import org.gridsuite.monitor.server.services.ReportService;
-import org.gridsuite.monitor.server.services.MonitorService;
-import org.gridsuite.monitor.server.services.ResultService;
+import org.gridsuite.monitor.server.services.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +79,9 @@ class MonitorIntegrationTest {
     @MockitoBean
     private ResultService resultService;
 
+    @MockitoBean
+    private S3RestService s3RestService;
+
     private UUID caseUuid;
 
     private String userId;
@@ -102,7 +101,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID(),
                 List.of("contingency1", "contingency2"),
                 List.of(UUID.randomUUID()));
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig);
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);

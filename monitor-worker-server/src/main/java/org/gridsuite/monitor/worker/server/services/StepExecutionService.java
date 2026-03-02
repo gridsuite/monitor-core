@@ -7,9 +7,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.steps.ReportPublisher;
 import org.gridsuite.monitor.commons.steps.AbstractStepExecutor;
-import org.gridsuite.monitor.commons.steps.StepStatusPublisher;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.springframework.stereotype.Service;
@@ -22,22 +20,9 @@ import java.util.Objects;
 @Service
 public class StepExecutionService<C extends ProcessConfig> extends AbstractStepExecutor {
 
-    private final StepStatusPublisher stepStatusPublisher;
-    private final ReportPublisher reportPublisher;
-
     public StepExecutionService(NotificationService notificationService, ReportService reportService) {
         this.stepStatusPublisher = notificationService::updateStepStatus;
         this.reportPublisher = reportService::sendReport;
-    }
-
-    @Override
-    public StepStatusPublisher getStepStatusPublisher() {
-        return stepStatusPublisher;
-    }
-
-    @Override
-    public ReportPublisher getReportPublisher() {
-        return reportPublisher;
     }
 
     public void skipStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {

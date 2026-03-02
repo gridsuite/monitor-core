@@ -17,13 +17,13 @@ import java.util.UUID;
 /**
  * @author Mohamed Ben-rejeb <mohamed.ben-rejeb at rte-france.com>
  */
-public interface StepExecution {
+public abstract class AbstractStepExecutor {
 
-    StepStatusPublisher getStepStatusPublisher();
+    protected abstract StepStatusPublisher getStepStatusPublisher();
 
-    ReportPublisher getReportPublisher();
+    protected abstract ReportPublisher getReportPublisher();
 
-    default void skipStep(
+    public void skipStep(
             UUID processExecutionId,
             UUID stepExecutionId,
             String stepTypeName,
@@ -43,7 +43,7 @@ public interface StepExecution {
         getStepStatusPublisher().updateStepStatus(processExecutionId, executionStep);
     }
 
-    default void executeStep(
+    public void executeStep(
             UUID processExecutionId,
             UUID stepExecutionId,
             String stepTypeName,
@@ -92,7 +92,7 @@ public interface StepExecution {
         }
     }
 
-    default void updateStepStatus(
+    private void updateStepStatus(
             UUID processExecutionId,
             UUID stepExecutionId,
             String stepTypeName,

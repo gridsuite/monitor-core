@@ -8,7 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.steps.ReportPublisher;
-import org.gridsuite.monitor.commons.steps.StepExecution;
+import org.gridsuite.monitor.commons.steps.AbstractStepExecutor;
 import org.gridsuite.monitor.commons.steps.StepStatusPublisher;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
@@ -20,7 +20,7 @@ import java.util.Objects;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class StepExecutionService<C extends ProcessConfig> implements StepExecution {
+public class StepExecutionService<C extends ProcessConfig> extends AbstractStepExecutor {
 
     private final StepStatusPublisher stepStatusPublisher;
     private final ReportPublisher reportPublisher;

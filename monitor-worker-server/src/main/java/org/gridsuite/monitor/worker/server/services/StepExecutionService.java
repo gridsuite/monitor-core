@@ -6,32 +6,24 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.steps.ReportPublisher;
-import org.gridsuite.monitor.commons.steps.StepExecutionInterface;
+import org.gridsuite.monitor.commons.steps.AbstractStepExecutor;
 import org.gridsuite.monitor.commons.steps.StepStatusPublisher;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class StepExecutionService<C extends ProcessConfig> implements StepExecutionInterface<ReportInfos> {
-
-    @Getter
-    @Setter
-    private UUID executionId;
+public class StepExecutionService<C extends ProcessConfig> extends AbstractStepExecutor {
 
     private final StepStatusPublisher stepStatusPublisher;
-    private final ReportPublisher<ReportInfos> reportPublisher;
+    private final ReportPublisher reportPublisher;
 
     public StepExecutionService(NotificationService notificationService, ReportService reportService) {
         this.stepStatusPublisher = notificationService::updateStepStatus;
@@ -44,13 +36,12 @@ public class StepExecutionService<C extends ProcessConfig> implements StepExecut
     }
 
     @Override
-    public ReportPublisher<ReportInfos> getReportPublisher() {
+    public ReportPublisher getReportPublisher() {
         return reportPublisher;
     }
 
     public void skipStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        setExecutionId(context.getProcessExecutionId());
-        skipStep(
+        skipStep(context.getProcessExecutionId(),
                 context.getStepExecutionId(),
                 step.getType().getName(),
                 context.getStepOrder(),
@@ -59,8 +50,7 @@ public class StepExecutionService<C extends ProcessConfig> implements StepExecut
     }
 
     public void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        setExecutionId(context.getProcessExecutionId());
-        executeStep(
+        executeStep(context.getProcessExecutionId(),
                 context.getStepExecutionId(),
                 step.getType().getName(),
                 context.getStepOrder(),

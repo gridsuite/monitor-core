@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.SnapshotRefinerConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.services.MonitorService;
@@ -50,6 +51,17 @@ public class MonitorController {
             @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
             @RequestHeader(HEADER_USER_ID) String userId) {
         UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
+        return ResponseEntity.ok(executionId);
+    }
+
+    @PostMapping("/execute/snapshot-refiner")
+    @Operation(summary = "Execute a snapshot refiner process")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The snapshot refiner execution has been started")})
+    public ResponseEntity<UUID> executeSnapshotRefiner(
+            @RequestParam UUID caseUuid,
+            @RequestBody SnapshotRefinerConfig snapshotRefinerConfig,
+            @RequestHeader(HEADER_USER_ID) String userId) {
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, snapshotRefinerConfig, false);
         return ResponseEntity.ok(executionId);
     }
 

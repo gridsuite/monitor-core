@@ -12,6 +12,7 @@ import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
+import org.gridsuite.monitor.commons.SnapshotRefinerConfig;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
@@ -37,8 +38,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -93,6 +93,32 @@ class MonitorControllerTest {
             .andExpect(jsonPath("$").value(executionId.toString()));
 
         verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue));
+    }
+
+    @Test
+    void executeSnapshotRefinerProcessShouldReturnExecutionId() throws Exception {
+        UUID caseUuid = UUID.randomUUID();
+        Optional<UUID> loadFlowParametersUuid = Optional.of(UUID.randomUUID());
+        Optional<UUID> stateEstimationParametersUuid = Optional.of(UUID.randomUUID());
+        UUID executionId = UUID.randomUUID();
+        String userId = "snapshot-refiner-server";
+        SnapshotRefinerConfig config = new SnapshotRefinerConfig(loadFlowParametersUuid, stateEstimationParametersUuid);
+
+        when(monitorService.executeProcess(caseUuid, userId, config, false))
+                .thenReturn(executionId);
+
+        MockHttpServletRequestBuilder request = post("/v1/execute/snapshot-refiner")
+                .param("caseUuid", caseUuid.toString())
+                .header("userId", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(config));
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").value(executionId.toString()));
+
+        verify(monitorService).executeProcess(caseUuid, userId, config, false);
     }
 
     @Test

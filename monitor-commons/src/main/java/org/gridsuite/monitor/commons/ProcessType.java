@@ -10,5 +10,6 @@ package org.gridsuite.monitor.commons;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public enum ProcessType {
-    SECURITY_ANALYSIS
+    SECURITY_ANALYSIS,
+    SNAPSHOT_REFINER
 }

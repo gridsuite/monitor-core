@@ -26,6 +26,7 @@ public class NotificationService {
     public void sendProcessRunMessage(UUID caseUuid, ProcessConfig processConfig, UUID executionId, String debugFileLocation) {
         String bindingName = switch (processConfig.processType()) {
             case SECURITY_ANALYSIS -> "publishRunSecurityAnalysis-out-0";
+            case SNAPSHOT_REFINER -> "publishRunSnapshotRefiner-out-0";
         };
         ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, debugFileLocation);
         publisher.send(bindingName, message);

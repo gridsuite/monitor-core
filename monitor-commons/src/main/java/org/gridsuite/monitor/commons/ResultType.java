@@ -11,5 +11,6 @@ package org.gridsuite.monitor.commons;
  */
 public enum ResultType {
     SECURITY_ANALYSIS,
-    STATE_ESTIMATION
+    STATE_ESTIMATION,
+    LOAD_FLOW
 }

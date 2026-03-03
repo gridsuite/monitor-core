@@ -34,16 +34,14 @@ public abstract class AbstractStepExecutor {
             int stepOrder,
             Instant startedAt
     ) {
-        ProcessExecutionStep executionStep = new ProcessExecutionStep(
-                stepExecutionId,
-                stepTypeName,
-                stepOrder,
-                StepStatus.SKIPPED,
-                null,
-                null,
-                null,
-                startedAt,
-                Instant.now());
+        ProcessExecutionStep executionStep = ProcessExecutionStep.builder()
+                .id(stepExecutionId)
+                .stepType(stepTypeName)
+                .stepOrder(stepOrder)
+                .status(StepStatus.SKIPPED)
+                .startedAt(startedAt)
+                .completedAt(Instant.now())
+                .build();
         stepStatusPublisher.updateStepStatus(processExecutionId, executionStep);
     }
 
@@ -58,16 +56,14 @@ public abstract class AbstractStepExecutor {
             ResultInfos resultInfos,
             Runnable stepExecution
     ) {
-        ProcessExecutionStep executionStep = new ProcessExecutionStep(
-                stepExecutionId,
-                stepTypeName,
-                stepOrder,
-                StepStatus.RUNNING,
-                null,
-                null,
-                reportUuid,
-                startedAt,
-                null);
+        ProcessExecutionStep executionStep = ProcessExecutionStep.builder()
+                .id(stepExecutionId)
+                .stepType(stepTypeName)
+                .stepOrder(stepOrder)
+                .status(StepStatus.RUNNING)
+                .reportId(reportUuid)
+                .startedAt(startedAt)
+                .build();
         stepStatusPublisher.updateStepStatus(processExecutionId, executionStep);
 
         try {
@@ -106,16 +102,17 @@ public abstract class AbstractStepExecutor {
             ResultInfos resultInfos,
             StepStatus status
     ) {
-        ProcessExecutionStep updated = new ProcessExecutionStep(
-                stepExecutionId,
-                stepTypeName,
-                stepOrder,
-                status,
-                resultInfos != null ? resultInfos.resultUUID() : null,
-                resultInfos != null ? resultInfos.resultType() : null,
-                reportUuid,
-                startedAt,
-                Instant.now());
+        ProcessExecutionStep updated = ProcessExecutionStep.builder()
+                .id(stepExecutionId)
+                .stepType(stepTypeName)
+                .stepOrder(stepOrder)
+                .status(status)
+                .resultId(resultInfos != null ? resultInfos.resultUUID() : null)
+                .resultType(resultInfos != null ? resultInfos.resultType() : null)
+                .reportId(reportUuid)
+                .startedAt(startedAt)
+                .completedAt(Instant.now())
+                .build();
         stepStatusPublisher.updateStepStatus(processExecutionId, updated);
     }
 }

@@ -20,8 +20,6 @@ import java.util.UUID;
 public abstract class AbstractStepExecutor {
 
     public AbstractStepExecutor() {
-        StepStatusPublisher stepStatusPublisher;
-        ReportPublisher reportPublisher;
     }
 
     protected StepStatusPublisher stepStatusPublisher;

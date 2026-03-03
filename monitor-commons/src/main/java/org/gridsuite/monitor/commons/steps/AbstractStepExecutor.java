@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 public abstract class AbstractStepExecutor {
 
-    public AbstractStepExecutor() {
+    protected AbstractStepExecutor() {
     }
 
     protected StepStatusPublisher stepStatusPublisher;

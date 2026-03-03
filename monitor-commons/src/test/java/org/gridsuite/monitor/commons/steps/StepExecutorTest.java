@@ -35,19 +35,43 @@ class StepExecutorTest {
 
         executor.skipStep(processExecutionId, stepExecutionId, "LOAD_NETWORK", 1, startedAt);
 
-        assertEquals(1, executor.publishedSteps().size());
-        PublishedStep published = executor.publishedSteps().get(0);
+        assertEquals(
+                1,
+                executor.publishedSteps()
+                        .size());
+        PublishedStep published = executor.publishedSteps()
+                .get(0);
         assertEquals(processExecutionId, published.processExecutionId());
-        assertEquals(stepExecutionId, published.step().getId());
-        assertEquals("LOAD_NETWORK", published.step().getStepType());
-        assertEquals(1, published.step().getStepOrder());
-        assertEquals(StepStatus.SKIPPED, published.step().getStatus());
-        assertNull(published.step().getResultId());
-        assertNull(published.step().getResultType());
-        assertNull(published.step().getReportId());
-        assertEquals(startedAt, published.step().getStartedAt());
-        assertNotNull(published.step().getCompletedAt());
-        assertTrue(executor.publishedReports().isEmpty());
+        assertEquals(
+                stepExecutionId,
+                published.step()
+                        .getId());
+        assertEquals(
+                "LOAD_NETWORK",
+                published.step()
+                        .getStepType());
+        assertEquals(
+                1,
+                published.step()
+                        .getStepOrder());
+        assertEquals(
+                StepStatus.SKIPPED,
+                published.step()
+                        .getStatus());
+        assertNull(published.step()
+                .getResultId());
+        assertNull(published.step()
+                .getResultType());
+        assertNull(published.step()
+                .getReportId());
+        assertEquals(
+                startedAt,
+                published.step()
+                        .getStartedAt());
+        assertNotNull(published.step()
+                .getCompletedAt());
+        assertTrue(executor.publishedReports()
+                .isEmpty());
     }
 
     @Test
@@ -72,26 +96,50 @@ class StepExecutorTest {
                 reportId,
                 reportInfos,
                 resultInfos,
-                executionCount::incrementAndGet
-        );
+                executionCount::incrementAndGet);
 
         assertEquals(1, executionCount.get());
         assertEquals(List.of(reportInfos), executor.publishedReports());
-        assertEquals(2, executor.publishedSteps().size());
+        assertEquals(
+                2,
+                executor.publishedSteps()
+                        .size());
 
-        PublishedStep running = executor.publishedSteps().get(0);
+        PublishedStep running = executor.publishedSteps()
+                .get(0);
         assertEquals(processExecutionId, running.processExecutionId());
-        assertEquals(StepStatus.RUNNING, running.step().getStatus());
-        assertEquals(reportId, running.step().getReportId());
-        assertNull(running.step().getCompletedAt());
+        assertEquals(
+                StepStatus.RUNNING,
+                running.step()
+                        .getStatus());
+        assertEquals(
+                reportId,
+                running.step()
+                        .getReportId());
+        assertNull(running.step()
+                .getCompletedAt());
 
-        PublishedStep completed = executor.publishedSteps().get(1);
+        PublishedStep completed = executor.publishedSteps()
+                .get(1);
         assertEquals(processExecutionId, completed.processExecutionId());
-        assertEquals(StepStatus.COMPLETED, completed.step().getStatus());
-        assertEquals(resultId, completed.step().getResultId());
-        assertEquals(ResultType.SECURITY_ANALYSIS, completed.step().getResultType());
-        assertEquals(reportId, completed.step().getReportId());
-        assertNotNull(completed.step().getCompletedAt());
+        assertEquals(
+                StepStatus.COMPLETED,
+                completed.step()
+                        .getStatus());
+        assertEquals(
+                resultId,
+                completed.step()
+                        .getResultId());
+        assertEquals(
+                ResultType.SECURITY_ANALYSIS,
+                completed.step()
+                        .getResultType());
+        assertEquals(
+                reportId,
+                completed.step()
+                        .getReportId());
+        assertNotNull(completed.step()
+                .getCompletedAt());
     }
 
     @Test
@@ -102,43 +150,62 @@ class StepExecutorTest {
         UUID reportId = UUID.randomUUID();
         Instant startedAt = Instant.now();
 
-        RuntimeException failure = new RuntimeException("boom");
+        ReportInfos reportInfos = new ReportInfos(reportId, null);
+        RuntimeException failure = new RuntimeException("exp");
 
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> executor.executeStep(
-                processExecutionId,
-                stepExecutionId,
-                "FAILING_STEP",
-                3,
-                startedAt,
-                reportId,
-                new ReportInfos(reportId, null),
-                null,
-                () -> {
-                    throw failure;
-                }
-        ));
+        Runnable failingExecution = () -> {
+            throw failure;
+        };
+
+        RuntimeException thrown = assertThrows(
+                RuntimeException.class,
+                () -> executeFailingStep(
+                        executor,
+                        processExecutionId,
+                        stepExecutionId,
+                        startedAt,
+                        reportId,
+                        reportInfos,
+                        failingExecution));
 
         assertSame(failure, thrown);
-        assertTrue(executor.publishedReports().isEmpty());
-        assertEquals(2, executor.publishedSteps().size());
+        assertTrue(executor.publishedReports()
+                .isEmpty());
+        assertEquals(
+                2,
+                executor.publishedSteps()
+                        .size());
 
-        PublishedStep running = executor.publishedSteps().get(0);
-        assertEquals(StepStatus.RUNNING, running.step().getStatus());
+        PublishedStep running = executor.publishedSteps()
+                .get(0);
+        assertEquals(
+                StepStatus.RUNNING,
+                running.step()
+                        .getStatus());
 
-        PublishedStep failed = executor.publishedSteps().get(1);
-        assertEquals(StepStatus.FAILED, failed.step().getStatus());
-        assertNull(failed.step().getResultId());
-        assertNull(failed.step().getResultType());
-        assertNotNull(failed.step().getCompletedAt());
+        PublishedStep failed = executor.publishedSteps()
+                .get(1);
+        assertEquals(
+                StepStatus.FAILED,
+                failed.step()
+                        .getStatus());
+        assertNull(failed.step()
+                .getResultId());
+        assertNull(failed.step()
+                .getResultType());
+        assertNotNull(failed.step()
+                .getCompletedAt());
     }
 
     private static final class TestStepExecutor extends AbstractStepExecutor {
+
         private final List<PublishedStep> publishedSteps = new ArrayList<>();
         private final List<ReportInfos> publishedReports = new ArrayList<>();
 
         private TestStepExecutor() {
-            this.stepStatusPublisher = (executionId, processExecutionStep) ->
-                    publishedSteps.add(new PublishedStep(executionId, processExecutionStep));
+            this.stepStatusPublisher = (executionId, processExecutionStep) -> publishedSteps.add(new PublishedStep(
+                    executionId,
+                    processExecutionStep));
             this.reportPublisher = publishedReports::add;
         }
 
@@ -151,6 +218,26 @@ class StepExecutorTest {
         }
     }
 
-    private record PublishedStep(UUID processExecutionId, ProcessExecutionStep step) {
+    private static void executeFailingStep(
+            TestStepExecutor executor,
+            UUID processExecutionId,
+            UUID stepExecutionId,
+            Instant startedAt,
+            UUID reportId,
+            ReportInfos reportInfos,
+            Runnable failingExecution
+    ) {
+        executor.executeStep(
+                processExecutionId,
+                stepExecutionId,
+                "FAILING_STEP",
+                3,
+                startedAt,
+                reportId,
+                reportInfos,
+                null,
+                failingExecution);
     }
+
+    private record PublishedStep(UUID processExecutionId, ProcessExecutionStep step) { }
 }

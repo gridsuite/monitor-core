@@ -21,5 +21,4 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 })
 public interface ProcessConfig {
     ProcessType processType();
-
 }

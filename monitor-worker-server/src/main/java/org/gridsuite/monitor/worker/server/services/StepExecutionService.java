@@ -21,8 +21,7 @@ import java.util.Objects;
 public class StepExecutionService<C extends ProcessConfig> extends AbstractStepExecutor {
 
     public StepExecutionService(NotificationService notificationService, ReportService reportService) {
-        this.stepStatusPublisher = notificationService::updateStepStatus;
-        this.reportPublisher = reportService::sendReport;
+        super(notificationService::updateStepStatus, reportService::sendReport);
     }
 
     public void skipStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {

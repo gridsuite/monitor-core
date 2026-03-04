@@ -158,8 +158,7 @@ class StepExecutorTest {
         };
 
         RuntimeException thrown = assertThrows(
-                RuntimeException.class,
-                () -> executeFailingStep(
+                RuntimeException.class, () -> executeFailingStep(
                         executor,
                         processExecutionId,
                         stepExecutionId,
@@ -199,14 +198,20 @@ class StepExecutorTest {
 
     private static final class TestStepExecutor extends AbstractStepExecutor {
 
-        private final List<PublishedStep> publishedSteps = new ArrayList<>();
-        private final List<ReportInfos> publishedReports = new ArrayList<>();
+        private final List<PublishedStep> publishedSteps;
+        private final List<ReportInfos> publishedReports;
 
         private TestStepExecutor() {
-            this.stepStatusPublisher = (executionId, processExecutionStep) -> publishedSteps.add(new PublishedStep(
-                    executionId,
-                    processExecutionStep));
-            this.reportPublisher = publishedReports::add;
+            this(new ArrayList<>(), new ArrayList<>());
+        }
+
+        private TestStepExecutor(List<PublishedStep> publishedSteps, List<ReportInfos> publishedReports) {
+            super(
+                    (executionId, processExecutionStep) -> publishedSteps.add(new PublishedStep(
+                            executionId,
+                            processExecutionStep)), publishedReports::add);
+            this.publishedSteps = publishedSteps;
+            this.publishedReports = publishedReports;
         }
 
         List<PublishedStep> publishedSteps() {

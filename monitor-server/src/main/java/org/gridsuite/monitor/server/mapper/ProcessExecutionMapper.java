@@ -19,6 +19,7 @@ public class ProcessExecutionMapper {
             entity.getId(),
             entity.getType(),
             entity.getCaseUuid(),
+            entity.getProcessConfigId(),
             entity.getStatus(),
             entity.getExecutionEnvName(),
             entity.getScheduledAt(),

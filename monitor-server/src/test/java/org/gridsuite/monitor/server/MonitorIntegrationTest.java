@@ -101,7 +101,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID(),
                 List.of(UUID.randomUUID()),
                 UUID.randomUUID());
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, UUID.randomUUID(), false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);

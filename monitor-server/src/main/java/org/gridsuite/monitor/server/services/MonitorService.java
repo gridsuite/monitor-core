@@ -55,12 +55,13 @@ public class MonitorService {
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, boolean isDebug) {
+    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, UUID processConfigId, boolean isDebug) {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .id(executionId)
             .type(processConfig.processType().name())
             .caseUuid(caseUuid)
+            .processConfigId(processConfigId)
             .status(ProcessStatus.SCHEDULED)
             .scheduledAt(Instant.now())
             .userId(userId)

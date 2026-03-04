@@ -56,7 +56,7 @@ public class MonitorController {
             @RequestHeader(HEADER_USER_ID) String userId) {
         Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
         if (processConfig.isPresent()) {
-            UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfig.get().processConfig(), isDebug);
+            UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfig.get().processConfig(), processConfig.get().id(), isDebug);
             return ResponseEntity.ok(executionId);
         } else {
             return ResponseEntity.internalServerError().build();

@@ -15,4 +15,5 @@ import org.gridsuite.monitor.commons.ReportInfos;
 public interface ReportPublisher {
 
     void sendReport(ReportInfos reportInfos);
+
 }

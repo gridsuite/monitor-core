@@ -65,6 +65,8 @@ public class SecurityAnalysisRestService {
     }
 
     public SecurityAnalysisParametersValues getParameters(UUID parametersUuid, String userId) {
+        Objects.requireNonNull(userId);
+
         LOGGER.info("Get security analysis parameters {}", parametersUuid);
 
         if (parametersUuid == null) {

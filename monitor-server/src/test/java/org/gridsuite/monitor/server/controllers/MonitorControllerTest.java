@@ -38,6 +38,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -119,10 +120,10 @@ class MonitorControllerTest {
             .header("userId", "user1");
 
         mockMvc.perform(request)
-            .andExpect(status().isInternalServerError());
+            .andExpect(status().isNotFound());
 
         verify(processConfigService).getProcessConfig(processConfigUuid);
-        verify(monitorService, never()).executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), any(UUID.class), any(Boolean.class));
+        verify(monitorService, never()).executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), any(UUID.class), anyBoolean());
     }
 
     @Test

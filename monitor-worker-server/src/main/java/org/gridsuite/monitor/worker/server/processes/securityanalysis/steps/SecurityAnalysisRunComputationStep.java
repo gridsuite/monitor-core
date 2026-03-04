@@ -72,7 +72,7 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
             SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues);
 
             List<ContingencyListsInfos> contingencyListInfos = securityAnalysisParametersValues.getContingencyListsInfos();
-            List<UUID> contingenciesListUuids = contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList();
+            List<UUID> contingenciesListUuids = contingencyListInfos != null ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList() : List.of();
             List<PersistentContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
 
             List<Contingency> contingencyList = new ArrayList<>();

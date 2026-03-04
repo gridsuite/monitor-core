@@ -49,7 +49,7 @@ public class MonitorController {
     @PostMapping("/execute/security-analysis")
     @Operation(summary = "Execute a security analysis process")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started"),
-                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+                           @ApiResponse(responseCode = "404", description = "Process config was not found")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,

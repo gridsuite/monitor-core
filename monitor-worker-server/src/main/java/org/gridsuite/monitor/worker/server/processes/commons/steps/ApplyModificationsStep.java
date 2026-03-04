@@ -8,12 +8,13 @@ package org.gridsuite.monitor.worker.server.processes.commons.steps;
 
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
+import com.powsybl.commons.report.TypedValue;
 import com.powsybl.iidm.network.Network;
 import org.apache.commons.collections4.CollectionUtils;
-import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.monitor.commons.ModifyingProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
 import org.gridsuite.monitor.worker.server.services.*;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  *     Apply modifications passed in context to network passed in context<br/>
@@ -80,7 +82,17 @@ public class ApplyModificationsStep<C extends ModifyingProcessConfig> extends Ab
     }
 
     private void applyModifications(List<UUID> modificationIds, Network network, ReportNode reportNode) {
-        List<ModificationInfos> modificationInfos = networkModificationRestService.getModifications(modificationIds);
-        networkModificationService.applyModifications(network, modificationInfos, reportNode, filterService);
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = networkModificationRestService.getModifications(modificationIds);
+        if (CollectionUtils.isNotEmpty(networkModificationsWithMissingInfo.missingCompositeModifications())) {
+            String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
+
+            reportNode.newReportNode()
+                    .withMessageTemplate("monitor.worker.server.modifications.error")
+                    .withUntypedValue("uuids", missingUuids)
+                     .withSeverity(TypedValue.ERROR_SEVERITY)
+                    .add();
+            throw new PowsyblException("Some network composite modifications are missing !!");
+        }
+        networkModificationService.applyModifications(network, networkModificationsWithMissingInfo.networkModifications(), reportNode, filterService);
     }
 }

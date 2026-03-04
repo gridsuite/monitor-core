@@ -12,6 +12,7 @@ import org.gridsuite.modification.dto.AttributeModification;
 import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
+import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,26 +59,27 @@ class NetworkModificationRestServiceTest {
         ModificationInfos modificationInfos2 = LoadModificationInfos.builder().equipmentId("load2").q0(new AttributeModification<>(null, OperationType.UNSET)).build();
 
         List<ModificationInfos> modificationInfos = List.of(modificationInfos1, modificationInfos2);
-        ModificationInfos[] modificationsArray = modificationInfos.toArray(ModificationInfos[]::new);
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of());
 
         try {
             server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-                .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications?uuids=" + MODIFICATION_1_UUID + "&uuids=" + MODIFICATION_2_UUID + "&onlyMetadata=false"))
+                .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications-with-missing-info?uuids=" + MODIFICATION_1_UUID + "&uuids=" + MODIFICATION_2_UUID + "&onlyMetadata=false"))
                 .andRespond(MockRestResponseCreators.withSuccess()
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(objectMapper.writeValueAsString(modificationsArray)));
+                    .body(objectMapper.writeValueAsString(networkModificationsWithMissingInfo)));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of(MODIFICATION_1_UUID, MODIFICATION_2_UUID));
-        assertThat(resultListModifications).usingRecursiveComparison().isEqualTo(modificationInfos);
+        NetworkModificationsWithMissingInfo result = networkModificationRestService.getModifications(List.of(MODIFICATION_1_UUID, MODIFICATION_2_UUID));
+        assertThat(result.networkModifications()).usingRecursiveComparison().isEqualTo(modificationInfos);
+        assertThat(result.missingCompositeModifications()).isEmpty();
     }
 
     @Test
     void getModificationsNotFound() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications?uuids=" + MODIFICATION_ERROR_UUID + "&onlyMetadata=false"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications-with-missing-info?uuids=" + MODIFICATION_ERROR_UUID + "&onlyMetadata=false"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);
@@ -86,7 +88,8 @@ class NetworkModificationRestServiceTest {
 
     @Test
     void getEmptyModifications() {
-        List<ModificationInfos> resultListModifications = networkModificationRestService.getModifications(List.of());
-        assertThat(resultListModifications).isEmpty();
+        NetworkModificationsWithMissingInfo result = networkModificationRestService.getModifications(List.of());
+        assertThat(result.networkModifications()).isEmpty();
+        assertThat(result.missingCompositeModifications()).isEmpty();
     }
 }

@@ -19,11 +19,13 @@ import java.util.UUID;
  */
 public abstract class AbstractStepExecutor {
 
-    protected AbstractStepExecutor() {
-    }
+    protected final StepStatusPublisher stepStatusPublisher;
+    protected final ReportPublisher reportPublisher;
 
-    protected StepStatusPublisher stepStatusPublisher;
-    protected ReportPublisher reportPublisher;
+    protected AbstractStepExecutor(StepStatusPublisher stepStatusPublisher, ReportPublisher reportPublisher) {
+        this.stepStatusPublisher = stepStatusPublisher;
+        this.reportPublisher = reportPublisher;
+    }
 
     public void skipStep(
             UUID processExecutionId,

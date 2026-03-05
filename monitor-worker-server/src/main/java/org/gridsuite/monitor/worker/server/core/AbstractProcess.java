@@ -13,6 +13,7 @@ import org.gridsuite.monitor.worker.server.services.StepExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,9 +33,16 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
         this.stepExecutionService = stepExecutionService;
     }
 
+    protected abstract List<ProcessStep<C>> defineSteps();
+
+    @Override
+    public List<ProcessStep<C>> getSteps() {
+        return Collections.unmodifiableList(defineSteps());
+    }
+
     @Override
     public void execute(ProcessExecutionContext<C> context) {
-        List<ProcessStep<C>> steps = defineSteps();
+        List<ProcessStep<C>> steps = getSteps();
         boolean skipRemaining = false;
 
         for (int i = 0; i < steps.size(); i++) {

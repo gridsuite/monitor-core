@@ -6,80 +6,43 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.StepStatus;
+import org.gridsuite.monitor.commons.steps.AbstractStepExecutor;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.util.Objects;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-@RequiredArgsConstructor
-public class StepExecutionService<C extends ProcessConfig> {
+public class StepExecutionService<C extends ProcessConfig> extends AbstractStepExecutor {
 
-    private final NotificationService notificationService;
-    private final ReportService reportService;
+    public StepExecutionService(NotificationService notificationService, ReportService reportService) {
+        super(notificationService::updateStepStatus, reportService::sendReport);
+    }
 
-    public void skipStep(ProcessStepExecutionContext<?> context, ProcessStep<?> step) {
-        ProcessExecutionStep executionStep = new ProcessExecutionStep(
+    public void skipStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
+        skipStep(context.getProcessExecutionId(),
                 context.getStepExecutionId(),
                 step.getType().getName(),
                 context.getStepOrder(),
-                StepStatus.SKIPPED,
-                null,
-                null,
-                null,
-                context.getStartedAt(),
-                Instant.now(),
-                null
+                context.getStartedAt()
         );
-        notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
     }
 
     public void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        ProcessExecutionStep executionStep = new ProcessExecutionStep(
-            context.getStepExecutionId(),
-            step.getType().getName(),
-            context.getStepOrder(),
-            StepStatus.RUNNING,
-            null,
-            null,
-            context.getReportInfos().reportUuid(),
-            context.getStartedAt(),
-            null,
-            null
+        executeStep(context.getProcessExecutionId(),
+                context.getStepExecutionId(),
+                step.getType().getName(),
+                context.getStepOrder(),
+                context.getStartedAt(),
+                Objects.requireNonNull(context.getReportInfos()).reportUuid(),
+                context.getReportInfos(),
+                context.getResultInfos(),
+                () -> step.execute(context)
         );
-        notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
-
-        try {
-            step.execute(context);
-            reportService.sendReport(context.getReportInfos());
-            updateStepStatus(context, StepStatus.COMPLETED, step);
-        } catch (Exception e) {
-            updateStepStatus(context, StepStatus.FAILED, step);
-            throw e;
-        }
-    }
-
-    private void updateStepStatus(ProcessStepExecutionContext<?> context, StepStatus status, ProcessStep<?> step) {
-        ProcessExecutionStep updated = new ProcessExecutionStep(
-            context.getStepExecutionId(),
-            step.getType().getName(),
-            context.getStepOrder(),
-            status,
-            context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null,
-            context.getResultInfos() != null ? context.getResultInfos().resultType() : null,
-            context.getReportInfos().reportUuid(),
-            context.getStartedAt(),
-            Instant.now(),
-            null
-        );
-        notificationService.updateStepStatus(context.getProcessExecutionId(), updated);
     }
 }

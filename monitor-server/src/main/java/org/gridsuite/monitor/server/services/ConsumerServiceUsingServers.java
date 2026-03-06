@@ -68,7 +68,7 @@ public class ConsumerServiceUsingServers {
             UUID executionId = processRunMessage.executionId();
 
             ProcessConfig processConfig = processRunMessage.config();
-            List<UUID> modificationUuids = processConfig.modificationUuids();
+            List<UUID> modificationUuids = ((SecurityAnalysisConfig) processConfig).modificationUuids();
 
             UUID applyModificationsStepId = UUID.randomUUID();
             UUID securityAnalysisStepId = UUID.randomUUID();

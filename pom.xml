@@ -43,6 +43,10 @@
         <gridsuite-dependencies.version>49.0.0</gridsuite-dependencies.version>
         <sonar.organization>gridsuite</sonar.organization>
         <sonar.projectKey>org.gridsuite:monitor-core</sonar.projectKey>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${maven.multiModuleProjectDirectory}/monitor-server/target/site/jacoco/jacoco.xml,
+            ${maven.multiModuleProjectDirectory}/monitor-worker-server/target/site/jacoco/jacoco.xml,
+        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <dependencyManagement>

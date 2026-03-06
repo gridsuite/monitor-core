@@ -31,4 +31,5 @@ public class ProcessExecutionStep {
     private UUID reportId;
     private Instant startedAt;
     private Instant completedAt;
+    private UUID resultCaseId;
 }

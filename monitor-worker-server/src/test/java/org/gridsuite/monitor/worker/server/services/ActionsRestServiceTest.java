@@ -7,9 +7,16 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.commons.PowsyblException;
+import com.powsybl.iidm.network.IdentifiableType;
+import org.gridsuite.actions.dto.EquipmentTypesByFilter;
+import org.gridsuite.actions.dto.FilterAttributes;
+import org.gridsuite.actions.dto.contingency.FilterBasedContingencyList;
+import org.gridsuite.actions.dto.contingency.IdBasedContingencyList;
 import org.gridsuite.actions.dto.contingency.PersistentContingencyList;
+import org.gridsuite.filter.utils.EquipmentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +27,9 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,58 +60,38 @@ class ActionsRestServiceTest {
     }
 
     @Test
-    void getPersistentContingencyLists() {
+    void getPersistentContingencyLists() throws JsonProcessingException {
         List<UUID> requestUuids = List.of(CONTINGENCY_1_UUID, CONTINGENCY_2_UUID);
 
-        String jsonResponse = """
-            [
-                {
-                    "metadata": {
-                        "id": "%s",
-                        "type": "IDENTIFIERS",
-                        "modificationDate": "2026-03-02T10:00:00Z"
-                    },
-                    "type": "IDENTIFIERS",
-                    "identifiers": ["LINE1", "LINE2"]
-                },
-                {
-                    "metadata": {
-                        "id": "%s",
-                        "type": "FILTERS",
-                        "modificationDate": "2026-03-02T11:00:00Z"
-                    },
-                    "type": "FILTERS",
-                    "filterIds": ["FILTER1"]
-                }
-            ]
-            """.formatted(CONTINGENCY_1_UUID, CONTINGENCY_2_UUID);
+        IdBasedContingencyList idBasedContingencyList = new IdBasedContingencyList(CONTINGENCY_1_UUID, Instant.now(), null);
+        FilterBasedContingencyList filterBasedContingencyList = new FilterBasedContingencyList(CONTINGENCY_2_UUID, Instant.now(),
+            List.of(new FilterAttributes(UUID.randomUUID(), EquipmentType.GENERATOR, "gen1")),
+            List.of(new EquipmentTypesByFilter(UUID.randomUUID(), Set.of(IdentifiableType.GENERATOR))));
+        String jsonResponse = objectMapper.writeValueAsString(List.of(idBasedContingencyList, filterBasedContingencyList));
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
             .andExpect(MockRestRequestMatchers.requestTo("http://actions-server/v1/contingency-lists"))
             .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(MockRestRequestMatchers.jsonPath("$[0]").value(CONTINGENCY_1_UUID.toString()))
-            .andExpect(MockRestRequestMatchers.jsonPath("$[1]").value(CONTINGENCY_2_UUID.toString()))
+            .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(requestUuids)))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(jsonResponse));
 
         List<PersistentContingencyList> result = actionsRestService.getPersistentContingencyLists(requestUuids);
         assertThat(result).isNotNull();
+
+        assertThat(result).usingRecursiveComparison().isEqualTo(objectMapper.readValue(jsonResponse, new TypeReference<List<PersistentContingencyList>>() { }));
     }
 
     @Test
-    void getPersistentContingencyListsNotFound() {
+    void getPersistentContingencyListsNotFound() throws JsonProcessingException {
         List<UUID> requestUuids = List.of(CONTINGENCY_ERROR_UUID);
 
-        try {
-            server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
                 .andExpect(MockRestRequestMatchers.requestTo("http://actions-server/v1/contingency-lists"))
                 .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(requestUuids)))
                 .andRespond(MockRestResponseCreators.withServerError());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
 
         assertThatThrownBy(() -> actionsRestService.getPersistentContingencyLists(requestUuids))
             .isInstanceOf(PowsyblException.class)
@@ -116,20 +105,16 @@ class ActionsRestServiceTest {
     }
 
     @Test
-    void getPersistentContingencyListsWithEmptyResponse() {
+    void getPersistentContingencyListsWithEmptyResponse() throws JsonProcessingException {
         List<UUID> requestUuids = List.of(CONTINGENCY_1_UUID);
 
-        try {
-            server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
-                .andExpect(MockRestRequestMatchers.requestTo("http://actions-server/v1/contingency-lists"))
-                .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(requestUuids)))
-                .andRespond(MockRestResponseCreators.withSuccess()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(objectMapper.writeValueAsString(List.of())));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+            .andExpect(MockRestRequestMatchers.requestTo("http://actions-server/v1/contingency-lists"))
+            .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(requestUuids)))
+            .andRespond(MockRestResponseCreators.withSuccess()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(List.of())));
 
         List<PersistentContingencyList> result = actionsRestService.getPersistentContingencyLists(requestUuids);
 

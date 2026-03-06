@@ -7,21 +7,18 @@
 package org.gridsuite.monitor.worker.server.processes.securityanalysis.steps;
 
 import com.powsybl.commons.report.ReportNode;
+import com.powsybl.contingency.Contingency;
+import com.powsybl.contingency.LineContingency;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
-import com.powsybl.loadflow.LoadFlowParameters;
+import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisResult;
+import org.apache.commons.lang3.tuple.Pair;
 import org.gridsuite.monitor.commons.ReportInfos;
 import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
-import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
-import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
-import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
-import org.gridsuite.monitor.worker.server.services.ActionsRestService;
-import org.gridsuite.monitor.worker.server.services.FilterRestService;
-import org.gridsuite.monitor.worker.server.services.LoadFlowRestService;
+import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisRestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,13 +45,7 @@ class SecurityAnalysisRunComputationStepTest {
     private SecurityAnalysisRestService securityAnalysisRestService;
 
     @Mock
-    private LoadFlowRestService loadFlowRestService;
-
-    @Mock
-    private ActionsRestService actionsRestService;
-
-    @Mock
-    private FilterRestService filterRestService;
+    private SecurityAnalysisParametersService securityAnalysisParametersService;
 
     @Mock
     private ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext;
@@ -70,7 +61,7 @@ class SecurityAnalysisRunComputationStepTest {
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, loadFlowRestService, actionsRestService, filterRestService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, securityAnalysisParametersService);
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.parametersUuid()).thenReturn(PARAMS_UUID);
@@ -87,18 +78,18 @@ class SecurityAnalysisRunComputationStepTest {
     @Test
     void executeRunSecurityAnalysis() {
         Network network = EurostagTutorialExample1Factory.create();
+        Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
+        Pair<SecurityAnalysisParameters, List<Contingency>> inputData = Pair.of(new SecurityAnalysisParameters(), List.of(contingency));
         when(stepContext.getNetwork()).thenReturn(network);
-        when(loadFlowRestService.getParameters(LOADFLOW_PARAMS_UUID)).thenReturn(new LoadFlowParametersInfos(null, null, new LoadFlowParameters(), null, null, null));
-        when(securityAnalysisRestService.getParameters(PARAMS_UUID, "user1")).thenReturn(new SecurityAnalysisParametersValues("OpenLoadFlow", 1, 0.5, 2, 0.7, 1,
-            List.of(new ContingencyListsInfos(List.of(new IdNameInfos(UUID.randomUUID(), "name")), "desc", true)), null));
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, "user1", network))
+            .thenReturn(inputData);
 
         runComputationStep.execute(stepContext);
 
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
 
-        verify(loadFlowRestService).getParameters(LOADFLOW_PARAMS_UUID);
-        verify(securityAnalysisRestService).getParameters(PARAMS_UUID, "user1");
+        verify(securityAnalysisParametersService).buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, "user1", network);
         verify(securityAnalysisRestService).saveResult(
                 any(UUID.class),
                 any(SecurityAnalysisResult.class)

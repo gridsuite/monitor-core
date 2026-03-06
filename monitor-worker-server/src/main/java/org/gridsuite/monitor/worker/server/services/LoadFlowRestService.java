@@ -53,11 +53,7 @@ public class LoadFlowRestService {
             .toUriString();
 
         try {
-            LoadFlowParametersInfos parameters = restTemplate.getForObject(path, LoadFlowParametersInfos.class);
-            if (parameters == null) {
-                throw new PowsyblException("Failed to retrieve loadflow parameters for UUID: " + loadFlowParametersUuid);
-            }
-            return parameters;
+            return restTemplate.getForObject(path, LoadFlowParametersInfos.class);
         } catch (RestClientException e) {
             throw new PowsyblException("Error retrieving loadflow parameters for UUID: " + loadFlowParametersUuid + " - " + e.getMessage(), e);
         }

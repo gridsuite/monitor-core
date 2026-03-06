@@ -79,7 +79,6 @@ public abstract class AbstractStepExecutor {
                     resultInfos,
                     StepStatus.COMPLETED);
         } catch (Exception e) {
-            reportPublisher.sendReport(reportInfos);
             updateStepStatus(
                     processExecutionId,
                     stepExecutionId,
@@ -89,6 +88,7 @@ public abstract class AbstractStepExecutor {
                     reportUuid,
                     resultInfos,
                     StepStatus.FAILED);
+            reportPublisher.sendReport(reportInfos);
             throw e;
         }
     }

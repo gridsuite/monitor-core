@@ -11,20 +11,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.services.MonitorService;
-import org.gridsuite.monitor.server.services.ProcessConfigService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -36,14 +33,11 @@ import java.util.UUID;
 public class MonitorController {
 
     private final MonitorService monitorService;
-    private final ProcessConfigService processConfigService;
 
     public static final String HEADER_USER_ID = "userId";
 
-    public MonitorController(MonitorService monitorService,
-                             ProcessConfigService processConfigService) {
+    public MonitorController(MonitorService monitorService) {
         this.monitorService = monitorService;
-        this.processConfigService = processConfigService;
     }
 
     @PostMapping("/execute/security-analysis")
@@ -55,13 +49,8 @@ public class MonitorController {
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
-        if (processConfig.isPresent()) {
-            UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfig.get().processConfig(), processConfig.get().id(), isDebug);
-            return ResponseEntity.ok(executionId);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+        return executionId != null ? ResponseEntity.ok(executionId) : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/executions/{executionId}/reports")

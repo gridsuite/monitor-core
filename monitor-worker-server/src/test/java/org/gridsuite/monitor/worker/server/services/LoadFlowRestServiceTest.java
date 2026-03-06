@@ -48,21 +48,17 @@ class LoadFlowRestServiceTest {
     }
 
     @Test
-    void getParameters() {
+    void getParameters() throws JsonProcessingException {
         LoadFlowParametersInfos expectedParameters = LoadFlowParametersInfos.builder()
             .provider("OpenLoadFlow")
             .build();
 
-        try {
-            server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-                .andExpect(MockRestRequestMatchers.requestTo(
-                    "http://load-flow-server/v1/parameters/" + PARAMETERS_UUID))
-                .andRespond(MockRestResponseCreators.withSuccess()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(objectMapper.writeValueAsString(expectedParameters)));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://load-flow-server/v1/parameters/" + PARAMETERS_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(expectedParameters)));
 
         LoadFlowParametersInfos result = loadFlowRestService.getParameters(PARAMETERS_UUID);
 

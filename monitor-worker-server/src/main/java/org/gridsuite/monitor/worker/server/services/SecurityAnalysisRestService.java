@@ -82,11 +82,7 @@ public class SecurityAnalysisRestService {
             headers.set("userId", userId);
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
 
-            SecurityAnalysisParametersValues parameters = restTemplate.exchange(path, HttpMethod.GET, requestEntity, SecurityAnalysisParametersValues.class).getBody();
-            if (parameters == null) {
-                throw new PowsyblException("Failed to retrieve security analysis parameters for UUID: " + parametersUuid);
-            }
-            return parameters;
+            return restTemplate.exchange(path, HttpMethod.GET, requestEntity, SecurityAnalysisParametersValues.class).getBody();
         } catch (RestClientException e) {
             throw new PowsyblException("Error retrieving security analysis parameters for UUID: " + parametersUuid + " - " + e.getMessage(), e);
         }

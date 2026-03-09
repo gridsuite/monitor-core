@@ -48,6 +48,9 @@ class MonitorServiceTest {
     private NotificationService notificationService;
 
     @Mock
+    private ProcessConfigService processConfigService;
+
+    @Mock
     private ReportService reportService;
 
     @Mock
@@ -83,10 +86,12 @@ class MonitorServiceTest {
     void executeProcessCreateExecutionAndSendNotification() {
         String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
+        when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, UUID.randomUUID(), true);
+        UUID result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
 
         assertThat(result).isNotNull();
+        verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&

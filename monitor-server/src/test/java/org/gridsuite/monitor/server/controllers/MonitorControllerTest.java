@@ -38,9 +38,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -87,7 +85,7 @@ class MonitorControllerTest {
         boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
         when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
-        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), any(UUID.class), eq(expectedDebugValue)))
+        when(monitorService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
                 .thenReturn(executionId);
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
@@ -104,7 +102,7 @@ class MonitorControllerTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), any(UUID.class), eq(expectedDebugValue));
+        verify(monitorService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue));
     }
 
     @Test
@@ -112,7 +110,7 @@ class MonitorControllerTest {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.empty());
+        when(monitorService.executeProcess(eq(caseUuid), eq("user1"), eq(processConfigUuid), eq(false))).thenReturn(null);
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
             .param("caseUuid", caseUuid.toString())
@@ -122,8 +120,7 @@ class MonitorControllerTest {
         mockMvc.perform(request)
             .andExpect(status().isNotFound());
 
-        verify(processConfigService).getProcessConfig(processConfigUuid);
-        verify(monitorService, never()).executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), any(UUID.class), anyBoolean());
+        verify(monitorService).executeProcess(eq(caseUuid), eq("user1"), eq(processConfigUuid), eq(false));
     }
 
     @Test

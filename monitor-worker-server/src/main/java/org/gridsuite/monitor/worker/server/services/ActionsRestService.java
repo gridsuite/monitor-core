@@ -59,11 +59,7 @@ public class ActionsRestService {
 
         try {
             ResponseEntity<List<PersistentContingencyList>> response = actionsServerRest.exchange(path, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<>() { });
-            List<PersistentContingencyList> contingencyLists = response.getBody();
-            if (contingencyLists == null) {
-                throw new PowsyblException("Failed to retrieve persistent contingency lists for UUIDs: " + contingenciesUuids);
-            }
-            return contingencyLists;
+            return response.getBody();
         } catch (RestClientException e) {
             throw new PowsyblException("Error retrieving persistent contingency lists for UUIDs: " + contingenciesUuids + " - " + e.getMessage(), e);
         }

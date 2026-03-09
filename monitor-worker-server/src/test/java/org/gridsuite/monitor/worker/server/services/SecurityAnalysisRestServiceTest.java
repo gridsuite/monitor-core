@@ -71,7 +71,7 @@ class SecurityAnalysisRestServiceTest {
     }
 
     @Test
-    void getParameters() {
+    void getParameters() throws JsonProcessingException {
         SecurityAnalysisParametersValues expectedParameters = SecurityAnalysisParametersValues.builder()
             .flowProportionalThreshold(0.1)
             .lowVoltageProportionalThreshold(0.05)
@@ -80,16 +80,12 @@ class SecurityAnalysisRestServiceTest {
             .highVoltageAbsoluteThreshold(10.0)
             .build();
 
-        try {
-            server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-                .andExpect(MockRestRequestMatchers.requestTo(
-                    "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID))
-                .andRespond(MockRestResponseCreators.withSuccess()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(objectMapper.writeValueAsString(expectedParameters)));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(expectedParameters)));
 
         SecurityAnalysisParametersValues result = securityAnalysisRestService.getParameters(PARAMETERS_UUID, "user1");
 

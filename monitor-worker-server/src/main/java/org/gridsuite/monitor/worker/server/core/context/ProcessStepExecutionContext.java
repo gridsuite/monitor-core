@@ -10,9 +10,9 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import lombok.Getter;
 import lombok.Setter;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
+import org.gridsuite.monitor.commons.types.report.ReportInfos;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 
 import java.time.Instant;

@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.core.context;
 
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.junit.jupiter.api.Test;

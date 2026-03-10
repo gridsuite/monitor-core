@@ -8,8 +8,8 @@ package org.gridsuite.monitor.server.entities.processexecution;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.gridsuite.monitor.commons.api.types.result.ResultType;
-import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.types.result.ResultType;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 
 import java.time.Instant;
 import java.util.UUID;

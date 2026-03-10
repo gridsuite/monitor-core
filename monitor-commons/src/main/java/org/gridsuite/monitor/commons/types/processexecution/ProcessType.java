@@ -4,13 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.dto.report;
-
-import com.powsybl.commons.report.ReportNode;
-
-import java.util.UUID;
+package org.gridsuite.monitor.commons.types.processexecution;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public record ReportInfos(UUID reportUuid, ReportNode reportNode) { }
+public enum ProcessType {
+    SECURITY_ANALYSIS
+}

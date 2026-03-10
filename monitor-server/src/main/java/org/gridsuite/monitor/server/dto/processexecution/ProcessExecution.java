@@ -8,7 +8,7 @@ package org.gridsuite.monitor.server.dto.processexecution;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 
 import java.time.Instant;
 import java.util.UUID;

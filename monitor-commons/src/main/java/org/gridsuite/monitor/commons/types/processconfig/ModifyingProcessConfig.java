@@ -4,15 +4,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.commons.api.types.processconfig;
+package org.gridsuite.monitor.commons.types.processconfig;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Kamil MARUT {@literal <kamil.marut at rte-france.com>}
  */
-public record PersistedProcessConfig(
-    UUID id,
-    ProcessConfig processConfig
-) {
+public interface ModifyingProcessConfig extends ProcessConfig {
+
+    List<UUID> modificationUuids();
+
 }

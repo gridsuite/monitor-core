@@ -7,8 +7,8 @@
 package org.gridsuite.monitor.worker.server.core.context;
 
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

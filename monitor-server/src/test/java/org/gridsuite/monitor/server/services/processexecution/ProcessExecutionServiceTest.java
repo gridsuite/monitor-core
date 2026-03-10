@@ -7,13 +7,13 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
-import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
-import org.gridsuite.monitor.commons.api.types.result.ResultInfos;
-import org.gridsuite.monitor.commons.api.types.result.ResultType;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.types.result.ResultInfos;
+import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;

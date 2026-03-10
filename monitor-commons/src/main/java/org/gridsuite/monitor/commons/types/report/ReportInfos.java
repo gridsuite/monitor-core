@@ -4,14 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.commons.api.types.result;
+package org.gridsuite.monitor.commons.types.report;
+
+import com.powsybl.commons.report.ReportNode;
 
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public record ResultInfos(
-    UUID resultUUID,
-    ResultType resultType
-) { }
+public record ReportInfos(UUID reportUuid, ReportNode reportNode) { }

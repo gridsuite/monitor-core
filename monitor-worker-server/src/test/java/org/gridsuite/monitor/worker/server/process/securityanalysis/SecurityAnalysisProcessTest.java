@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.worker.server.process.securityanalysis;
 
-import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.process.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.process.commons.steps.LoadNetworkStep;

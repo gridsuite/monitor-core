@@ -1,7 +1,7 @@
 package org.gridsuite.monitor.worker.server.core.orchestrator;
 
-import org.gridsuite.monitor.commons.api.types.messaging.ProcessRunMessage;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 
 /**
  * Root orchestrator interface responsible for executing a {@code Process} run request.

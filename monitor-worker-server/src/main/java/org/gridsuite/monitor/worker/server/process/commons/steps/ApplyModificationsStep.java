@@ -11,7 +11,7 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.modification.dto.ModificationInfos;
-import org.gridsuite.monitor.commons.api.types.processconfig.ModifyingProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ModifyingProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;

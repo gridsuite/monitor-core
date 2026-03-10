@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.core.process;
 
 import lombok.Getter;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 
 import java.util.UUID;
 

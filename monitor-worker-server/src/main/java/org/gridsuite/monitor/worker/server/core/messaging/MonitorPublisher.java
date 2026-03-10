@@ -1,7 +1,8 @@
 package org.gridsuite.monitor.worker.server.core.messaging;
 
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.steps.StepStatusPublisher;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +23,7 @@ import java.util.UUID;
  *   <li>Publish final execution status ({@code COMPLETED} or {@code FAILED})</li>
  * </ul>
  */
-public interface Notificator {
+public interface MonitorPublisher extends StepStatusPublisher {
 
     /**
      * Publish an update about the overall process execution status.
@@ -42,13 +43,4 @@ public interface Notificator {
      * @param steps the ordered list of step status snapshots to publish
      */
     void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> steps);
-
-    /**
-     * Publish an update for a single step status change (e.g. {@code RUNNING}, {@code COMPLETED},
-     * {@code FAILED}, {@code SKIPPED}).
-     *
-     * @param executionId the process execution identifier used to correlate all updates of the same run
-     * @param step the step status snapshot to publish
-     */
-    void updateStepStatus(UUID executionId, ProcessExecutionStep step);
 }

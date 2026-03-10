@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.result.providers;
 
-import org.gridsuite.monitor.commons.api.types.result.ResultType;
+import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.services.result.ResultProvider;
 import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
 import org.springframework.stereotype.Service;

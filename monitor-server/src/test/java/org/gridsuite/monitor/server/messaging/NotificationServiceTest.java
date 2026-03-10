@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.server.messaging;
 
-import org.gridsuite.monitor.commons.api.types.messaging.ProcessRunMessage;
-import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

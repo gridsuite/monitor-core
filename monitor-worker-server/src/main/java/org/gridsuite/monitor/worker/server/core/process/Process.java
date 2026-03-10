@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.worker.server.core.process;
 
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 
 import java.util.List;

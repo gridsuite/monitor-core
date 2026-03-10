@@ -11,7 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import lombok.Setter;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
+import org.gridsuite.monitor.commons.steps.ReportPublisher;
+import org.gridsuite.monitor.commons.types.report.ReportInfos;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -28,7 +29,7 @@ import java.util.Objects;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class ReportRestClient {
+public class ReportRestClient implements ReportPublisher {
 
     static final String REPORT_API_VERSION = "v1";
     private static final String DELIMITER = "/";
@@ -51,6 +52,10 @@ public class ReportRestClient {
         return this.reportServerBaseUri + DELIMITER + REPORT_API_VERSION + DELIMITER + "reports" + DELIMITER;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void sendReport(ReportInfos reportInfos) {
         Objects.requireNonNull(reportInfos);
 

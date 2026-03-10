@@ -7,8 +7,8 @@
 package org.gridsuite.monitor.server.messaging;
 
 import lombok.RequiredArgsConstructor;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.api.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 

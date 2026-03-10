@@ -4,16 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.commons.api.types.processexecution;
+package org.gridsuite.monitor.commons.types.processexecution;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.gridsuite.monitor.commons.api.types.result.ResultType;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -22,14 +20,9 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProcessExecutionStep {
-    private UUID id;
-    private String stepType;
-    private Integer stepOrder;
-    private StepStatus status;
-    private UUID resultId;
-    private ResultType resultType;
-    private UUID reportId;
+public class ProcessExecutionStatusUpdate {
+    private ProcessStatus status;
+    private String executionEnvName;
     private Instant startedAt;
     private Instant completedAt;
 }

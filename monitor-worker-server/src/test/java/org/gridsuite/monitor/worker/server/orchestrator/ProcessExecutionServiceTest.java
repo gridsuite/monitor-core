@@ -6,13 +6,13 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
-import org.gridsuite.monitor.commons.api.types.messaging.ProcessRunMessage;
-import org.gridsuite.monitor.commons.api.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.api.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessStatus;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessType;
-import org.gridsuite.monitor.commons.api.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;

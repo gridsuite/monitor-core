@@ -4,13 +4,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.commons.api.types.messaging;
+package org.gridsuite.monitor.commons.types.result;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public enum MessageType {
-    EXECUTION_STATUS_UPDATE,
-    STEP_STATUS_UPDATE,
-    STEPS_STATUSES_UPDATE,
+public enum ResultType {
+    SECURITY_ANALYSIS,
+    STATE_ESTIMATION
 }

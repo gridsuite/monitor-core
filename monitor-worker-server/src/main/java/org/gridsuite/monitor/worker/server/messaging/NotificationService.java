@@ -6,10 +6,10 @@
  */
 package org.gridsuite.monitor.worker.server.messaging;
 
-import org.gridsuite.monitor.commons.api.types.messaging.MessageType;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.api.types.processexecution.ProcessExecutionStep;
-import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
+import org.gridsuite.monitor.commons.types.messaging.MessageType;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.worker.server.core.messaging.MonitorPublisher;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -22,7 +22,7 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class NotificationService implements Notificator {
+public class NotificationService implements MonitorPublisher {
 
     private final StreamBridge updatePublisher;
     private static final String PROCESS_UPDATE_BINDING = "publishMonitorUpdate-out-0";
@@ -47,6 +47,10 @@ public class NotificationService implements Notificator {
         updatePublisher.send(PROCESS_UPDATE_BINDING, message);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate processExecutionStatusUpdate) {
         sendMonitorUpdate(
                 executionId,
@@ -55,6 +59,10 @@ public class NotificationService implements Notificator {
         );
     }
 
+    /**
+     * {@inheritDoc}
+    */
+    @Override
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         sendMonitorUpdate(
                 executionId,
@@ -63,6 +71,10 @@ public class NotificationService implements Notificator {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         sendMonitorUpdate(
             executionId,

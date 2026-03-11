@@ -52,6 +52,12 @@
     </build>
 
     <dependencies>
+        <!-- MapStruct Dependency -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
         <!-- Compilation dependencies -->
         <dependency>
             <groupId>com.powsybl</groupId>

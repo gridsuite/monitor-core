@@ -13,8 +13,6 @@ import lombok.Setter;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ReportInfos;
 import org.gridsuite.monitor.commons.ResultInfos;
-import org.gridsuite.monitor.commons.ResultType;
-import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -41,7 +39,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     @Setter
     private ResultInfos resultInfos;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, UUID stepId, int stepOrder) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, UUID stepId, int stepOrder, ResultInfos resultInfos) {
         this.processContext = processContext;
         this.stepExecutionId = stepId;
         this.processStepType = processStepType;
@@ -50,9 +48,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
                 .withMessageTemplate("monitor.worker.server.stepType")
                 .withUntypedValue("stepType", processStepType.getName())
                 .build());
-        if (processStepType instanceof SecurityAnalysisStepType) {
-            this.resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-        }
+        this.resultInfos = resultInfos;
         this.stepOrder = stepOrder;
     }
 

@@ -306,7 +306,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void compareProcessConfigsShouldThrowExceptionWhenDifferentTypes() throws Exception {
+    void compareProcessConfigsShouldThrowExceptionWhenDifferentTypes() {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
 

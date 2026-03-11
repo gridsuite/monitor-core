@@ -7,11 +7,11 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
@@ -44,18 +44,25 @@ public class ProcessExecutionService {
     private final S3RestService s3RestService;
     private final S3PathResolver s3PathResolver;
 
+    private final ProcessExecutionStepMapper processExecutionStepMapper;
+    private final ProcessExecutionMapper processExecutionMapper;
+
     public ProcessExecutionService(ProcessExecutionRepository executionRepository,
-                                   NotificationService notificationService,
-                                   ReportRestClient reportRestClient,
-                                   ResultService resultService,
-                                   S3RestService s3RestService,
-                                   S3PathResolver s3PathResolver) {
+                          NotificationService notificationService,
+                          ReportRestClient reportRestClient,
+                          ResultService resultService,
+                          S3RestService s3RestService,
+                          S3PathResolver s3PathResolver,
+                          ProcessExecutionStepMapper processExecutionStepMapper,
+                          ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.reportRestClient = reportRestClient;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
         this.s3PathResolver = s3PathResolver;
+        this.processExecutionStepMapper = processExecutionStepMapper;
+        this.processExecutionMapper = processExecutionMapper;
     }
 
     @Transactional
@@ -106,23 +113,14 @@ public class ProcessExecutionService {
             .filter(s -> s.getId().equals(stepEntity.getId()))
             .findFirst()
             .ifPresentOrElse(
-                existingStep -> {
-                    existingStep.setStatus(stepEntity.getStatus());
-                    existingStep.setStepType(stepEntity.getStepType());
-                    existingStep.setStepOrder(stepEntity.getStepOrder());
-                    existingStep.setStartedAt(stepEntity.getStartedAt());
-                    existingStep.setCompletedAt(stepEntity.getCompletedAt());
-                    existingStep.setResultId(stepEntity.getResultId());
-                    existingStep.setResultType(stepEntity.getResultType());
-                    existingStep.setReportId(stepEntity.getReportId());
-                },
+                existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
                 () -> steps.add(stepEntity));
     }
 
     @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         executionRepository.findById(executionId).ifPresent(execution -> {
-            ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+            ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
             updateStep(execution, stepEntity);
             executionRepository.save(execution);
         });
@@ -132,25 +130,11 @@ public class ProcessExecutionService {
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {
-                ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+                ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
                 updateStep(execution, stepEntity);
             });
             executionRepository.save(execution);
         });
-    }
-
-    private ProcessExecutionStepEntity toStepEntity(ProcessExecutionStep processExecutionStep) {
-        return ProcessExecutionStepEntity.builder()
-                .id(processExecutionStep.getId())
-                .stepType(processExecutionStep.getStepType())
-                .stepOrder(processExecutionStep.getStepOrder())
-                .status(processExecutionStep.getStatus())
-                .resultId(processExecutionStep.getResultId())
-                .resultType(processExecutionStep.getResultType())
-                .reportId(processExecutionStep.getReportId())
-                .startedAt(processExecutionStep.getStartedAt())
-                .completedAt(processExecutionStep.getCompletedAt())
-                .build();
     }
 
     @Transactional(readOnly = true)
@@ -204,7 +188,7 @@ public class ProcessExecutionService {
     @Transactional(readOnly = true)
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
-            .map(ProcessExecutionMapper::toDto).toList();
+            .map(processExecutionMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -212,7 +196,7 @@ public class ProcessExecutionService {
         Optional<ProcessExecutionEntity> entity = executionRepository.findById(executionId);
         if (entity.isPresent()) {
             return entity.map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
-                .map(ProcessExecutionStepMapper::toDto)
+                .map(processExecutionStepMapper::toDto)
                 .toList());
         } else {
             return Optional.empty();

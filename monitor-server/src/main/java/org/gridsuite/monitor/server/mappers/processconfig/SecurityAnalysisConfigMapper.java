@@ -8,32 +8,25 @@ package org.gridsuite.monitor.server.mappers.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 /**
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class SecurityAnalysisConfigMapper {
-    public static SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto) {
-        SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity();
-        entity.setProcessType(ProcessType.SECURITY_ANALYSIS);
-        update(entity, dto);
-        return entity;
-    }
+@Mapper(componentModel = "spring")
+public interface SecurityAnalysisConfigMapper {
 
-    public static PersistedProcessConfig toDto(SecurityAnalysisConfigEntity entity) {
-        return new PersistedProcessConfig(entity.getId(), new SecurityAnalysisConfig(
-            entity.getParametersUuid(),
-            entity.getContingencies(),
-            entity.getModificationUuids()
-        ));
-    }
+    @Mapping(target = "processType", expression = "java(dto.processType())")
+    SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);
 
-    public static void update(SecurityAnalysisConfigEntity entity, SecurityAnalysisConfig dto) {
-        entity.setParametersUuid(dto.parametersUuid());
-        entity.setContingencies(dto.contingencies());
-        entity.setModificationUuids(dto.modificationUuids());
-    }
+    SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity dto);
+
+    @Mapping(target = "processConfig", source = ".")
+    PersistedProcessConfig toPersistedProcessConfigDto(SecurityAnalysisConfigEntity entity);
+
+    void updateEntityFromDto(SecurityAnalysisConfig dto, @MappingTarget SecurityAnalysisConfigEntity entity);
+
 }

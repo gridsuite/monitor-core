@@ -8,23 +8,21 @@ package org.gridsuite.monitor.server.mappers.processexecution;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 /**
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class ProcessExecutionStepMapper {
-    public static ProcessExecutionStep toDto(ProcessExecutionStepEntity entity) {
-        return ProcessExecutionStep.builder()
-                .id(entity.getId())
-                .stepType(entity.getStepType())
-                .stepOrder(entity.getStepOrder())
-                .status(entity.getStatus())
-                .resultId(entity.getResultId())
-                .resultType(entity.getResultType())
-                .reportId(entity.getReportId())
-                .startedAt(entity.getStartedAt())
-                .completedAt(entity.getCompletedAt())
-                .build();
-    }
+@Mapper(componentModel = "spring")
+public interface ProcessExecutionStepMapper {
+
+    ProcessExecutionStep toDto(ProcessExecutionStepEntity entity);
+
+    ProcessExecutionStepEntity toEntity(ProcessExecutionStep dto);
+
+    @Mapping(target = "id", ignore = true)
+    void updateEntityFromEntity(ProcessExecutionStepEntity source, @MappingTarget ProcessExecutionStepEntity target);
+
 }

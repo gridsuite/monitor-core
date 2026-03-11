@@ -21,6 +21,8 @@ import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
+import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.services.S3RestService;
@@ -29,8 +31,10 @@ import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -68,6 +72,12 @@ class ProcessExecutionServiceTest {
 
     @Mock
     private S3PathResolver s3PathResolver;
+
+    @Spy
+    private ProcessExecutionStepMapper processExecutionStepMapper = Mappers.getMapper(ProcessExecutionStepMapper.class);
+
+    @Spy
+    private ProcessExecutionMapper processExecutionMapper = Mappers.getMapper(ProcessExecutionMapper.class);
 
     @InjectMocks
     private ProcessExecutionService processExecutionService;

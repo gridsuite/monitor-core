@@ -88,9 +88,9 @@ class MonitorServiceTest {
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
+        Optional<UUID> result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
 
-        assertThat(result).isNotNull();
+        assertThat(result.isPresent());
         verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
@@ -104,9 +104,8 @@ class MonitorServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
-                result,
-                debugFileLocation,
-                userId
+                result.get(),
+                debugFileLocation
         );
         verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
     }

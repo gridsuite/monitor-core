@@ -58,7 +58,7 @@ public class MonitorService {
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
+    public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
         UUID executionId = UUID.randomUUID();
         Optional<PersistedProcessConfig> persistedProcessConfig = processConfigService.getProcessConfig(processConfigId);
         if (persistedProcessConfig.isPresent()) {
@@ -76,11 +76,11 @@ public class MonitorService {
             }
             executionRepository.save(execution);
 
-            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation(), execution.getUserId());
+            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
 
-            return execution.getId();
+            return Optional.of(execution.getId());
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 

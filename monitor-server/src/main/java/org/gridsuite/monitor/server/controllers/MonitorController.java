@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -49,8 +50,8 @@ public class MonitorController {
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
-        return executionId != null ? ResponseEntity.ok(executionId) : ResponseEntity.notFound().build();
+        Optional<UUID> executionId = monitorService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+        return executionId.isPresent() ? ResponseEntity.ok(executionId.get()) : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/executions/{executionId}/reports")

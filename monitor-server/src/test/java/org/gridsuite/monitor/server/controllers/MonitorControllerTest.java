@@ -86,7 +86,7 @@ class MonitorControllerTest {
 
         when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
         when(monitorService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
-                .thenReturn(executionId);
+                .thenReturn(Optional.of(executionId));
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
             .param("caseUuid", caseUuid.toString())
@@ -110,7 +110,7 @@ class MonitorControllerTest {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(monitorService.executeProcess(eq(caseUuid), eq("user1"), eq(processConfigUuid), eq(false))).thenReturn(null);
+        when(monitorService.executeProcess(eq(caseUuid), eq("user1"), eq(processConfigUuid), eq(false))).thenReturn(Optional.empty());
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
             .param("caseUuid", caseUuid.toString())

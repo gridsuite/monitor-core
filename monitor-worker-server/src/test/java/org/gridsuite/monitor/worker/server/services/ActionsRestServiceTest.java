@@ -13,9 +13,9 @@ import com.powsybl.commons.PowsyblException;
 import com.powsybl.iidm.network.IdentifiableType;
 import org.gridsuite.actions.dto.EquipmentTypesByFilter;
 import org.gridsuite.actions.dto.FilterAttributes;
+import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.contingency.FilterBasedContingencyList;
 import org.gridsuite.actions.dto.contingency.IdBasedContingencyList;
-import org.gridsuite.actions.dto.contingency.PersistentContingencyList;
 import org.gridsuite.filter.utils.EquipmentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,8 @@ class ActionsRestServiceTest {
         FilterBasedContingencyList filterBasedContingencyList = new FilterBasedContingencyList(CONTINGENCY_2_UUID, Instant.now(),
             List.of(new FilterAttributes(UUID.randomUUID(), EquipmentType.GENERATOR, "gen1")),
             List.of(new EquipmentTypesByFilter(UUID.randomUUID(), Set.of(IdentifiableType.GENERATOR))));
-        String jsonResponse = objectMapper.writeValueAsString(List.of(idBasedContingencyList, filterBasedContingencyList));
+        List<AbstractContingencyList> abstractContingencyLists = List.of(idBasedContingencyList, filterBasedContingencyList);
+        String jsonResponse = objectMapper.writeValueAsString(abstractContingencyLists);
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
             .andExpect(MockRestRequestMatchers.requestTo("http://actions-server/v1/contingency-lists"))
@@ -77,10 +78,10 @@ class ActionsRestServiceTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(jsonResponse));
 
-        List<PersistentContingencyList> result = actionsRestService.getPersistentContingencyLists(requestUuids);
+        List<AbstractContingencyList> result = actionsRestService.getPersistentContingencyLists(requestUuids);
         assertThat(result).isNotNull();
 
-        assertThat(result).usingRecursiveComparison().isEqualTo(objectMapper.readValue(jsonResponse, new TypeReference<List<PersistentContingencyList>>() { }));
+        assertThat(result).usingRecursiveComparison().isEqualTo(objectMapper.readValue(jsonResponse, new TypeReference<List<AbstractContingencyList>>() { }));
     }
 
     @Test
@@ -100,7 +101,7 @@ class ActionsRestServiceTest {
 
     @Test
     void getEmptyContingencies() {
-        List<PersistentContingencyList> result = actionsRestService.getPersistentContingencyLists(List.of());
+        List<AbstractContingencyList> result = actionsRestService.getPersistentContingencyLists(List.of());
         assertThat(result).isEmpty();
     }
 
@@ -116,7 +117,7 @@ class ActionsRestServiceTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(List.of())));
 
-        List<PersistentContingencyList> result = actionsRestService.getPersistentContingencyLists(requestUuids);
+        List<AbstractContingencyList> result = actionsRestService.getPersistentContingencyLists(requestUuids);
 
         assertThat(result).isEmpty();
     }

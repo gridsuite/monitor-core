@@ -72,7 +72,7 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfigEntity savedEntity = captor.getValue();
         assertThat(savedEntity.getId()).isEqualTo(expectedProcessConfigId);
         assertThat(savedEntity.getProcessType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
-        assertThat(savedEntity.getParametersUuid()).isEqualTo(securityAnalysisConfig.parametersUuid());
+        assertThat(savedEntity.getSecurityAnalysisParametersUuid()).isEqualTo(securityAnalysisConfig.securityAnalysisParametersUuid());
         assertThat(savedEntity.getModificationUuids()).isEqualTo(securityAnalysisConfig.modificationUuids());
     }
 
@@ -185,11 +185,11 @@ class ProcessConfigServiceTest {
         assertThat(processConfigs.get(1).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
         SecurityAnalysisConfig resSecurityAnalysisConfig1 = (SecurityAnalysisConfig) processConfigs.get(0).processConfig();
-        assertThat(resSecurityAnalysisConfig1.parametersUuid()).isEqualTo(securityAnalysisConfig1.parametersUuid());
+        assertThat(resSecurityAnalysisConfig1.securityAnalysisParametersUuid()).isEqualTo(securityAnalysisConfig1.securityAnalysisParametersUuid());
         assertThat(resSecurityAnalysisConfig1.modificationUuids()).isEqualTo(securityAnalysisConfig1.modificationUuids());
 
         SecurityAnalysisConfig resSecurityAnalysisConfig2 = (SecurityAnalysisConfig) processConfigs.get(1).processConfig();
-        assertThat(resSecurityAnalysisConfig2.parametersUuid()).isEqualTo(securityAnalysisConfig2.parametersUuid());
+        assertThat(resSecurityAnalysisConfig2.securityAnalysisParametersUuid()).isEqualTo(securityAnalysisConfig2.securityAnalysisParametersUuid());
         assertThat(resSecurityAnalysisConfig2.modificationUuids()).isEqualTo(securityAnalysisConfig2.modificationUuids());
     }
 

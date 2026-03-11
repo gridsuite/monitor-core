@@ -11,11 +11,12 @@ import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.identifiers.IdBasedNetworkElementIdentifier;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.loadflow.LoadFlowParameters;
+import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.contingency.IdBasedContingencyList;
-import org.gridsuite.actions.dto.contingency.PersistentContingencyList;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,9 +60,8 @@ class SecurityAnalysisParametersServiceTest {
 
     @Test
     void buildSecurityAnalysisInputData() {
-        UUID parametersUuid = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
         UUID loadflowParametersUuid = UUID.randomUUID();
-        String userId = "user1";
         Network network = EurostagTutorialExample1Factory.create();
 
         UUID contingencyListId = UUID.randomUUID();
@@ -83,15 +84,21 @@ class SecurityAnalysisParametersServiceTest {
         List<UUID> contingencyListUuids = List.of(contingencyListId);
         IdBasedContingencyList idBasedContingencyList = new IdBasedContingencyList(contingencyListId, Instant.now(),
             new IdentifierContingencyList("c1", List.of(new IdBasedNetworkElementIdentifier("GEN", "c1"))));
-        List<PersistentContingencyList> persistentContingencyList = List.of(idBasedContingencyList);
+        List<AbstractContingencyList> persistentContingencyList = List.of(idBasedContingencyList);
 
-        when(securityAnalysisRestService.getParameters(parametersUuid, userId)).thenReturn(securityAnalysisParametersValues);
+        when(securityAnalysisRestService.getParameters(securityAnalysisParametersUuid)).thenReturn(securityAnalysisParametersValues);
         when(loadFlowRestService.getParameters(loadflowParametersUuid)).thenReturn(loadFlowParametersInfos);
         when(actionsRestService.getPersistentContingencyLists(contingencyListUuids)).thenReturn(persistentContingencyList);
 
-        securityAnalysisParametersService.buildSecurityAnalysisInputData(parametersUuid, loadflowParametersUuid, userId, network);
+        SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(securityAnalysisParametersUuid, loadflowParametersUuid, network);
 
-        verify(securityAnalysisRestService, times(1)).getParameters(parametersUuid, userId);
+        assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters()).usingRecursiveComparison().isEqualTo(loadFlowParametersInfos.getCommonParameters());
+        assertThat(inputData.contingencies().size()).isEqualTo(1);
+        assertThat(inputData.contingencies().get(0).getId()).isEqualTo("c1");
+        assertThat(inputData.contingencies().get(0).getElements().size()).isEqualTo(1);
+        assertThat(inputData.contingencies().get(0).getElements().get(0).getId()).isEqualTo("GEN");
+
+        verify(securityAnalysisRestService, times(1)).getParameters(securityAnalysisParametersUuid);
         verify(loadFlowRestService, times(1)).getParameters(loadflowParametersUuid);
         verify(actionsRestService, times(1)).getPersistentContingencyLists(contingencyListUuids);
     }

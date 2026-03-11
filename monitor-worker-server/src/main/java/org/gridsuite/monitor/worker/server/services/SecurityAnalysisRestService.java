@@ -64,27 +64,21 @@ public class SecurityAnalysisRestService {
         restTemplate.exchange(getSecurityAnalysisServerBaseUri() + path, HttpMethod.POST, new HttpEntity<>(result, headers), Void.class);
     }
 
-    public SecurityAnalysisParametersValues getParameters(UUID parametersUuid, String userId) {
-        Objects.requireNonNull(userId);
-
-        LOGGER.info("Get security analysis parameters {}", parametersUuid);
-
-        if (parametersUuid == null) {
-            throw new PowsyblException("Security analysis parameters UUID is null !!");
-        }
+    public SecurityAnalysisParametersValues getParameters(UUID securityAnalysisParametersUuid) {
+        LOGGER.info("Get security analysis parameters {}", securityAnalysisParametersUuid);
 
         var path = securityAnalysisServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + SA_API_VERSION + DELIMITER + "parameters/{uuid}")
-            .buildAndExpand(parametersUuid)
+            .buildAndExpand(securityAnalysisParametersUuid)
             .toUriString();
 
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("userId", userId);
+            headers.set("userId", "user1");   // TODO : to remove after the fix that will remove the userId header when getting parameters
             HttpEntity<?> requestEntity = new HttpEntity<>(headers);
 
             return restTemplate.exchange(path, HttpMethod.GET, requestEntity, SecurityAnalysisParametersValues.class).getBody();
         } catch (RestClientException e) {
-            throw new PowsyblException("Error retrieving security analysis parameters for UUID: " + parametersUuid + " - " + e.getMessage(), e);
+            throw new PowsyblException("Error retrieving security analysis parameters for UUID: " + securityAnalysisParametersUuid + " - " + e.getMessage(), e);
         }
     }
 }

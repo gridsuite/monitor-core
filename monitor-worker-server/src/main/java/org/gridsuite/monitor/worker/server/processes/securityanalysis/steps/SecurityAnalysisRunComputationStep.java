@@ -8,24 +8,21 @@ package org.gridsuite.monitor.worker.server.processes.securityanalysis.steps;
 
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.commons.report.TypedValue;
-import com.powsybl.contingency.Contingency;
 import com.powsybl.security.SecurityAnalysis;
-import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisRunParameters;
-import org.apache.commons.lang3.tuple.Pair;
 import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.processes.securityanalysis.SecurityAnalysisStepType;
 import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisRestService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -52,13 +49,13 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
         ReportNode reportNode = context.getReportInfos().reportNode();
 
         try {
-            Pair<SecurityAnalysisParameters, List<Contingency>> inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(
-                context.getConfig().parametersUuid(), context.getConfig().loadflowParametersUuid(), context.getUserId(), context.getNetwork());
+            SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(
+                context.getConfig().securityAnalysisParametersUuid(), context.getConfig().loadflowParametersUuid(), context.getNetwork());
 
             SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
-                .setSecurityAnalysisParameters(inputData.getLeft())
+                .setSecurityAnalysisParameters(inputData.securityAnalysisParameters())
                 .setReportNode(reportNode);
-            SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), inputData.getRight(), runParameters);
+            SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), inputData.contingencies(), runParameters);
 
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
             securityAnalysisRestService.saveResult(resultInfos.resultUUID(), saReport.getResult());

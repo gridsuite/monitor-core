@@ -10,10 +10,8 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -28,7 +26,7 @@ public class StateEstimationService {
     static final String SE_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     @Setter
     private String stateEstimationServerBaseUri;
@@ -38,20 +36,19 @@ public class StateEstimationService {
     }
 
     public StateEstimationService(
-            RestTemplateBuilder restTemplateBuilder,
+            RestClient.Builder restClientBuilder,
             @Value("${gridsuite.services.state-estimation-server.base-uri:http://state-estimation-server/}") String stateEstimationServerBaseUri) {
         this.stateEstimationServerBaseUri = stateEstimationServerBaseUri;
-        this.restTemplate = restTemplateBuilder.build();
+        this.restClient = restClientBuilder.baseUrl(getStateEstimationServerBaseUri()).build();
     }
 
     public String getResult(UUID resultUuid) {
         LOGGER.info("Fetching state estimation result {}", resultUuid);
 
-        var path = UriComponentsBuilder.fromPath("/results/{resultUuid}")
-                .buildAndExpand(resultUuid)
-                .toUriString();
-
-        return restTemplate.exchange(getStateEstimationServerBaseUri() + path, HttpMethod.GET, null, String.class).getBody();
+        return restClient.get()
+            .uri("/results/{resultUuid}", resultUuid)
+            .retrieve()
+            .body(String.class);
     }
 
     public void deleteResult(UUID resultUuid) {
@@ -62,6 +59,9 @@ public class StateEstimationService {
                 .build()
                 .toUriString();
 
-        restTemplate.delete(getStateEstimationServerBaseUri() + path);
+        restClient.delete()
+            .uri(path)
+            .retrieve()
+            .toBodilessEntity();
     }
 }

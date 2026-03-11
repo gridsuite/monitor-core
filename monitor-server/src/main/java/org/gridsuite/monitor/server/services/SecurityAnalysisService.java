@@ -10,10 +10,8 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -28,7 +26,7 @@ public class SecurityAnalysisService {
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     @Setter
     private String securityAnalysisServerBaseUri;
@@ -38,20 +36,19 @@ public class SecurityAnalysisService {
     }
 
     public SecurityAnalysisService(
-        RestTemplateBuilder restTemplateBuilder,
+        RestClient.Builder restClientBuilder,
         @Value("${gridsuite.services.security-analysis-server.base-uri:http://security-analysis-server/}") String securityAnalysisServerBaseUri) {
         this.securityAnalysisServerBaseUri = securityAnalysisServerBaseUri;
-        this.restTemplate = restTemplateBuilder.build();
+        this.restClient = restClientBuilder.baseUrl(getSecurityAnalysisServerBaseUri()).build();
     }
 
     public String getResult(UUID resultUuid) {
         LOGGER.info("Fetching result {}", resultUuid);
 
-        var path = UriComponentsBuilder.fromPath("/results/{resultUuid}/nmk-contingencies-result")
-            .buildAndExpand(resultUuid)
-            .toUriString();
-
-        return restTemplate.exchange(getSecurityAnalysisServerBaseUri() + path, HttpMethod.GET, null, String.class).getBody();
+        return restClient.get()
+            .uri("/results/{resultUuid}/nmk-contingencies-result", resultUuid)
+            .retrieve()
+            .body(String.class);
     }
 
     public void deleteResult(UUID resultUuid) {
@@ -62,6 +59,9 @@ public class SecurityAnalysisService {
             .build()
             .toUriString();
 
-        restTemplate.delete(getSecurityAnalysisServerBaseUri() + path);
+        restClient.delete()
+            .uri(path)
+            .retrieve()
+            .toBodilessEntity();
     }
 }

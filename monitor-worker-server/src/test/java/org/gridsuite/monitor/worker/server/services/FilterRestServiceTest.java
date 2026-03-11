@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.commons.PowsyblException;
 import org.gridsuite.filter.AbstractFilter;
 import org.gridsuite.filter.expertfilter.ExpertFilter;
 import org.gridsuite.filter.expertfilter.expertrule.AbstractExpertRule;
@@ -29,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.RestClientException;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -94,7 +94,6 @@ class FilterRestServiceTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> filterUuids = List.of(FILTER_ERROR_UUID);
-        assertThatThrownBy(() -> filterRestService.getFilters(filterUuids)).isInstanceOf(PowsyblException.class)
-            .hasMessage("Error retrieving filters");
+        assertThatThrownBy(() -> filterRestService.getFilters(filterUuids)).isInstanceOf(RestClientException.class);
     }
 }

@@ -10,12 +10,11 @@ package org.gridsuite.monitor.worker.server.services;
 import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,27 +26,28 @@ public class NetworkModificationRestService {
     private static final String NETWORK_MODIFICATION_SERVER_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
-    private final RestTemplate networkModificationServerRest;
-    private final String networkModificationServerBaseUri;
+    private final RestClient networkModificationServerRest;
 
     public NetworkModificationRestService(@Value("${gridsuite.services.network-modification-server.base-uri:http://network-modification-server/}") String networkModificationServerBaseUri,
-                                          RestTemplateBuilder restTemplateBuilder) {
-        this.networkModificationServerRest = restTemplateBuilder.build();
-        this.networkModificationServerBaseUri = networkModificationServerBaseUri;
+                                          RestClient.Builder restClientBuilder) {
+        this.networkModificationServerRest = restClientBuilder.baseUrl(networkModificationServerBaseUri).build();
     }
 
     public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
-        if (CollectionUtils.isNotEmpty(modificationsUuids)) {
-            String path = this.networkModificationServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
-                    "network-composite-modifications" + DELIMITER + "network-modifications")
-                .queryParam("uuids", modificationsUuids.toArray())
-                .queryParam("onlyMetadata", "false")
-                .buildAndExpand()
-                .toUriString();
-            ModificationInfos[] modificationInfos = networkModificationServerRest.getForObject(path, ModificationInfos[].class);
-            return modificationInfos != null ? Arrays.asList(modificationInfos) : List.of();
-        } else {
+        if (CollectionUtils.isEmpty(modificationsUuids)) {
             return List.of();
         }
+
+        String path = UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
+                "network-composite-modifications" + DELIMITER + "network-modifications")
+            .queryParam("uuids", modificationsUuids.toArray())
+            .queryParam("onlyMetadata", "false")
+            .buildAndExpand()
+            .toUriString();
+
+        return networkModificationServerRest.get()
+            .uri(path)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() { });
     }
 }

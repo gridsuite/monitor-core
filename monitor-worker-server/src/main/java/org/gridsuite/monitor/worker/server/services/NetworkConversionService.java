@@ -30,6 +30,7 @@ import java.util.UUID;
 public class NetworkConversionService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
 
+    // We keep RestTemplate here since CaseDataSourceClient only accept RestTemplate for now
     private final RestTemplate caseServerRest;
 
     public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri,

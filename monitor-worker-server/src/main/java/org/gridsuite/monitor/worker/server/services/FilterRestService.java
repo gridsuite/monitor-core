@@ -6,15 +6,11 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import com.powsybl.commons.PowsyblException;
 import org.gridsuite.filter.AbstractFilter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -29,14 +25,11 @@ public class FilterRestService {
 
     private static final String DELIMITER = "/";
 
-    private final String filterServerBaseUri;
-
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
     public FilterRestService(@Value("${gridsuite.services.filter-server.base-uri:http://filter-server/}") String filterServerBaseUri,
-                             RestTemplateBuilder restTemplateBuilder) {
-        this.filterServerBaseUri = filterServerBaseUri;
-        this.restTemplate = restTemplateBuilder.build();
+                             RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.baseUrl(filterServerBaseUri).build();
     }
 
     public List<AbstractFilter> getFilters(List<UUID> filtersUuids) {
@@ -44,10 +37,10 @@ public class FilterRestService {
             .queryParam("ids", filtersUuids)
             .buildAndExpand()
             .toUriString();
-        try {
-            return restTemplate.exchange(filterServerBaseUri + path, HttpMethod.GET, null, new ParameterizedTypeReference<List<AbstractFilter>>() { }).getBody();
-        } catch (HttpStatusCodeException e) {
-            throw new PowsyblException("Error retrieving filters", e);
-        }
+
+        return restClient.get()
+            .uri(path)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() { });
     }
 }

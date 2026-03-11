@@ -48,10 +48,7 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
-        return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> Optional.of(SecurityAnalysisConfigMapper.toDto(sae));
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
-        });
+        return processConfigRepository.findById(processConfigUuid).map(this::toPersistedProcessConfig);
     }
 
     @Transactional
@@ -82,24 +79,22 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        List<ProcessConfigEntity> processConfigs = processConfigRepository.findAllByProcessType(processType);
-        return processConfigs.stream().map(entity -> switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
-        }).toList();
+        return processConfigRepository.findAllByProcessType(processType).stream()
+            .map(this::toPersistedProcessConfig)
+            .toList();
     }
 
     @Transactional(readOnly = true)
     public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        Optional<PersistedProcessConfig> config1 = getProcessConfig(uuid1);
-        Optional<PersistedProcessConfig> config2 = getProcessConfig(uuid2);
+        Optional<ProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
+        Optional<ProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
 
-        if (config1.isEmpty() || config2.isEmpty()) {
+        if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
             return Optional.empty();
         }
 
-        ProcessConfig processConfig1 = config1.get().processConfig();
-        ProcessConfig processConfig2 = config2.get().processConfig();
+        ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1.get());
+        ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
 
         if (processConfig1.processType() != processConfig2.processType()) {
             throw new IllegalArgumentException("Cannot compare different process config types: " + processConfig1.processType() + " vs " + processConfig2.processType());
@@ -113,6 +108,17 @@ public class ProcessConfigService {
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
 
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
+    }
+
+    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+        return switch (entity) {
+            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
+        };
+    }
+
+    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
+        return toPersistedProcessConfig(entity).processConfig();
     }
 
     private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {

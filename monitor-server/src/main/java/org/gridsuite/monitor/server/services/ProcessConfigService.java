@@ -110,15 +110,15 @@ public class ProcessConfigService {
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
     }
 
-    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
         return switch (entity) {
             case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         };
     }
 
-    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
-        return toPersistedProcessConfig(entity).processConfig();
+    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+        return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
     }
 
     private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {

@@ -12,7 +12,6 @@ import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisRunParameters;
 import org.gridsuite.monitor.commons.ResultInfos;
-import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
@@ -24,7 +23,6 @@ import org.gridsuite.monitor.worker.server.services.SecurityAnalysisRestService;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -57,9 +55,8 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
                 .setReportNode(reportNode);
             SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), inputData.contingencies(), runParameters);
 
-            ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
+            ResultInfos resultInfos = context.getResultInfos();
             securityAnalysisRestService.saveResult(resultInfos.resultUUID(), saReport.getResult());
-            context.setResultInfos(resultInfos);
         } catch (Exception e) {
             reportNode.newReportNode()
                 .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)

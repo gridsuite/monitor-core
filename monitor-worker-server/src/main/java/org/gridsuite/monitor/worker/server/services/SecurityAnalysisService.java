@@ -8,8 +8,6 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -23,7 +21,6 @@ import java.util.UUID;
  */
 @Service
 public class SecurityAnalysisService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisService.class);
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -45,7 +42,6 @@ public class SecurityAnalysisService {
 
     public void saveResult(UUID resultUuid, SecurityAnalysisResult result) {
         Objects.requireNonNull(result);
-        LOGGER.info("Saving result {}", resultUuid);
 
         restClient.post()
             .uri("/results/{resultUuid}", resultUuid)

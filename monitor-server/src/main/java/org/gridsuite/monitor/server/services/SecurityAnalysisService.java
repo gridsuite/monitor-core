@@ -7,8 +7,6 @@
 package org.gridsuite.monitor.server.services;
 
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -22,7 +20,6 @@ import java.util.UUID;
  */
 @Service
 public class SecurityAnalysisService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisService.class);
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -43,8 +40,6 @@ public class SecurityAnalysisService {
     }
 
     public String getResult(UUID resultUuid) {
-        LOGGER.info("Fetching result {}", resultUuid);
-
         return restClient.get()
             .uri("/results/{resultUuid}/nmk-contingencies-result", resultUuid)
             .retrieve()
@@ -52,8 +47,6 @@ public class SecurityAnalysisService {
     }
 
     public void deleteResult(UUID resultUuid) {
-        LOGGER.info("Deleting result {}", resultUuid);
-
         var path = UriComponentsBuilder.fromPath("/results")
             .queryParam("resultsUuids", List.of(resultUuid))
             .build()

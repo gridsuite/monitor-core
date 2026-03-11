@@ -13,8 +13,6 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.NetworkFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
@@ -28,8 +26,6 @@ import java.util.UUID;
  */
 @Service
 public class NetworkConversionService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
-
     // We keep RestTemplate here since CaseDataSourceClient only accept RestTemplate for now
     private final RestTemplate caseServerRest;
 
@@ -39,8 +35,6 @@ public class NetworkConversionService {
     }
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
-        LOGGER.info("Creating network");
-
         CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerRest, caseUuid);
 
         Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());

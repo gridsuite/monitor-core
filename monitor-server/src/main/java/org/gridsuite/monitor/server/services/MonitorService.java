@@ -116,7 +116,7 @@ public class MonitorService {
     @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         executionRepository.findById(executionId).ifPresent(execution -> {
-            ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+            ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
             updateStep(execution, stepEntity);
             executionRepository.save(execution);
         });
@@ -126,15 +126,11 @@ public class MonitorService {
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         executionRepository.findById(executionId).ifPresent(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {
-                ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+                ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
                 updateStep(execution, stepEntity);
             });
             executionRepository.save(execution);
         });
-    }
-
-    private ProcessExecutionStepEntity toStepEntity(ProcessExecutionStep processExecutionStep) {
-        return processExecutionStepMapper.toEntity(processExecutionStep);
     }
 
     @Transactional(readOnly = true)

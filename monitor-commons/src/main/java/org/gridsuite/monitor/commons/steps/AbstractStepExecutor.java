@@ -51,7 +51,6 @@ public abstract class AbstractStepExecutor {
             String stepTypeName,
             int stepOrder,
             Instant startedAt,
-            UUID reportUuid,
             ReportInfos reportInfos,
             ResultInfos resultInfos,
             Runnable stepExecution
@@ -61,7 +60,7 @@ public abstract class AbstractStepExecutor {
                 .stepType(stepTypeName)
                 .stepOrder(stepOrder)
                 .status(StepStatus.RUNNING)
-                .reportId(reportUuid)
+                .reportId(reportInfos.reportUuid())
                 .startedAt(startedAt)
                 .build();
         stepStatusPublisher.updateStepStatus(processExecutionId, executionStep);
@@ -75,7 +74,7 @@ public abstract class AbstractStepExecutor {
                     stepTypeName,
                     stepOrder,
                     startedAt,
-                    reportUuid,
+                    reportInfos.reportUuid(),
                     resultInfos,
                     StepStatus.COMPLETED);
         } catch (Exception e) {
@@ -85,7 +84,7 @@ public abstract class AbstractStepExecutor {
                     stepTypeName,
                     stepOrder,
                     startedAt,
-                    reportUuid,
+                    reportInfos.reportUuid(),
                     resultInfos,
                     StepStatus.FAILED);
             throw e;

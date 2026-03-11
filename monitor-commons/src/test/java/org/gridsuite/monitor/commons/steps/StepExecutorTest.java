@@ -93,7 +93,6 @@ class StepExecutorTest {
                 "RUN_SECURITY_ANALYSIS",
                 2,
                 startedAt,
-                reportId,
                 reportInfos,
                 resultInfos,
                 executionCount::incrementAndGet);
@@ -163,7 +162,6 @@ class StepExecutorTest {
                         processExecutionId,
                         stepExecutionId,
                         startedAt,
-                        reportId,
                         reportInfos,
                         failingExecution));
 
@@ -228,7 +226,6 @@ class StepExecutorTest {
             UUID processExecutionId,
             UUID stepExecutionId,
             Instant startedAt,
-            UUID reportId,
             ReportInfos reportInfos,
             Runnable failingExecution
     ) {
@@ -238,7 +235,6 @@ class StepExecutorTest {
                 "FAILING_STEP",
                 3,
                 startedAt,
-                reportId,
                 reportInfos,
                 null,
                 failingExecution);

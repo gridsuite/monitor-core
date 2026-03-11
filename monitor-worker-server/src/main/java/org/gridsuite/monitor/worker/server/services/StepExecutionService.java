@@ -12,8 +12,6 @@ import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
-
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -39,7 +37,6 @@ public class StepExecutionService<C extends ProcessConfig> extends AbstractStepE
                 step.getType().getName(),
                 context.getStepOrder(),
                 context.getStartedAt(),
-                Objects.requireNonNull(context.getReportInfos()).reportUuid(),
                 context.getReportInfos(),
                 context.getResultInfos(),
                 () -> step.execute(context)

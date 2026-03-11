@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -304,18 +306,17 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void compareProcessConfigsShouldReturn400WhenDifferentTypes() throws Exception {
+    void compareProcessConfigsShouldThrowExceptionWhenDifferentTypes() throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
 
         when(processConfigService.compareProcessConfigs(any(), any()))
             .thenThrow(new IllegalArgumentException("Cannot compare different process config types"));
 
-        mockMvc.perform(get("/v1/process-configs/compare")
+        assertThrows(ServletException.class, () -> mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
                 .param("uuid2", uuid2.toString())
-                .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest());
+                .contentType(MediaType.APPLICATION_JSON)));
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }

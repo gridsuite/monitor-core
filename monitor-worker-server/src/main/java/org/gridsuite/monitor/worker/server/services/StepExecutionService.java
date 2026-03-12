@@ -49,12 +49,12 @@ public class StepExecutionService<C extends ProcessConfig> {
 
         try {
             step.execute(context);
-            reportService.sendReport(context.getReportInfos());
             updateStepStatus(context, StepStatus.COMPLETED, step);
         } catch (Exception e) {
-            reportService.sendReport(context.getReportInfos());
             updateStepStatus(context, StepStatus.FAILED, step);
             throw e;
+        } finally {
+            reportService.sendReport(context.getReportInfos());
         }
     }
 

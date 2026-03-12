@@ -31,8 +31,8 @@ import java.util.UUID;
 @Getter
 @Setter
 public class SecurityAnalysisConfigEntity extends ProcessConfigEntity {
-    @Column(name = "parameters_uuid")
-    private UUID parametersUuid;
+    @Column(name = "security_analysis_parameters_uuid")
+    private UUID securityAnalysisParametersUuid;
 
     @Column(name = "loadflow_parameters_uuid")
     private UUID loadflowParametersUuid;

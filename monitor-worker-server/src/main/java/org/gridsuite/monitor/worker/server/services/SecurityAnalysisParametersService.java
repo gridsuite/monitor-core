@@ -9,13 +9,13 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.contingency.Contingency;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.security.SecurityAnalysisParameters;
-import org.apache.commons.lang3.tuple.Pair;
 import org.gridsuite.actions.ContingencyListEvaluator;
-import org.gridsuite.actions.dto.contingency.PersistentContingencyList;
+import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.evaluation.ContingencyInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.springframework.stereotype.Service;
 
@@ -44,8 +44,8 @@ public class SecurityAnalysisParametersService {
         this.filterRestService = filterRestService;
     }
 
-    public Pair<SecurityAnalysisParameters, List<Contingency>> buildSecurityAnalysisInputData(UUID parametersUuid, UUID loadflowParametersUuid, String userId, Network network) {
-        SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestService.getParameters(parametersUuid, userId);
+    public SecurityAnalysisInputData buildSecurityAnalysisInputData(UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid, Network network) {
+        SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestService.getParameters(securityAnalysisParametersUuid);
         LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestService.getParameters(loadflowParametersUuid);
 
         SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues);
@@ -54,7 +54,8 @@ public class SecurityAnalysisParametersService {
         List<UUID> contingenciesListUuids = contingencyListInfos != null
             ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList()
             : List.of();
-        List<PersistentContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
+
+        List<AbstractContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
 
         List<Contingency> contingencyList = new ArrayList<>();
         ContingencyListEvaluator contingencyListEvaluator = new ContingencyListEvaluator(filterRestService);
@@ -68,7 +69,7 @@ public class SecurityAnalysisParametersService {
             contingencyList.addAll(contingencies);
         });
 
-        return Pair.of(securityAnalysisParameters, contingencyList);
+        return new SecurityAnalysisInputData(securityAnalysisParameters, contingencyList);
     }
 
     private static SecurityAnalysisParameters buildSecurityAnalysisParameters(LoadFlowParametersInfos loadFlowParametersInfos,

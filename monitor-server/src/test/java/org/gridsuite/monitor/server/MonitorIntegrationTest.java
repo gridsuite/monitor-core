@@ -103,14 +103,14 @@ class MonitorIntegrationTest {
                 UUID.randomUUID());
         UUID processConfigId = configService.createProcessConfig(securityAnalysisConfig);
 
-        UUID executionId = monitorService.executeProcess(caseUuid, userId, processConfigId, false);
+        Optional<UUID> executionId = monitorService.executeProcess(caseUuid, userId, processConfigId, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
         assertThat(sentMessage).isNotNull();
 
         // Verify execution persisted with correct initial state
-        ProcessExecutionEntity execution = executionRepository.findById(executionId).orElse(null);
+        ProcessExecutionEntity execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
         assertThat(execution.getSteps()).isEmpty();
@@ -130,7 +130,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId.get(), step0, MessageType.STEP_STATUS_UPDATE);
 
         // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
@@ -147,10 +147,10 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId.get(), step1, MessageType.STEP_STATUS_UPDATE);
 
         // Verify both steps were added to database with correct data
-        execution = executionRepository.findById(executionId).orElse(null);
+        execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution.getSteps()).hasSize(2);
         assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
@@ -169,10 +169,10 @@ class MonitorIntegrationTest {
                 .startedAt(startedAt)
                 .completedAt(completedAt)
                 .build();
-        sendMessage(executionId, finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
+        sendMessage(executionId.get(), finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
 
         // Verify final state persisted
-        execution = executionRepository.findById(executionId).orElse(null);
+        execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
         assertThat(execution.getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt.truncatedTo(ChronoUnit.MILLIS));
@@ -188,7 +188,7 @@ class MonitorIntegrationTest {
         when(reportService.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
-        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
+        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -217,7 +217,7 @@ class MonitorIntegrationTest {
         when(resultService.getResult(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS))).thenReturn(result1);
 
         // Test the results endpoint fetches correctly from database
-        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
+        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId.get()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -311,11 +311,11 @@ class MonitorIntegrationTest {
             .orElseThrow();
         SecurityAnalysisConfig retrievedSecurityAnalysisConfig2 = (SecurityAnalysisConfig) retrievedConfig2.processConfig();
 
-        assertThat(retrievedSecurityAnalysisConfig1.parametersUuid()).isEqualTo(parametersUuid1);
+        assertThat(retrievedSecurityAnalysisConfig1.securityAnalysisParametersUuid()).isEqualTo(parametersUuid1);
         assertThat(retrievedSecurityAnalysisConfig1.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid1);
         assertThat(retrievedSecurityAnalysisConfig1.modificationUuids()).isEqualTo(List.of(modificationUuid1));
 
-        assertThat(retrievedSecurityAnalysisConfig2.parametersUuid()).isEqualTo(parametersUuid2);
+        assertThat(retrievedSecurityAnalysisConfig2.securityAnalysisParametersUuid()).isEqualTo(parametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 

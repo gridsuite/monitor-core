@@ -8,19 +8,23 @@ package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -62,6 +66,12 @@ class MonitorServiceTest {
     @Mock
     private S3PathResolver s3PathResolver;
 
+    @Spy
+    private ProcessExecutionStepMapper processExecutionStepMapper = Mappers.getMapper(ProcessExecutionStepMapper.class);
+
+    @Spy
+    private ProcessExecutionMapper processExecutionMapper = Mappers.getMapper(ProcessExecutionMapper.class);
+
     @InjectMocks
     private MonitorService monitorService;
 
@@ -88,9 +98,9 @@ class MonitorServiceTest {
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
+        Optional<UUID> result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
 
-        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
         verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
@@ -104,9 +114,8 @@ class MonitorServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
-                result,
-                debugFileLocation,
-                userId
+                result.get(),
+                debugFileLocation
         );
         verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
     }

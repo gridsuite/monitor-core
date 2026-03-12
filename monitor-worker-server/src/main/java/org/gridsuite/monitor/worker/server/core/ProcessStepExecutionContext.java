@@ -11,8 +11,8 @@ import com.powsybl.iidm.network.Network;
 import lombok.Getter;
 import lombok.Setter;
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ReportInfos;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -69,10 +69,6 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
     public String getDebugFileLocation() {
         return processContext.getDebugFileLocation();
-    }
-
-    public String getUserId() {
-        return processContext.getUserId();
     }
 
     public void setNetwork(Network network) {

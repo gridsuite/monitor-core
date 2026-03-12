@@ -87,7 +87,7 @@ class SecurityAnalysisRestServiceTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(expectedParameters)));
 
-        SecurityAnalysisParametersValues result = securityAnalysisRestService.getParameters(PARAMETERS_UUID, "user1");
+        SecurityAnalysisParametersValues result = securityAnalysisRestService.getParameters(PARAMETERS_UUID);
 
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedParameters);
     }
@@ -99,7 +99,7 @@ class SecurityAnalysisRestServiceTest {
                 "http://security-analysis-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestService.getParameters(PARAMETERS_ERROR_UUID, "user1"))
+        assertThatThrownBy(() -> securityAnalysisRestService.getParameters(PARAMETERS_ERROR_UUID))
             .isInstanceOf(PowsyblException.class)
             .hasMessageContaining("Error retrieving security analysis parameters");
     }

@@ -8,23 +8,12 @@ package org.gridsuite.monitor.server.mapper;
 
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.mapstruct.Mapper;
 
 /**
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class ProcessExecutionMapper {
-    public static ProcessExecution toDto(ProcessExecutionEntity entity) {
-        return new ProcessExecution(
-            entity.getId(),
-            entity.getType(),
-            entity.getCaseUuid(),
-            entity.getProcessConfigId(),
-            entity.getStatus(),
-            entity.getExecutionEnvName(),
-            entity.getScheduledAt(),
-            entity.getStartedAt(),
-            entity.getCompletedAt(),
-            entity.getUserId());
-    }
+@Mapper(componentModel = "spring")
+public interface ProcessExecutionMapper {
+    ProcessExecution toDto(ProcessExecutionEntity entity);
 }

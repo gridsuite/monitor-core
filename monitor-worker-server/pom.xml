@@ -14,7 +14,7 @@
 
     <properties>
         <network-modification.version>0.61.0</network-modification.version>
-        <actions.version>0.4.0-SNAPSHOT</actions.version>
+        <actions.version>0.4.0</actions.version>
         <spring-cloud-aws-starter-s3>3.3.1</spring-cloud-aws-starter-s3>
     </properties>
 

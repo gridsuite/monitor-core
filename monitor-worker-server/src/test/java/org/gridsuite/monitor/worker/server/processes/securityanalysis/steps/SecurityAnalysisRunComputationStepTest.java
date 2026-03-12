@@ -13,11 +13,11 @@ import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisResult;
-import org.apache.commons.lang3.tuple.Pair;
-import org.gridsuite.monitor.commons.ReportInfos;
 import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.dto.ReportInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisRestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,9 +64,8 @@ class SecurityAnalysisRunComputationStepTest {
         runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, securityAnalysisParametersService);
 
         when(stepContext.getConfig()).thenReturn(config);
-        when(config.parametersUuid()).thenReturn(PARAMS_UUID);
+        when(config.securityAnalysisParametersUuid()).thenReturn(PARAMS_UUID);
         when(config.loadflowParametersUuid()).thenReturn(LOADFLOW_PARAMS_UUID);
-        when(stepContext.getUserId()).thenReturn("user1");
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -79,9 +78,9 @@ class SecurityAnalysisRunComputationStepTest {
     void executeRunSecurityAnalysis() {
         Network network = EurostagTutorialExample1Factory.create();
         Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
-        Pair<SecurityAnalysisParameters, List<Contingency>> inputData = Pair.of(new SecurityAnalysisParameters(), List.of(contingency));
+        SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency));
         when(stepContext.getNetwork()).thenReturn(network);
-        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, "user1", network))
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
             .thenReturn(inputData);
 
         runComputationStep.execute(stepContext);
@@ -89,7 +88,7 @@ class SecurityAnalysisRunComputationStepTest {
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
 
-        verify(securityAnalysisParametersService).buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, "user1", network);
+        verify(securityAnalysisParametersService).buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network);
         verify(securityAnalysisRestService).saveResult(
                 any(UUID.class),
                 any(SecurityAnalysisResult.class)

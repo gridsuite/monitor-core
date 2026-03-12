@@ -11,7 +11,7 @@ import com.powsybl.iidm.network.Network;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.external.adapter.NetworkConversionService;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

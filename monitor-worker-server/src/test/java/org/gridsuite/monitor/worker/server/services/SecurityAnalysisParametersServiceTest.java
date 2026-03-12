@@ -13,6 +13,10 @@ import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.loadflow.LoadFlowParameters;
 import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.contingency.IdBasedContingencyList;
+import org.gridsuite.monitor.worker.server.clients.ActionsRestClient;
+import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
+import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
+import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
@@ -40,22 +44,22 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SecurityAnalysisParametersServiceTest {
     @Mock
-    private SecurityAnalysisRestService securityAnalysisRestService;
+    private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     @Mock
-    private LoadFlowRestService loadFlowRestService;
+    private LoadFlowRestClient loadFlowRestClient;
 
     @Mock
-    private ActionsRestService actionsRestService;
+    private ActionsRestClient actionsRestClient;
 
     @Mock
-    private FilterRestService filterRestService;
+    private FilterRestClient filterRestClient;
 
     private SecurityAnalysisParametersService securityAnalysisParametersService;
 
     @BeforeEach
     void setUp() {
-        securityAnalysisParametersService = new SecurityAnalysisParametersService(securityAnalysisRestService, loadFlowRestService, actionsRestService, filterRestService);
+        securityAnalysisParametersService = new SecurityAnalysisParametersService(securityAnalysisRestClient, loadFlowRestClient, actionsRestClient, filterRestClient);
     }
 
     @Test
@@ -86,9 +90,9 @@ class SecurityAnalysisParametersServiceTest {
             new IdentifierContingencyList("c1", List.of(new IdBasedNetworkElementIdentifier("GEN", "c1"))));
         List<AbstractContingencyList> persistentContingencyList = List.of(idBasedContingencyList);
 
-        when(securityAnalysisRestService.getParameters(securityAnalysisParametersUuid)).thenReturn(securityAnalysisParametersValues);
-        when(loadFlowRestService.getParameters(loadflowParametersUuid)).thenReturn(loadFlowParametersInfos);
-        when(actionsRestService.getPersistentContingencyLists(contingencyListUuids)).thenReturn(persistentContingencyList);
+        when(securityAnalysisRestClient.getParameters(securityAnalysisParametersUuid)).thenReturn(securityAnalysisParametersValues);
+        when(loadFlowRestClient.getParameters(loadflowParametersUuid)).thenReturn(loadFlowParametersInfos);
+        when(actionsRestClient.getPersistentContingencyLists(contingencyListUuids)).thenReturn(persistentContingencyList);
 
         SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(securityAnalysisParametersUuid, loadflowParametersUuid, network);
 
@@ -98,8 +102,8 @@ class SecurityAnalysisParametersServiceTest {
         assertThat(inputData.contingencies().get(0).getElements()).hasSize(1);
         assertThat(inputData.contingencies().get(0).getElements().get(0).getId()).isEqualTo("GEN");
 
-        verify(securityAnalysisRestService, times(1)).getParameters(securityAnalysisParametersUuid);
-        verify(loadFlowRestService, times(1)).getParameters(loadflowParametersUuid);
-        verify(actionsRestService, times(1)).getPersistentContingencyLists(contingencyListUuids);
+        verify(securityAnalysisRestClient, times(1)).getParameters(securityAnalysisParametersUuid);
+        verify(loadFlowRestClient, times(1)).getParameters(loadflowParametersUuid);
+        verify(actionsRestClient, times(1)).getPersistentContingencyLists(contingencyListUuids);
     }
 }

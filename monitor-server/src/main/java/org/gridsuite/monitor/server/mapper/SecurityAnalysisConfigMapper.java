@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.server.mapper;
 
-import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.mapstruct.Mapper;
@@ -21,8 +20,7 @@ public interface SecurityAnalysisConfigMapper {
     @Mapping(target = "processType", expression = "java(dto.processType())")
     SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);
 
-    @Mapping(target = "processConfig", source = ".")
-    ProcessConfig toProcessConfigDto(SecurityAnalysisConfigEntity entity);
+    SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity dto);
 
     void updateEntityFromDto(SecurityAnalysisConfig dto, @MappingTarget SecurityAnalysisConfigEntity entity);
 }

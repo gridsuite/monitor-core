@@ -11,6 +11,7 @@ import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
+import org.gridsuite.monitor.server.dto.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
@@ -18,9 +19,7 @@ import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -85,7 +84,7 @@ public class ProcessConfigService {
 
     private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
         return switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+            case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         };
     }

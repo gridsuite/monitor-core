@@ -110,8 +110,7 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
-        // Verify report was NOT sent on failure
-        verify(reportService, never()).sendReport(any(ReportInfos.class));
+        verify(reportService).sendReport(any(ReportInfos.class));
     }
 
     @Test

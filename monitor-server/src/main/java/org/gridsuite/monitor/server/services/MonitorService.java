@@ -8,6 +8,8 @@ package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
@@ -32,6 +34,8 @@ import java.util.*;
  */
 @Service
 public class MonitorService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MonitorService.class);
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
@@ -93,7 +97,7 @@ public class MonitorService {
 
     @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
-        executionRepository.findById(executionId).ifPresent(execution -> {
+        executionRepository.findById(executionId).ifPresentOrElse(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {
                 execution.setExecutionEnvName(executionEnvName);
@@ -105,7 +109,7 @@ public class MonitorService {
                 execution.setCompletedAt(completedAt);
             }
             executionRepository.save(execution);
-        });
+        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
     }
 
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
@@ -124,22 +128,22 @@ public class MonitorService {
 
     @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
-        executionRepository.findById(executionId).ifPresent(execution -> {
+        executionRepository.findById(executionId).ifPresentOrElse(execution -> {
             ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
             updateStep(execution, stepEntity);
             executionRepository.save(execution);
-        });
+        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring step update", executionId));
     }
 
     @Transactional
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
-        executionRepository.findById(executionId).ifPresent(execution -> {
+        executionRepository.findById(executionId).ifPresentOrElse(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {
                 ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
                 updateStep(execution, stepEntity);
             });
             executionRepository.save(execution);
-        });
+        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring steps update", executionId));
     }
 
     @Transactional(readOnly = true)

@@ -106,11 +106,17 @@ public class ProcessConfigController {
     @Operation(summary = "Compare 2 process configs")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Comparison result returned"),
-        @ApiResponse(responseCode = "404", description = "One or both process configs are not found")})
+        @ApiResponse(responseCode = "404", description = "One or both process configs are not found"),
+        @ApiResponse(responseCode = "400", description = "Process configs are of different types")})
     public ResponseEntity<ProcessConfigComparison> compareProcessConfigs(
         @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
         @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {
-        Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
-        return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+
+        try {
+            Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
+            return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

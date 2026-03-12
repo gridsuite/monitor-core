@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -226,7 +224,8 @@ class ProcessConfigControllerTest {
     void compareProcessConfigsShouldReturnComparisonResult() throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
-        UUID parametersUuid = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
         List<UUID> modificationUuids = List.of(UUID.randomUUID());
 
         ProcessConfigComparison comparison = new ProcessConfigComparison(
@@ -235,8 +234,8 @@ class ProcessConfigControllerTest {
             true,
             List.of(
                 new ProcessConfigFieldComparison("modifications", true, modificationUuids, modificationUuids),
-                new ProcessConfigFieldComparison("securityAnalysisParameters", true, parametersUuid, parametersUuid),
-                new ProcessConfigFieldComparison("contingencies", true, List.of("contingency1"), List.of("contingency1"))
+                new ProcessConfigFieldComparison("securityAnalysisParameters", true, securityAnalysisParametersUuid, securityAnalysisParametersUuid),
+                new ProcessConfigFieldComparison("loadflowParameters", true, loadflowParametersUuid, loadflowParametersUuid)
             )
         );
 
@@ -307,17 +306,18 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void compareProcessConfigsShouldThrowExceptionWhenDifferentTypes() {
+    void compareProcessConfigsShouldReturn400WhenDifferentTypes() throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
 
         when(processConfigService.compareProcessConfigs(any(), any()))
             .thenThrow(new IllegalArgumentException("Cannot compare different process config types"));
 
-        assertThrows(ServletException.class, () -> mockMvc.perform(get("/v1/process-configs/compare")
+        mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
                 .param("uuid2", uuid2.toString())
-                .contentType(MediaType.APPLICATION_JSON)));
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }

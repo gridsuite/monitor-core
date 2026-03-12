@@ -129,22 +129,22 @@ public class ProcessConfigService {
             config2.modificationUuids()
         ));
 
-        // Compare parameters
-        boolean parametersIdentical = Objects.equals(config1.parametersUuid(), config2.parametersUuid());
+        // Compare security analysis parameters
+        boolean securityAnalysisParametersIdentical = Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid());
         differences.add(new ProcessConfigFieldComparison(
             "securityAnalysisParameters",
-            parametersIdentical,
-            config1.parametersUuid(),
-            config2.parametersUuid()
+            securityAnalysisParametersIdentical,
+            config1.securityAnalysisParametersUuid(),
+            config2.securityAnalysisParametersUuid()
         ));
 
-        // Compare contingencies
-        boolean contingenciesIdentical = Objects.equals(config1.contingencies(), config2.contingencies());
+        // Compare loadflow parameters
+        boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());
         differences.add(new ProcessConfigFieldComparison(
-            "contingencies",
-            contingenciesIdentical,
-            config1.contingencies(),
-            config2.contingencies()
+            "loadflowParameters",
+            loadflowParametersIdentical,
+            config1.loadflowParametersUuid(),
+            config2.loadflowParametersUuid()
         ));
 
         return differences;

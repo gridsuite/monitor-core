@@ -9,6 +9,8 @@ package org.gridsuite.monitor.server.services;
 import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
+import org.gridsuite.monitor.server.dto.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
@@ -203,5 +205,170 @@ class ProcessConfigServiceTest {
 
         verify(processConfigRepository).findAllByProcessType(ProcessType.SECURITY_ANALYSIS);
         assertThat(processConfigs).isEmpty();
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturnIdenticalWhenConfigsAreEqual() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        List<UUID> modificationUuids = List.of(UUID.randomUUID(), UUID.randomUUID());
+
+        SecurityAnalysisConfigEntity entity1 = new SecurityAnalysisConfigEntity();
+        entity1.setId(uuid1);
+        entity1.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid);
+        entity1.setModificationUuids(modificationUuids);
+        entity1.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        SecurityAnalysisConfigEntity entity2 = new SecurityAnalysisConfigEntity();
+        entity2.setId(uuid2);
+        entity2.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid);
+        entity2.setModificationUuids(modificationUuids);
+        entity2.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        when(processConfigRepository.findById(uuid1)).thenReturn(Optional.of(entity1));
+        when(processConfigRepository.findById(uuid2)).thenReturn(Optional.of(entity2));
+
+        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(uuid1, uuid2);
+
+        assertThat(result).isPresent();
+        ProcessConfigComparison comparison = result.get();
+        assertThat(comparison.processConfigUuid1()).isEqualTo(uuid1);
+        assertThat(comparison.processConfigUuid2()).isEqualTo(uuid2);
+        assertThat(comparison.identical()).isTrue();
+        assertThat(comparison.differences()).hasSize(3);
+        assertThat(comparison.differences()).allMatch(ProcessConfigFieldComparison::identical);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturnDifferencesWhenModificationsAreDifferent() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        List<UUID> modificationUuids1 = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<UUID> modificationUuids2 = List.of(UUID.randomUUID(), UUID.randomUUID());
+
+        SecurityAnalysisConfigEntity entity1 = new SecurityAnalysisConfigEntity();
+        entity1.setId(uuid1);
+        entity1.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid);
+        entity1.setModificationUuids(modificationUuids1);
+        entity1.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        SecurityAnalysisConfigEntity entity2 = new SecurityAnalysisConfigEntity();
+        entity2.setId(uuid2);
+        entity2.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid);
+        entity2.setModificationUuids(modificationUuids2);
+        entity2.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        when(processConfigRepository.findById(uuid1)).thenReturn(Optional.of(entity1));
+        when(processConfigRepository.findById(uuid2)).thenReturn(Optional.of(entity2));
+
+        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(uuid1, uuid2);
+
+        assertThat(result).isPresent();
+        ProcessConfigComparison comparison = result.get();
+        assertThat(comparison.identical()).isFalse();
+        assertThat(comparison.differences()).hasSize(3);
+
+        ProcessConfigFieldComparison modificationsComparison = comparison.differences().stream()
+            .filter(d -> "modifications".equals(d.field()))
+            .findFirst()
+            .orElseThrow();
+        assertThat(modificationsComparison.identical()).isFalse();
+        assertThat(modificationsComparison.value1()).isEqualTo(modificationUuids1);
+        assertThat(modificationsComparison.value2()).isEqualTo(modificationUuids2);
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturnDifferencesWhenParametersAreDifferent() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid1 = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid2 = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        List<UUID> modificationUuids = List.of(UUID.randomUUID());
+
+        SecurityAnalysisConfigEntity entity1 = new SecurityAnalysisConfigEntity();
+        entity1.setId(uuid1);
+        entity1.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid1);
+        entity1.setModificationUuids(modificationUuids);
+        entity1.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        SecurityAnalysisConfigEntity entity2 = new SecurityAnalysisConfigEntity();
+        entity2.setId(uuid2);
+        entity2.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid2);
+        entity2.setModificationUuids(modificationUuids);
+        entity2.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        when(processConfigRepository.findById(uuid1)).thenReturn(Optional.of(entity1));
+        when(processConfigRepository.findById(uuid2)).thenReturn(Optional.of(entity2));
+
+        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(uuid1, uuid2);
+
+        assertThat(result).isPresent();
+        ProcessConfigComparison comparison = result.get();
+        assertThat(comparison.identical()).isFalse();
+
+        ProcessConfigFieldComparison parametersComparison = comparison.differences().stream()
+            .filter(d -> "securityAnalysisParameters".equals(d.field()))
+            .findFirst()
+            .orElseThrow();
+        assertThat(parametersComparison.identical()).isFalse();
+        assertThat(parametersComparison.value1()).isEqualTo(securityAnalysisParametersUuid1);
+        assertThat(parametersComparison.value2()).isEqualTo(securityAnalysisParametersUuid2);
+    }
+
+    @Test
+    void compareProcessConfigsShouldDetectOrderDifferenceInModifications() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        UUID mod1 = UUID.randomUUID();
+        UUID mod2 = UUID.randomUUID();
+        List<UUID> modificationUuids1 = List.of(mod1, mod2);
+        List<UUID> modificationUuids2 = List.of(mod2, mod1); // Different order
+
+        SecurityAnalysisConfigEntity entity1 = new SecurityAnalysisConfigEntity();
+        entity1.setId(uuid1);
+        entity1.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid);
+        entity1.setModificationUuids(modificationUuids1);
+        entity1.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        SecurityAnalysisConfigEntity entity2 = new SecurityAnalysisConfigEntity();
+        entity2.setId(uuid2);
+        entity2.setSecurityAnalysisParametersUuid(securityAnalysisParametersUuid);
+        entity2.setModificationUuids(modificationUuids2);
+        entity2.setLoadflowParametersUuid(loadflowParametersUuid);
+
+        when(processConfigRepository.findById(uuid1)).thenReturn(Optional.of(entity1));
+        when(processConfigRepository.findById(uuid2)).thenReturn(Optional.of(entity2));
+
+        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(uuid1, uuid2);
+
+        assertThat(result).isPresent();
+        ProcessConfigComparison comparison = result.get();
+        assertThat(comparison.identical()).isFalse();
+
+        ProcessConfigFieldComparison modificationsComparison = comparison.differences().stream()
+            .filter(d -> "modifications".equals(d.field()))
+            .findFirst()
+            .orElseThrow();
+        assertThat(modificationsComparison.identical()).isFalse();
+    }
+
+    @Test
+    void compareProcessConfigsShouldReturnEmptyWhenOneConfigNotFound() {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        when(processConfigRepository.findById(uuid1)).thenReturn(Optional.empty());
+        when(processConfigRepository.findById(uuid2)).thenReturn(Optional.of(new SecurityAnalysisConfigEntity()));
+
+        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(uuid1, uuid2);
+
+        assertThat(result).isEmpty();
     }
 }

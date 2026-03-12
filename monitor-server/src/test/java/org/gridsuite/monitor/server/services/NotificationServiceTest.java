@@ -39,17 +39,19 @@ class NotificationServiceTest {
     private UUID caseUuid;
     private UUID parametersUuid;
     private UUID executionId;
+    private UUID loadflowParametersUuid;
 
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
         parametersUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
+        loadflowParametersUuid = UUID.randomUUID();
 
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                loadflowParametersUuid
         );
     }
 

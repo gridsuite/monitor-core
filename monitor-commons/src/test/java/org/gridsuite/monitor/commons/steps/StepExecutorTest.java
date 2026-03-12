@@ -168,8 +168,7 @@ class StepExecutorTest {
                         failingExecution));
 
         assertSame(failure, thrown);
-        assertTrue(executor.publishedReports()
-                .isEmpty());
+        assertEquals(List.of(reportInfos), executor.publishedReports());
         assertEquals(
                 2,
                 executor.publishedSteps()

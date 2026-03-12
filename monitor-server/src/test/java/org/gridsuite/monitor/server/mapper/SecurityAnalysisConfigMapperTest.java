@@ -28,15 +28,15 @@ class SecurityAnalysisConfigMapperTest {
     void toEntity() {
         SecurityAnalysisConfig dto = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("C1", "C2", "C3"),
-                List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),
+                UUID.randomUUID()
         );
 
         SecurityAnalysisConfigEntity entity = mapper.toEntity(dto);
 
         assertThat(entity).isNotNull();
-        assertThat(entity.getParametersUuid()).isEqualTo(dto.parametersUuid());
-        assertThat(entity.getContingencies()).isEqualTo(dto.contingencies());
+        assertThat(entity.getSecurityAnalysisParametersUuid()).isEqualTo(dto.securityAnalysisParametersUuid());
+        assertThat(entity.getLoadflowParametersUuid()).isEqualTo(dto.loadflowParametersUuid());
         assertThat(entity.getModificationUuids()).isEqualTo(dto.modificationUuids());
         assertThat(entity.getProcessType()).isEqualTo(dto.processType());
     }
@@ -45,7 +45,7 @@ class SecurityAnalysisConfigMapperTest {
     void entityToPersistedConfig() {
         SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity(
                 UUID.randomUUID(),
-                List.of("C1", "C2", "C3")
+                UUID.randomUUID()
         );
         entity.setId(UUID.randomUUID());
         entity.setModificationUuids(
@@ -59,8 +59,8 @@ class SecurityAnalysisConfigMapperTest {
 
         SecurityAnalysisConfig sac = (SecurityAnalysisConfig) persistedProcessConfig.processConfig();
 
-        assertThat(sac.parametersUuid()).isEqualTo(entity.getParametersUuid());
-        assertThat(sac.contingencies()).isEqualTo(entity.getContingencies());
+        assertThat(sac.securityAnalysisParametersUuid()).isEqualTo(entity.getSecurityAnalysisParametersUuid());
+        assertThat(sac.loadflowParametersUuid()).isEqualTo(entity.getLoadflowParametersUuid());
         assertThat(sac.modificationUuids()).isEqualTo(entity.getModificationUuids());
     }
 }

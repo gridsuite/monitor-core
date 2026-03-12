@@ -84,7 +84,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     private void applyModifications(List<UUID> modificationIds, Network network, ReportNode reportNode) {
         NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = networkModificationRestService.getModifications(modificationIds);
-        if (CollectionUtils.isNotEmpty(networkModificationsWithMissingInfo.missingCompositeModifications())) {
+        if (networkModificationsWithMissingInfo != null && CollectionUtils.isNotEmpty(networkModificationsWithMissingInfo.missingCompositeModifications())) {
             String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
 
             reportNode.newReportNode()

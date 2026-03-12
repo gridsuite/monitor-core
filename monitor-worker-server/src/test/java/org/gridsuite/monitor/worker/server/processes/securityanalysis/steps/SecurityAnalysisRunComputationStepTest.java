@@ -14,7 +14,6 @@ import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.commons.ReportInfos;
-import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.commons.ResultType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
@@ -32,6 +31,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,7 +58,6 @@ class SecurityAnalysisRunComputationStepTest {
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID LOADFLOW_PARAMS_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
-    private static final UUID RESULT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -73,9 +72,6 @@ class SecurityAnalysisRunComputationStepTest {
                 .withMessageTemplate("test")
                 .build());
         when(stepContext.getReportInfos()).thenReturn(reportInfos);
-
-        ResultInfos resultInfos = new ResultInfos(RESULT_UUID, ResultType.SECURITY_ANALYSIS);
-        when(stepContext.getResultInfos()).thenReturn(resultInfos);
     }
 
     @Test
@@ -97,5 +93,9 @@ class SecurityAnalysisRunComputationStepTest {
                 any(UUID.class),
                 any(SecurityAnalysisResult.class)
         );
+        verify(stepContext).setResultInfos(argThat(resultInfos ->
+                        resultInfos.resultUUID() != null &&
+                        resultInfos.resultType() == ResultType.SECURITY_ANALYSIS
+        ));
     }
 }

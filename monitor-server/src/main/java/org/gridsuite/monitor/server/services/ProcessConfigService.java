@@ -10,20 +10,16 @@ import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
-import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
 import org.gridsuite.monitor.server.dto.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -50,10 +46,7 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
-        return processConfigRepository.findById(processConfigUuid).flatMap(entity -> switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> Optional.of(securityAnalysisConfigMapper.toPersistedProcessConfigDto(sae));
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
-        });
+        return processConfigRepository.findById(processConfigUuid).map(this::toPersistedProcessConfig);
     }
 
     @Transactional
@@ -84,24 +77,33 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        List<ProcessConfigEntity> processConfigs = processConfigRepository.findAllByProcessType(processType);
-        return processConfigs.stream().map(entity -> switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toPersistedProcessConfigDto(sae);
+        return processConfigRepository.findAllByProcessType(processType).stream()
+                .map(this::toPersistedProcessConfig)
+                .toList();
+    }
+
+    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
+        return switch (entity) {
+            case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
-        }).toList();
+        };
+    }
+
+    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+        return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
     }
 
     @Transactional(readOnly = true)
     public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        Optional<PersistedProcessConfig> config1 = getProcessConfig(uuid1);
-        Optional<PersistedProcessConfig> config2 = getProcessConfig(uuid2);
+        Optional<ProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
+        Optional<ProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
 
-        if (config1.isEmpty() || config2.isEmpty()) {
+        if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
             return Optional.empty();
         }
 
-        ProcessConfig processConfig1 = config1.get().processConfig();
-        ProcessConfig processConfig2 = config2.get().processConfig();
+        ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1.get());
+        ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
 
         if (processConfig1.processType() != processConfig2.processType()) {
             throw new IllegalArgumentException("Cannot compare different process config types: " + processConfig1.processType() + " vs " + processConfig2.processType());

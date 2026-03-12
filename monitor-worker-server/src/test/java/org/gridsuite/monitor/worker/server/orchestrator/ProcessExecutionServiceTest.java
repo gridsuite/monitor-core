@@ -22,10 +22,7 @@ import org.gridsuite.monitor.worker.server.messaging.NotificationService;
 import org.gridsuite.monitor.worker.server.process.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.process.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.process.securityanalysis.steps.SecurityAnalysisRunComputationStep;
-import org.gridsuite.monitor.worker.server.services.FilterService;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
-import org.gridsuite.monitor.worker.server.services.S3Service;
+import org.gridsuite.monitor.worker.server.services.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -77,6 +74,9 @@ class ProcessExecutionServiceTest {
     @Mock
     private SecurityAnalysisRestClient securityAnalysisRestClient;
 
+    @Mock
+    private SecurityAnalysisParametersService securityAnalysisParametersService;
+
     private ProcessExecutionService processExecutionService;
 
     private LoadNetworkStep<ProcessConfig> loadNetworkStep;
@@ -97,7 +97,7 @@ class ProcessExecutionServiceTest {
 
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, s3Service, filterService);
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient, securityAnalysisParametersService);
     }
 
     @Test

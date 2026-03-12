@@ -109,16 +109,18 @@ class MonitorIntegrationTest {
         // Start process execution
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID()));
-        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig, false);
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID());
+        UUID processConfigId = configService.createProcessConfig(securityAnalysisConfig);
+
+        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigId, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
         assertThat(sentMessage).isNotNull();
 
         // Verify execution persisted with correct initial state
-        ProcessExecutionEntity execution = executionRepository.findById(executionId).orElse(null);
+        ProcessExecutionEntity execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
         assertThat(execution.getSteps()).isEmpty();
@@ -138,7 +140,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId.get(), step0, MessageType.STEP_STATUS_UPDATE);
 
         // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
@@ -155,10 +157,10 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId.get(), step1, MessageType.STEP_STATUS_UPDATE);
 
         // Verify both steps were added to database with correct data
-        execution = executionRepository.findById(executionId).orElse(null);
+        execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution.getSteps()).hasSize(2);
         assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
@@ -177,10 +179,10 @@ class MonitorIntegrationTest {
                 .startedAt(startedAt)
                 .completedAt(completedAt)
                 .build();
-        sendMessage(executionId, finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
+        sendMessage(executionId.get(), finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
 
         // Verify final state persisted
-        execution = executionRepository.findById(executionId).orElse(null);
+        execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
         assertThat(execution.getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt.truncatedTo(ChronoUnit.MILLIS));
@@ -196,7 +198,7 @@ class MonitorIntegrationTest {
         when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
-        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
+        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -225,7 +227,7 @@ class MonitorIntegrationTest {
         when(resultService.getResult(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS))).thenReturn(result1);
 
         // Test the results endpoint fetches correctly from database
-        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
+        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId.get()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -246,10 +248,12 @@ class MonitorIntegrationTest {
     void processConfigIT() {
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
+        UUID loadflowparametersUuid = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of("contingency1", "contingency2"),
-                List.of(modificationUuid)
+                List.of(modificationUuid),
+                loadflowparametersUuid
+
         );
         UUID configId = configService.createProcessConfig(securityAnalysisConfig);
         assertThat(processConfigRepository.findById(configId)).isNotEmpty();
@@ -260,10 +264,11 @@ class MonitorIntegrationTest {
 
         UUID updatedParametersUuid = UUID.randomUUID();
         UUID updatedModificationUuid = UUID.randomUUID();
+        UUID updatedLoadflowParametersUuid = UUID.randomUUID();
         SecurityAnalysisConfig updatedSecurityAnalysisConfig = new SecurityAnalysisConfig(
                 updatedParametersUuid,
-                List.of("contingency3", "contingency4"),
-                List.of(updatedModificationUuid)
+                List.of(updatedModificationUuid),
+                updatedLoadflowParametersUuid
         );
         boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
         assertThat(updated).isTrue();
@@ -280,21 +285,23 @@ class MonitorIntegrationTest {
     @Test
     void processConfigsIT() {
         UUID parametersUuid1 = UUID.randomUUID();
+        UUID loadFlowParametersUuid1 = UUID.randomUUID();
         UUID modificationUuid1 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
             parametersUuid1,
-            List.of("contingency1", "contingency2"),
-            List.of(modificationUuid1)
+            List.of(modificationUuid1),
+            loadFlowParametersUuid1
         );
         UUID configId1 = configService.createProcessConfig(securityAnalysisConfig1);
         assertThat(processConfigRepository.findById(configId1)).isNotEmpty();
 
         UUID parametersUuid2 = UUID.randomUUID();
+        UUID loadFlowParametersUuid2 = UUID.randomUUID();
         UUID modificationUuid2 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
             parametersUuid2,
-            List.of("contingency3", "contingency4"),
-            List.of(modificationUuid2)
+            List.of(modificationUuid2),
+            loadFlowParametersUuid2
         );
         UUID configId2 = configService.createProcessConfig(securityAnalysisConfig2);
         assertThat(processConfigRepository.findById(configId2)).isNotEmpty();
@@ -314,12 +321,12 @@ class MonitorIntegrationTest {
             .orElseThrow();
         SecurityAnalysisConfig retrievedSecurityAnalysisConfig2 = (SecurityAnalysisConfig) retrievedConfig2.processConfig();
 
-        assertThat(retrievedSecurityAnalysisConfig1.parametersUuid()).isEqualTo(parametersUuid1);
-        assertThat(retrievedSecurityAnalysisConfig1.contingencies()).isEqualTo(List.of("contingency1", "contingency2"));
+        assertThat(retrievedSecurityAnalysisConfig1.securityAnalysisParametersUuid()).isEqualTo(parametersUuid1);
+        assertThat(retrievedSecurityAnalysisConfig1.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid1);
         assertThat(retrievedSecurityAnalysisConfig1.modificationUuids()).isEqualTo(List.of(modificationUuid1));
 
-        assertThat(retrievedSecurityAnalysisConfig2.parametersUuid()).isEqualTo(parametersUuid2);
-        assertThat(retrievedSecurityAnalysisConfig2.contingencies()).isEqualTo(List.of("contingency3", "contingency4"));
+        assertThat(retrievedSecurityAnalysisConfig2.securityAnalysisParametersUuid()).isEqualTo(parametersUuid2);
+        assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
         boolean deleted = configService.deleteProcessConfig(configId1);

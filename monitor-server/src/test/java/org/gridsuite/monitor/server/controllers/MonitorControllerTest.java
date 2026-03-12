@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
@@ -16,6 +17,7 @@ import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,6 +59,9 @@ class MonitorControllerTest {
     @MockitoBean
     private ProcessExecutionService processExecutionService;
 
+    @MockitoBean
+    private ProcessConfigService processConfigService;
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @NullSource
@@ -65,21 +70,26 @@ class MonitorControllerTest {
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
         UUID executionId = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        UUID processConfigUuid = UUID.randomUUID();
+
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of("contingency1", "contingency2"),
-                List.of(modificationUuid)
+                List.of(modificationUuid),
+                loadflowParametersUuid
         );
+        PersistedProcessConfig persistedProcessConfig = new PersistedProcessConfig(processConfigUuid, config);
+
         boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
-        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue)))
-                .thenReturn(executionId);
+        when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
+        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
+                .thenReturn(Optional.of(executionId));
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
             .param("caseUuid", caseUuid.toString())
-            .header("userId", "user1")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(config));
+            .param("processConfigUuid", processConfigUuid.toString())
+            .header("userId", "user1");
 
         if (isDebug != null) {
             request.param("isDebug", isDebug.toString());
@@ -90,7 +100,25 @@ class MonitorControllerTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(SecurityAnalysisConfig.class), eq(expectedDebugValue));
+        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue));
+    }
+
+    @Test
+    void executeSecurityAnalysisWithConfigNotFoundShouldReturnError() throws Exception {
+        UUID caseUuid = UUID.randomUUID();
+        UUID processConfigUuid = UUID.randomUUID();
+
+        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false)).thenReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
+            .param("caseUuid", caseUuid.toString())
+            .param("processConfigUuid", processConfigUuid.toString())
+            .header("userId", "user1");
+
+        mockMvc.perform(request)
+            .andExpect(status().isNotFound());
+
+        verify(processExecutionService).executeProcess(caseUuid, "user1", processConfigUuid, false);
     }
 
     @Test
@@ -150,9 +178,9 @@ class MonitorControllerTest {
 
     @Test
     void getLaunchedProcesses() throws Exception {
-        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), "user1");
-        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, "user2");
-        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, "user3");
+        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, "user2");
+        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, "user3");
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 

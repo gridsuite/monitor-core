@@ -4,16 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.commons.types.processconfig;
+package org.gridsuite.monitor.worker.server.dto.report;
 
-import java.util.List;
+import com.powsybl.commons.report.ReportNode;
+
 import java.util.UUID;
 
 /**
- * @author Kamil MARUT {@literal <kamil.marut at rte-france.com>}
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-public interface ModifyingProcessConfig extends ProcessConfig {
-
-    List<UUID> modificationUuids();
-
-}
+public record ReportInfos(UUID reportUuid, ReportNode reportNode) { }

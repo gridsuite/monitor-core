@@ -9,7 +9,7 @@ package org.gridsuite.monitor.worker.server.messaging;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
-import org.gridsuite.monitor.worker.server.core.messaging.MonitorPublisher;
+import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -22,7 +22,7 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class NotificationService implements MonitorPublisher {
+public class NotificationService implements Notificator {
 
     private final StreamBridge updatePublisher;
     private static final String PROCESS_UPDATE_BINDING = "publishMonitorUpdate-out-0";

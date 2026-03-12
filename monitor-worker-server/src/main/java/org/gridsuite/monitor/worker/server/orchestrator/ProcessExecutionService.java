@@ -11,7 +11,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.core.messaging.MonitorPublisher;
+import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
@@ -34,12 +34,12 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
     private final StepExecutor stepExecutor;
-    private final MonitorPublisher notificationService;
+    private final Notificator notificationService;
     private final String executionEnvName;
 
     public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
                                    StepExecutor stepExecutor,
-                                   MonitorPublisher notificationService,
+                                   Notificator notificationService,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));

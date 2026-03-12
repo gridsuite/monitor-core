@@ -2,8 +2,10 @@ package org.gridsuite.monitor.worker.server.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +20,7 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
@@ -27,7 +28,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @RestClientTest(SecurityAnalysisRestClient.class)
 @ContextConfiguration(classes = {MonitorWorkerConfig.class, SecurityAnalysisRestClient.class})
 class SecurityAnalysisRestClientTest {
+
     private static final UUID RESULT_UUID = UUID.randomUUID();
+    private static final UUID PARAMETERS_UUID = UUID.randomUUID();
+    private static final UUID PARAMETERS_ERROR_UUID = UUID.randomUUID();
 
     @Autowired
     private SecurityAnalysisRestClient securityAnalysisRestClient;
@@ -63,5 +67,39 @@ class SecurityAnalysisRestClientTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> securityAnalysisRestClient.saveResult(RESULT_UUID, result)).isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void getParameters() throws JsonProcessingException {
+        SecurityAnalysisParametersValues expectedParameters = SecurityAnalysisParametersValues.builder()
+            .flowProportionalThreshold(0.1)
+            .lowVoltageProportionalThreshold(0.05)
+            .highVoltageProportionalThreshold(0.05)
+            .lowVoltageAbsoluteThreshold(10.0)
+            .highVoltageAbsoluteThreshold(10.0)
+            .build();
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(expectedParameters)));
+
+        SecurityAnalysisParametersValues result = securityAnalysisRestClient.getParameters(PARAMETERS_UUID);
+
+        assertThat(result).usingRecursiveComparison().isEqualTo(expectedParameters);
+    }
+
+    @Test
+    void getParametersNotFound() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
+            .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> securityAnalysisRestClient.getParameters(PARAMETERS_ERROR_UUID))
+            .isInstanceOf(PowsyblException.class)
+            .hasMessageContaining("Error retrieving security analysis parameters");
     }
 }

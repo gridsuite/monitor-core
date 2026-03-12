@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -22,6 +22,7 @@ import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionSte
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.services.S3RestService;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ public class ProcessExecutionService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
+    private final ProcessConfigService processConfigService;
     private final ReportRestClient reportRestClient;
     private final ResultService resultService;
     private final S3RestService s3RestService;
@@ -49,6 +51,7 @@ public class ProcessExecutionService {
 
     public ProcessExecutionService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
+                          ProcessConfigService processConfigService,
                           ReportRestClient reportRestClient,
                           ResultService resultService,
                           S3RestService s3RestService,
@@ -57,6 +60,7 @@ public class ProcessExecutionService {
                           ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
+        this.processConfigService = processConfigService;
         this.reportRestClient = reportRestClient;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
@@ -66,24 +70,30 @@ public class ProcessExecutionService {
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, boolean isDebug) {
+    public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
         UUID executionId = UUID.randomUUID();
-        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-            .id(executionId)
-            .type(processConfig.processType().name())
-            .caseUuid(caseUuid)
-            .status(ProcessStatus.SCHEDULED)
-            .scheduledAt(Instant.now())
-            .userId(userId)
-            .build();
-        if (isDebug) {
-            execution.setDebugFileLocation(s3PathResolver.toDebugLocation(processConfig.processType().name(), executionId));
+        Optional<PersistedProcessConfig> persistedProcessConfig = processConfigService.getProcessConfig(processConfigId);
+        if (persistedProcessConfig.isPresent()) {
+            ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+                .id(executionId)
+                .type(persistedProcessConfig.get().processConfig().processType().name())
+                .caseUuid(caseUuid)
+                .processConfigId(persistedProcessConfig.get().id())
+                .status(ProcessStatus.SCHEDULED)
+                .scheduledAt(Instant.now())
+                .userId(userId)
+                .build();
+            if (isDebug) {
+                execution.setDebugFileLocation(s3PathResolver.toDebugLocation(persistedProcessConfig.get().processConfig().processType().name(), executionId));
+            }
+            executionRepository.save(execution);
+
+            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
+
+            return Optional.of(execution.getId());
+        } else {
+            return Optional.empty();
         }
-        executionRepository.save(execution);
-
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), execution.getDebugFileLocation());
-
-        return execution.getId();
     }
 
     @Transactional

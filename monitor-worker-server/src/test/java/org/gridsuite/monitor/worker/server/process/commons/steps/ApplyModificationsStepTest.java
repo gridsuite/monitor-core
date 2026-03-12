@@ -13,10 +13,10 @@ import org.gridsuite.modification.dto.AttributeModification;
 import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
-import org.gridsuite.monitor.commons.types.report.ReportInfos;
-import org.gridsuite.monitor.commons.types.processconfig.ModifyingProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
@@ -30,7 +30,6 @@ import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,27 +57,30 @@ class ApplyModificationsStepTest {
     private S3Service s3Service;
 
     @Mock
-    private ModifyingProcessConfig config;
+    private ProcessConfig config;
 
-    private ApplyModificationsStep<ModifyingProcessConfig> applyModificationsStep;
+    private ApplyModificationsStep<ProcessConfig> applyModificationsStep;
 
     @Mock
-    private ProcessStepExecutionContext<ModifyingProcessConfig> stepContext;
+    private ProcessStepExecutionContext<ProcessConfig> stepContext;
 
     private static final UUID MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        when(stepContext.getConfig()).thenReturn(config);
-
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, s3Service, filterService);
+        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
+        when(stepContext.getConfig()).thenReturn(config);
+        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build());
+        when(stepContext.getReportInfos()).thenReturn(reportInfos);
     }
 
     @Test
-    void executeApplyModificationsWhenModificationUuidsNotEmpty() {
-        setUpReportInfos();
-        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
+    void executeApplyModifications() {
         String stepType = applyModificationsStep.getType().getName();
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
@@ -95,21 +97,7 @@ class ApplyModificationsStepTest {
     }
 
     @Test
-    void executeDoesNothingWhenModificationUuidsEmpty() {
-        when(config.modificationUuids()).thenReturn(Collections.emptyList());
-
-        applyModificationsStep.execute(stepContext);
-
-        verifyNoInteractions(networkModificationService);
-        verifyNoInteractions(networkModificationRestClient);
-        verifyNoInteractions(filterService);
-        verifyNoInteractions(s3Service);
-    }
-
-    @Test
     void executeApplyModificationsDebugOn() throws IOException {
-        setUpReportInfos();
-        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         String stepType = applyModificationsStep.getType().getName();
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
@@ -149,13 +137,5 @@ class ApplyModificationsStepTest {
         networkWriter.accept(mockedPath);
 
         verify(network).write("XIIDM", null, mockedPath);
-    }
-
-    private void setUpReportInfos() {
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
-                .withResourceBundles("i18n.reports")
-                .withMessageTemplate("test")
-                .build());
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
     }
 }

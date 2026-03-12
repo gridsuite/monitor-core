@@ -6,13 +6,17 @@
  */
 package org.gridsuite.monitor.server.entities.processconfig;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -27,14 +31,9 @@ import java.util.UUID;
 @Getter
 @Setter
 public class SecurityAnalysisConfigEntity extends ProcessConfigEntity {
-    @Column(name = "parameters_uuid")
-    private UUID parametersUuid;
+    @Column(name = "security_analysis_parameters_uuid")
+    private UUID securityAnalysisParametersUuid;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "security_analysis_contingencies",
-                    joinColumns = @JoinColumn(name = "security_analysis_config_id"),
-                    foreignKey = @ForeignKey(name = "SecurityAnalysisConfigEntity_contingencies_fk1"))
-    @Column(name = "contingency")
-    @OrderColumn(name = "pos_contingencies")
-    private List<String> contingencies;
+    @Column(name = "loadflow_parameters_uuid")
+    private UUID loadflowParametersUuid;
 }

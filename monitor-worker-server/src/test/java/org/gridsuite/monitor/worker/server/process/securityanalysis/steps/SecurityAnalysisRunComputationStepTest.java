@@ -7,14 +7,19 @@
 package org.gridsuite.monitor.worker.server.process.securityanalysis.steps;
 
 import com.powsybl.commons.report.ReportNode;
+import com.powsybl.contingency.Contingency;
+import com.powsybl.contingency.LineContingency;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisResult;
-import org.gridsuite.monitor.commons.types.report.ReportInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
+import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +45,9 @@ class SecurityAnalysisRunComputationStepTest {
     private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     @Mock
+    private SecurityAnalysisParametersService securityAnalysisParametersService;
+
+    @Mock
     private ProcessStepExecutionContext<SecurityAnalysisConfig> stepContext;
 
     @Mock
@@ -48,14 +56,16 @@ class SecurityAnalysisRunComputationStepTest {
     private SecurityAnalysisRunComputationStep runComputationStep;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
+    private static final UUID LOADFLOW_PARAMS_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient, securityAnalysisParametersService);
 
         when(stepContext.getConfig()).thenReturn(config);
-        when(config.parametersUuid()).thenReturn(PARAMS_UUID);
+        when(config.securityAnalysisParametersUuid()).thenReturn(PARAMS_UUID);
+        when(config.loadflowParametersUuid()).thenReturn(LOADFLOW_PARAMS_UUID);
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -67,13 +77,18 @@ class SecurityAnalysisRunComputationStepTest {
     @Test
     void executeRunSecurityAnalysis() {
         Network network = EurostagTutorialExample1Factory.create();
+        Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
+        SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency));
         when(stepContext.getNetwork()).thenReturn(network);
-        when(config.contingencies()).thenReturn(List.of("NHV1_NHV2_1", "NHV1_NHV2_2"));
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
+            .thenReturn(inputData);
 
         runComputationStep.execute(stepContext);
 
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
+
+        verify(securityAnalysisParametersService).buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network);
         verify(securityAnalysisRestClient).saveResult(
                 any(UUID.class),
                 any(SecurityAnalysisResult.class)

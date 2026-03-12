@@ -11,7 +11,7 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.modification.dto.ModificationInfos;
-import org.gridsuite.monitor.commons.types.processconfig.ModifyingProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
@@ -32,7 +32,7 @@ import java.util.UUID;
  *     @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Component
-public class ApplyModificationsStep<C extends ModifyingProcessConfig> extends AbstractProcessStep<C> {
+public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractProcessStep<C> {
 
     private final NetworkModificationService networkModificationService;
     private final NetworkModificationRestClient networkModificationRestClient;

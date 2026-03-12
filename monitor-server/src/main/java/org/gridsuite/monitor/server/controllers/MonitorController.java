@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
@@ -23,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -43,14 +43,15 @@ public class MonitorController {
 
     @PostMapping("/execute/security-analysis")
     @Operation(summary = "Execute a security analysis process")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started"),
+                           @ApiResponse(responseCode = "404", description = "Process config was not found")})
     public ResponseEntity<UUID> executeSecurityAnalysis(
-            @RequestParam UUID caseUuid,
+            @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
+            @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
-            @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, securityAnalysisConfig, isDebug);
-        return ResponseEntity.ok(executionId);
+        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+        return executionId.isPresent() ? ResponseEntity.ok(executionId.get()) : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/executions/{executionId}/reports")

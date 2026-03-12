@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import com.powsybl.commons.report.ReportNode;
-import org.gridsuite.monitor.commons.types.report.ReportInfos;
+import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -112,8 +112,7 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
-        // Verify report was NOT sent on failure
-        verify(reportRestClient, never()).sendReport(any(ReportInfos.class));
+        verify(reportRestClient).sendReport(any(ReportInfos.class));
     }
 
     @Test

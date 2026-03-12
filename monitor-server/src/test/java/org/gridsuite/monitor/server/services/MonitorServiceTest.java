@@ -8,19 +8,23 @@ package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportLog;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.dto.Severity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -48,6 +52,9 @@ class MonitorServiceTest {
     private NotificationService notificationService;
 
     @Mock
+    private ProcessConfigService processConfigService;
+
+    @Mock
     private ReportService reportService;
 
     @Mock
@@ -58,6 +65,12 @@ class MonitorServiceTest {
 
     @Mock
     private S3PathResolver s3PathResolver;
+
+    @Spy
+    private ProcessExecutionStepMapper processExecutionStepMapper = Mappers.getMapper(ProcessExecutionStepMapper.class);
+
+    @Spy
+    private ProcessExecutionMapper processExecutionMapper = Mappers.getMapper(ProcessExecutionMapper.class);
 
     @InjectMocks
     private MonitorService monitorService;
@@ -74,8 +87,8 @@ class MonitorServiceTest {
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID()
         );
     }
 
@@ -83,10 +96,12 @@ class MonitorServiceTest {
     void executeProcessCreateExecutionAndSendNotification() {
         String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
+        when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
-        UUID result = monitorService.executeProcess(caseUuid, userId, securityAnalysisConfig, true);
+        Optional<UUID> result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
 
-        assertThat(result).isNotNull();
+        assertThat(result).isNotEmpty();
+        verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
@@ -99,7 +114,7 @@ class MonitorServiceTest {
         verify(notificationService).sendProcessRunMessage(
                 caseUuid,
                 securityAnalysisConfig,
-                result,
+                result.get(),
                 debugFileLocation
         );
         verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
@@ -412,6 +427,7 @@ class MonitorServiceTest {
     void getLaunchedProcesses() {
         UUID execution1Uuid = UUID.randomUUID();
         UUID case1Uuid = UUID.randomUUID();
+        UUID config1Uuid = UUID.randomUUID();
         Instant scheduledAt1 = Instant.now().minusSeconds(60);
         Instant startedAt1 = Instant.now().minusSeconds(30);
         Instant completedAt1 = Instant.now();
@@ -419,6 +435,7 @@ class MonitorServiceTest {
             .id(execution1Uuid)
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case1Uuid)
+            .processConfigId(config1Uuid)
             .status(ProcessStatus.COMPLETED)
             .executionEnvName("env1")
             .scheduledAt(scheduledAt1)
@@ -429,12 +446,14 @@ class MonitorServiceTest {
 
         UUID execution2Uuid = UUID.randomUUID();
         UUID case2Uuid = UUID.randomUUID();
+        UUID config2Uuid = UUID.randomUUID();
         Instant scheduledAt2 = Instant.now().minusSeconds(90);
         Instant startedAt2 = Instant.now().minusSeconds(80);
         ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
             .id(execution2Uuid)
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case2Uuid)
+            .processConfigId(config2Uuid)
             .status(ProcessStatus.RUNNING)
             .executionEnvName("env2")
             .scheduledAt(scheduledAt2)
@@ -446,8 +465,8 @@ class MonitorServiceTest {
 
         List<ProcessExecution> result = monitorService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
 
-        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, "user1");
-        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, "user2");
+        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, "user2");
 
         assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
         verify(executionRepository).findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name());

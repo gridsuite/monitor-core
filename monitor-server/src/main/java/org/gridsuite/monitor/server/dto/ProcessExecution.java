@@ -22,6 +22,7 @@ public record ProcessExecution(
     UUID id,
     String type,
     UUID caseUuid,
+    UUID processConfigId,
     ProcessStatus status,
     String executionEnvName,
     Instant scheduledAt,

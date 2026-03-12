@@ -6,8 +6,10 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.security.SecurityAnalysisResult;
 import lombok.Setter;
+import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -27,8 +30,8 @@ import java.util.UUID;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @Service
-public class SecurityAnalysisService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisService.class);
+public class SecurityAnalysisRestService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityAnalysisRestService.class);
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -41,7 +44,7 @@ public class SecurityAnalysisService {
         return this.securityAnalysisServerBaseUri + DELIMITER + SA_API_VERSION + DELIMITER;
     }
 
-    public SecurityAnalysisService(
+    public SecurityAnalysisRestService(
         RestTemplateBuilder restTemplateBuilder,
         @Value("${gridsuite.services.security-analysis-server.base-uri:http://security-analysis-server/}") String securityAnalysisServerBaseUri) {
         this.securityAnalysisServerBaseUri = securityAnalysisServerBaseUri;
@@ -59,5 +62,23 @@ public class SecurityAnalysisService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         restTemplate.exchange(getSecurityAnalysisServerBaseUri() + path, HttpMethod.POST, new HttpEntity<>(result, headers), Void.class);
+    }
+
+    public SecurityAnalysisParametersValues getParameters(UUID securityAnalysisParametersUuid) {
+        LOGGER.info("Get security analysis parameters {}", securityAnalysisParametersUuid);
+
+        var path = securityAnalysisServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + SA_API_VERSION + DELIMITER + "parameters/{uuid}")
+            .buildAndExpand(securityAnalysisParametersUuid)
+            .toUriString();
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("userId", "user1");   // TODO : to remove after the fix that will remove the userId header when getting parameters
+            HttpEntity<?> requestEntity = new HttpEntity<>(headers);
+
+            return restTemplate.exchange(path, HttpMethod.GET, requestEntity, SecurityAnalysisParametersValues.class).getBody();
+        } catch (RestClientException e) {
+            throw new PowsyblException("Error retrieving security analysis parameters for UUID: " + securityAnalysisParametersUuid + " - " + e.getMessage(), e);
+        }
     }
 }

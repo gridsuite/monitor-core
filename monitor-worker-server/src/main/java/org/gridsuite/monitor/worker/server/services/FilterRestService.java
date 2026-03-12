@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.commons.PowsyblException;
+import org.gridsuite.actions.FilterProvider;
 import org.gridsuite.filter.AbstractFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -24,7 +25,7 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class FilterRestService {
+public class FilterRestService implements FilterProvider {
     private static final String FILTER_SERVER_API_VERSION = "v1";
 
     private static final String DELIMITER = "/";

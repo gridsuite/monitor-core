@@ -7,20 +7,20 @@
 package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.commons.ProcessConfig;
+import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
+import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
-import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
-import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,44 +39,60 @@ public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
+    private final ProcessConfigService processConfigService;
     private final ReportService reportService;
     private final ResultService resultService;
     private final S3RestService s3RestService;
     private final S3PathResolver s3PathResolver;
 
+    private final ProcessExecutionStepMapper processExecutionStepMapper;
+    private final ProcessExecutionMapper processExecutionMapper;
+
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
+                          ProcessConfigService processConfigService,
                           ReportService reportService,
                           ResultService resultService,
                           S3RestService s3RestService,
-                          S3PathResolver s3PathResolver) {
+                          S3PathResolver s3PathResolver,
+                          ProcessExecutionStepMapper processExecutionStepMapper,
+                          ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
+        this.processConfigService = processConfigService;
         this.reportService = reportService;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
         this.s3PathResolver = s3PathResolver;
+        this.processExecutionStepMapper = processExecutionStepMapper;
+        this.processExecutionMapper = processExecutionMapper;
     }
 
     @Transactional
-    public UUID executeProcess(UUID caseUuid, String userId, ProcessConfig processConfig, boolean isDebug) {
+    public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
         UUID executionId = UUID.randomUUID();
-        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-            .id(executionId)
-            .type(processConfig.processType().name())
-            .caseUuid(caseUuid)
-            .status(ProcessStatus.SCHEDULED)
-            .scheduledAt(Instant.now())
-            .userId(userId)
-            .build();
-        if (isDebug) {
-            execution.setDebugFileLocation(s3PathResolver.toDebugLocation(processConfig.processType().name(), executionId));
+        Optional<PersistedProcessConfig> persistedProcessConfig = processConfigService.getProcessConfig(processConfigId);
+        if (persistedProcessConfig.isPresent()) {
+            ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+                .id(executionId)
+                .type(persistedProcessConfig.get().processConfig().processType().name())
+                .caseUuid(caseUuid)
+                .processConfigId(persistedProcessConfig.get().id())
+                .status(ProcessStatus.SCHEDULED)
+                .scheduledAt(Instant.now())
+                .userId(userId)
+                .build();
+            if (isDebug) {
+                execution.setDebugFileLocation(s3PathResolver.toDebugLocation(persistedProcessConfig.get().processConfig().processType().name(), executionId));
+            }
+            executionRepository.save(execution);
+
+            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
+
+            return Optional.of(execution.getId());
+        } else {
+            return Optional.empty();
         }
-        executionRepository.save(execution);
-
-        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), execution.getDebugFileLocation());
-
-        return execution.getId();
     }
 
     @Transactional
@@ -106,23 +122,14 @@ public class MonitorService {
             .filter(s -> s.getId().equals(stepEntity.getId()))
             .findFirst()
             .ifPresentOrElse(
-                existingStep -> {
-                    existingStep.setStatus(stepEntity.getStatus());
-                    existingStep.setStepType(stepEntity.getStepType());
-                    existingStep.setStepOrder(stepEntity.getStepOrder());
-                    existingStep.setStartedAt(stepEntity.getStartedAt());
-                    existingStep.setCompletedAt(stepEntity.getCompletedAt());
-                    existingStep.setResultId(stepEntity.getResultId());
-                    existingStep.setResultType(stepEntity.getResultType());
-                    existingStep.setReportId(stepEntity.getReportId());
-                },
+                existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
                 () -> steps.add(stepEntity));
     }
 
     @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         executionRepository.findById(executionId).ifPresentOrElse(execution -> {
-            ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+            ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
             updateStep(execution, stepEntity);
             executionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring step update", executionId));
@@ -132,25 +139,11 @@ public class MonitorService {
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         executionRepository.findById(executionId).ifPresentOrElse(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {
-                ProcessExecutionStepEntity stepEntity = toStepEntity(processExecutionStep);
+                ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
                 updateStep(execution, stepEntity);
             });
             executionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring steps update", executionId));
-    }
-
-    private ProcessExecutionStepEntity toStepEntity(ProcessExecutionStep processExecutionStep) {
-        return ProcessExecutionStepEntity.builder()
-                .id(processExecutionStep.getId())
-                .stepType(processExecutionStep.getStepType())
-                .stepOrder(processExecutionStep.getStepOrder())
-                .status(processExecutionStep.getStatus())
-                .resultId(processExecutionStep.getResultId())
-                .resultType(processExecutionStep.getResultType())
-                .reportId(processExecutionStep.getReportId())
-                .startedAt(processExecutionStep.getStartedAt())
-                .completedAt(processExecutionStep.getCompletedAt())
-                .build();
     }
 
     @Transactional(readOnly = true)
@@ -204,7 +197,7 @@ public class MonitorService {
     @Transactional(readOnly = true)
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
-            .map(ProcessExecutionMapper::toDto).toList();
+            .map(processExecutionMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -212,7 +205,7 @@ public class MonitorService {
         Optional<ProcessExecutionEntity> entity = executionRepository.findById(executionId);
         if (entity.isPresent()) {
             return entity.map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
-                .map(ProcessExecutionStepMapper::toDto)
+                .map(processExecutionStepMapper::toDto)
                 .toList());
         } else {
             return Optional.empty();

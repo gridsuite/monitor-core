@@ -24,3 +24,7 @@ gridsuite:
       base-uri: http://localhost:5007
     filter-server:
       base-uri: http://localhost:5027
+    load-flow-server:
+      base-uri: http://localhost:5008
+    actions-server:
+      base-uri: http://localhost:5022

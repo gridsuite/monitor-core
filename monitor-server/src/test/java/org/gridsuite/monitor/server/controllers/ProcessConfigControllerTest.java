@@ -54,8 +54,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                UUID.randomUUID()
         );
 
         when(processConfigService.createProcessConfig(any(ProcessConfig.class)))
@@ -76,9 +76,10 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         PersistedProcessConfig securityAnalysisConfig = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
         ));
+
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -112,8 +113,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
         );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
@@ -132,8 +133,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
         );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
@@ -178,13 +179,13 @@ class ProcessConfigControllerTest {
         List<PersistedProcessConfig> securityAnalysisConfigs = List.of(
             new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                UUID.randomUUID()
             )),
             new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency3", "contingency4"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID()
             ))
         );
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);

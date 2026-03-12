@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.server.mappers.processconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.junit.jupiter.api.Test;
@@ -39,28 +38,5 @@ class SecurityAnalysisConfigMapperTest {
         assertThat(entity.getLoadflowParametersUuid()).isEqualTo(dto.loadflowParametersUuid());
         assertThat(entity.getModificationUuids()).isEqualTo(dto.modificationUuids());
         assertThat(entity.getProcessType()).isEqualTo(dto.processType());
-    }
-
-    @Test
-    void entityToPersistedConfig() {
-        SecurityAnalysisConfigEntity entity = new SecurityAnalysisConfigEntity(
-                UUID.randomUUID(),
-                UUID.randomUUID()
-        );
-        entity.setId(UUID.randomUUID());
-        entity.setModificationUuids(
-                List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
-        );
-
-        PersistedProcessConfig persistedProcessConfig = mapper.toPersistedProcessConfigDto(entity);
-
-        assertThat(persistedProcessConfig).isNotNull();
-        assertThat(persistedProcessConfig.id()).isEqualTo(entity.getId());
-
-        SecurityAnalysisConfig sac = (SecurityAnalysisConfig) persistedProcessConfig.processConfig();
-
-        assertThat(sac.securityAnalysisParametersUuid()).isEqualTo(entity.getSecurityAnalysisParametersUuid());
-        assertThat(sac.loadflowParametersUuid()).isEqualTo(entity.getLoadflowParametersUuid());
-        assertThat(sac.modificationUuids()).isEqualTo(entity.getModificationUuids());
     }
 }

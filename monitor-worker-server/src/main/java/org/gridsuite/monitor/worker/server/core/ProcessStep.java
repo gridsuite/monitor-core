@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.worker.server.core;
 
 import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ResultInfos;
 
 import java.util.UUID;
 
@@ -21,8 +20,4 @@ public interface ProcessStep<C extends ProcessConfig> {
     UUID getId();
 
     void execute(ProcessStepExecutionContext<C> context);
-
-    default ResultInfos createResultInfos() {
-        return null;
-    }
 }

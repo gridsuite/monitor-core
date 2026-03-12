@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.core;
 import com.powsybl.iidm.network.Network;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ResultInfos;
-import org.gridsuite.monitor.commons.ResultType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -45,8 +44,6 @@ class ProcessStepExecutionContextTest {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         UUID stepExecutionId = UUID.randomUUID();
-        ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-
         when(stepType.getName()).thenReturn("test-step");
         when(processContext.getExecutionId()).thenReturn(executionId);
         when(processContext.getCaseUuid()).thenReturn(caseUuid);
@@ -54,7 +51,7 @@ class ProcessStepExecutionContextTest {
         when(processContext.getConfig()).thenReturn(config);
         when(processContext.getDebugFileLocation()).thenReturn("debug/file/location");
 
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepExecutionId, stepOrder, resultInfos);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepExecutionId, stepOrder);
 
         assertThat(stepContext.getStepExecutionId()).isEqualTo(stepExecutionId);
         assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);
@@ -64,7 +61,6 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
         assertThat(stepContext.getReportInfos()).isNotNull();
-        assertThat(stepContext.getResultInfos()).isEqualTo(resultInfos);
         assertThat(stepContext.getReportInfos().reportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
         assertThat(stepContext.getCaseUuid()).isEqualTo(caseUuid);
@@ -77,7 +73,7 @@ class ProcessStepExecutionContextTest {
         int stepOrder = 1;
         UUID stepId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepId, stepOrder, null);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepId, stepOrder);
 
         Network newNetwork = mock(Network.class);
         stepContext.setNetwork(newNetwork);

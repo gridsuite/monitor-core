@@ -2,7 +2,6 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.commons.PowsyblException;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
@@ -16,6 +15,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 
 import java.util.UUID;
@@ -83,6 +83,7 @@ class SecurityAnalysisRestServiceTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
                 "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID))
+            .andExpect(MockRestRequestMatchers.header("userId", "user1"))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(expectedParameters)));
@@ -97,10 +98,10 @@ class SecurityAnalysisRestServiceTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
                 "http://security-analysis-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
+            .andExpect(MockRestRequestMatchers.header("userId", "user1"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> securityAnalysisRestService.getParameters(PARAMETERS_ERROR_UUID))
-            .isInstanceOf(PowsyblException.class)
-            .hasMessageContaining("Error retrieving security analysis parameters");
+            .isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
 }

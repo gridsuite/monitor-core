@@ -105,10 +105,17 @@ class ApplyModificationsStepTest {
         String stepType = applyModificationsStep.getType().getName();
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
+        List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of(MISSING_MODIFICATION_UUID));
+
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
+        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
 
         assertThrows(RuntimeException.class, () -> applyModificationsStep.execute(stepContext));
+        verify(networkModificationRestService).getModifications(any(List.class));
+        verify(networkModificationService, never()).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
     }
 
     @Test

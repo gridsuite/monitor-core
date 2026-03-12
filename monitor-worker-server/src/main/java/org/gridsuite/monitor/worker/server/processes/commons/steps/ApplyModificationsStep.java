@@ -15,6 +15,7 @@ import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
+import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.*;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.stereotype.Component;
@@ -87,10 +88,11 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
             String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
 
             reportNode.newReportNode()
-                    .withMessageTemplate("monitor.worker.server.modifications.error")
-                    .withUntypedValue("uuids", missingUuids)
-                     .withSeverity(TypedValue.ERROR_SEVERITY)
-                    .add();
+                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
+                .withMessageTemplate("monitor.worker.server.modifications.error")
+                .withUntypedValue("uuids", missingUuids)
+                .withSeverity(TypedValue.ERROR_SEVERITY)
+                .add();
             throw new PowsyblException("Some network composite modifications are missing !!");
         }
         networkModificationService.applyModifications(network, networkModificationsWithMissingInfo.networkModifications(), reportNode, filterService);

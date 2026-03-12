@@ -15,8 +15,8 @@ import java.util.UUID;
 public record SecurityAnalysisConfig(
     UUID securityAnalysisParametersUuid,
     List<UUID> modificationUuids,
-    UUID loadflowParametersUuid) implements ModifyingProcessConfig {
-
+    UUID loadflowParametersUuid
+) implements ProcessConfig {
     @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;

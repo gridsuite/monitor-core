@@ -54,6 +54,7 @@ public class SecurityAnalysisParametersService {
         List<UUID> contingenciesListUuids = contingencyListInfos != null
             ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList()
             : List.of();
+
         List<AbstractContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
 
         List<Contingency> contingencyList = new ArrayList<>();

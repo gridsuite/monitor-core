@@ -15,6 +15,7 @@ import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +28,12 @@ import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -62,18 +65,19 @@ class ApplyModificationsStepTest {
     private ProcessStepExecutionContext<ProcessConfig> stepContext;
 
     private static final UUID MODIFICATION_UUID = UUID.randomUUID();
+    private static final UUID MISSING_MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
+    private ReportInfos reportInfos;
 
     @BeforeEach
     void setUp() {
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
         when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         when(stepContext.getConfig()).thenReturn(config);
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+        reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
                 .build());
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
     }
 
     @Test
@@ -82,10 +86,12 @@ class ApplyModificationsStepTest {
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
         List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of());
 
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
-        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(modificationInfos);
+        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
         doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
         applyModificationsStep.execute(stepContext);
@@ -94,15 +100,48 @@ class ApplyModificationsStepTest {
     }
 
     @Test
+    void executeApplyModificationsFailWhenModificationsAreMissing() {
+        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID, MISSING_MODIFICATION_UUID));
+        String stepType = applyModificationsStep.getType().getName();
+        assertEquals("APPLY_MODIFICATIONS", stepType);
+
+        List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of(MISSING_MODIFICATION_UUID));
+
+        Network network = EurostagTutorialExample1Factory.create();
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
+
+        assertThrows(RuntimeException.class, () -> applyModificationsStep.execute(stepContext));
+        verify(networkModificationRestService).getModifications(any(List.class));
+        verify(networkModificationService, never()).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
+    }
+
+    @Test
+    void executeDoesNothingWhenModificationUuidsEmpty() {
+        when(config.modificationUuids()).thenReturn(Collections.emptyList());
+
+        applyModificationsStep.execute(stepContext);
+
+        verifyNoInteractions(networkModificationService);
+        verifyNoInteractions(networkModificationRestService);
+        verifyNoInteractions(filterService);
+        verifyNoInteractions(s3Service);
+    }
+
+    @Test
     void executeApplyModificationsDebugOn() throws IOException {
         String stepType = applyModificationsStep.getType().getName();
         assertEquals("APPLY_MODIFICATIONS", stepType);
 
         List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of());
 
         Network network = mock(Network.class);
         when(stepContext.getNetwork()).thenReturn(network);
-        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(modificationInfos);
+        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
         doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
         // --- mock data specific to debug behaviour ---

@@ -8,14 +8,13 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.gridsuite.modification.dto.ModificationInfos;
+import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,18 +35,17 @@ public class NetworkModificationRestService {
         this.networkModificationServerBaseUri = networkModificationServerBaseUri;
     }
 
-    public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
+    public NetworkModificationsWithMissingInfo getModifications(List<UUID> modificationsUuids) {
         if (CollectionUtils.isNotEmpty(modificationsUuids)) {
             String path = this.networkModificationServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
-                    "network-composite-modifications" + DELIMITER + "network-modifications")
+                    "network-composite-modifications" + DELIMITER + "network-modifications-with-missing-info")
                 .queryParam("uuids", modificationsUuids.toArray())
                 .queryParam("onlyMetadata", "false")
                 .buildAndExpand()
                 .toUriString();
-            ModificationInfos[] modificationInfos = networkModificationServerRest.getForObject(path, ModificationInfos[].class);
-            return modificationInfos != null ? Arrays.asList(modificationInfos) : List.of();
+            return networkModificationServerRest.getForObject(path, NetworkModificationsWithMissingInfo.class);
         } else {
-            return List.of();
+            return new NetworkModificationsWithMissingInfo(List.of(), List.of());
         }
     }
 }

@@ -10,18 +10,15 @@ import org.gridsuite.monitor.commons.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
-import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.server.entities.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mapper.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,16 +28,18 @@ import java.util.UUID;
 @Service
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
+    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
         this.processConfigRepository = processConfigRepository;
+        this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
     }
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
         switch (processConfig) {
             case SecurityAnalysisConfig sac -> {
-                return processConfigRepository.save(SecurityAnalysisConfigMapper.toEntity(sac)).getId();
+                return processConfigRepository.save(securityAnalysisConfigMapper.toEntity(sac)).getId();
             }
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         }
@@ -60,7 +59,7 @@ public class ProcessConfigService {
                 }
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
-                        SecurityAnalysisConfigMapper.update((SecurityAnalysisConfigEntity) entity, sac);
+                        securityAnalysisConfigMapper.updateEntityFromDto(sac, (SecurityAnalysisConfigEntity) entity);
                     default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
                 return true;
@@ -80,8 +79,19 @@ public class ProcessConfigService {
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
         return processConfigRepository.findAllByProcessType(processType).stream()
-            .map(this::toPersistedProcessConfig)
-            .toList();
+                .map(this::toPersistedProcessConfig)
+                .toList();
+    }
+
+    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
+        return switch (entity) {
+            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
+        };
+    }
+
+    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+        return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
     }
 
     @Transactional(readOnly = true)
@@ -110,17 +120,6 @@ public class ProcessConfigService {
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
     }
 
-    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
-        return switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> SecurityAnalysisConfigMapper.toDto(sae);
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
-        };
-    }
-
-    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
-        return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
-    }
-
     private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
         List<ProcessConfigFieldComparison> differences = new ArrayList<>();
 
@@ -133,22 +132,22 @@ public class ProcessConfigService {
             config2.modificationUuids()
         ));
 
-        // Compare parameters
-        boolean parametersIdentical = Objects.equals(config1.parametersUuid(), config2.parametersUuid());
+        // Compare security analysis parameters
+        boolean securityAnalysisParametersIdentical = Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid());
         differences.add(new ProcessConfigFieldComparison(
             "securityAnalysisParameters",
-            parametersIdentical,
-            config1.parametersUuid(),
-            config2.parametersUuid()
+            securityAnalysisParametersIdentical,
+            config1.securityAnalysisParametersUuid(),
+            config2.securityAnalysisParametersUuid()
         ));
 
-        // Compare contingencies
-        boolean contingenciesIdentical = Objects.equals(config1.contingencies(), config2.contingencies());
+        // Compare loadflow parameters
+        boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());
         differences.add(new ProcessConfigFieldComparison(
-            "contingencies",
-            contingenciesIdentical,
-            config1.contingencies(),
-            config2.contingencies()
+            "loadflowParameters",
+            loadflowParametersIdentical,
+            config1.loadflowParametersUuid(),
+            config2.loadflowParametersUuid()
         ));
 
         return differences;

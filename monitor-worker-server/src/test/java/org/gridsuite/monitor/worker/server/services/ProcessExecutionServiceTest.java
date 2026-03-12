@@ -63,7 +63,10 @@ class ProcessExecutionServiceTest {
     private S3Service s3Service;
 
     @Mock
-    private SecurityAnalysisService securityAnalysisService;
+    private SecurityAnalysisRestService securityAnalysisRestService;
+
+    @Mock
+    private SecurityAnalysisParametersService securityAnalysisParametersService;
 
     private ProcessExecutionService processExecutionService;
 
@@ -84,7 +87,7 @@ class ProcessExecutionServiceTest {
 
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisService);
+        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, securityAnalysisParametersService);
     }
 
     @Test

@@ -56,8 +56,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                UUID.randomUUID()
         );
 
         when(processConfigService.createProcessConfig(any(ProcessConfig.class)))
@@ -78,9 +78,10 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         PersistedProcessConfig securityAnalysisConfig = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
         ));
+
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfig);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -114,8 +115,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
         );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
@@ -134,8 +135,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of("contingency1", "contingency2"),
-            List.of(UUID.randomUUID(), UUID.randomUUID())
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
         );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
@@ -180,13 +181,13 @@ class ProcessConfigControllerTest {
         List<PersistedProcessConfig> securityAnalysisConfigs = List.of(
             new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency1", "contingency2"),
-                List.of(UUID.randomUUID(), UUID.randomUUID())
+                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                UUID.randomUUID()
             )),
             new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
                 UUID.randomUUID(),
-                List.of("contingency3", "contingency4"),
-                List.of(UUID.randomUUID())
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID()
             ))
         );
         String expectedJson = objectMapper.writeValueAsString(securityAnalysisConfigs);
@@ -223,7 +224,8 @@ class ProcessConfigControllerTest {
     void compareProcessConfigsShouldReturnComparisonResult() throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
-        UUID parametersUuid = UUID.randomUUID();
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
         List<UUID> modificationUuids = List.of(UUID.randomUUID());
 
         ProcessConfigComparison comparison = new ProcessConfigComparison(
@@ -232,8 +234,8 @@ class ProcessConfigControllerTest {
             true,
             List.of(
                 new ProcessConfigFieldComparison("modifications", true, modificationUuids, modificationUuids),
-                new ProcessConfigFieldComparison("securityAnalysisParameters", true, parametersUuid, parametersUuid),
-                new ProcessConfigFieldComparison("contingencies", true, List.of("contingency1"), List.of("contingency1"))
+                new ProcessConfigFieldComparison("securityAnalysisParameters", true, securityAnalysisParametersUuid, securityAnalysisParametersUuid),
+                new ProcessConfigFieldComparison("loadflowParameters", true, loadflowParametersUuid, loadflowParametersUuid)
             )
         );
 
@@ -315,7 +317,7 @@ class ProcessConfigControllerTest {
                 .param("uuid1", uuid1.toString())
                 .param("uuid2", uuid2.toString())
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest());
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }

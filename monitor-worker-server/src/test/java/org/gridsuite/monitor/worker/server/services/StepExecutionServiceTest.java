@@ -9,11 +9,11 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.ReportInfos;
 import org.gridsuite.monitor.commons.StepStatus;
 import org.gridsuite.monitor.worker.server.core.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.ProcessStepType;
+import org.gridsuite.monitor.worker.server.dto.ReportInfos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,8 +110,7 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
-        // Verify report was NOT sent on failure
-        verify(reportService, never()).sendReport(any(ReportInfos.class));
+        verify(reportService).sendReport(any(ReportInfos.class));
     }
 
     @Test

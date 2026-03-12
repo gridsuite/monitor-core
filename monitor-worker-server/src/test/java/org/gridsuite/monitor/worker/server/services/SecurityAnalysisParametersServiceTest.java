@@ -93,9 +93,9 @@ class SecurityAnalysisParametersServiceTest {
         SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(securityAnalysisParametersUuid, loadflowParametersUuid, network);
 
         assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters()).usingRecursiveComparison().isEqualTo(loadFlowParametersInfos.getCommonParameters());
-        assertThat(inputData.contingencies().size()).isEqualTo(1);
+        assertThat(inputData.contingencies()).hasSize(1);
         assertThat(inputData.contingencies().get(0).getId()).isEqualTo("c1");
-        assertThat(inputData.contingencies().get(0).getElements().size()).isEqualTo(1);
+        assertThat(inputData.contingencies().get(0).getElements()).hasSize(1);
         assertThat(inputData.contingencies().get(0).getElements().get(0).getId()).isEqualTo("GEN");
 
         verify(securityAnalysisRestService, times(1)).getParameters(securityAnalysisParametersUuid);

@@ -100,7 +100,7 @@ class MonitorServiceTest {
 
         Optional<UUID> result = monitorService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
 
-        assertThat(result.isPresent());
+        assertThat(result).isNotEmpty();
         verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&

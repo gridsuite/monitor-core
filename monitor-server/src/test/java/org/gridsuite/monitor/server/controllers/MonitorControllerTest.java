@@ -110,7 +110,7 @@ class MonitorControllerTest {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(monitorService.executeProcess(eq(caseUuid), eq("user1"), eq(processConfigUuid), eq(false))).thenReturn(Optional.empty());
+        when(monitorService.executeProcess(caseUuid, "user1", processConfigUuid, false)).thenReturn(Optional.empty());
 
         MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
             .param("caseUuid", caseUuid.toString())
@@ -120,7 +120,7 @@ class MonitorControllerTest {
         mockMvc.perform(request)
             .andExpect(status().isNotFound());
 
-        verify(monitorService).executeProcess(eq(caseUuid), eq("user1"), eq(processConfigUuid), eq(false));
+        verify(monitorService).executeProcess(caseUuid, "user1", processConfigUuid, false);
     }
 
     @Test

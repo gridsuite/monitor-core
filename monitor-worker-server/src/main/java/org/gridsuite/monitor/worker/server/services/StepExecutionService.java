@@ -45,5 +45,4 @@ public class StepExecutionService<C extends ProcessConfig> extends AbstractStepE
                 () -> step.execute(context)
         );
     }
-
 }

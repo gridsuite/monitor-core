@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.commons.PowsyblException;
 import com.powsybl.iidm.network.IdentifiableType;
 import org.gridsuite.actions.dto.EquipmentTypesByFilter;
 import org.gridsuite.actions.dto.FilterAttributes;
@@ -26,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.HttpServerErrorException;
 
 import java.time.Instant;
 import java.util.List;
@@ -95,8 +95,7 @@ class ActionsRestServiceTest {
                 .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> actionsRestService.getPersistentContingencyLists(requestUuids))
-            .isInstanceOf(PowsyblException.class)
-            .hasMessageContaining("Error retrieving persistent contingency lists");
+            .isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
 
     @Test

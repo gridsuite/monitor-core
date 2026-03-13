@@ -55,7 +55,7 @@ class MonitorServiceTest {
     private ProcessConfigService processConfigService;
 
     @Mock
-    private ReportService reportService;
+    private ReportRestService reportRestService;
 
     @Mock
     private ResultService resultService;
@@ -376,15 +376,15 @@ class MonitorServiceTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
         ReportPage reportPage2 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
-        when(reportService.getReport(reportId2)).thenReturn(reportPage2);
+        when(reportRestService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestService.getReport(reportId2)).thenReturn(reportPage2);
 
         List<ReportPage> result = monitorService.getReports(executionId);
 
         assertThat(result).hasSize(2).containsExactly(reportPage1, reportPage2);
         verify(executionRepository).findById(executionId);
-        verify(reportService).getReport(reportId1);
-        verify(reportService).getReport(reportId2);
+        verify(reportRestService).getReport(reportId1);
+        verify(reportRestService).getReport(reportId2);
     }
 
     @Test
@@ -551,8 +551,8 @@ class MonitorServiceTest {
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         doNothing().when(executionRepository).deleteById(executionId);
 
-        doNothing().when(reportService).deleteReport(reportId1);
-        doNothing().when(reportService).deleteReport(reportId2);
+        doNothing().when(reportRestService).deleteReport(reportId1);
+        doNothing().when(reportRestService).deleteReport(reportId2);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
         boolean done = monitorService.deleteExecution(executionId);
@@ -560,8 +560,8 @@ class MonitorServiceTest {
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).deleteById(executionId);
-        verify(reportService).deleteReport(reportId1);
-        verify(reportService).deleteReport(reportId2);
+        verify(reportRestService).deleteReport(reportId1);
+        verify(reportRestService).deleteReport(reportId2);
         verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
     }
 
@@ -573,7 +573,7 @@ class MonitorServiceTest {
         assertThat(done).isFalse();
 
         verify(executionRepository).findById(executionId);
-        verifyNoInteractions(reportService);
+        verifyNoInteractions(reportRestService);
         verifyNoInteractions(resultService);
         verify(executionRepository, never()).deleteById(executionId);
     }

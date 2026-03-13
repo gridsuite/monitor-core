@@ -16,9 +16,7 @@ import com.powsybl.iidm.network.NetworkFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Properties;
 import java.util.UUID;
@@ -27,20 +25,19 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class NetworkConversionService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
+public class CaseRestService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CaseRestService.class);
 
-    private final RestTemplate caseServerRest;
+    private final String caseServerBaseUri;
 
-    public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri,
-                                    RestTemplateBuilder restTemplateBuilder) {
-        this.caseServerRest = restTemplateBuilder.rootUri(caseServerBaseUri).build();
+    public CaseRestService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri) {
+        this.caseServerBaseUri = caseServerBaseUri;
     }
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
         LOGGER.info("Creating network");
 
-        CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerRest, caseUuid);
+        CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerBaseUri, caseUuid);
 
         Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
         if (importer == null) {

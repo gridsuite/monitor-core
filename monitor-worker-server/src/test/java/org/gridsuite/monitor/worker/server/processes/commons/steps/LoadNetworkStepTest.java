@@ -12,7 +12,7 @@ import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.ReportInfos;
-import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
+import org.gridsuite.monitor.worker.server.services.CaseRestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 class LoadNetworkStepTest {
 
     @Mock
-    private NetworkConversionService networkConversionService;
+    private CaseRestService caseRestService;
 
     private LoadNetworkStep<ProcessConfig> loadNetworkStep;
 
@@ -46,7 +46,7 @@ class LoadNetworkStepTest {
 
     @BeforeEach
     void setUp() {
-        loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
+        loadNetworkStep = new LoadNetworkStep<>(caseRestService);
         when(stepContext.getCaseUuid()).thenReturn(CASE_UUID);
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -58,14 +58,14 @@ class LoadNetworkStepTest {
     @Test
     void executeLoadNetwork() {
         Network expectedNetwork = EurostagTutorialExample1Factory.create();
-        when(networkConversionService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
+        when(caseRestService.createNetwork(eq(CASE_UUID), any(ReportNode.class)))
             .thenReturn(expectedNetwork);
 
         loadNetworkStep.execute(stepContext);
 
         String stepType = loadNetworkStep.getType().getName();
         assertEquals("LOAD_NETWORK", stepType);
-        verify(networkConversionService).createNetwork(eq(CASE_UUID), any(ReportNode.class));
+        verify(caseRestService).createNetwork(eq(CASE_UUID), any(ReportNode.class));
         verify(stepContext).setNetwork(expectedNetwork);
         ReportNode stepReportNode = stepContext.getReportInfos().reportNode();
         ReportNode importReportNode = stepReportNode.getChildren().getFirst();

@@ -18,14 +18,14 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class ReportService {
+public class ReportRestService {
     private static final String REPORT_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
     private final RestClient restClient;
 
-    public ReportService(@Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
-                         RestClient.Builder restClientBuilder) {
+    public ReportRestService(@Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
+                             RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder
             .baseUrl(reportServerBaseUri + DELIMITER + REPORT_API_VERSION + DELIMITER + "reports")
             .build();

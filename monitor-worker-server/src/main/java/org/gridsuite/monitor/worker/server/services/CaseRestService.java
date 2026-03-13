@@ -25,12 +25,12 @@ import java.util.UUID;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class NetworkConversionService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConversionService.class);
+public class CaseRestService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CaseRestService.class);
 
     private final String caseServerBaseUri;
 
-    public NetworkConversionService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri) {
+    public CaseRestService(@Value("${powsybl.services.case-server.base-uri:http://case-server/}") String caseServerBaseUri) {
         this.caseServerBaseUri = caseServerBaseUri;
     }
 

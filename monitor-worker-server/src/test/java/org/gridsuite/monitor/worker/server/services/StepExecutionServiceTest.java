@@ -38,7 +38,7 @@ class StepExecutionServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private ReportService reportService;
+    private ReportRestService reportRestService;
 
     @Mock
     private ProcessStep<ProcessConfig> processStep;
@@ -53,7 +53,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService<>(notificationService, reportService);
+        stepExecutionService = new StepExecutionService<>(notificationService, reportRestService);
     }
 
     @Test
@@ -69,7 +69,7 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(context, processStep);
 
         verify(processStep).execute(context);
-        verify(reportService).sendReport(any(ReportInfos.class));
+        verify(reportRestService).sendReport(any(ReportInfos.class));
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
@@ -110,7 +110,7 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
-        verify(reportService).sendReport(any(ReportInfos.class));
+        verify(reportRestService).sendReport(any(ReportInfos.class));
     }
 
     @Test
@@ -125,7 +125,7 @@ class StepExecutionServiceTest {
 
         verify(processStep, never()).execute(any());
         // Verify report was NOT sent on skip
-        verify(reportService, never()).sendReport(any(ReportInfos.class));
+        verify(reportRestService, never()).sendReport(any(ReportInfos.class));
         verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.SKIPPED &&
                         "SKIPPED_STEP".equals(step.getStepType()) &&

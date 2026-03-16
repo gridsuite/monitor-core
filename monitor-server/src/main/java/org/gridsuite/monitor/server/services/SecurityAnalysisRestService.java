@@ -15,13 +15,13 @@ import java.util.UUID;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @Service
-public class SecurityAnalysisService {
+public class SecurityAnalysisRestService {
     static final String SA_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
     private final RestClient restClient;
 
-    public SecurityAnalysisService(
+    public SecurityAnalysisRestService(
         RestClient.Builder restClientBuilder,
         @Value("${gridsuite.services.security-analysis-server.base-uri:http://security-analysis-server/}") String securityAnalysisServerBaseUri) {
         this.restClient = restClientBuilder

@@ -24,7 +24,7 @@ import java.time.Instant;
 public class StepExecutionService<C extends ProcessConfig> {
 
     private final NotificationService notificationService;
-    private final ReportService reportService;
+    private final ReportRestService reportRestService;
 
     public void skipStep(ProcessStepExecutionContext<?> context, ProcessStep<?> step) {
         ProcessExecutionStep executionStep = ProcessExecutionStep.builder()
@@ -56,7 +56,7 @@ public class StepExecutionService<C extends ProcessConfig> {
             updateStepStatus(context, StepStatus.FAILED, step);
             throw e;
         } finally {
-            reportService.sendReport(context.getReportInfos());
+            reportRestService.sendReport(context.getReportInfos());
         }
     }
 

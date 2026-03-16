@@ -7,16 +7,14 @@
 package org.gridsuite.monitor.server.services;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.commons.PersistedProcessConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.gridsuite.monitor.commons.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.ProcessStatus;
 import org.gridsuite.monitor.commons.ProcessType;
 import org.gridsuite.monitor.commons.ResultInfos;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
-import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
@@ -39,60 +37,43 @@ public class MonitorService {
 
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
-    private final ProcessConfigService processConfigService;
+    private final MonitorPersistenceService monitorPersistenceService;
     private final ReportService reportService;
     private final ResultService resultService;
     private final S3RestService s3RestService;
-    private final S3PathResolver s3PathResolver;
 
     private final ProcessExecutionStepMapper processExecutionStepMapper;
     private final ProcessExecutionMapper processExecutionMapper;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
-                          ProcessConfigService processConfigService,
+                          MonitorPersistenceService monitorPersistenceService,
                           ReportService reportService,
                           ResultService resultService,
                           S3RestService s3RestService,
-                          S3PathResolver s3PathResolver,
                           ProcessExecutionStepMapper processExecutionStepMapper,
                           ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
-        this.processConfigService = processConfigService;
+        this.monitorPersistenceService = monitorPersistenceService;
         this.reportService = reportService;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
-        this.s3PathResolver = s3PathResolver;
         this.processExecutionStepMapper = processExecutionStepMapper;
         this.processExecutionMapper = processExecutionMapper;
     }
 
-    @Transactional
     public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
-        UUID executionId = UUID.randomUUID();
-        Optional<PersistedProcessConfig> persistedProcessConfig = processConfigService.getProcessConfig(processConfigId);
-        if (persistedProcessConfig.isPresent()) {
-            ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
-                .id(executionId)
-                .type(persistedProcessConfig.get().processConfig().processType().name())
-                .caseUuid(caseUuid)
-                .processConfigId(persistedProcessConfig.get().id())
-                .status(ProcessStatus.SCHEDULED)
-                .scheduledAt(Instant.now())
-                .userId(userId)
-                .build();
-            if (isDebug) {
-                execution.setDebugFileLocation(s3PathResolver.toDebugLocation(persistedProcessConfig.get().processConfig().processType().name(), executionId));
-            }
-            executionRepository.save(execution);
-
-            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
-
-            return Optional.of(execution.getId());
-        } else {
-            return Optional.empty();
-        }
+        return monitorPersistenceService.createExecution(caseUuid, userId, processConfigId, isDebug)
+            .map(createdExecution -> {
+                notificationService.sendProcessRunMessage(
+                    caseUuid,
+                    createdExecution.processConfig(),
+                    createdExecution.executionId(),
+                    createdExecution.debugFileLocation()
+                );
+                return createdExecution.executionId();
+            });
     }
 
     @Transactional
@@ -212,28 +193,13 @@ public class MonitorService {
         }
     }
 
-    @Transactional
     public boolean deleteExecution(UUID executionId) {
-        List<ResultInfos> resultIds = new ArrayList<>();
-        List<UUID> reportIds = new ArrayList<>();
-
-        Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
-        if (executionEntity.isPresent()) {
-            Optional.ofNullable(executionEntity.get().getSteps()).orElse(List.of()).forEach(step -> {
-                if (step.getResultId() != null && step.getResultType() != null) {
-                    resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
-                }
-                if (step.getReportId() != null) {
-                    reportIds.add(step.getReportId());
-                }
-            });
-            resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportService::deleteReport);
-
-            executionRepository.deleteById(executionId);
-
-            return true;
-        }
-        return false;
+        return monitorPersistenceService.deleteExecution(executionId)
+            .map(deletedExecution -> {
+                deletedExecution.resultInfos().forEach(resultService::deleteResult);
+                deletedExecution.reportIds().forEach(reportService::deleteReport);
+                return true;
+            })
+            .orElse(false);
     }
 }

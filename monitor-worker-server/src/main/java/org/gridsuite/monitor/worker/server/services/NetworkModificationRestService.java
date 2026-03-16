@@ -12,7 +12,6 @@ import org.gridsuite.modification.dto.ModificationInfos;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,13 +36,12 @@ public class NetworkModificationRestService {
 
     public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
         if (CollectionUtils.isNotEmpty(modificationsUuids)) {
-            String path = UriComponentsBuilder.fromPath(DELIMITER + "network-composite-modifications" + DELIMITER + "network-modifications")
-                .queryParam("uuids", modificationsUuids.toArray())
-                .queryParam("onlyMetadata", "false")
-                .buildAndExpand()
-                .toUriString();
             ModificationInfos[] modificationInfos = networkModificationServerRest.get()
-                .uri(path)
+                .uri(uriBuilder -> uriBuilder
+                    .path(DELIMITER + "network-composite-modifications" + DELIMITER + "network-modifications")
+                    .queryParam("uuids", modificationsUuids.toArray())
+                    .queryParam("onlyMetadata", "false")
+                    .build())
                 .retrieve()
                 .body(ModificationInfos[].class);
             return modificationInfos != null ? Arrays.asList(modificationInfos) : List.of();

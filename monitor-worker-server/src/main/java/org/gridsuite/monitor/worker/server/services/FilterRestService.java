@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,12 +34,11 @@ public class FilterRestService implements FilterProvider {
     }
 
     public List<AbstractFilter> getFilters(List<UUID> filtersUuids) {
-        String path = UriComponentsBuilder.fromPath("/filters/metadata")
-            .queryParam("ids", filtersUuids)
-            .buildAndExpand()
-            .toUriString();
         return restClient.get()
-            .uri(path)
+            .uri(uriBuilder -> uriBuilder
+                .path("/filters/metadata")
+                .queryParam("ids", filtersUuids.toArray())
+                .build())
             .retrieve()
             .body(new ParameterizedTypeReference<>() { });
     }

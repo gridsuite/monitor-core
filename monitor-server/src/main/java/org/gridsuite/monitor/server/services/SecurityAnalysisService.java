@@ -9,9 +9,6 @@ package org.gridsuite.monitor.server.services;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -40,13 +37,11 @@ public class SecurityAnalysisService {
     }
 
     public void deleteResult(UUID resultUuid) {
-        var path = UriComponentsBuilder.fromPath("/results")
-            .queryParam("resultsUuids", List.of(resultUuid))
-            .build()
-            .toUriString();
-
         restClient.delete()
-            .uri(path)
+            .uri(uriBuilder -> uriBuilder
+                .path("/results")
+                .queryParam("resultsUuids", resultUuid)
+                .build())
             .retrieve()
             .toBodilessEntity();
     }

@@ -16,10 +16,10 @@ import java.util.UUID;
  */
 @Service
 public class SecurityAnalysisResultProvider implements ResultProvider {
-    private final SecurityAnalysisService securityAnalysisService;
+    private final SecurityAnalysisRestService securityAnalysisRestService;
 
-    public SecurityAnalysisResultProvider(SecurityAnalysisService securityAnalysisService) {
-        this.securityAnalysisService = securityAnalysisService;
+    public SecurityAnalysisResultProvider(SecurityAnalysisRestService securityAnalysisRestService) {
+        this.securityAnalysisRestService = securityAnalysisRestService;
     }
 
     @Override
@@ -29,11 +29,11 @@ public class SecurityAnalysisResultProvider implements ResultProvider {
 
     @Override
     public String getResult(UUID resultId) {
-        return securityAnalysisService.getResult(resultId);
+        return securityAnalysisRestService.getResult(resultId);
     }
 
     @Override
     public void deleteResult(UUID resultId) {
-        securityAnalysisService.deleteResult(resultId);
+        securityAnalysisRestService.deleteResult(resultId);
     }
 }

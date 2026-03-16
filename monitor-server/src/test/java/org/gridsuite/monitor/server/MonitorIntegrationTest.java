@@ -74,7 +74,7 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ReportService reportService;
+    private ReportRestService reportRestService;
 
     @MockitoBean
     private ResultService resultService;
@@ -184,8 +184,8 @@ class MonitorIntegrationTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
         ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        when(reportService.getReport(reportId0)).thenReturn(reportPage0);
-        when(reportService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestService.getReport(reportId0)).thenReturn(reportPage0);
+        when(reportRestService.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))

@@ -40,7 +40,7 @@ public class MonitorService {
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
     private final ProcessConfigService processConfigService;
-    private final ReportService reportService;
+    private final ReportRestService reportRestService;
     private final ResultService resultService;
     private final S3RestService s3RestService;
     private final S3PathResolver s3PathResolver;
@@ -51,7 +51,7 @@ public class MonitorService {
     public MonitorService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
                           ProcessConfigService processConfigService,
-                          ReportService reportService,
+                          ReportRestService reportRestService,
                           ResultService resultService,
                           S3RestService s3RestService,
                           S3PathResolver s3PathResolver,
@@ -60,7 +60,7 @@ public class MonitorService {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.processConfigService = processConfigService;
-        this.reportService = reportService;
+        this.reportRestService = reportRestService;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
         this.s3PathResolver = s3PathResolver;
@@ -150,7 +150,7 @@ public class MonitorService {
     public List<ReportPage> getReports(UUID executionId) {
         List<UUID> reportIds = getReportIds(executionId);
         return reportIds.stream()
-                .map(reportService::getReport)
+                .map(reportRestService::getReport)
                 .toList();
     }
 
@@ -228,7 +228,7 @@ public class MonitorService {
                 }
             });
             resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportService::deleteReport);
+            reportIds.forEach(reportRestService::deleteReport);
 
             executionRepository.deleteById(executionId);
 

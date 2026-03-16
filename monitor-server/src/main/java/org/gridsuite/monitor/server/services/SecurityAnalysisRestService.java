@@ -4,16 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.server.services;
 
-import com.powsybl.security.SecurityAnalysisResult;
-import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -34,22 +29,20 @@ public class SecurityAnalysisRestService {
             .build();
     }
 
-    public void saveResult(UUID resultUuid, SecurityAnalysisResult result) {
-        Objects.requireNonNull(result);
-        restClient.post()
-            .uri("/results/{resultUuid}", resultUuid)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(result)
+    public String getResult(UUID resultUuid) {
+        return restClient.get()
+            .uri("/results/{resultUuid}/nmk-contingencies-result", resultUuid)
             .retrieve()
-            .toBodilessEntity();
+            .body(String.class);
     }
 
-    public SecurityAnalysisParametersValues getParameters(UUID securityAnalysisParametersUuid) {
-        return restClient.get()
-            .uri("/parameters/{securityAnalysisParametersUuid}",
-                securityAnalysisParametersUuid)
-            .header("userId", "user1")
+    public void deleteResult(UUID resultUuid) {
+        restClient.delete()
+            .uri(uriBuilder -> uriBuilder
+                .path("/results")
+                .queryParam("resultsUuids", resultUuid)
+                .build())
             .retrieve()
-            .body(SecurityAnalysisParametersValues.class);
+            .toBodilessEntity();
     }
 }

@@ -19,11 +19,11 @@ import static org.mockito.Mockito.*;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 class SecurityAnalysisResultProviderTest {
-    private final SecurityAnalysisService securityAnalysisService =
-        Mockito.mock(SecurityAnalysisService.class);
+    private final SecurityAnalysisRestService securityAnalysisRestService =
+        Mockito.mock(SecurityAnalysisRestService.class);
 
     private final SecurityAnalysisResultProvider provider =
-        new SecurityAnalysisResultProvider(securityAnalysisService);
+        new SecurityAnalysisResultProvider(securityAnalysisRestService);
 
     @Test
     void getTypeShouldReturnSecurityAnalysis() {
@@ -36,24 +36,24 @@ class SecurityAnalysisResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(securityAnalysisService.getResult(id)).thenReturn(expected);
+        when(securityAnalysisRestService.getResult(id)).thenReturn(expected);
 
         String result = provider.getResult(id);
 
         assertThat(result).isEqualTo(expected);
-        verify(securityAnalysisService).getResult(id);
-        verifyNoMoreInteractions(securityAnalysisService);
+        verify(securityAnalysisRestService).getResult(id);
+        verifyNoMoreInteractions(securityAnalysisRestService);
     }
 
     @Test
     void deleteResultShouldDelegateToSecurityAnalysisService() {
         UUID id = UUID.randomUUID();
 
-        doNothing().when(securityAnalysisService).deleteResult(id);
+        doNothing().when(securityAnalysisRestService).deleteResult(id);
 
         provider.deleteResult(id);
 
-        verify(securityAnalysisService).deleteResult(id);
-        verifyNoMoreInteractions(securityAnalysisService);
+        verify(securityAnalysisRestService).deleteResult(id);
+        verifyNoMoreInteractions(securityAnalysisRestService);
     }
 }

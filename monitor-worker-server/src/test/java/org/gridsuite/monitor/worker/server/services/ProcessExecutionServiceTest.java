@@ -48,7 +48,7 @@ class ProcessExecutionServiceTest {
     private ProcessConfig processConfig;
 
     @Mock
-    private CaseRestService caseRestService;
+    private NetworkConversionService networkConversionService;
 
     @Mock
     private NetworkModificationService networkModificationService;
@@ -85,7 +85,7 @@ class ProcessExecutionServiceTest {
         List<Process<? extends ProcessConfig>> processList = List.of(process);
         processExecutionService = new ProcessExecutionService(processList, notificationService, EXECUTION_ENV_NAME);
 
-        loadNetworkStep = new LoadNetworkStep<>(caseRestService);
+        loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestService, s3Service, filterService);
         runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestService, securityAnalysisParametersService);
     }

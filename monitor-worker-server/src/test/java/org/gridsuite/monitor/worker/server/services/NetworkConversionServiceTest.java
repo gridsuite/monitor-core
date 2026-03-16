@@ -31,10 +31,10 @@ import static org.mockito.Mockito.*;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@RestClientTest(CaseRestService.class)
-class CaseRestServiceTest {
+@RestClientTest(NetworkConversionService.class)
+class NetworkConversionServiceTest {
     @Autowired
-    private CaseRestService service;
+    private NetworkConversionService service;
 
     @Mock
     private Importer importer;

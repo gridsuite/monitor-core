@@ -11,7 +11,7 @@ import com.powsybl.iidm.network.Network;
 import org.gridsuite.monitor.commons.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.core.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.services.CaseRestService;
+import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -22,11 +22,11 @@ import java.util.UUID;
 @Component
 public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessStep<C> {
 
-    private final CaseRestService caseRestService;
+    private final NetworkConversionService networkConversionService;
 
-    public LoadNetworkStep(CaseRestService caseRestService) {
+    public LoadNetworkStep(NetworkConversionService networkConversionService) {
         super(CommonStepType.LOAD_NETWORK);
-        this.caseRestService = caseRestService;
+        this.networkConversionService = networkConversionService;
     }
 
     @Override
@@ -41,6 +41,6 @@ public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessSte
                     .withMessageTemplate("monitor.worker.server.importCase")
                     .withUntypedValue("caseUuid", caseUuid.toString())
                     .add();
-        return caseRestService.createNetwork(caseUuid, reporter);
+        return networkConversionService.createNetwork(caseUuid, reporter);
     }
 }

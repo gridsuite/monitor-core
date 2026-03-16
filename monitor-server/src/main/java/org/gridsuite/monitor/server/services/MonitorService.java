@@ -17,6 +17,7 @@ import org.gridsuite.monitor.commons.ResultInfos;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mapper.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
+import org.springframework.context.ApplicationEventPublisher;
 import org.gridsuite.monitor.server.dto.ProcessExecution;
 import org.gridsuite.monitor.server.dto.ReportPage;
 import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
@@ -38,32 +39,32 @@ public class MonitorService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MonitorService.class);
 
     private final ProcessExecutionRepository executionRepository;
-    private final NotificationService notificationService;
     private final ProcessConfigService processConfigService;
     private final ReportService reportService;
     private final ResultService resultService;
     private final S3RestService s3RestService;
     private final S3PathResolver s3PathResolver;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final ProcessExecutionStepMapper processExecutionStepMapper;
     private final ProcessExecutionMapper processExecutionMapper;
 
     public MonitorService(ProcessExecutionRepository executionRepository,
-                          NotificationService notificationService,
                           ProcessConfigService processConfigService,
                           ReportService reportService,
                           ResultService resultService,
                           S3RestService s3RestService,
                           S3PathResolver s3PathResolver,
+                          ApplicationEventPublisher eventPublisher,
                           ProcessExecutionStepMapper processExecutionStepMapper,
                           ProcessExecutionMapper processExecutionMapper) {
         this.executionRepository = executionRepository;
-        this.notificationService = notificationService;
         this.processConfigService = processConfigService;
         this.reportService = reportService;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
         this.s3PathResolver = s3PathResolver;
+        this.eventPublisher = eventPublisher;
         this.processExecutionStepMapper = processExecutionStepMapper;
         this.processExecutionMapper = processExecutionMapper;
     }
@@ -86,8 +87,12 @@ public class MonitorService {
                 execution.setDebugFileLocation(s3PathResolver.toDebugLocation(persistedProcessConfig.get().processConfig().processType().name(), executionId));
             }
             executionRepository.save(execution);
-
-            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
+            eventPublisher.publishEvent(new MonitorTransactionalEvents.ProcessRunRequested(
+                caseUuid,
+                persistedProcessConfig.get().processConfig(),
+                execution.getId(),
+                execution.getDebugFileLocation()
+            ));
 
             return Optional.of(execution.getId());
         } else {
@@ -227,10 +232,11 @@ public class MonitorService {
                     reportIds.add(step.getReportId());
                 }
             });
-            resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportService::deleteReport);
-
             executionRepository.deleteById(executionId);
+            eventPublisher.publishEvent(new MonitorTransactionalEvents.ExecutionDeleted(
+                List.copyOf(resultIds),
+                List.copyOf(reportIds)
+            ));
 
             return true;
         }

@@ -31,15 +31,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@RestClientTest(ReportRestService.class)
-@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestService.class})
+@RestClientTest(ReportRestClient.class)
+@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestClient.class})
 class ReportRestClientTest {
 
     private static final UUID REPORT_UUID = UUID.randomUUID();
     private static final UUID REPORT_ERROR_UUID = UUID.randomUUID();
 
     @Autowired
-    private ReportRestService reportRestService;
+    private ReportRestClient reportRestService;
 
     @Autowired
     private MockRestServiceServer server;

@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.core.process;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 
 import java.util.List;
 
@@ -18,7 +17,6 @@ import java.util.List;
  * <p>
  * A {@code Process} is identified by a {@link ProcessType} and provides an ordered list of {@link ProcessStep}s
  * to be orchestrated by {@code ProcessExecutor}.
- * <p>
  *
  * @param <C> the concrete {@link ProcessConfig} type required by this process
  *
@@ -39,14 +37,6 @@ public interface Process<C extends ProcessConfig> {
      * @return ordered process steps
      */
     List<ProcessStep<C>> getSteps();
-
-    /**
-     * Executes the steps for this process.
-     *
-     * @param context the current execution context
-     * @param stepExecutor the executor responsible for running and skipping individual steps
-     */
-    void executeSteps(ProcessExecutionContext<C> context, StepExecutor stepExecutor);
 
     /**
      * Hook invoked when a step throws during execution.

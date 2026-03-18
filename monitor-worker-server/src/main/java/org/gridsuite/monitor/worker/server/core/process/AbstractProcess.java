@@ -10,8 +10,6 @@ import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,29 +35,6 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     @Override
     public List<ProcessStep<C>> getSteps() {
         return Collections.unmodifiableList(defineSteps());
-    }
-
-    @Override
-    public void executeSteps(ProcessExecutionContext<C> context, StepExecutor stepExecutor) {
-        List<ProcessStep<C>> steps = getSteps();
-        boolean skipRemaining = false;
-
-        for (int i = 0; i < steps.size(); i++) {
-            ProcessStep<C> step = steps.get(i);
-            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, i);
-
-            if (skipRemaining) {
-                stepExecutor.skipStep(stepContext, step);
-                continue;
-            }
-
-            try {
-                stepExecutor.executeStep(stepContext, step);
-            } catch (Exception e) {
-                onStepFailure(context, step, e);
-                skipRemaining = true;
-            }
-        }
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -89,8 +90,34 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
         updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
-        process.executeSteps(context, stepExecutor);
+        doExecuteSteps(process, context);
         updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
+    }
+
+    private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        List<ProcessStep<T>> steps = process.getSteps();
+        RuntimeException failure = null;
+
+        for (int i = 0; i < steps.size(); i++) {
+            ProcessStep<T> step = steps.get(i);
+            ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
+
+            if (failure != null) {
+                stepExecutor.skipStep(stepContext, step);
+                continue;
+            }
+
+            try {
+                stepExecutor.executeStep(stepContext, step);
+            } catch (RuntimeException e) {
+                process.onStepFailure(context, step, e);
+                failure = e;
+            }
+        }
+
+        if (failure != null) {
+            throw failure;
+        }
     }
 
     private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {

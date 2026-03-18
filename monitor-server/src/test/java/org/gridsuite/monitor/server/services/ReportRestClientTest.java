@@ -32,11 +32,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RestClientTest(ReportRestService.class)
-@ContextConfiguration(classes = {ReportRestService.class})
-class ReportRestServiceTest {
+@RestClientTest(ReportRestClient.class)
+@ContextConfiguration(classes = {ReportRestClient.class})
+class ReportRestClientTest {
     @Autowired
-    private ReportRestService reportRestService;
+    private ReportRestClient reportRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -58,7 +58,7 @@ class ReportRestServiceTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(reportPage)));
 
-        ReportPage reportResult = reportRestService.getReport(reportId);
+        ReportPage reportResult = reportRestClient.getReport(reportId);
         assertThat(reportResult).usingRecursiveComparison().isEqualTo(reportPage);
     }
 
@@ -70,7 +70,7 @@ class ReportRestServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> reportRestService.getReport(reportId)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> reportRestClient.getReport(reportId)).isInstanceOf(RestClientException.class);
     }
 
     @Test
@@ -81,7 +81,7 @@ class ReportRestServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
             .andRespond(MockRestResponseCreators.withSuccess());
 
-        assertThatNoException().isThrownBy(() -> reportRestService.deleteReport(reportId));
+        assertThatNoException().isThrownBy(() -> reportRestClient.deleteReport(reportId));
     }
 
     @Test
@@ -92,6 +92,6 @@ class ReportRestServiceTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> reportRestService.deleteReport(reportId)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> reportRestClient.deleteReport(reportId)).isInstanceOf(RestClientException.class);
     }
 }

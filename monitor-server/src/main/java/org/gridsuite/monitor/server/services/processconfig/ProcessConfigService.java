@@ -6,12 +6,12 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.dto.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
+import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;

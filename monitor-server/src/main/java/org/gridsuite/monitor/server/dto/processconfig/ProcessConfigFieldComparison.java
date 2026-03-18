@@ -4,15 +4,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.commons.types.processconfig;
+package org.gridsuite.monitor.server.dto.processconfig;
 
-import java.util.UUID;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-public record PersistedProcessConfig(
-    UUID id,
-    ProcessConfig processConfig
-) {
-}
+@Schema(description = "Field comparison result")
+public record ProcessConfigFieldComparison(
+    String field,
+    boolean identical,
+    Object value1,
+    Object value2) { }

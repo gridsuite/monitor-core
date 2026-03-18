@@ -7,8 +7,8 @@
 package org.gridsuite.monitor.worker.server.messaging;
 
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

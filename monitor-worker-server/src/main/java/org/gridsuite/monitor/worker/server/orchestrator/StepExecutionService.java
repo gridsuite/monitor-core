@@ -8,7 +8,7 @@ package org.gridsuite.monitor.worker.server.orchestrator;
 
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.services.ReportRestService;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;

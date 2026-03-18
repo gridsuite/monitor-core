@@ -1,7 +1,7 @@
 package org.gridsuite.monitor.worker.server.core.messaging;
 
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 
 import java.util.List;
 import java.util.UUID;

@@ -6,6 +6,8 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;

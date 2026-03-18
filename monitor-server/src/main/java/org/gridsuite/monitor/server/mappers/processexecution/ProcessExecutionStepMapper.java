@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.mappers.processexecution;
 
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

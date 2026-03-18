@@ -8,7 +8,7 @@ package org.gridsuite.monitor.server.services.result.providers;
 
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.services.result.ResultProvider;
-import org.gridsuite.monitor.server.services.SecurityAnalysisRestService;
+import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -18,10 +18,10 @@ import java.util.UUID;
  */
 @Service
 public class SecurityAnalysisResultProvider implements ResultProvider {
-    private final SecurityAnalysisRestService securityAnalysisRestService;
+    private final SecurityAnalysisRestClient securityAnalysisRestClient;
 
-    public SecurityAnalysisResultProvider(SecurityAnalysisRestService securityAnalysisRestService) {
-        this.securityAnalysisRestService = securityAnalysisRestService;
+    public SecurityAnalysisResultProvider(SecurityAnalysisRestClient securityAnalysisRestClient) {
+        this.securityAnalysisRestClient = securityAnalysisRestClient;
     }
 
     @Override
@@ -31,11 +31,11 @@ public class SecurityAnalysisResultProvider implements ResultProvider {
 
     @Override
     public String getResult(UUID resultId) {
-        return securityAnalysisRestService.getResult(resultId);
+        return securityAnalysisRestClient.getResult(resultId);
     }
 
     @Override
     public void deleteResult(UUID resultId) {
-        securityAnalysisRestService.deleteResult(resultId);
+        securityAnalysisRestClient.deleteResult(resultId);
     }
 }

@@ -7,14 +7,14 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.commons.types.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
-import org.gridsuite.monitor.server.services.ReportRestService;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.clients.ReportRestClient;
+import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
@@ -42,10 +42,10 @@ public class ProcessExecutionService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProcessExecutionService.class);
 
-    private final ProcessExecutionRepository executionRepository;
+    private final ProcessExecutionRepository processExecutionRepository;
     private final NotificationService notificationService;
     private final ProcessConfigService processConfigService;
-    private final ReportRestService reportRestService;
+    private final ReportRestClient reportRestClient;
     private final ResultService resultService;
     private final S3RestService s3RestService;
     private final S3PathResolver s3PathResolver;
@@ -53,19 +53,19 @@ public class ProcessExecutionService {
     private final ProcessExecutionStepMapper processExecutionStepMapper;
     private final ProcessExecutionMapper processExecutionMapper;
 
-    public ProcessExecutionService(ProcessExecutionRepository executionRepository,
+    public ProcessExecutionService(ProcessExecutionRepository processExecutionRepository,
                           NotificationService notificationService,
                           ProcessConfigService processConfigService,
-                          ReportRestService reportRestService,
+                          ReportRestClient reportRestClient,
                           ResultService resultService,
                           S3RestService s3RestService,
                           S3PathResolver s3PathResolver,
                           ProcessExecutionStepMapper processExecutionStepMapper,
                           ProcessExecutionMapper processExecutionMapper) {
-        this.executionRepository = executionRepository;
+        this.processExecutionRepository = processExecutionRepository;
         this.notificationService = notificationService;
         this.processConfigService = processConfigService;
-        this.reportRestService = reportRestService;
+        this.reportRestClient = reportRestClient;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
         this.s3PathResolver = s3PathResolver;
@@ -90,7 +90,7 @@ public class ProcessExecutionService {
             if (isDebug) {
                 execution.setDebugFileLocation(s3PathResolver.toDebugLocation(persistedProcessConfig.get().processConfig().processType().name(), executionId));
             }
-            executionRepository.save(execution);
+            processExecutionRepository.save(execution);
 
             notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
 
@@ -102,7 +102,7 @@ public class ProcessExecutionService {
 
     @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
-        executionRepository.findById(executionId).ifPresentOrElse(execution -> {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             execution.setStatus(status);
             if (executionEnvName != null) {
                 execution.setExecutionEnvName(executionEnvName);
@@ -113,7 +113,7 @@ public class ProcessExecutionService {
             if (completedAt != null) {
                 execution.setCompletedAt(completedAt);
             }
-            executionRepository.save(execution);
+            processExecutionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
     }
 
@@ -133,21 +133,21 @@ public class ProcessExecutionService {
 
     @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
-        executionRepository.findById(executionId).ifPresentOrElse(execution -> {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
             updateStep(execution, stepEntity);
-            executionRepository.save(execution);
+            processExecutionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring step update", executionId));
     }
 
     @Transactional
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
-        executionRepository.findById(executionId).ifPresentOrElse(execution -> {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             processExecutionSteps.forEach(processExecutionStep -> {
                 ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
                 updateStep(execution, stepEntity);
             });
-            executionRepository.save(execution);
+            processExecutionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring steps update", executionId));
     }
 
@@ -155,12 +155,12 @@ public class ProcessExecutionService {
     public List<ReportPage> getReports(UUID executionId) {
         List<UUID> reportIds = getReportIds(executionId);
         return reportIds.stream()
-                .map(reportRestService::getReport)
+                .map(reportRestClient::getReport)
                 .toList();
     }
 
     private List<UUID> getReportIds(UUID executionId) {
-        return executionRepository.findById(executionId)
+        return processExecutionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .map(ProcessExecutionStepEntity::getReportId)
                 .filter(java.util.Objects::nonNull)
@@ -178,7 +178,7 @@ public class ProcessExecutionService {
 
     @Transactional(readOnly = true)
     public Optional<byte[]> getDebugInfos(UUID executionId) {
-        return executionRepository.findById(executionId)
+        return processExecutionRepository.findById(executionId)
             .map(ProcessExecutionEntity::getDebugFileLocation)
             .filter(Objects::nonNull)
             .map(debugFileLocation -> {
@@ -191,7 +191,7 @@ public class ProcessExecutionService {
     }
 
     private List<ResultInfos> getResultInfos(UUID executionId) {
-        return executionRepository.findById(executionId)
+        return processExecutionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .filter(step -> step.getResultId() != null)
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
@@ -201,13 +201,13 @@ public class ProcessExecutionService {
 
     @Transactional(readOnly = true)
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
-        return executionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
+        return processExecutionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
             .map(processExecutionMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
     public Optional<List<ProcessExecutionStep>> getStepsInfos(UUID executionId) {
-        Optional<ProcessExecutionEntity> entity = executionRepository.findById(executionId);
+        Optional<ProcessExecutionEntity> entity = processExecutionRepository.findById(executionId);
         if (entity.isPresent()) {
             return entity.map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .map(processExecutionStepMapper::toDto)
@@ -222,7 +222,7 @@ public class ProcessExecutionService {
         List<ResultInfos> resultIds = new ArrayList<>();
         List<UUID> reportIds = new ArrayList<>();
 
-        Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
+        Optional<ProcessExecutionEntity> executionEntity = processExecutionRepository.findById(executionId);
         if (executionEntity.isPresent()) {
             Optional.ofNullable(executionEntity.get().getSteps()).orElse(List.of()).forEach(step -> {
                 if (step.getResultId() != null && step.getResultType() != null) {
@@ -233,9 +233,9 @@ public class ProcessExecutionService {
                 }
             });
             resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportRestService::deleteReport);
+            reportIds.forEach(reportRestClient::deleteReport);
 
-            executionRepository.deleteById(executionId);
+            processExecutionRepository.deleteById(executionId);
 
             return true;
         }

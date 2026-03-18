@@ -9,7 +9,7 @@ package org.gridsuite.monitor.worker.server.orchestrator;
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.services.ReportRestService;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;

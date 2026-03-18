@@ -96,27 +96,23 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
         List<ProcessStep<T>> steps = process.getSteps();
-        RuntimeException failure = null;
+        boolean skipRemaining = false;
 
         for (int i = 0; i < steps.size(); i++) {
             ProcessStep<T> step = steps.get(i);
             ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
 
-            if (failure != null) {
+            if (skipRemaining) {
                 stepExecutor.skipStep(stepContext, step);
                 continue;
             }
 
             try {
                 stepExecutor.executeStep(stepContext, step);
-            } catch (RuntimeException e) {
+            } catch (Exception e) {
                 process.onStepFailure(context, step, e);
-                failure = e;
+                skipRemaining = true;
             }
-        }
-
-        if (failure != null) {
-            throw failure;
         }
     }
 

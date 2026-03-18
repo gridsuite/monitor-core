@@ -44,7 +44,7 @@ class ProcessTest {
         }
 
         @Override
-        protected List<ProcessStep<ProcessConfig>> defineSteps() {
+        public List<ProcessStep<ProcessConfig>> defineSteps() {
             return steps;
         }
     }

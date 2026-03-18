@@ -47,9 +47,6 @@ public class NotificationService implements Notificator {
         updatePublisher.send(PROCESS_UPDATE_BINDING, message);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate processExecutionStatusUpdate) {
         sendMonitorUpdate(
@@ -59,9 +56,6 @@ public class NotificationService implements Notificator {
         );
     }
 
-    /**
-     * {@inheritDoc}
-    */
     @Override
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         sendMonitorUpdate(
@@ -71,9 +65,6 @@ public class NotificationService implements Notificator {
         );
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         sendMonitorUpdate(

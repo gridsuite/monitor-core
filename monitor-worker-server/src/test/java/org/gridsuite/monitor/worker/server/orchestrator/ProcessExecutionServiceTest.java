@@ -16,7 +16,7 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
-import org.gridsuite.monitor.worker.server.core.orchestrator.StepOrchestrator;
+import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
 import org.gridsuite.monitor.worker.server.process.commons.steps.ApplyModificationsStep;
@@ -92,7 +92,7 @@ class ProcessExecutionServiceTest {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
 
         List<Process<? extends ProcessConfig>> processList = List.of(process);
-        StepOrchestrator stepExecutor = new StepExecutionService(notificationService, reportRestClient);
+        StepExecutor stepExecutor = new StepExecutionService(notificationService, reportRestClient);
         processExecutionService = new ProcessExecutionService(processList, stepExecutor, notificationService, EXECUTION_ENV_NAME);
 
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);

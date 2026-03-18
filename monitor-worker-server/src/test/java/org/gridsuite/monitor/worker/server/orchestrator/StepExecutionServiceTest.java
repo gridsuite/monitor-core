@@ -55,7 +55,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService<>(notificationService, reportRestClient);
+        stepExecutionService = new StepExecutionService(notificationService, reportRestClient);
     }
 
     @Test

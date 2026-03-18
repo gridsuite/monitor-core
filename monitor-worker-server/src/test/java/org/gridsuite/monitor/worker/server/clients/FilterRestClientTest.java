@@ -28,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.HttpServerErrorException;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -93,7 +94,7 @@ class FilterRestClientTest {
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> filterUuids = List.of(FILTER_ERROR_UUID);
-        assertThatThrownBy(() -> filterRestClient.getFilters(filterUuids)).isInstanceOf(PowsyblException.class)
-            .hasMessage("Error retrieving filters");
+        assertThatThrownBy(() -> filterRestClient.getFilters(filterUuids))
+            .isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
 }

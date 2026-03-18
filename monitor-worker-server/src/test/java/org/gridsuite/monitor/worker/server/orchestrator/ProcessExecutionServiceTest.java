@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -129,7 +128,7 @@ class ProcessExecutionServiceTest {
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
 
-        assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
+        processExecutionService.executeProcess(runMessage);
 
         verify(step1).execute(any());
         verify(step2, never()).execute(any());

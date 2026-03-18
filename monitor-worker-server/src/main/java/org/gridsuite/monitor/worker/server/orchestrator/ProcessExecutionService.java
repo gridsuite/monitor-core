@@ -116,6 +116,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             } catch (Exception e) {
                 // TODO better error handling
                 LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
+                updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
                 skipRemaining = true;
             }
         }

@@ -34,10 +34,10 @@ class ProcessTest {
 
     @BeforeEach
     void setUp() {
-        process = new TestProcess();
+        process = new TestProcess(
+                stepExecutionService);
     }
 
-    /*
     @Test
     void executeShouldExecuteAllStepsSuccessfullyWhenNoErrors() {
         ProcessStepExecutionContext<ProcessConfig> stepContext1 = mock(ProcessStepExecutionContext.class);
@@ -87,15 +87,13 @@ class ProcessTest {
         inOrder.verify(processContext).createStepContext(any(), eq(2));
     }
 
-     */
-
     /**
      * Mock implementation of AbstractProcess for testing purposes
      */
     private static class TestProcess extends AbstractProcess<ProcessConfig> {
 
-        public TestProcess() {
-            super(ProcessType.SECURITY_ANALYSIS);
+        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService) {
+            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
         }
 
         @Override

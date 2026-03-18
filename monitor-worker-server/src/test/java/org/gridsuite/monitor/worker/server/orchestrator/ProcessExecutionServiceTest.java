@@ -105,7 +105,7 @@ class ProcessExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        // doNothing().when(processExecutionService).executeSteps(process, any(ProcessExecutionContext.class));
+        doNothing().when(process).execute(any(ProcessExecutionContext.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
         when(process.getSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
@@ -128,13 +128,12 @@ class ProcessExecutionServiceTest {
             steps.get(2).getStepOrder() == 2
         ));
 
-        /*
-        verify(processExecutionService).executeSteps(eq(process), argThat(context ->
+        verify(process).execute(argThat(context ->
                 context.getExecutionId().equals(executionId) &&
                         context.getCaseUuid().equals(caseUuid) &&
                         context.getConfig().equals(processConfig) &&
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
-        ));*/
+        ));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -149,21 +148,19 @@ class ProcessExecutionServiceTest {
         ));
     }
 
-    @Disabled
     @Test
     void executeProcessShouldSendFailedStatusWhenProcessThrowsException() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         RuntimeException processException = new RuntimeException("Process execution failed");
-        //doThrow(processException).when(processExecutionService).executeSteps(eq(process), any(ProcessExecutionContext.class));
+        doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
 
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
-        /*verify(processExecutionService).executeSteps(eq(process), any(ProcessExecutionContext.class));*/
-        /*verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));*/
-        /*
+        verify(process).execute(any(ProcessExecutionContext.class));
+        verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.RUNNING
@@ -171,7 +168,7 @@ class ProcessExecutionServiceTest {
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
                 update.getStatus() == ProcessStatus.FAILED &&
                         update.getCompletedAt() != null
-        ));*/
+        ));
     }
 
     @Test
@@ -182,7 +179,7 @@ class ProcessExecutionServiceTest {
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No process found for type");
-        // verify(processExecutionService, never()).executeSteps(process, any());
+        verify(process, never()).execute(any());
         verifyNoInteractions(notificationService);
     }
 }

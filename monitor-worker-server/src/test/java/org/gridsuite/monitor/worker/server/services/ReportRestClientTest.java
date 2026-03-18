@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @RestClientTest(ReportRestService.class)
 @ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestService.class})
-class ReportRestServiceTest {
+class ReportRestClientTest {
 
     private static final UUID REPORT_UUID = UUID.randomUUID();
     private static final UUID REPORT_ERROR_UUID = UUID.randomUUID();

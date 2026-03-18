@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services;
+package org.gridsuite.monitor.server.clients;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,9 +31,9 @@ import static org.mockito.Mockito.*;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class S3RestServiceTest {
+class S3RestClientTest {
     @InjectMocks
-    private S3RestService s3RestService;
+    private S3RestClient s3RestClient;
 
     @Mock
     private S3Client s3Client;
@@ -50,7 +50,7 @@ class S3RestServiceTest {
             "executionId1/debug/file2.txt", "content2"
         );
 
-        byte[] zipBytes = s3RestService.buildZip(
+        byte[] zipBytes = s3RestClient.buildZip(
             "executionId1",
             keys,
             key -> new ByteArrayInputStream(fakeData.get(key).getBytes())
@@ -87,7 +87,7 @@ class S3RestServiceTest {
             .thenReturn(firstPage)
             .thenReturn(secondPage);
 
-        List<String> keys = s3RestService.getFilesKeysInDirectory("debug/");
+        List<String> keys = s3RestClient.getFilesKeysInDirectory("debug/");
 
         assertEquals(2, keys.size());
         assertTrue(keys.contains("executionId1/debug/file1.txt"));
@@ -118,7 +118,7 @@ class S3RestServiceTest {
                 )
             ));
 
-        byte[] zipBytes = s3RestService.downloadDirectoryAsZip("executionId1");
+        byte[] zipBytes = s3RestClient.downloadDirectoryAsZip("executionId1");
 
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry entry = zis.getNextEntry();

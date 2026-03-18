@@ -21,7 +21,7 @@ import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMap
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.S3RestService;
+import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
@@ -47,7 +47,7 @@ public class ProcessExecutionService {
     private final ProcessConfigService processConfigService;
     private final ReportRestClient reportRestClient;
     private final ResultService resultService;
-    private final S3RestService s3RestService;
+    private final S3RestClient s3RestClient;
     private final S3PathResolver s3PathResolver;
 
     private final ProcessExecutionStepMapper processExecutionStepMapper;
@@ -58,7 +58,7 @@ public class ProcessExecutionService {
                           ProcessConfigService processConfigService,
                           ReportRestClient reportRestClient,
                           ResultService resultService,
-                          S3RestService s3RestService,
+                          S3RestClient s3RestClient,
                           S3PathResolver s3PathResolver,
                           ProcessExecutionStepMapper processExecutionStepMapper,
                           ProcessExecutionMapper processExecutionMapper) {
@@ -67,7 +67,7 @@ public class ProcessExecutionService {
         this.processConfigService = processConfigService;
         this.reportRestClient = reportRestClient;
         this.resultService = resultService;
-        this.s3RestService = s3RestService;
+        this.s3RestClient = s3RestClient;
         this.s3PathResolver = s3PathResolver;
         this.processExecutionStepMapper = processExecutionStepMapper;
         this.processExecutionMapper = processExecutionMapper;
@@ -183,7 +183,7 @@ public class ProcessExecutionService {
             .filter(Objects::nonNull)
             .map(debugFileLocation -> {
                 try {
-                    return s3RestService.downloadDirectoryAsZip(debugFileLocation);
+                    return s3RestClient.downloadDirectoryAsZip(debugFileLocation);
                 } catch (IOException e) {
                     throw new PowsyblException("An error occurred while downloading debug files", e);
                 }

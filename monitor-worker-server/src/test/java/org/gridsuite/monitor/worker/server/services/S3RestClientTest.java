@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import org.gridsuite.monitor.worker.server.clients.S3RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,18 +33,18 @@ import static org.mockito.Mockito.verify;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class S3RestServiceTest {
+class S3RestClientTest {
     @Mock
     S3Client s3Client;
 
-    S3RestService s3RestService;
+    S3RestClient s3RestClient;
 
     @TempDir
     Path testDir;
 
     @BeforeEach
     void setup() {
-        s3RestService = new S3RestService(s3Client, "my-bucket");
+        s3RestClient = new S3RestClient(s3Client, "my-bucket");
     }
 
     @Test
@@ -51,7 +52,7 @@ class S3RestServiceTest {
         Path tempFile = Files.createTempFile(testDir, "test", ".txt");
         Files.writeString(tempFile, "dataToUpload");
 
-        s3RestService.uploadFile(tempFile, "testS3Key", "fileToUploadName");
+        s3RestClient.uploadFile(tempFile, "testS3Key", "fileToUploadName");
 
         ArgumentCaptor<PutObjectRequest> requestCaptor =
             ArgumentCaptor.forClass(PutObjectRequest.class);
@@ -79,7 +80,7 @@ class S3RestServiceTest {
             .putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
         assertThatThrownBy(() ->
-            s3RestService.uploadFile(fileToUpload, "key", "file.txt")
+            s3RestClient.uploadFile(fileToUpload, "key", "file.txt")
         )
             .isInstanceOf(IOException.class)
             .hasMessageContaining("Error occurred while uploading file to S3")

@@ -9,7 +9,7 @@ package org.gridsuite.monitor.worker.server.messaging;
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
+import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessOrchestrator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class ConsumerService {
 
-    private final ProcessExecutor executionService;
+    private final ProcessOrchestrator executionService;
 
     @Bean
     public <T extends ProcessConfig> Consumer<Message<ProcessRunMessage<T>>> consumeRun() {

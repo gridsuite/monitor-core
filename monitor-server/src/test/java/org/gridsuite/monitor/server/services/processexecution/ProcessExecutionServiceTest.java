@@ -26,7 +26,7 @@ import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMap
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.S3RestService;
+import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
@@ -73,7 +73,7 @@ class ProcessExecutionServiceTest {
     private ResultService resultService;
 
     @Mock
-    private S3RestService s3RestService;
+    private S3RestClient s3RestClient;
 
     @Mock
     private S3PathResolver s3PathResolver;
@@ -597,7 +597,7 @@ class ProcessExecutionServiceTest {
         byte[] expectedBytes = "zip-content".getBytes();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        when(s3RestService.downloadDirectoryAsZip("debug/file/location")).thenReturn(expectedBytes);
+        when(s3RestClient.downloadDirectoryAsZip("debug/file/location")).thenReturn(expectedBytes);
 
         Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
 
@@ -605,7 +605,7 @@ class ProcessExecutionServiceTest {
         assertThat(expectedBytes).isEqualTo(result.get());
 
         verify(executionRepository).findById(executionId);
-        verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
+        verify(s3RestClient).downloadDirectoryAsZip("debug/file/location");
     }
 
     @Test
@@ -617,7 +617,7 @@ class ProcessExecutionServiceTest {
         assertThat(result).isEmpty();
 
         verify(executionRepository).findById(executionId);
-        verifyNoInteractions(s3RestService);
+        verifyNoInteractions(s3RestClient);
     }
 
     @Test
@@ -627,7 +627,7 @@ class ProcessExecutionServiceTest {
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        when(s3RestService.downloadDirectoryAsZip("debug/file/location")).thenThrow(new IOException("S3 error"));
+        when(s3RestClient.downloadDirectoryAsZip("debug/file/location")).thenThrow(new IOException("S3 error"));
 
         PowsyblException exception = assertThrows(
             PowsyblException.class,
@@ -637,7 +637,7 @@ class ProcessExecutionServiceTest {
         assertThat(exception.getMessage()).contains("An error occurred while downloading debug files");
 
         verify(executionRepository).findById(executionId);
-        verify(s3RestService).downloadDirectoryAsZip("debug/file/location");
+        verify(s3RestClient).downloadDirectoryAsZip("debug/file/location");
     }
 
     @Test
@@ -651,6 +651,6 @@ class ProcessExecutionServiceTest {
         assertThat(result).isEmpty();
 
         verify(executionRepository).findById(executionId);
-        verifyNoInteractions(s3RestService);
+        verifyNoInteractions(s3RestClient);
     }
 }

@@ -4,9 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.worker.server.services;
+package org.gridsuite.monitor.worker.server.clients;
 
-import org.gridsuite.monitor.worker.server.dto.ReportInfos;
+import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -18,14 +18,14 @@ import java.util.Objects;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class ReportRestService {
+public class ReportRestClient {
     static final String REPORT_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
     private final RestClient restClient;
 
-    public ReportRestService(@Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
-                             RestClient.Builder restClientBuilder) {
+    public ReportRestClient(@Value("${gridsuite.services.report-server.base-uri:http://report-server/}") String reportServerBaseUri,
+                            RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder
             .baseUrl(reportServerBaseUri + DELIMITER + REPORT_API_VERSION + DELIMITER + "reports")
             .build();

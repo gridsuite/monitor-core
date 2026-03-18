@@ -23,7 +23,7 @@ import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEn
 import org.gridsuite.monitor.server.messaging.ConsumerService;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.S3RestService;
+import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.gridsuite.monitor.server.services.result.ResultService;
@@ -92,7 +92,7 @@ class MonitorIntegrationTest {
     private ResultService resultService;
 
     @MockitoBean
-    private S3RestService s3RestService;
+    private S3RestClient s3RestClient;
 
     private UUID caseUuid;
 

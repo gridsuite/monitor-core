@@ -14,8 +14,8 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
-import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
-import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
+import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessOrchestrator;
+import org.gridsuite.monitor.worker.server.core.orchestrator.StepOrchestrator;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,15 +32,15 @@ import java.util.stream.IntStream;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
-public class ProcessExecutionService implements ProcessExecutor {
+public class ProcessExecutionService implements ProcessOrchestrator {
 
     private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
-    private final StepExecutor stepExecutor;
+    private final StepOrchestrator stepExecutor;
     private final Notificator notificationService;
     private final String executionEnvName;
 
     public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
-                                   StepExecutor stepExecutor,
+                                   StepOrchestrator stepExecutor,
                                    Notificator notificationService,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()

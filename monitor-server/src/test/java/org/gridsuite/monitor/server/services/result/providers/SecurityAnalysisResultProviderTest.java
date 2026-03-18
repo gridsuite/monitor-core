@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.server.services.result.providers;
 
 import org.gridsuite.monitor.commons.types.result.ResultType;
-import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.server.services.SecurityAnalysisRestService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -20,11 +20,11 @@ import static org.mockito.Mockito.*;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 class SecurityAnalysisResultProviderTest {
-    private final SecurityAnalysisRestClient securityAnalysisRestClient =
-        Mockito.mock(SecurityAnalysisRestClient.class);
+    private final SecurityAnalysisRestService securityAnalysisRestService =
+        Mockito.mock(SecurityAnalysisRestService.class);
 
     private final SecurityAnalysisResultProvider provider =
-        new SecurityAnalysisResultProvider(securityAnalysisRestClient);
+        new SecurityAnalysisResultProvider(securityAnalysisRestService);
 
     @Test
     void getTypeShouldReturnSecurityAnalysis() {
@@ -37,24 +37,24 @@ class SecurityAnalysisResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(securityAnalysisRestClient.getResult(id)).thenReturn(expected);
+        when(securityAnalysisRestService.getResult(id)).thenReturn(expected);
 
         String result = provider.getResult(id);
 
         assertThat(result).isEqualTo(expected);
-        verify(securityAnalysisRestClient).getResult(id);
-        verifyNoMoreInteractions(securityAnalysisRestClient);
+        verify(securityAnalysisRestService).getResult(id);
+        verifyNoMoreInteractions(securityAnalysisRestService);
     }
 
     @Test
     void deleteResultShouldDelegateToSecurityAnalysisService() {
         UUID id = UUID.randomUUID();
 
-        doNothing().when(securityAnalysisRestClient).deleteResult(id);
+        doNothing().when(securityAnalysisRestService).deleteResult(id);
 
         provider.deleteResult(id);
 
-        verify(securityAnalysisRestClient).deleteResult(id);
-        verifyNoMoreInteractions(securityAnalysisRestClient);
+        verify(securityAnalysisRestService).deleteResult(id);
+        verifyNoMoreInteractions(securityAnalysisRestService);
     }
 }

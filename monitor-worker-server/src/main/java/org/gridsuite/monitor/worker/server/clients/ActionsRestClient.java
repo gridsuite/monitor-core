@@ -7,21 +7,13 @@
 
 package org.gridsuite.monitor.worker.server.clients;
 
-import com.powsybl.commons.PowsyblException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,13 +26,13 @@ public class ActionsRestClient {
     private static final String ACTIONS_SERVER_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
-    private final RestTemplate actionsServerRest;
-    private final String actionsServerBaseUri;
+    private final RestClient actionsServerRest;
 
     public ActionsRestClient(@Value("${gridsuite.services.actions-server.base-uri:http://actions-server/}") String actionsServerBaseUri,
-                             RestTemplateBuilder restTemplateBuilder) {
-        this.actionsServerRest = restTemplateBuilder.build();
-        this.actionsServerBaseUri = actionsServerBaseUri;
+                             RestClient.Builder restClientBuilder) {
+        this.actionsServerRest = restClientBuilder
+            .baseUrl(actionsServerBaseUri + DELIMITER + ACTIONS_SERVER_API_VERSION)
+            .build();
     }
 
     public List<AbstractContingencyList> getPersistentContingencyLists(List<UUID> contingenciesUuids) {
@@ -48,20 +40,11 @@ public class ActionsRestClient {
             return List.of();
         }
 
-        String path = this.actionsServerBaseUri + UriComponentsBuilder
-            .fromPath(DELIMITER + ACTIONS_SERVER_API_VERSION + DELIMITER + "contingency-lists")
-            .buildAndExpand()
-            .toUriString();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<List<UUID>> httpEntity = new HttpEntity<>(contingenciesUuids, headers);
-
-        try {
-            ResponseEntity<List<AbstractContingencyList>> response = actionsServerRest.exchange(path, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<>() { });
-            return response.getBody();
-        } catch (RestClientException e) {
-            throw new PowsyblException("Error retrieving persistent contingency lists for UUIDs: " + contingenciesUuids + " - " + e.getMessage(), e);
-        }
+        return actionsServerRest.post()
+            .uri("/contingency-lists")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(contingenciesUuids)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() { });
     }
 }

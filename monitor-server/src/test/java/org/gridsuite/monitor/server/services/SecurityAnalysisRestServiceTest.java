@@ -27,15 +27,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-@RestClientTest(SecurityAnalysisRestClient.class)
-@ContextConfiguration(classes = { SecurityAnalysisRestClient.class })
-class SecurityAnalysisRestClientTest {
+@RestClientTest(SecurityAnalysisRestService.class)
+@ContextConfiguration(classes = { SecurityAnalysisRestService.class })
+class SecurityAnalysisRestServiceTest {
 
     private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final String RESULT_BODY = "{\"status\":\"OK\"}";
 
     @Autowired
-    private SecurityAnalysisRestClient securityAnalysisRestClient;
+    private SecurityAnalysisRestService securityAnalysisRestService;
 
     @Autowired
     private MockRestServiceServer server;
@@ -56,7 +56,7 @@ class SecurityAnalysisRestClientTest {
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = securityAnalysisRestClient.getResult(RESULT_UUID);
+        String result = securityAnalysisRestService.getResult(RESULT_UUID);
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -69,7 +69,7 @@ class SecurityAnalysisRestClientTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID))
+        assertThatThrownBy(() -> securityAnalysisRestService.getResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
     }
 
@@ -79,7 +79,7 @@ class SecurityAnalysisRestClientTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results?resultsUuids=" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withSuccess());
 
-        assertThatNoException().isThrownBy(() -> securityAnalysisRestClient.deleteResult(RESULT_UUID));
+        assertThatNoException().isThrownBy(() -> securityAnalysisRestService.deleteResult(RESULT_UUID));
     }
 
     @Test
@@ -88,7 +88,7 @@ class SecurityAnalysisRestClientTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results?resultsUuids=" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestClient.deleteResult(RESULT_UUID))
+        assertThatThrownBy(() -> securityAnalysisRestService.deleteResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
     }
 }

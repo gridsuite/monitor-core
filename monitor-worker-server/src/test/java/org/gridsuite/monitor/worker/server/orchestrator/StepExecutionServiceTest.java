@@ -11,7 +11,7 @@ import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
-import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
+import org.gridsuite.monitor.worker.server.services.ReportRestService;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
@@ -40,7 +40,7 @@ class StepExecutionServiceTest {
     private NotificationService notificationService;
 
     @Mock
-    private ReportRestClient reportRestClient;
+    private ReportRestService reportRestService;
 
     @Mock
     private ProcessStep<ProcessConfig> processStep;
@@ -55,7 +55,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService(notificationService, reportRestClient);
+        stepExecutionService = new StepExecutionService<>(notificationService, reportRestService);
     }
 
     @Test
@@ -71,7 +71,7 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(context, processStep);
 
         verify(processStep).execute(context);
-        verify(reportRestClient).sendReport(any(ReportInfos.class));
+        verify(reportRestService).sendReport(any(ReportInfos.class));
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
@@ -112,7 +112,7 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
-        verify(reportRestClient).sendReport(any(ReportInfos.class));
+        verify(reportRestService).sendReport(any(ReportInfos.class));
     }
 
     @Test
@@ -127,7 +127,7 @@ class StepExecutionServiceTest {
 
         verify(processStep, never()).execute(any());
         // Verify report was NOT sent on skip
-        verify(reportRestClient, never()).sendReport(any(ReportInfos.class));
+        verify(reportRestService, never()).sendReport(any(ReportInfos.class));
         verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.SKIPPED &&
                         "SKIPPED_STEP".equals(step.getStepType()) &&

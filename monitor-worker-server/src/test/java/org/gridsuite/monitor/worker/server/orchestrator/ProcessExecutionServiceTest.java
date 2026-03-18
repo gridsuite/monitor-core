@@ -14,7 +14,7 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
-import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
+import org.gridsuite.monitor.worker.server.services.ReportRestService;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
@@ -69,7 +69,7 @@ class ProcessExecutionServiceTest {
     private S3Service s3Service;
 
     @Mock
-    ReportRestClient reportRestClient;
+    ReportRestService reportRestClient;
 
     @Mock
     private SecurityAnalysisRestClient securityAnalysisRestClient;

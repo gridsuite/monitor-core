@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.commons.PowsyblException;
 import org.gridsuite.filter.AbstractFilter;
 import org.gridsuite.filter.expertfilter.ExpertFilter;
 import org.gridsuite.filter.expertfilter.expertrule.AbstractExpertRule;
@@ -29,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
+import org.springframework.web.client.HttpServerErrorException;
 
 import java.util.ArrayList;
 import java.util.Date;

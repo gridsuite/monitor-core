@@ -13,7 +13,7 @@ import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
-import org.gridsuite.monitor.server.clients.ReportRestClient;
+import org.gridsuite.monitor.server.services.ReportRestService;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
@@ -84,7 +84,7 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ReportRestClient reportRestClient;
+    private ReportRestService reportRestService;
 
     @MockitoBean
     private ResultService resultService;
@@ -194,8 +194,8 @@ class MonitorIntegrationTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
         ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
 
-        when(reportRestClient.getReport(reportId0)).thenReturn(reportPage0);
-        when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestService.getReport(reportId0)).thenReturn(reportPage0);
+        when(reportRestService.getReport(reportId1)).thenReturn(reportPage1);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))

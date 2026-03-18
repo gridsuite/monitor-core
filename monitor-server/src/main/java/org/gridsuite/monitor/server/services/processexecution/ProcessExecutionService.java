@@ -12,7 +12,7 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionStep
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
-import org.gridsuite.monitor.server.clients.ReportRestClient;
+import org.gridsuite.monitor.server.services.ReportRestService;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
@@ -45,7 +45,7 @@ public class ProcessExecutionService {
     private final ProcessExecutionRepository executionRepository;
     private final NotificationService notificationService;
     private final ProcessConfigService processConfigService;
-    private final ReportRestClient reportRestClient;
+    private final ReportRestService reportRestService;
     private final ResultService resultService;
     private final S3RestService s3RestService;
     private final S3PathResolver s3PathResolver;
@@ -56,7 +56,7 @@ public class ProcessExecutionService {
     public ProcessExecutionService(ProcessExecutionRepository executionRepository,
                           NotificationService notificationService,
                           ProcessConfigService processConfigService,
-                          ReportRestClient reportRestClient,
+                          ReportRestService reportRestService,
                           ResultService resultService,
                           S3RestService s3RestService,
                           S3PathResolver s3PathResolver,
@@ -65,7 +65,7 @@ public class ProcessExecutionService {
         this.executionRepository = executionRepository;
         this.notificationService = notificationService;
         this.processConfigService = processConfigService;
-        this.reportRestClient = reportRestClient;
+        this.reportRestService = reportRestService;
         this.resultService = resultService;
         this.s3RestService = s3RestService;
         this.s3PathResolver = s3PathResolver;
@@ -155,7 +155,7 @@ public class ProcessExecutionService {
     public List<ReportPage> getReports(UUID executionId) {
         List<UUID> reportIds = getReportIds(executionId);
         return reportIds.stream()
-                .map(reportRestClient::getReport)
+                .map(reportRestService::getReport)
                 .toList();
     }
 
@@ -233,7 +233,7 @@ public class ProcessExecutionService {
                 }
             });
             resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportRestClient::deleteReport);
+            reportIds.forEach(reportRestService::deleteReport);
 
             executionRepository.deleteById(executionId);
 

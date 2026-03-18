@@ -31,15 +31,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@RestClientTest(ReportRestClient.class)
-@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestClient.class})
-class ReportRestClientTest {
+@RestClientTest(ReportRestService.class)
+@ContextConfiguration(classes = {MonitorWorkerConfig.class, ReportRestService.class})
+class ReportRestServiceTest {
 
     private static final UUID REPORT_UUID = UUID.randomUUID();
     private static final UUID REPORT_ERROR_UUID = UUID.randomUUID();
 
     @Autowired
-    private ReportRestClient reportRestClient;
+    private ReportRestService reportRestService;
 
     @Autowired
     private MockRestServiceServer server;
@@ -67,7 +67,7 @@ class ReportRestClientTest {
                 .andRespond(MockRestResponseCreators.withSuccess());
 
         ReportInfos reportInfos = new ReportInfos(REPORT_UUID, reportNode);
-        assertThatNoException().isThrownBy(() -> reportRestClient.sendReport(reportInfos));
+        assertThatNoException().isThrownBy(() -> reportRestService.sendReport(reportInfos));
     }
 
     @Test
@@ -82,6 +82,6 @@ class ReportRestClientTest {
                 .andRespond(MockRestResponseCreators.withServerError());
 
         ReportInfos reportInfos = new ReportInfos(REPORT_ERROR_UUID, reportNode);
-        assertThatThrownBy(() -> reportRestClient.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> reportRestService.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
     }
 }

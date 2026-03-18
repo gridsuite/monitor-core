@@ -7,16 +7,10 @@
 package org.gridsuite.monitor.worker.server.clients;
 
 import com.powsybl.commons.PowsyblException;
-import lombok.Setter;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.client.RestClient;
 
 import java.util.UUID;
 
@@ -25,37 +19,26 @@ import java.util.UUID;
  */
 @Service
 public class LoadFlowRestClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoadFlowRestClient.class);
     static final String LOADFLOW_API_VERSION = "v1";
-    private static final String DELIMITER = "/";
 
-    private final RestTemplate restTemplate;
-
-    @Setter
-    private String loadFlowServerBaseUri;
+    private final RestClient restClient;
 
     public LoadFlowRestClient(
-        RestTemplateBuilder restTemplateBuilder,
+        RestClient.Builder restClientBuilder,
         @Value("${gridsuite.services.load-flow-server.base-uri:http://load-flow-server/}") String loadFlowServerBaseUri) {
-        this.loadFlowServerBaseUri = loadFlowServerBaseUri;
-        this.restTemplate = restTemplateBuilder.build();
+        this.restClient = restClientBuilder
+            .baseUrl(loadFlowServerBaseUri + "/" + LOADFLOW_API_VERSION)
+            .build();
     }
 
     public LoadFlowParametersInfos getParameters(UUID loadFlowParametersUuid) {
-        LOGGER.info("Get loadflow parameters {}", loadFlowParametersUuid);
-
         if (loadFlowParametersUuid == null) {
             throw new PowsyblException("Loadflow parameters UUID is null !!");
         }
 
-        var path = loadFlowServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + LOADFLOW_API_VERSION + DELIMITER + "parameters/{uuid}")
-            .buildAndExpand(loadFlowParametersUuid)
-            .toUriString();
-
-        try {
-            return restTemplate.getForObject(path, LoadFlowParametersInfos.class);
-        } catch (RestClientException e) {
-            throw new PowsyblException("Error retrieving loadflow parameters for UUID: " + loadFlowParametersUuid + " - " + e.getMessage(), e);
-        }
+        return restClient.get()
+            .uri("/parameters/{loadFlowParametersUuid}", loadFlowParametersUuid)
+            .retrieve()
+            .body(LoadFlowParametersInfos.class);
     }
 }

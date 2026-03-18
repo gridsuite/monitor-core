@@ -31,8 +31,7 @@ class ProcessTest {
 
         List<ProcessStep<ProcessConfig>> steps = process.getSteps();
 
-        assertThat(steps).containsExactly(step1, step2);
-        assertThat(steps).isUnmodifiable();
+        assertThat(steps).isUnmodifiable().containsExactly(step1, step2);
     }
 
     private static class TestProcess extends AbstractProcess<ProcessConfig> {

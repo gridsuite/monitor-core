@@ -13,7 +13,7 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
-import org.gridsuite.monitor.worker.server.core.orchestrator.StepOrchestrator;
+import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +24,7 @@ import java.time.Instant;
  */
 @Service
 @RequiredArgsConstructor
-public class StepExecutionService implements StepOrchestrator {
+public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 

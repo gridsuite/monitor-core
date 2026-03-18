@@ -35,13 +35,14 @@ public class NetworkModificationRestService {
 
     public NetworkModificationsWithMissingInfo getModifications(List<UUID> modificationsUuids) {
         if (CollectionUtils.isNotEmpty(modificationsUuids)) {
-            String path = this.networkModificationServerBaseUri + UriComponentsBuilder.fromPath(DELIMITER + NETWORK_MODIFICATION_SERVER_API_VERSION + DELIMITER +
-                    "network-composite-modifications" + DELIMITER + "network-modifications-with-missing-info")
-                .queryParam("uuids", modificationsUuids.toArray())
-                .queryParam("onlyMetadata", "false")
-                .buildAndExpand()
-                .toUriString();
-            return networkModificationServerRest.getForObject(path, NetworkModificationsWithMissingInfo.class);
+            return networkModificationServerRest.get()
+                .uri(uriBuilder -> uriBuilder
+                    .path(DELIMITER + "network-composite-modifications" + DELIMITER + "network-modifications-with-missing-info")
+                    .queryParam("uuids", modificationsUuids.toArray())
+                    .queryParam("onlyMetadata", "false")
+                    .build())
+                .retrieve()
+                .body(NetworkModificationsWithMissingInfo.class);
         } else {
             return new NetworkModificationsWithMissingInfo(List.of(), List.of());
         }

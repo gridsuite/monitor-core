@@ -50,59 +50,36 @@ class ProcessExecutionServiceTest {
     @Mock
     private ReportRestClient reportRestClient;
 
-    @Mock
-    private ProcessStep<ProcessConfig> step1;
-
-    @Mock
-    private ProcessStep<ProcessConfig> step2;
-
-    @Mock
-    private ProcessStep<ProcessConfig> step3;
-
-    @Mock
-    private ProcessStepType stepType1;
-
-    @Mock
-    private ProcessStepType stepType2;
-
-    @Mock
-    private ProcessStepType stepType3;
-
     private ProcessExecutionService processExecutionService;
 
     private static final String EXECUTION_ENV_NAME = "test-env";
-    private static final UUID STEP1_ID = UUID.randomUUID();
-    private static final UUID STEP2_ID = UUID.randomUUID();
-    private static final UUID STEP3_ID = UUID.randomUUID();
-    private static final String STEP1_TYPE_NAME = "STEP_1";
-    private static final String STEP2_TYPE_NAME = "STEP_2";
-    private static final String STEP3_TYPE_NAME = "STEP_3";
 
     @BeforeEach
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-
-        lenient().when(step1.getId()).thenReturn(STEP1_ID);
-        lenient().when(step1.getType()).thenReturn(stepType1);
-        lenient().when(stepType1.getName()).thenReturn(STEP1_TYPE_NAME);
-
-        lenient().when(step2.getId()).thenReturn(STEP2_ID);
-        lenient().when(step2.getType()).thenReturn(stepType2);
-        lenient().when(stepType2.getName()).thenReturn(STEP2_TYPE_NAME);
-
-        lenient().when(step3.getId()).thenReturn(STEP3_ID);
-        lenient().when(step3.getType()).thenReturn(stepType3);
-        lenient().when(stepType3.getName()).thenReturn(STEP3_TYPE_NAME);
-
-        List<Process<? extends ProcessConfig>> processList = List.of(process);
         StepExecutor stepExecutor = new StepExecutionService(notificationService, reportRestClient);
-        processExecutionService = new ProcessExecutionService(processList, stepExecutor, notificationService, EXECUTION_ENV_NAME);
+        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, EXECUTION_ENV_NAME);
+    }
+
+    private static ProcessStep<ProcessConfig> mockStep(UUID id, String typeName) {
+        ProcessStep<ProcessConfig> step = mock(ProcessStep.class);
+        ProcessStepType type = mock(ProcessStepType.class);
+        when(step.getId()).thenReturn(id);
+        when(step.getType()).thenReturn(type);
+        when(type.getName()).thenReturn(typeName);
+        return step;
     }
 
     @Test
     void executeProcessShouldCompleteSuccessfullyWhenAllStepsSucceed() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID step1Id = UUID.randomUUID();
+        UUID step2Id = UUID.randomUUID();
+        UUID step3Id = UUID.randomUUID();
+        ProcessStep<ProcessConfig> step1 = mockStep(step1Id, "STEP_1");
+        ProcessStep<ProcessConfig> step2 = mockStep(step2Id, "STEP_2");
+        ProcessStep<ProcessConfig> step3 = mockStep(step3Id, "STEP_3");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
@@ -112,16 +89,16 @@ class ProcessExecutionServiceTest {
         verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&
-            steps.get(0).getId().equals(STEP1_ID) &&
-            steps.get(0).getStepType().equals(STEP1_TYPE_NAME) &&
+            steps.get(0).getId().equals(step1Id) &&
+            steps.get(0).getStepType().equals("STEP_1") &&
             steps.get(0).getStepOrder() == 0 &&
             steps.get(1).getStatus() == StepStatus.SCHEDULED &&
-            steps.get(1).getId().equals(STEP2_ID) &&
-            steps.get(1).getStepType().equals(STEP2_TYPE_NAME) &&
+            steps.get(1).getId().equals(step2Id) &&
+            steps.get(1).getStepType().equals("STEP_2") &&
             steps.get(1).getStepOrder() == 1 &&
             steps.get(2).getStatus() == StepStatus.SCHEDULED &&
-            steps.get(2).getId().equals(STEP3_ID) &&
-            steps.get(2).getStepType().equals(STEP3_TYPE_NAME) &&
+            steps.get(2).getId().equals(step3Id) &&
+            steps.get(2).getStepType().equals("STEP_3") &&
             steps.get(2).getStepOrder() == 2
         ));
         verify(step1).execute(any());
@@ -144,10 +121,13 @@ class ProcessExecutionServiceTest {
     void executeProcessShouldSkipRemainingStepsAndSendFailedStatusWhenFirstStepFails() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
+        ProcessStep<ProcessConfig> step1 = mockStep(UUID.randomUUID(), "STEP_1");
+        ProcessStep<ProcessConfig> step2 = mockStep(UUID.randomUUID(), "STEP_2");
+        ProcessStep<ProcessConfig> step3 = mockStep(UUID.randomUUID(), "STEP_3");
         RuntimeException stepException = new RuntimeException("Step execution failed");
         doThrow(stepException).when(step1).execute(any());
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
 
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));

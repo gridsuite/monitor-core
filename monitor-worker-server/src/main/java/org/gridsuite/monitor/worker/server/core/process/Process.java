@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.core.process;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 
 import java.util.List;
 
@@ -32,18 +31,9 @@ public interface Process<C extends ProcessConfig> {
     ProcessType getProcessType();
 
     /**
-     * Defines the list of steps that compose this process.
+     * Defines the ordered list of steps that compose this process.
      *
      * @return ordered process steps
      */
     List<ProcessStep<C>> getSteps();
-
-    /**
-     * Hook invoked when a step throws during execution.
-     *
-     * @param context the current execution context
-     * @param step the step that failed
-     * @param e the exception thrown by the step
-     */
-    void onStepFailure(ProcessExecutionContext<C> context, ProcessStep<C> step, Exception e);
 }

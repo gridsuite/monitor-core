@@ -12,7 +12,6 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
-import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
@@ -135,7 +134,6 @@ class ProcessExecutionServiceTest {
         verify(step1).execute(any());
         verify(step2, never()).execute(any());
         verify(step3, never()).execute(any());
-        verify(process).onStepFailure(any(ProcessExecutionContext.class), eq(step1), eq(stepException));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
             update.getStatus() == ProcessStatus.RUNNING

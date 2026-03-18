@@ -9,9 +9,6 @@ package org.gridsuite.monitor.worker.server.core.process;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,8 +18,6 @@ import java.util.List;
  */
 @Getter
 public abstract class AbstractProcess<C extends ProcessConfig> implements Process<C> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProcess.class);
 
     protected final ProcessType processType;
 
@@ -35,11 +30,5 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
     @Override
     public List<ProcessStep<C>> getSteps() {
         return Collections.unmodifiableList(defineSteps());
-    }
-
-    @Override
-    public void onStepFailure(ProcessExecutionContext<C> context, ProcessStep<C> step, Exception e) {
-        // TODO better error handling
-        LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
     }
 }

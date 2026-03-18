@@ -18,6 +18,8 @@ import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +35,8 @@ import java.util.stream.IntStream;
  */
 @Service
 public class ProcessExecutionService implements ProcessExecutor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProcessExecutionService.class);
 
     private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
     private final StepExecutor stepExecutor;
@@ -110,7 +114,8 @@ public class ProcessExecutionService implements ProcessExecutor {
             try {
                 stepExecutor.executeStep(stepContext, step);
             } catch (Exception e) {
-                process.onStepFailure(context, step, e);
+                // TODO better error handling
+                LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
                 skipRemaining = true;
             }
         }

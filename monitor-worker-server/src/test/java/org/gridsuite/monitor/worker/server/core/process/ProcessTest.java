@@ -9,15 +9,27 @@ package org.gridsuite.monitor.worker.server.core.process;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.orchestrator.StepExecutionService;
+import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -25,7 +37,7 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MockitoExtension.class)
 class ProcessTest {
     @Mock
-    private StepExecutionService stepExecutionService;
+    private StepExecutor stepExecutor;
 
     @Mock
     private ProcessExecutionContext<ProcessConfig> processContext;
@@ -34,8 +46,7 @@ class ProcessTest {
 
     @BeforeEach
     void setUp() {
-        process = new TestProcess(
-                stepExecutionService);
+        process = new TestProcess();
     }
 
     @Test
@@ -49,10 +60,10 @@ class ProcessTest {
                 .thenReturn(stepContext2)
                 .thenReturn(stepContext3);
 
-        process.execute(processContext);
+        process.executeSteps(processContext, stepExecutor);
 
-        verify(stepExecutionService, times(3)).executeStep(any(), any());
-        verify(stepExecutionService, never()).skipStep(any(), any());
+        verify(stepExecutor, times(3)).executeStep(any(), any());
+        verify(stepExecutor, never()).skipStep(any(), any());
         // Verify stepOrder is correctly set
         InOrder inOrder = inOrder(processContext);
         inOrder.verify(processContext).createStepContext(any(), eq(0));
@@ -71,15 +82,15 @@ class ProcessTest {
                 .thenReturn(stepContext3);
         // Make the first step fail
         doThrow(new RuntimeException("Network loading failed"))
-                .when(stepExecutionService).executeStep(eq(stepContext1), any());
+                .when(stepExecutor).executeStep(eq(stepContext1), any());
 
-        process.execute(processContext);
+        process.executeSteps(processContext, stepExecutor);
 
-        verify(stepExecutionService).executeStep(eq(stepContext1), any());
-        verify(stepExecutionService).skipStep(eq(stepContext2), any());
-        verify(stepExecutionService).skipStep(eq(stepContext3), any());
-        verify(stepExecutionService, times(1)).executeStep(any(), any());
-        verify(stepExecutionService, times(2)).skipStep(any(), any());
+        verify(stepExecutor).executeStep(eq(stepContext1), any());
+        verify(stepExecutor).skipStep(eq(stepContext2), any());
+        verify(stepExecutor).skipStep(eq(stepContext3), any());
+        verify(stepExecutor, times(1)).executeStep(any(), any());
+        verify(stepExecutor, times(2)).skipStep(any(), any());
         // Verify stepOrder is correctly set
         InOrder inOrder = inOrder(processContext);
         inOrder.verify(processContext).createStepContext(any(), eq(0));
@@ -92,12 +103,12 @@ class ProcessTest {
      */
     private static class TestProcess extends AbstractProcess<ProcessConfig> {
 
-        public TestProcess(StepExecutionService<ProcessConfig> stepExecutionService) {
-            super(ProcessType.SECURITY_ANALYSIS, stepExecutionService);
+        public TestProcess() {
+            super(ProcessType.SECURITY_ANALYSIS);
         }
 
         @Override
-        public List<ProcessStep<ProcessConfig>> defineSteps() {
+        protected List<ProcessStep<ProcessConfig>> defineSteps() {
             // Return 3 dummy steps for testing
             ProcessStep<ProcessConfig> step1 = mock(ProcessStep.class);
             ProcessStep<ProcessConfig> step2 = mock(ProcessStep.class);

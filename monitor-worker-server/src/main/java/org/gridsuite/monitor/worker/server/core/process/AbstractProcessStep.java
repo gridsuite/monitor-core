@@ -12,32 +12,13 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import java.util.UUID;
 
 /**
- * Base class for {@link ProcessStep} implementations.
- * <p>
- * Provides:
- * <ul>
- *   <li>A fixed {@link ProcessStepType} (usually an enum value)</li>
- *   <li>An auto-generated unique {@link UUID} step identifier used for correlation/monitoring</li>
- * </ul>
- * <p>
- * Step implementations should extend this class when they only need to provide business logic in
- * {@link #execute(org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext)}.
- *
- * @param <C> the concrete {@link ProcessConfig} type required by this step
- *
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Getter
 public abstract class AbstractProcessStep<C extends ProcessConfig> implements ProcessStep<C> {
 
-    /**
-     * Functional classification of the step.
-     */
     private final ProcessStepType type;
 
-    /**
-     * Unique identifier of this step instance.
-     */
     private final UUID id;
 
     /**

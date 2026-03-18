@@ -12,7 +12,6 @@ import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -50,6 +49,7 @@ public class ProcessExecutionService implements ProcessExecutor {
         this.executionEnvName = executionEnvName;
     }
 
+    @Override
     public <T extends ProcessConfig> void executeProcess(ProcessRunMessage<T> runMessage) {
         @SuppressWarnings("unchecked") // safe: ProcessType uniquely maps to a Process with the matching ProcessConfig subtype
         Process<T> process = (Process<T>) processes.get(runMessage.processType());
@@ -89,30 +89,8 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
         updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
-        doExecuteSteps(process, context);
+        process.executeSteps(context, stepExecutor);
         updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
-    }
-
-    private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        List<ProcessStep<T>> steps = process.getSteps();
-        boolean skipRemaining = false;
-
-        for (int i = 0; i < steps.size(); i++) {
-            ProcessStep<T> step = steps.get(i);
-            ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
-
-            if (skipRemaining) {
-                stepExecutor.skipStep(stepContext, step);
-                continue;
-            }
-
-            try {
-                stepExecutor.executeStep(stepContext, step);
-            } catch (Exception e) {
-                process.onStepFailure(context, step, e);
-                skipRemaining = true;
-            }
-        }
     }
 
     private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {

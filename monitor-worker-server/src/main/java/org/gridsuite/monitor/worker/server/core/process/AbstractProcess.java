@@ -10,6 +10,8 @@ import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,19 +19,6 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Base class for {@link Process} implementations.
- * <p>
- * Provides:
- * <ul>
- *   <li>Storage of the {@link ProcessType} used to route execution requests</li>
- *   <li>A default {@link #onStepFailure(ProcessExecutionContext, ProcessStep, Exception)} implementation that logs</li>
- * </ul>
- * <p>
- * Note: This class does <strong>not</strong> orchestrate step execution. Orchestration belongs to the application layer
- * (e.g. a {@code ProcessExecutor} / orchestrator service).
- *
- * @param <C> the concrete {@link ProcessConfig} type required by this process
- *
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Getter
@@ -37,9 +26,6 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProcess.class);
 
-    /**
-     * The process type associated with this implementation.
-     */
     protected final ProcessType processType;
 
     protected AbstractProcess(ProcessType processType) {
@@ -53,11 +39,29 @@ public abstract class AbstractProcess<C extends ProcessConfig> implements Proces
         return Collections.unmodifiableList(defineSteps());
     }
 
-    /**
-     * Default failure hook that logs the failing step and exception message.
-     * <p>
-     * Override to implement domain-specific failure behavior (e.g. cleanup, extra diagnostics).
-     */
+    @Override
+    public void executeSteps(ProcessExecutionContext<C> context, StepExecutor stepExecutor) {
+        List<ProcessStep<C>> steps = getSteps();
+        boolean skipRemaining = false;
+
+        for (int i = 0; i < steps.size(); i++) {
+            ProcessStep<C> step = steps.get(i);
+            ProcessStepExecutionContext<C> stepContext = context.createStepContext(step, i);
+
+            if (skipRemaining) {
+                stepExecutor.skipStep(stepContext, step);
+                continue;
+            }
+
+            try {
+                stepExecutor.executeStep(stepContext, step);
+            } catch (Exception e) {
+                onStepFailure(context, step, e);
+                skipRemaining = true;
+            }
+        }
+    }
+
     @Override
     public void onStepFailure(ProcessExecutionContext<C> context, ProcessStep<C> step, Exception e) {
         // TODO better error handling

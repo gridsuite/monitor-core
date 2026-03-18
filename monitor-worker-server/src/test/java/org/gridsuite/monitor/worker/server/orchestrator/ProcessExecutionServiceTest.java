@@ -16,6 +16,7 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
@@ -24,7 +25,6 @@ import org.gridsuite.monitor.worker.server.process.commons.steps.LoadNetworkStep
 import org.gridsuite.monitor.worker.server.process.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.gridsuite.monitor.worker.server.services.*;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -105,13 +105,13 @@ class ProcessExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        doNothing().when(process).execute(any(ProcessExecutionContext.class));
+        doNothing().when(process).executeSteps(any(ProcessExecutionContext.class), any(StepExecutor.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
         when(process.getSteps()).thenReturn((List) List.of(loadNetworkStep, applyModificationsStep, runComputationStep));
 
         processExecutionService.executeProcess(runMessage);
 
-        verify(process, times(2)).getSteps();
+        verify(process, times(1)).getSteps();
         verify(notificationService, times(1)).updateStepsStatuses(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&
@@ -128,12 +128,12 @@ class ProcessExecutionServiceTest {
             steps.get(2).getStepOrder() == 2
         ));
 
-        verify(process).execute(argThat(context ->
+        verify(process).executeSteps(argThat(context ->
                 context.getExecutionId().equals(executionId) &&
                         context.getCaseUuid().equals(caseUuid) &&
                         context.getConfig().equals(processConfig) &&
                         context.getExecutionEnvName().equals(EXECUTION_ENV_NAME)
-        ));
+        ), any(StepExecutor.class));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -154,12 +154,12 @@ class ProcessExecutionServiceTest {
         UUID caseUuid = UUID.randomUUID();
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         RuntimeException processException = new RuntimeException("Process execution failed");
-        doThrow(processException).when(process).execute(any(ProcessExecutionContext.class));
+        doThrow(processException).when(process).executeSteps(any(ProcessExecutionContext.class), any(StepExecutor.class));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
 
         assertThrows(RuntimeException.class, () -> processExecutionService.executeProcess(runMessage));
 
-        verify(process).execute(any(ProcessExecutionContext.class));
+        verify(process).executeSteps(any(ProcessExecutionContext.class), any(StepExecutor.class));
         verify(notificationService, times(2)).updateExecutionStatus(eq(executionId), any(ProcessExecutionStatusUpdate.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -179,7 +179,7 @@ class ProcessExecutionServiceTest {
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No process found for type");
-        verify(process, never()).execute(any());
+        verify(process, never()).executeSteps(any(), any());
         verifyNoInteractions(notificationService);
     }
 }

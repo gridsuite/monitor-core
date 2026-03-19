@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

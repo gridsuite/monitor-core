@@ -114,10 +114,10 @@ class ApplyModificationsStepTest {
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
         when(stepContext.getReportInfos()).thenReturn(reportInfos);
-        when(networkModificationRestService.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
+        when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
 
         assertThrows(RuntimeException.class, () -> applyModificationsStep.execute(stepContext));
-        verify(networkModificationRestService).getModifications(any(List.class));
+        verify(networkModificationRestClient).getModifications(any(List.class));
         verify(networkModificationService, never()).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
     }
 
@@ -128,7 +128,7 @@ class ApplyModificationsStepTest {
         applyModificationsStep.execute(stepContext);
 
         verifyNoInteractions(networkModificationService);
-        verifyNoInteractions(networkModificationRestService);
+        verifyNoInteractions(networkModificationRestClient);
         verifyNoInteractions(filterService);
         verifyNoInteractions(s3Service);
     }

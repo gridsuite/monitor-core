@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * Used by the orchestrator to publish process execution updates (execution status and step statuses)
- * to the monitor server (via messaging).
+ * to the monitor server (via messaging)
  *
  * @author Thang PHAM <quyet-thang.pham at rte-france.com>
  */

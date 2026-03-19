@@ -219,7 +219,8 @@ public class MonitorService {
 
         Optional<ProcessExecutionEntity> executionEntity = executionRepository.findById(executionId);
         if (executionEntity.isPresent()) {
-            Optional.ofNullable(executionEntity.get().getSteps()).orElse(List.of()).forEach(step -> {
+            ProcessExecutionEntity entity = executionEntity.get();
+            Optional.ofNullable(entity.getSteps()).orElse(List.of()).forEach(step -> {
                 if (step.getResultId() != null && step.getResultType() != null) {
                     resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
                 }
@@ -230,7 +231,7 @@ public class MonitorService {
             resultIds.forEach(resultService::deleteResult);
             reportIds.forEach(reportRestService::deleteReport);
 
-            executionRepository.deleteById(executionId);
+            executionRepository.delete(entity);
 
             return true;
         }

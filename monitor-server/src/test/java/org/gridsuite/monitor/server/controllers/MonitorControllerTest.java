@@ -67,7 +67,7 @@ class MonitorControllerTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @NullSource
-    void executeSecurityAnalysisShouldReturnExecutionId(Boolean isDebug) throws Exception {
+    void executeProcessShouldReturnExecutionId(Boolean isDebug) throws Exception {
         UUID caseUuid = UUID.randomUUID();
         UUID parametersUuid = UUID.randomUUID();
         UUID modificationUuid = UUID.randomUUID();
@@ -88,7 +88,7 @@ class MonitorControllerTest {
         when(monitorService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
                 .thenReturn(Optional.of(executionId));
 
-        MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
+        MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
             .param("processConfigUuid", processConfigUuid.toString())
             .header("userId", "user1");
@@ -106,13 +106,13 @@ class MonitorControllerTest {
     }
 
     @Test
-    void executeSecurityAnalysisWithConfigNotFoundShouldReturnError() throws Exception {
+    void executeProcessWithConfigNotFoundShouldReturnError() throws Exception {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
         when(monitorService.executeProcess(caseUuid, "user1", processConfigUuid, false)).thenReturn(Optional.empty());
 
-        MockHttpServletRequestBuilder request = post("/v1/execute/security-analysis")
+        MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
             .param("processConfigUuid", processConfigUuid.toString())
             .header("userId", "user1");

@@ -224,7 +224,8 @@ public class ProcessExecutionService {
 
         Optional<ProcessExecutionEntity> executionEntity = processExecutionRepository.findById(executionId);
         if (executionEntity.isPresent()) {
-            Optional.ofNullable(executionEntity.get().getSteps()).orElse(List.of()).forEach(step -> {
+            ProcessExecutionEntity entity = executionEntity.get();
+            Optional.ofNullable(entity.getSteps()).orElse(List.of()).forEach(step -> {
                 if (step.getResultId() != null && step.getResultType() != null) {
                     resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
                 }
@@ -235,7 +236,7 @@ public class ProcessExecutionService {
             resultIds.forEach(resultService::deleteResult);
             reportIds.forEach(reportRestClient::deleteReport);
 
-            processExecutionRepository.deleteById(executionId);
+            processExecutionRepository.delete(entity);
 
             return true;
         }

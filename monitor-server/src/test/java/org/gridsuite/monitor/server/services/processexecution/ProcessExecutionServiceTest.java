@@ -561,7 +561,7 @@ class ProcessExecutionServiceTest {
             .build();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        doNothing().when(executionRepository).deleteById(executionId);
+        doNothing().when(executionRepository).delete(execution);
 
         doNothing().when(reportRestClient).deleteReport(reportId1);
         doNothing().when(reportRestClient).deleteReport(reportId2);
@@ -571,7 +571,7 @@ class ProcessExecutionServiceTest {
         assertThat(done).isTrue();
 
         verify(executionRepository).findById(executionId);
-        verify(executionRepository).deleteById(executionId);
+        verify(executionRepository).delete(execution);
         verify(reportRestClient).deleteReport(reportId1);
         verify(reportRestClient).deleteReport(reportId2);
         verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
@@ -585,9 +585,9 @@ class ProcessExecutionServiceTest {
         assertThat(done).isFalse();
 
         verify(executionRepository).findById(executionId);
+        verifyNoMoreInteractions(executionRepository);
         verifyNoInteractions(reportRestClient);
         verifyNoInteractions(resultService);
-        verify(executionRepository, never()).deleteById(executionId);
     }
 
     @Test

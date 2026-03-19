@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import org.gridsuite.monitor.worker.server.clients.S3RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class S3ServiceTest {
     @Mock
-    S3RestService s3RestService;
+    S3RestClient s3RestClient;
 
     @InjectMocks
     S3Service s3Service;
@@ -64,14 +65,14 @@ class S3ServiceTest {
             Path uploaded = invocation.getArgument(0);
             Files.copy(uploaded, capturedCopy, StandardCopyOption.REPLACE_EXISTING);
             return null;
-        }).when(s3RestService)
+        }).when(s3RestClient)
             .uploadFile(any(Path.class), anyString(), anyString());
 
         // --- Method invocation ---
         s3Service.exportCompressedToS3(s3Key, fileNamePrefix, fileNameSuffix, writer);
 
         // --- Assertions ---
-        verify(s3RestService).uploadFile(any(), eq(s3Key), eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz")));
+        verify(s3RestClient).uploadFile(any(), eq(s3Key), eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz")));
         try (InputStream in = new GZIPInputStream(Files.newInputStream(capturedCopy))) {
             String uncompressedContent = new String(in.readAllBytes(), UTF_8);
             assertThat(uncompressedContent).isNotNull();
@@ -99,7 +100,7 @@ class S3ServiceTest {
 
         // --- Assertions ---
         ArgumentCaptor<Path> compressedDebugFileToUploadCaptor = ArgumentCaptor.forClass(Path.class);
-        verify(s3RestService).uploadFile(
+        verify(s3RestClient).uploadFile(
             compressedDebugFileToUploadCaptor.capture(),
             eq(s3Key),
             eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz"))

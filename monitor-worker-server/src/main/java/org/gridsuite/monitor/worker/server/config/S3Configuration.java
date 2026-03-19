@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.config;
 
-import org.gridsuite.monitor.worker.server.services.S3RestService;
+import org.gridsuite.monitor.worker.server.clients.S3RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +28,8 @@ public class S3Configuration {
 
     @SuppressWarnings("checkstyle:MethodName")
     @Bean
-    public S3RestService s3RestService(S3Client s3Client) {
+    public S3RestClient s3RestService(S3Client s3Client) {
         LOGGER.info("Configuring S3RestService with bucket: {}", bucketName);
-        return new S3RestService(s3Client, bucketName);
+        return new S3RestClient(s3Client, bucketName);
     }
 }

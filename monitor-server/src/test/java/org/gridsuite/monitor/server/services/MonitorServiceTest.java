@@ -549,7 +549,7 @@ class MonitorServiceTest {
             .build();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-        doNothing().when(executionRepository).deleteById(executionId);
+        doNothing().when(executionRepository).delete(execution);
 
         doNothing().when(reportRestService).deleteReport(reportId1);
         doNothing().when(reportRestService).deleteReport(reportId2);
@@ -559,7 +559,7 @@ class MonitorServiceTest {
         assertThat(done).isTrue();
 
         verify(executionRepository).findById(executionId);
-        verify(executionRepository).deleteById(executionId);
+        verify(executionRepository).delete(execution);
         verify(reportRestService).deleteReport(reportId1);
         verify(reportRestService).deleteReport(reportId2);
         verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
@@ -573,9 +573,9 @@ class MonitorServiceTest {
         assertThat(done).isFalse();
 
         verify(executionRepository).findById(executionId);
+        verifyNoMoreInteractions(executionRepository);
         verifyNoInteractions(reportRestService);
         verifyNoInteractions(resultService);
-        verify(executionRepository, never()).deleteById(executionId);
     }
 
     @Test

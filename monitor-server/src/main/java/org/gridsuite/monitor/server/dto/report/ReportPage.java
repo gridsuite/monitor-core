@@ -16,6 +16,8 @@ import java.util.List;
  * non-serializable instances (e.g., Pageable.unpaged()), making them unsuitable
  * for direct API responses. This record contains only the essential pagination
  * data needed by clients.
+ *
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 public record ReportPage(int number, List<ReportLog> content, long totalElements, int totalPages) {
     public ReportPage(Page<ReportLog> page) {

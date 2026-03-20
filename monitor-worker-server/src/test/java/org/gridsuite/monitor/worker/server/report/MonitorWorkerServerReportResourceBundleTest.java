@@ -24,7 +24,7 @@ class MonitorWorkerServerReportResourceBundleTest {
     void reportResourceBundleIsRegisteredViaAutoService() {
         ServiceLoader<ReportResourceBundle> loader = ServiceLoader.load(ReportResourceBundle.class);
 
-        assertThat(loader).anyMatch(bundle -> bundle instanceof MonitorWorkerServerReportResourceBundle);
+        assertThat(loader).anyMatch(MonitorWorkerServerReportResourceBundle.class::isInstance);
     }
 
     @Test

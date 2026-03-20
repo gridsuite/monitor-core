@@ -55,7 +55,7 @@ class LoadFlowRestClientTest {
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://load-flow-server/v1/parameters/" + PARAMETERS_UUID))
+                "http://loadflow-server/v1/parameters/" + PARAMETERS_UUID))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(expectedParameters)));
@@ -69,7 +69,7 @@ class LoadFlowRestClientTest {
     void getParametersNotFound() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://load-flow-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
+                "http://loadflow-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> loadFlowRestClient.getParameters(PARAMETERS_ERROR_UUID))

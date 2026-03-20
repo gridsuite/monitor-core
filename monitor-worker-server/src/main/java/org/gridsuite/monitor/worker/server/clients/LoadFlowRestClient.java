@@ -25,7 +25,7 @@ public class LoadFlowRestClient {
 
     public LoadFlowRestClient(
         RestClient.Builder restClientBuilder,
-        @Value("${gridsuite.services.load-flow-server.base-uri:http://load-flow-server/}") String loadFlowServerBaseUri) {
+        @Value("${gridsuite.services.loadflow-server.base-uri:http://loadflow-server/}") String loadFlowServerBaseUri) {
         this.restClient = restClientBuilder
             .baseUrl(loadFlowServerBaseUri + "/" + LOADFLOW_API_VERSION)
             .build();

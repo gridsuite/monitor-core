@@ -153,6 +153,7 @@ class StepExecutionServiceTest {
         ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
         when(context.getProcessExecutionId()).thenReturn(executionId);
         when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
+        when(context.getStartedAt()).thenReturn(java.time.Instant.now());
         when(context.getStepOrder()).thenReturn(stepOrder);
 
         return context;

@@ -8,7 +8,7 @@
 package org.gridsuite.monitor.worker.server.clients;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
+import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;

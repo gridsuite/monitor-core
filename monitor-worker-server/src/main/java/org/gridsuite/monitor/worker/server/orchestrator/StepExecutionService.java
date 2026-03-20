@@ -35,6 +35,8 @@ public class StepExecutionService implements StepExecutor {
                 .stepType(step.getType().getName())
                 .stepOrder(context.getStepOrder())
                 .status(StepStatus.SKIPPED)
+                .startedAt(context.getStartedAt())
+                .completedAt(Instant.now())
                 .build();
         notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
     }

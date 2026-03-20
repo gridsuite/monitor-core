@@ -17,7 +17,7 @@ import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionCont
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
-import org.gridsuite.monitor.worker.server.dto.NetworkModificationsWithMissingInfo;
+import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
 import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
@@ -87,9 +87,6 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     private void applyModifications(List<UUID> modificationIds, Network network, ReportNode reportNode) {
         NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = networkModificationRestClient.getModifications(modificationIds);
-        if (networkModificationsWithMissingInfo == null) {
-            throw new PowsyblException("Failed to retrieve network modifications");
-        }
         if (CollectionUtils.isNotEmpty(networkModificationsWithMissingInfo.missingCompositeModifications())) {
             String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
 
@@ -99,7 +96,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
                 .withUntypedValue("uuids", missingUuids)
                 .withSeverity(TypedValue.ERROR_SEVERITY)
                 .add();
-            throw new PowsyblException("Some network composite modifications are missing !!");
+            throw new PowsyblException("Some network composite modifications are missing");
         }
         networkModificationService.applyModifications(network, networkModificationsWithMissingInfo.networkModifications(), reportNode, filterService);
     }

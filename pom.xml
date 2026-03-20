@@ -44,7 +44,7 @@
         <sonar.organization>gridsuite</sonar.organization>
         <sonar.projecttetedddKey>org.gridsuite:monitor-core</sonar.projecttetedddKey>
     </properties>
-
+wxx
     <dependencyManagement>
         <dependencies>
             <dependency>

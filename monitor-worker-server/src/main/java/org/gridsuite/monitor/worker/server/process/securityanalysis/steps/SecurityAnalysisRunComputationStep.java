@@ -19,7 +19,6 @@ import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionCont
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.process.securityanalysis.SecurityAnalysisStepType;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
-import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.springframework.stereotype.Component;
 
@@ -62,7 +61,6 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
             context.setResultInfos(resultInfos);
         } catch (Exception e) {
             reportNode.newReportNode()
-                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
                 .withMessageTemplate("monitor.worker.server.securityanalysis.step.error")
                 .withUntypedValue("errorMessage", e.getMessage())
                 .withSeverity(TypedValue.ERROR_SEVERITY)

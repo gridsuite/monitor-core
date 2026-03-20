@@ -15,6 +15,8 @@
     <properties>
         <liquibase-hibernate-package>org.gridsuite.monitor.server</liquibase-hibernate-package>
         <spring-cloud-aws-starter-s3>3.3.1</spring-cloud-aws-starter-s3>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <lombok-mapstruct-bindings.version>0.2.0</lombok-mapstruct-bindings.version>
     </properties>
 
     <build>
@@ -27,6 +29,28 @@
                         <classpathDependencyExcludes>
                             <classpathDependencyExclude>com.powsybl:powsybl-config-classic</classpathDependencyExclude>
                         </classpathDependencyExcludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <parameters>${maven.compiler.parameters}</parameters>
+                        <annotationProcessorPaths combine.children="append">
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>${mapstruct.version}</version>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok-mapstruct-binding</artifactId>
+                                <version>${lombok-mapstruct-bindings.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
             </plugins>

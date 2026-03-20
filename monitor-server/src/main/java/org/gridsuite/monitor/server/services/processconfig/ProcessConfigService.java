@@ -36,6 +36,10 @@ public class ProcessConfigService {
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
+        return doCreateProcessConfig(processConfig);
+    }
+
+    private UUID doCreateProcessConfig(ProcessConfig processConfig) {
         switch (processConfig) {
             case SecurityAnalysisConfig sac -> {
                 return processConfigRepository.save(securityAnalysisConfigMapper.toEntity(sac)).getId();
@@ -69,7 +73,7 @@ public class ProcessConfigService {
     @Transactional
     public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
         return processConfigRepository.findById(sourceProcessConfigUuid)
-            .map(sourceEntity -> processConfigRepository.save(sourceEntity).getId());
+            .map(sourceEntity -> doCreateProcessConfig(toProcessConfig(sourceEntity)));
     }
 
     @Transactional

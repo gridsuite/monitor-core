@@ -149,11 +149,9 @@ class ProcessConfigServiceTest {
         UUID processConfigId = UUID.randomUUID();
         UUID expectedNewProcessConfigId = UUID.randomUUID();
 
-        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
-
         when(processConfigRepository.findById(processConfigId))
-            .thenReturn(Optional.of(securityAnalysisConfigEntity));
-        when(processConfigRepository.save(securityAnalysisConfigEntity))
+            .thenReturn(Optional.of(mock(SecurityAnalysisConfigEntity.class)));
+        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
             .thenAnswer(invocation -> {
                 SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
                 entity.setId(expectedNewProcessConfigId);
@@ -161,10 +159,13 @@ class ProcessConfigServiceTest {
             });
 
         Optional<UUID> newProcessConfigId = processConfigService.duplicateProcessConfig(processConfigId);
+
         assertThat(newProcessConfigId).isPresent();
         assertThat(newProcessConfigId.get()).isEqualTo(expectedNewProcessConfigId);
+
         verify(processConfigRepository).findById(processConfigId);
-        verify(processConfigRepository).save(securityAnalysisConfigEntity);
+        ArgumentCaptor<SecurityAnalysisConfigEntity> captor = ArgumentCaptor.forClass(SecurityAnalysisConfigEntity.class);
+        verify(processConfigRepository).save(captor.capture());
     }
 
     @Test

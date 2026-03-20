@@ -155,26 +155,28 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         UUID newProcessConfigId = UUID.randomUUID();
 
-        when(processConfigService.duplicateProcessConfig(any(UUID.class)))
+        when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.of(newProcessConfigId));
 
         mockMvc.perform(post("/v1/process-configs/duplication?duplicateFrom={uuid}", processConfigId))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").value(newProcessConfigId.toString()));
 
-        verify(processConfigService).duplicateProcessConfig(any(UUID.class));
+        verify(processConfigService).duplicateProcessConfig(processConfigId);
     }
 
     @Test
     void duplicateSecurityAnalysisConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
-        when(processConfigService.duplicateProcessConfig(any(UUID.class)))
+        when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(post("/v1/process-configs/duplication?duplicateFrom={uuid}", processConfigId))
             .andExpect(status().isNotFound());
 
-        verify(processConfigService).duplicateProcessConfig(any(UUID.class));
+        verify(processConfigService).duplicateProcessConfig(processConfigId);
     }
 
     @Test

@@ -146,10 +146,36 @@ class ProcessConfigServiceTest {
 
     @Test
     void duplicateSecurityAnalysisConfig() {
+        UUID processConfigId = UUID.randomUUID();
+        UUID expectedNewProcessConfigId = UUID.randomUUID();
+
+        SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
+
+        when(processConfigRepository.findById(processConfigId))
+            .thenReturn(Optional.of(securityAnalysisConfigEntity));
+        when(processConfigRepository.save(securityAnalysisConfigEntity))
+            .thenAnswer(invocation -> {
+                SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
+                entity.setId(expectedNewProcessConfigId);
+                return entity;
+            });
+
+        Optional<UUID> newProcessConfigId = processConfigService.duplicateProcessConfig(processConfigId);
+        assertThat(newProcessConfigId).isPresent();
+        assertThat(newProcessConfigId.get()).isEqualTo(expectedNewProcessConfigId);
+        verify(processConfigRepository).findById(processConfigId);
+        verify(processConfigRepository).save(securityAnalysisConfigEntity);
     }
 
     @Test
     void duplicateSecurityAnalysisConfigNotFound() {
+        UUID processConfigId = UUID.randomUUID();
+
+        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
+
+        Optional<UUID> newProcessConfigId = processConfigService.duplicateProcessConfig(processConfigId);
+        assertThat(newProcessConfigId).isEmpty();
+        verify(processConfigRepository).findById(processConfigId);
     }
 
     @Test

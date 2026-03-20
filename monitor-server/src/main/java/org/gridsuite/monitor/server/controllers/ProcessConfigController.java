@@ -80,6 +80,19 @@ public class ProcessConfigController {
             ResponseEntity.notFound().build();
     }
 
+    @PostMapping(value = "/duplication", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Duplicate a process config")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "process config was duplicated"),
+        @ApiResponse(responseCode = "404", description = "process config to duplicate was not found")})
+    public ResponseEntity<UUID> duplicateProcessConfig(
+        @Parameter(description = "process config UUID to duplicate") @RequestParam("duplicateFrom") UUID sourceProcessConfigUuid) {
+        Optional<UUID> newProcessConfigUuid = processConfigService.duplicateProcessConfig(sourceProcessConfigUuid);
+        return newProcessConfigUuid
+            .map(configUuid -> ResponseEntity.ok().body(configUuid))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping(value = "/{uuid}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Delete process config")
     @ApiResponses(value = {

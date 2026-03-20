@@ -67,6 +67,12 @@ public class ProcessConfigService {
     }
 
     @Transactional
+    public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
+        return processConfigRepository.findById(sourceProcessConfigUuid)
+            .map(sourceEntity -> createProcessConfig(toProcessConfig(sourceEntity)));
+    }
+
+    @Transactional
     public boolean deleteProcessConfig(UUID processConfigUuid) {
         if (processConfigRepository.existsById(processConfigUuid)) {
             processConfigRepository.deleteById(processConfigUuid);

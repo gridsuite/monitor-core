@@ -145,6 +145,14 @@ class ProcessConfigServiceTest {
     }
 
     @Test
+    void duplicateSecurityAnalysisConfig() {
+    }
+
+    @Test
+    void duplicateSecurityAnalysisConfigNotFound() {
+    }
+
+    @Test
     void deleteSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
 

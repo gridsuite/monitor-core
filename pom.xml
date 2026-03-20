@@ -46,7 +46,7 @@
     </properties>
 wxx
     <dependencyManagement>
-        <dependencies>
+        <dependencies>dqdf
             <dependency>
                 <groupId>org.gridsuite</groupId>
                 <artifactId>gridsuite-dependencies</artifactId>

@@ -105,6 +105,38 @@ class ProcessConfigServiceTest {
     }
 
     @Test
+    void getProcessConfigsMetadata() {
+        UUID processConfigId1 = UUID.randomUUID();
+        UUID processConfigId2 = UUID.randomUUID();
+
+        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
+        );
+        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID(), UUID.randomUUID()),
+            UUID.randomUUID()
+        );
+
+        SecurityAnalysisConfigEntity entity1 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig1);
+        entity1.setId(processConfigId1);
+        SecurityAnalysisConfigEntity entity2 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig2);
+        entity2.setId(processConfigId2);
+
+        when(processConfigRepository.findAllById(List.of(processConfigId1, processConfigId2)))
+            .thenReturn(List.of(entity1, entity2));
+
+        List<PersistedProcessConfig> persistedProcessConfigList = processConfigService.getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2));
+
+        assertThat(persistedProcessConfigList).isEqualTo(List.of(
+            new PersistedProcessConfig(processConfigId1, securityAnalysisConfig1),
+            new PersistedProcessConfig(processConfigId2, securityAnalysisConfig2)
+        ));
+    }
+
+    @Test
     void updateSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);

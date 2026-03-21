@@ -67,6 +67,15 @@ public class ProcessConfigController {
         return processConfig.map(config -> ResponseEntity.ok().body(config)).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping(value = "/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get process configs")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "process configs were returned")})
+    public ResponseEntity<List<PersistedProcessConfig>> getProcessConfigsMetadata(@RequestParam("ids") List<UUID> processConfigIds) {
+        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigsMetadata(processConfigIds);
+        return ResponseEntity.ok().body(processConfigs);
+    }
+
     @PutMapping(value = "/{uuid}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update process config")
     @ApiResponses(value = {

@@ -53,6 +53,11 @@ public class ProcessConfigService {
         return processConfigRepository.findById(processConfigUuid).map(this::toPersistedProcessConfig);
     }
 
+    @Transactional(readOnly = true)
+    public List<PersistedProcessConfig> getProcessConfigsMetadata(List<UUID> processConfigUuids) {
+        return processConfigRepository.findAllById(processConfigUuids).stream().map(this::toPersistedProcessConfig).toList();
+    }
+
     @Transactional
     public boolean updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
         return processConfigRepository.findById(processConfigUuid)

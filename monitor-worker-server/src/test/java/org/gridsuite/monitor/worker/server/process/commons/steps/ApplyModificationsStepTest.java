@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.process.commons.steps;
 
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
@@ -105,8 +106,6 @@ class ApplyModificationsStepTest {
     @Test
     void executeApplyModificationsFailWhenModificationsAreMissing() {
         when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID, MISSING_MODIFICATION_UUID));
-        String stepType = applyModificationsStep.getType().getName();
-        assertEquals("APPLY_MODIFICATIONS", stepType);
 
         List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
         NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of(MISSING_MODIFICATION_UUID));
@@ -116,7 +115,7 @@ class ApplyModificationsStepTest {
         when(stepContext.getReportInfos()).thenReturn(reportInfos);
         when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
 
-        assertThrows(RuntimeException.class, () -> applyModificationsStep.execute(stepContext));
+        assertThrows(PowsyblException.class, () -> applyModificationsStep.execute(stepContext), "Some network composite modifications are missing");
         verify(networkModificationRestClient).getModifications(any(List.class));
         verify(networkModificationService, never()).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
     }

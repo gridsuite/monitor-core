@@ -8,12 +8,11 @@
 package org.gridsuite.monitor.worker.server.clients;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.gridsuite.modification.dto.ModificationInfos;
+import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,19 +33,18 @@ public class NetworkModificationRestClient {
             .build();
     }
 
-    public List<ModificationInfos> getModifications(List<UUID> modificationsUuids) {
+    public NetworkModificationsWithMissingInfo getModifications(List<UUID> modificationsUuids) {
         if (CollectionUtils.isNotEmpty(modificationsUuids)) {
-            ModificationInfos[] modificationInfos = networkModificationServerRest.get()
+            return networkModificationServerRest.get()
                 .uri(uriBuilder -> uriBuilder
-                    .path(DELIMITER + "network-composite-modifications" + DELIMITER + "network-modifications")
+                    .path(DELIMITER + "network-composite-modifications" + DELIMITER + "network-modifications-with-missing-info")
                     .queryParam("uuids", modificationsUuids.toArray())
                     .queryParam("onlyMetadata", "false")
                     .build())
                 .retrieve()
-                .body(ModificationInfos[].class);
-            return modificationInfos != null ? Arrays.asList(modificationInfos) : List.of();
+                .body(NetworkModificationsWithMissingInfo.class);
         } else {
-            return List.of();
+            return new NetworkModificationsWithMissingInfo(List.of(), List.of());
         }
     }
 }

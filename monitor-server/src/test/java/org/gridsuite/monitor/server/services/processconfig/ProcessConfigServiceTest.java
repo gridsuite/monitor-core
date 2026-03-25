@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -109,30 +110,20 @@ class ProcessConfigServiceTest {
         UUID processConfigId1 = UUID.randomUUID();
         UUID processConfigId2 = UUID.randomUUID();
 
-        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of(UUID.randomUUID(), UUID.randomUUID()),
-            UUID.randomUUID()
-        );
-        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of(UUID.randomUUID(), UUID.randomUUID()),
-            UUID.randomUUID()
-        );
-
-        SecurityAnalysisConfigEntity entity1 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig1);
+        SecurityAnalysisConfigEntity entity1 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
         entity1.setId(processConfigId1);
-        SecurityAnalysisConfigEntity entity2 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig2);
+        SecurityAnalysisConfigEntity entity2 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
         entity2.setId(processConfigId2);
 
         when(processConfigRepository.findAllById(List.of(processConfigId1, processConfigId2)))
             .thenReturn(List.of(entity1, entity2));
 
-        List<PersistedProcessConfig> persistedProcessConfigList = processConfigService.getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2));
+        List<MetadataInfos> metadataInfos = processConfigService.getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2));
 
-        assertThat(persistedProcessConfigList).isEqualTo(List.of(
-            new PersistedProcessConfig(processConfigId1, securityAnalysisConfig1),
-            new PersistedProcessConfig(processConfigId2, securityAnalysisConfig2)
+        verify(processConfigRepository).findAllById(List.of(processConfigId1, processConfigId2));
+        assertThat(metadataInfos).isEqualTo(List.of(
+            new MetadataInfos(processConfigId1, ProcessType.SECURITY_ANALYSIS),
+            new MetadataInfos(processConfigId2, ProcessType.SECURITY_ANALYSIS)
         ));
     }
 

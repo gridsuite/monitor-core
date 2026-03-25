@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -115,30 +116,19 @@ class ProcessConfigControllerTest {
         UUID processConfigId1 = UUID.randomUUID();
         UUID processConfigId2 = UUID.randomUUID();
 
-        SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of(UUID.randomUUID(), UUID.randomUUID()),
-            UUID.randomUUID()
-        );
-        SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
-            UUID.randomUUID(),
-            List.of(UUID.randomUUID(), UUID.randomUUID()),
-            UUID.randomUUID()
-        );
-
-        List<PersistedProcessConfig> expectedResult = List.of(
-            new PersistedProcessConfig(processConfigId1, securityAnalysisConfig1),
-            new PersistedProcessConfig(processConfigId2, securityAnalysisConfig2)
+        List<MetadataInfos> expectedMetadata = List.of(
+            new MetadataInfos(processConfigId1, ProcessType.SECURITY_ANALYSIS),
+            new MetadataInfos(processConfigId2, ProcessType.SECURITY_ANALYSIS)
         );
 
         when(processConfigService.getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2)))
-            .thenReturn(expectedResult);
+            .thenReturn(expectedMetadata);
 
         mockMvc.perform(get("/v1/process-configs/metadata")
                 .param("ids", processConfigId1.toString(), processConfigId2.toString()))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().json(objectMapper.writeValueAsString(expectedResult)));
+            .andExpect(content().json(objectMapper.writeValueAsString(expectedMetadata)));
 
         verify(processConfigService).getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2));
     }

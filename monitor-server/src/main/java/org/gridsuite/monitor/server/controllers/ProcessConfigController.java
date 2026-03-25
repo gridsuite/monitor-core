@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -71,8 +72,8 @@ public class ProcessConfigController {
     @Operation(summary = "Get process configs")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process configs were returned")})
-    public ResponseEntity<List<PersistedProcessConfig>> getProcessConfigsMetadata(@RequestParam("ids") List<UUID> processConfigIds) {
-        List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigsMetadata(processConfigIds);
+    public ResponseEntity<List<MetadataInfos>> getProcessConfigsMetadata(@RequestParam("ids") List<UUID> processConfigIds) {
+        List<MetadataInfos> processConfigs = processConfigService.getProcessConfigsMetadata(processConfigIds);
         return ResponseEntity.ok().body(processConfigs);
     }
 

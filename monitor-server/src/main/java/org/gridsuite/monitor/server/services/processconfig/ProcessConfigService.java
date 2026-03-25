@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.processconfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
@@ -54,8 +55,10 @@ public class ProcessConfigService {
     }
 
     @Transactional(readOnly = true)
-    public List<PersistedProcessConfig> getProcessConfigsMetadata(List<UUID> processConfigUuids) {
-        return processConfigRepository.findAllById(processConfigUuids).stream().map(this::toPersistedProcessConfig).toList();
+    public List<MetadataInfos> getProcessConfigsMetadata(List<UUID> processConfigUuids) {
+        return processConfigRepository.findAllById(processConfigUuids).stream()
+            .map(entity -> new MetadataInfos(entity.getId(), entity.getProcessType()))
+            .toList();
     }
 
     @Transactional

@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,12 +36,12 @@ public class SecurityAnalysisRestService {
         this.securityAnalysisServerBaseUri = securityAnalysisServerBaseUri;
     }
 
-    public void runSecurityAnalysis(UUID caseUuid, UUID executionId, List<String> contingencies, UUID parametersUuid) {
+    public void runSecurityAnalysis(UUID caseUuid, UUID executionId, UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid) {
         var uriComponentsBuilder = UriComponentsBuilder.fromPath(DELIMITER + SECURITY_ANALYSIS_SERVER_API_VERSION + DELIMITER + "/cases/{caseUuid}/run-and-save");
         var path = uriComponentsBuilder
             .queryParam("executionUuid", executionId)
-            .queryParam("contingencyListName", contingencies)
-            .queryParam("parametersUuid", parametersUuid)
+            .queryParam("parametersUuid", securityAnalysisParametersUuid)
+            .queryParam("loadFlowParametersUuid", loadflowParametersUuid)
             .buildAndExpand(caseUuid)
             .toUriString();
 

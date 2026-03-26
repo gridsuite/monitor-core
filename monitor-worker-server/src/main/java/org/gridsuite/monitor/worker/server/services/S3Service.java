@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import org.apache.commons.io.FileUtils;
+import org.gridsuite.monitor.worker.server.clients.S3RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -29,10 +30,10 @@ import java.util.zip.GZIPOutputStream;
 @Service
 public class S3Service {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Service.class);
-    private final S3RestService s3RestService;
+    private final S3RestClient s3RestClient;
 
-    public S3Service(S3RestService s3RestService) {
-        this.s3RestService = s3RestService;
+    public S3Service(S3RestClient s3RestClient) {
+        this.s3RestClient = s3RestClient;
     }
 
     public void exportCompressedToS3(String s3Key, String fileNamePrefix, String fileNameSuffix, ThrowingConsumer<Path> writer) throws IOException {
@@ -53,7 +54,7 @@ public class S3Service {
                 in.transferTo(out);
             }
 
-            s3RestService.uploadFile(compressedDebugFile, s3Key, String.join("", fileNamePrefix, fileNameSuffix, ".gz"));
+            s3RestClient.uploadFile(compressedDebugFile, s3Key, String.join("", fileNamePrefix, fileNameSuffix, ".gz"));
         } finally {
             try {
                 if (Files.exists(tempDir)) {

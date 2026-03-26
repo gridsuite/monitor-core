@@ -7,13 +7,14 @@
 package org.gridsuite.monitor.server.services;
 
 import org.gridsuite.monitor.commons.CaseResultInfos;
-import org.gridsuite.monitor.commons.ProcessConfig;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.ProcessRunMessage;
-import org.gridsuite.monitor.commons.ProcessStatus;
-import org.gridsuite.monitor.commons.ResultType;
-import org.gridsuite.monitor.commons.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.StepStatus;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.types.result.ResultType;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,14 +38,14 @@ public class ConsumerServiceUsingServers {
 
     private final NetworkModificationRestService networkModificationRestService;
     private final SecurityAnalysisRestService securityAnalysisRestService;
-    private final MonitorService monitorService;
+    private final ProcessExecutionService processExecutionService;
 
     private record ProcessExecutionContext(
         UUID applyModificationsStepId,
         UUID securityAnalysisStepId,
         UUID caseUuid,
-        List<String> contingencies,
-        UUID parametersUuid
+        UUID securityAnalysisParametersUuid,
+        UUID loadflowParametersUuid
     ) { }
 
     private final Map<UUID, ProcessExecutionContext> processExecutionContexts = new ConcurrentHashMap<>();
@@ -52,10 +53,10 @@ public class ConsumerServiceUsingServers {
     @Autowired
     ConsumerServiceUsingServers(NetworkModificationRestService networkModificationRestService,
                                 SecurityAnalysisRestService securityAnalysisRestService,
-                                MonitorService monitorService) {
+                                ProcessExecutionService processExecutionService) {
         this.networkModificationRestService = networkModificationRestService;
         this.securityAnalysisRestService = securityAnalysisRestService;
-        this.monitorService = monitorService;
+        this.processExecutionService = processExecutionService;
     }
 
     @Bean
@@ -68,17 +69,17 @@ public class ConsumerServiceUsingServers {
             UUID executionId = processRunMessage.executionId();
 
             ProcessConfig processConfig = processRunMessage.config();
-            List<UUID> modificationUuids = ((SecurityAnalysisConfig) processConfig).modificationUuids();
+            List<UUID> modificationUuids = processConfig.modificationUuids();
 
             UUID applyModificationsStepId = UUID.randomUUID();
             UUID securityAnalysisStepId = UUID.randomUUID();
 
-            List<String> contingencies = null;
-            UUID parametersUuid = null;
+            UUID securityAnalysisParametersUuid = null;
+            UUID loadflowParametersUuid = null;
             switch (processConfig.processType()) {
                 case SECURITY_ANALYSIS -> {
-                    contingencies = ((SecurityAnalysisConfig) processConfig).contingencies();
-                    parametersUuid = ((SecurityAnalysisConfig) processConfig).parametersUuid();
+                    securityAnalysisParametersUuid = ((SecurityAnalysisConfig) processConfig).securityAnalysisParametersUuid();
+                    loadflowParametersUuid = ((SecurityAnalysisConfig) processConfig).loadflowParametersUuid();
                 }
             }
 
@@ -86,14 +87,14 @@ public class ConsumerServiceUsingServers {
                 applyModificationsStepId,
                 securityAnalysisStepId,
                 caseUuid,
-                contingencies,
-                parametersUuid
+                securityAnalysisParametersUuid,
+                loadflowParametersUuid
             ));
 
-            monitorService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, Instant.now(), null);
-            monitorService.updateStepStatus(executionId,
+            processExecutionService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, Instant.now(), null);
+            processExecutionService.updateStepStatus(executionId,
                 new ProcessExecutionStep(applyModificationsStepId, "APPLY_MODIFICATIONS", 0, StepStatus.RUNNING, null, null, null, Instant.now(), null, null));
-            monitorService.updateStepStatus(executionId,
+            processExecutionService.updateStepStatus(executionId,
                 new ProcessExecutionStep(securityAnalysisStepId, "SECURITY_ANALYSIS", 1, StepStatus.SCHEDULED, null, null, null, null, null, null));
 
             // call network-modification-server to apply modifications
@@ -120,16 +121,16 @@ public class ConsumerServiceUsingServers {
                 return;
             }
 
-            monitorService.updateStepStatus(executionId,
+            processExecutionService.updateStepStatus(executionId,
                 new ProcessExecutionStep(processExecutionContext.applyModificationsStepId(), stepType, 0, stepStatus, null, null, reportUuid, null, Instant.now(), caseResultUuid));
-            monitorService.updateStepStatus(executionId,
+            processExecutionService.updateStepStatus(executionId,
                 new ProcessExecutionStep(processExecutionContext.securityAnalysisStepId(), "SECURITY_ANALYSIS", 1,
                     stepStatus == StepStatus.COMPLETED ? StepStatus.RUNNING : StepStatus.SKIPPED,
                     null, null, null, Instant.now(), null, null));
 
             if (stepStatus == StepStatus.COMPLETED) {
                 // call security-analysis-server to run security analysis
-                securityAnalysisRestService.runSecurityAnalysis(caseResultUuid, executionId, processExecutionContext.contingencies(), processExecutionContext.parametersUuid());
+                securityAnalysisRestService.runSecurityAnalysis(caseResultUuid, executionId, processExecutionContext.securityAnalysisParametersUuid(), processExecutionContext.loadflowParametersUuid);
             } else {
                 processExecutionContexts.remove(executionId);
             }
@@ -155,9 +156,9 @@ public class ConsumerServiceUsingServers {
                 return;
             }
 
-            monitorService.updateStepStatus(executionId,
+            processExecutionService.updateStepStatus(executionId,
                 new ProcessExecutionStep(processExecutionContext.securityAnalysisStepId(), stepType, 1, stepStatus, resultUuid, ResultType.SECURITY_ANALYSIS, reportUuid, null, Instant.now(), caseResultUuid));
-            monitorService.updateExecutionStatus(executionId,
+            processExecutionService.updateExecutionStatus(executionId,
                 stepStatus == StepStatus.COMPLETED ? ProcessStatus.COMPLETED : ProcessStatus.FAILED,
                 null, null, Instant.now());
 

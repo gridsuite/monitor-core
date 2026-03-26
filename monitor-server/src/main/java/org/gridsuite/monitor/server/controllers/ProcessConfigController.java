@@ -69,9 +69,9 @@ public class ProcessConfigController {
     }
 
     @GetMapping(value = "/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get process configs")
+    @Operation(summary = "Get process configs metadata")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "process configs were returned")})
+        @ApiResponse(responseCode = "200", description = "process configs metadata were returned")})
     public ResponseEntity<List<MetadataInfos>> getProcessConfigsMetadata(@RequestParam("ids") List<UUID> processConfigIds) {
         List<MetadataInfos> processConfigs = processConfigService.getProcessConfigsMetadata(processConfigIds);
         return ResponseEntity.ok().body(processConfigs);
@@ -96,7 +96,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "200", description = "process config was duplicated"),
         @ApiResponse(responseCode = "404", description = "process config to duplicate was not found")})
     public ResponseEntity<UUID> duplicateProcessConfig(
-        @Parameter(description = "process config UUID to duplicate") @RequestParam("duplicateFrom") UUID sourceProcessConfigUuid) {
+        @Parameter(description = "UUID of the process config to duplicate") @RequestParam("duplicateFrom") UUID sourceProcessConfigUuid) {
         Optional<UUID> newProcessConfigUuid = processConfigService.duplicateProcessConfig(sourceProcessConfigUuid);
         return newProcessConfigUuid
             .map(configUuid -> ResponseEntity.ok().body(configUuid))

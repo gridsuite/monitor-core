@@ -112,7 +112,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void getProcessConfigsMetadata() throws Exception {
+    void getSecurityAnalysisConfigsMetadata() throws Exception {
         UUID processConfigId1 = UUID.randomUUID();
         UUID processConfigId2 = UUID.randomUUID();
 
@@ -174,7 +174,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void duplicateSecurityAnalysisConfig() throws Exception {
+    void duplicateProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
         UUID newProcessConfigId = UUID.randomUUID();
 
@@ -190,7 +190,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void duplicateSecurityAnalysisConfigNotFound() throws Exception {
+    void duplicateProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.duplicateProcessConfig(processConfigId))

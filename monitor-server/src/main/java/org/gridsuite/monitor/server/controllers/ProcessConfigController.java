@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -67,6 +68,15 @@ public class ProcessConfigController {
         return processConfig.map(config -> ResponseEntity.ok().body(config)).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping(value = "/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get process configs metadata")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "process configs metadata were returned")})
+    public ResponseEntity<List<MetadataInfos>> getProcessConfigsMetadata(@RequestParam("ids") List<UUID> processConfigIds) {
+        List<MetadataInfos> processConfigs = processConfigService.getProcessConfigsMetadata(processConfigIds);
+        return ResponseEntity.ok().body(processConfigs);
+    }
+
     @PutMapping(value = "/{uuid}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update process config")
     @ApiResponses(value = {
@@ -78,6 +88,19 @@ public class ProcessConfigController {
         return processConfigService.updateProcessConfig(processConfigUuid, processConfig) ?
             ResponseEntity.ok().build() :
             ResponseEntity.notFound().build();
+    }
+
+    @PostMapping(value = "/duplication", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Duplicate a process config")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "process config was duplicated"),
+        @ApiResponse(responseCode = "404", description = "process config to duplicate was not found")})
+    public ResponseEntity<UUID> duplicateProcessConfig(
+        @Parameter(description = "UUID of the process config to duplicate") @RequestParam("duplicateFrom") UUID sourceProcessConfigUuid) {
+        Optional<UUID> newProcessConfigUuid = processConfigService.duplicateProcessConfig(sourceProcessConfigUuid);
+        return newProcessConfigUuid
+            .map(configUuid -> ResponseEntity.ok().body(configUuid))
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping(value = "/{uuid}", produces = MediaType.APPLICATION_JSON_VALUE)

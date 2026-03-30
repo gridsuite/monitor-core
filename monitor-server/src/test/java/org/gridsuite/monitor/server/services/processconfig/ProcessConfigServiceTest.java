@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -105,6 +106,28 @@ class ProcessConfigServiceTest {
     }
 
     @Test
+    void getProcessConfigsMetadata() {
+        UUID processConfigId1 = UUID.randomUUID();
+        UUID processConfigId2 = UUID.randomUUID();
+
+        SecurityAnalysisConfigEntity entity1 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
+        entity1.setId(processConfigId1);
+        SecurityAnalysisConfigEntity entity2 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
+        entity2.setId(processConfigId2);
+
+        when(processConfigRepository.findAllById(List.of(processConfigId1, processConfigId2)))
+            .thenReturn(List.of(entity1, entity2));
+
+        List<MetadataInfos> metadataInfos = processConfigService.getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2));
+
+        verify(processConfigRepository).findAllById(List.of(processConfigId1, processConfigId2));
+        assertThat(metadataInfos).isEqualTo(List.of(
+            new MetadataInfos(processConfigId1, ProcessType.SECURITY_ANALYSIS),
+            new MetadataInfos(processConfigId2, ProcessType.SECURITY_ANALYSIS)
+        ));
+    }
+
+    @Test
     void updateSecurityAnalysisConfig() {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
@@ -141,6 +164,41 @@ class ProcessConfigServiceTest {
         boolean done = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
         assertThat(done).isFalse();
 
+        verify(processConfigRepository).findById(processConfigId);
+    }
+
+    @Test
+    void duplicateSecurityAnalysisConfig() {
+        UUID processConfigId = UUID.randomUUID();
+        UUID expectedNewProcessConfigId = UUID.randomUUID();
+
+        when(processConfigRepository.findById(processConfigId))
+            .thenReturn(Optional.of(mock(SecurityAnalysisConfigEntity.class)));
+        when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
+            .thenAnswer(invocation -> {
+                SecurityAnalysisConfigEntity entity = invocation.getArgument(0);
+                entity.setId(expectedNewProcessConfigId);
+                return entity;
+            });
+
+        Optional<UUID> newProcessConfigId = processConfigService.duplicateProcessConfig(processConfigId);
+
+        assertThat(newProcessConfigId).isPresent();
+        assertThat(newProcessConfigId.get()).isEqualTo(expectedNewProcessConfigId);
+
+        verify(processConfigRepository).findById(processConfigId);
+        ArgumentCaptor<SecurityAnalysisConfigEntity> captor = ArgumentCaptor.forClass(SecurityAnalysisConfigEntity.class);
+        verify(processConfigRepository).save(captor.capture());
+    }
+
+    @Test
+    void duplicateSecurityAnalysisConfigNotFound() {
+        UUID processConfigId = UUID.randomUUID();
+
+        when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
+
+        Optional<UUID> newProcessConfigId = processConfigService.duplicateProcessConfig(processConfigId);
+        assertThat(newProcessConfigId).isEmpty();
         verify(processConfigRepository).findById(processConfigId);
     }
 

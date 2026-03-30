@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -111,6 +112,28 @@ class ProcessConfigControllerTest {
     }
 
     @Test
+    void getSecurityAnalysisConfigsMetadata() throws Exception {
+        UUID processConfigId1 = UUID.randomUUID();
+        UUID processConfigId2 = UUID.randomUUID();
+
+        List<MetadataInfos> expectedMetadata = List.of(
+            new MetadataInfos(processConfigId1, ProcessType.SECURITY_ANALYSIS),
+            new MetadataInfos(processConfigId2, ProcessType.SECURITY_ANALYSIS)
+        );
+
+        when(processConfigService.getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2)))
+            .thenReturn(expectedMetadata);
+
+        mockMvc.perform(get("/v1/process-configs/metadata")
+                .param("ids", processConfigId1.toString(), processConfigId2.toString()))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(objectMapper.writeValueAsString(expectedMetadata)));
+
+        verify(processConfigService).getProcessConfigsMetadata(List.of(processConfigId1, processConfigId2));
+    }
+
+    @Test
     void updateSecurityAnalysisConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(
@@ -148,6 +171,35 @@ class ProcessConfigControllerTest {
             .andExpect(status().isNotFound());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
+    }
+
+    @Test
+    void duplicateProcessConfig() throws Exception {
+        UUID processConfigId = UUID.randomUUID();
+        UUID newProcessConfigId = UUID.randomUUID();
+
+        when(processConfigService.duplicateProcessConfig(processConfigId))
+            .thenReturn(Optional.of(newProcessConfigId));
+
+        mockMvc.perform(post("/v1/process-configs/duplication?duplicateFrom={uuid}", processConfigId))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").value(newProcessConfigId.toString()));
+
+        verify(processConfigService).duplicateProcessConfig(processConfigId);
+    }
+
+    @Test
+    void duplicateProcessConfigNotFound() throws Exception {
+        UUID processConfigId = UUID.randomUUID();
+
+        when(processConfigService.duplicateProcessConfig(processConfigId))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/v1/process-configs/duplication?duplicateFrom={uuid}", processConfigId))
+            .andExpect(status().isNotFound());
+
+        verify(processConfigService).duplicateProcessConfig(processConfigId);
     }
 
     @Test

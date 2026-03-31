@@ -14,7 +14,6 @@
 
     <properties>
         <network-modification.version>0.61.0</network-modification.version>
-        <actions.version>0.4.0</actions.version>
         <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
     </properties>
 
@@ -96,7 +95,6 @@
         <dependency>
             <groupId>org.gridsuite</groupId>
             <artifactId>gridsuite-actions</artifactId>
-            <version>${actions.version}</version>
         </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>

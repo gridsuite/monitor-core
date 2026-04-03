@@ -18,9 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * {@link ProcessConfigHandler} for {@link ProcessType#SECURITY_ANALYSIS}.
- *
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Component
 public class SecurityAnalysisConfigHandler implements ProcessConfigHandler<SecurityAnalysisConfig, SecurityAnalysisConfigEntity> {

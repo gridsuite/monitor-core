@@ -21,9 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -45,16 +43,18 @@ class ProcessConfigServiceTest {
     @Mock
     private SecurityAnalysisProcessConfigRepository securityAnalysisProcessConfigRepository;
 
-    @InjectMocks
     private ProcessConfigService processConfigService;
 
     private SecurityAnalysisConfig securityAnalysisConfig;
 
-    @Spy
     private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper = Mappers.getMapper(SecurityAnalysisConfigMapper.class);
 
     @BeforeEach
     void setUp() {
+        SecurityAnalysisConfigHandler securityAnalysisConfigHandler =
+            new SecurityAnalysisConfigHandler(securityAnalysisConfigMapper, securityAnalysisProcessConfigRepository);
+        processConfigService = new ProcessConfigService(processConfigRepository, List.of(securityAnalysisConfigHandler));
+
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
                 List.of(UUID.randomUUID()),
@@ -176,8 +176,10 @@ class ProcessConfigServiceTest {
         UUID processConfigId = UUID.randomUUID();
         UUID expectedNewProcessConfigId = UUID.randomUUID();
 
+        SecurityAnalysisConfigEntity mockSourceEntity = mock(SecurityAnalysisConfigEntity.class);
+        when(mockSourceEntity.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(processConfigRepository.findById(processConfigId))
-            .thenReturn(Optional.of(mock(SecurityAnalysisConfigEntity.class)));
+            .thenReturn(Optional.of(mockSourceEntity));
         when(processConfigRepository.save(any(SecurityAnalysisConfigEntity.class)))
             .thenAnswer(invocation -> {
                 SecurityAnalysisConfigEntity entity = invocation.getArgument(0);

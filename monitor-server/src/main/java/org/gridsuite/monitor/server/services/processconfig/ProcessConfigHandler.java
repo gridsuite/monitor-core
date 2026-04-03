@@ -8,7 +8,6 @@ package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 
 import java.util.List;
@@ -24,6 +23,4 @@ public interface ProcessConfigHandler<C extends ProcessConfig, E extends Abstrac
     void updateEntity(C config, E entity);
 
     List<E> findAll();
-
-    List<ProcessConfigFieldComparison> compare(C config1, C config2);
 }

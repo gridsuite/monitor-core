@@ -7,10 +7,10 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
@@ -128,7 +128,7 @@ public class ProcessConfigService {
             throw new IllegalArgumentException("Cannot compare different process config types: " + processConfig1.processType() + " vs " + processConfig2.processType());
         }
 
-        List<ProcessConfigFieldComparison> differences = getHandler(processConfig1.processType()).compare(processConfig1, processConfig2);
+        List<ProcessConfigFieldComparison> differences = processConfig1.compareWith(processConfig2);
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
 
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));

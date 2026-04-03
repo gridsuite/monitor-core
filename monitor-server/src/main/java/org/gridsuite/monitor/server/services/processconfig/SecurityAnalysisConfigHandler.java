@@ -8,14 +8,12 @@ package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.processconfig.SecurityAnalysisProcessConfigRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -55,21 +53,5 @@ public class SecurityAnalysisConfigHandler implements ProcessConfigHandler<Secur
     @Override
     public List<SecurityAnalysisConfigEntity> findAll() {
         return repository.findAll();
-    }
-
-    @Override
-    public List<ProcessConfigFieldComparison> compare(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
-        boolean modificationsIdentical = Objects.equals(config1.modificationUuids(), config2.modificationUuids());
-        boolean securityAnalysisParametersIdentical = Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid());
-        boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());
-
-        return List.of(
-            new ProcessConfigFieldComparison("modifications", modificationsIdentical,
-                config1.modificationUuids(), config2.modificationUuids()),
-            new ProcessConfigFieldComparison("securityAnalysisParameters", securityAnalysisParametersIdentical,
-                config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid()),
-            new ProcessConfigFieldComparison("loadflowParameters", loadflowParametersIdentical,
-                config1.loadflowParametersUuid(), config2.loadflowParametersUuid())
-        );
     }
 }

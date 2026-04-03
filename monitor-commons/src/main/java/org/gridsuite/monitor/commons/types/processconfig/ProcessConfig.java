@@ -27,4 +27,6 @@ public interface ProcessConfig {
     ProcessType processType();
 
     List<UUID> modificationUuids();
+
+    List<ProcessConfigFieldComparison> compareWith(ProcessConfig other);
 }

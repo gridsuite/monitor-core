@@ -4,14 +4,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.dto.processconfig;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+package org.gridsuite.monitor.commons.types.processconfig;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@Schema(description = "Field comparison result")
 public record ProcessConfigFieldComparison(
     String field,
     boolean identical,

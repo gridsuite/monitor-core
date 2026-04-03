@@ -17,13 +17,10 @@ import org.mapstruct.MappingTarget;
  */
 @Mapper(componentModel = "spring")
 public interface SecurityAnalysisConfigMapper {
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "processType", ignore = true)
+    @Mapping(target = "processType", expression = "java(dto.processType())")
     SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);
 
     SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity dto);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "processType", ignore = true)
     void updateEntityFromDto(SecurityAnalysisConfig dto, @MappingTarget SecurityAnalysisConfigEntity entity);
 }

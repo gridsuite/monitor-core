@@ -12,6 +12,9 @@ import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfig
 
 import java.util.List;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 public interface ProcessConfigHandler<C extends ProcessConfig, E extends AbstractProcessConfigEntity> {
 
     ProcessType getProcessType();

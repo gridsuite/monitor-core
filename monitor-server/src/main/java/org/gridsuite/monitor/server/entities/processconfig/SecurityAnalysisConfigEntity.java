@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.server.entities.processconfig;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.PrimaryKeyJoinColumn;
@@ -16,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.UUID;
 
@@ -24,13 +24,16 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "security_analysis_config")
-@DiscriminatorValue("SECURITY_ANALYSIS")
 @PrimaryKeyJoinColumn(foreignKey = @ForeignKey(name = "securityAnalysisConfig_id_fk_constraint"))
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 public class SecurityAnalysisConfigEntity extends ProcessConfigEntity {
+    {
+        setProcessType(ProcessType.SECURITY_ANALYSIS);
+    }
+
     @Column(name = "security_analysis_parameters_uuid")
     private UUID securityAnalysisParametersUuid;
 

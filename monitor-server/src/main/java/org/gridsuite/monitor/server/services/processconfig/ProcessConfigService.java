@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -29,24 +30,25 @@ import java.util.stream.Collectors;
 @Service
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
-    private final Map<ProcessType, ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity>> handlers;
+    private final Map<ProcessType, ProcessConfigHandler<?, ?>> handlers;
 
-    @SuppressWarnings("unchecked")
     public ProcessConfigService(ProcessConfigRepository processConfigRepository,
                                 List<ProcessConfigHandler<?, ?>> handlers) {
         this.processConfigRepository = processConfigRepository;
-        this.handlers = handlers.stream().collect(Collectors.toMap(
+        this.handlers = handlers.stream().collect(Collectors.toUnmodifiableMap(
             ProcessConfigHandler::getProcessType,
-            h -> (ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity>) h
+            Function.identity()
         ));
     }
 
-    private ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> getHandler(ProcessType processType) {
-        ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> handler = handlers.get(processType);
+    @SuppressWarnings("unchecked")
+    private <C extends ProcessConfig, E extends AbstractProcessConfigEntity> ProcessConfigHandler<C, E> getHandler(ProcessType processType) {
+        ProcessConfigHandler<?, ?> handler = handlers.get(processType);
         if (handler == null) {
             throw new IllegalArgumentException("Unsupported process config type: " + processType);
         }
-        return handler;
+        // Safe: the service always dispatches using config.processType(), which matches the handler's registered type
+        return (ProcessConfigHandler<C, E>) handler;
     }
 
     @Transactional

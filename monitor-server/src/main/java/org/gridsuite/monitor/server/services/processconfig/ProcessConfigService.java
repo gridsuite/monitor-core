@@ -7,20 +7,22 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
-import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
-import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
-import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
+import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -28,25 +30,30 @@ import java.util.*;
 @Service
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
-    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
+    private final Map<ProcessType, ProcessConfigHandler<?, ?>> handlers;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository,
+                                List<ProcessConfigHandler<?, ?>> handlers) {
         this.processConfigRepository = processConfigRepository;
-        this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
+        this.handlers = handlers.stream().collect(Collectors.toUnmodifiableMap(
+            ProcessConfigHandler::getProcessType,
+            Function.identity()
+        ));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <C extends ProcessConfig, E extends AbstractProcessConfigEntity> ProcessConfigHandler<C, E> getHandler(ProcessType processType) {
+        ProcessConfigHandler<?, ?> handler = handlers.get(processType);
+        if (handler == null) {
+            throw new IllegalArgumentException("Unsupported process config type: " + processType);
+        }
+        // Safe: the service always dispatches using config.processType(), which matches the handler's registered type
+        return (ProcessConfigHandler<C, E>) handler;
     }
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
-        return doCreateProcessConfig(processConfig);
-    }
-
-    private UUID doCreateProcessConfig(ProcessConfig processConfig) {
-        switch (processConfig) {
-            case SecurityAnalysisConfig sac -> {
-                return processConfigRepository.save(securityAnalysisConfigMapper.toEntity(sac)).getId();
-            }
-            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
-        }
+        return processConfigRepository.save(getHandler(processConfig.processType()).toEntity(processConfig)).getId();
     }
 
     @Transactional(readOnly = true)
@@ -68,11 +75,7 @@ public class ProcessConfigService {
                 if (entity.getProcessType() != processConfig.processType()) {
                     throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
-                switch (processConfig) {
-                    case SecurityAnalysisConfig sac ->
-                        securityAnalysisConfigMapper.updateEntityFromDto(sac, (SecurityAnalysisConfigEntity) entity);
-                    default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
-                }
+                getHandler(processConfig.processType()).updateEntity(processConfig, entity);
                 return true;
             })
             .orElse(false);
@@ -81,7 +84,10 @@ public class ProcessConfigService {
     @Transactional
     public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
         return processConfigRepository.findById(sourceProcessConfigUuid)
-            .map(sourceEntity -> doCreateProcessConfig(toProcessConfig(sourceEntity)));
+            .map(sourceEntity -> {
+                ProcessConfig sourceConfig = toProcessConfig(sourceEntity);
+                return processConfigRepository.save(getHandler(sourceConfig.processType()).toEntity(sourceConfig)).getId();
+            });
     }
 
     @Transactional
@@ -95,26 +101,23 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return processConfigRepository.findAllByProcessType(processType).stream()
-                .map(this::toPersistedProcessConfig)
-                .toList();
+        return getHandler(processType).findAll().stream()
+            .map(this::toPersistedProcessConfig)
+            .toList();
     }
 
-    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
-        return switch (entity) {
-            case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
-        };
+    private ProcessConfig toProcessConfig(AbstractProcessConfigEntity entity) {
+        return getHandler(entity.getProcessType()).toDto(entity);
     }
 
-    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+    private PersistedProcessConfig toPersistedProcessConfig(AbstractProcessConfigEntity entity) {
         return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
     }
 
     @Transactional(readOnly = true)
     public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        Optional<ProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
-        Optional<ProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
+        Optional<AbstractProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
+        Optional<AbstractProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
 
         if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
             return Optional.empty();
@@ -127,46 +130,9 @@ public class ProcessConfigService {
             throw new IllegalArgumentException("Cannot compare different process config types: " + processConfig1.processType() + " vs " + processConfig2.processType());
         }
 
-        List<ProcessConfigFieldComparison> differences = switch (processConfig1) {
-            case SecurityAnalysisConfig sac1 -> compareSecurityAnalysisConfigs(sac1, (SecurityAnalysisConfig) processConfig2);
-            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig1.processType());
-        };
-
+        List<ProcessConfigFieldComparison> differences = processConfig1.compareWith(processConfig2);
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
 
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
-    }
-
-    private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
-        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
-
-        // Compare modifications
-        boolean modificationsIdentical = Objects.equals(config1.modificationUuids(), config2.modificationUuids());
-        differences.add(new ProcessConfigFieldComparison(
-            "modifications",
-            modificationsIdentical,
-            config1.modificationUuids(),
-            config2.modificationUuids()
-        ));
-
-        // Compare security analysis parameters
-        boolean securityAnalysisParametersIdentical = Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid());
-        differences.add(new ProcessConfigFieldComparison(
-            "securityAnalysisParameters",
-            securityAnalysisParametersIdentical,
-            config1.securityAnalysisParametersUuid(),
-            config2.securityAnalysisParametersUuid()
-        ));
-
-        // Compare loadflow parameters
-        boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());
-        differences.add(new ProcessConfigFieldComparison(
-            "loadflowParameters",
-            loadflowParametersIdentical,
-            config1.loadflowParametersUuid(),
-            config2.loadflowParametersUuid()
-        ));
-
-        return differences;
     }
 }

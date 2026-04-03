@@ -4,19 +4,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.repositories;
+package org.gridsuite.monitor.server.repositories.processconfig;
 
-import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Repository
-public interface ProcessExecutionRepository extends JpaRepository<ProcessExecutionEntity, UUID> {
-    List<ProcessExecutionEntity> findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(String type);
+public interface SecurityAnalysisProcessConfigRepository extends JpaRepository<SecurityAnalysisConfigEntity, UUID> {
 }

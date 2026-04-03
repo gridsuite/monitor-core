@@ -13,7 +13,6 @@
     <name>Monitor worker server</name>
 
     <properties>
-        <network-modification.version>0.61.0</network-modification.version>
         <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
     </properties>
 
@@ -90,7 +89,6 @@
         <dependency>
             <groupId>org.gridsuite</groupId>
             <artifactId>gridsuite-network-modification</artifactId>
-            <version>${network-modification.version}</version>
         </dependency>
         <dependency>
             <groupId>org.gridsuite</groupId>

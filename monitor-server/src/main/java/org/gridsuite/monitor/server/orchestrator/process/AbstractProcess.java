@@ -1,0 +1,34 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package org.gridsuite.monitor.server.orchestrator.process;
+
+import lombok.Getter;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
+@Getter
+public abstract class AbstractProcess<C extends ProcessConfig> implements Process<C> {
+
+    protected final ProcessType processType;
+
+    protected AbstractProcess(ProcessType processType) {
+        this.processType = processType;
+    }
+
+    protected abstract List<ProcessStep<C>> defineSteps();
+
+    @Override
+    public List<ProcessStep<C>> getSteps() {
+        return Collections.unmodifiableList(defineSteps());
+    }
+}

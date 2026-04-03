@@ -4,11 +4,14 @@ spring:
   cloud:
     stream:
       bindings:
-        publishRunSecurityAnalysis-out-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
-        consumeMonitorUpdate-in-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
-          group: monitorUpdateGroup
+        publishRun-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run
+        consumeRun-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run
+          group: monitorRunGroup
+
+monitor:
+  execution-env-name: ${MONITOR_EXECUTION_ENV_NAME:default-env}
 
 powsybl-ws:
   database:

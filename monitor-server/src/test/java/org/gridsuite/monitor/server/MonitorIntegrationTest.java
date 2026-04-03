@@ -7,11 +7,9 @@
 package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
@@ -20,7 +18,6 @@ import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
-import org.gridsuite.monitor.server.messaging.ConsumerService;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.clients.S3RestClient;
@@ -32,11 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
 import org.springframework.http.MediaType;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -74,12 +68,6 @@ class MonitorIntegrationTest {
     private ProcessConfigRepository processConfigRepository;
 
     @Autowired
-    private ConsumerService consumerService;
-
-    @Autowired
-    private OutputDestination outputDestination;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -94,11 +82,12 @@ class MonitorIntegrationTest {
     @MockitoBean
     private S3RestClient s3RestClient;
 
+    @MockitoBean
+    private org.gridsuite.monitor.server.orchestrator.ProcessExecutor processExecutor;
+
     private UUID caseUuid;
 
     private String userId;
-
-    public static final String PROCESS_SA_RUN_DESTINATION = "monitor.process.securityanalysis.run";
 
     @BeforeEach
     void setUp() {
@@ -117,17 +106,13 @@ class MonitorIntegrationTest {
 
         Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigId, false);
 
-        // Verify message was published
-        Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
-        assertThat(sentMessage).isNotNull();
-
         // Verify execution persisted with correct initial state
         ProcessExecutionEntity execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
         assertThat(execution.getSteps()).isEmpty();
 
-        // Simulate first step creation via message with both report and result
+        // Simulate step updates via direct service calls (as ServerNotificator would do)
         UUID stepId0 = UUID.randomUUID();
         UUID reportId0 = UUID.randomUUID();
         UUID resultId0 = UUID.randomUUID();
@@ -142,9 +127,8 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId.get(), step0, MessageType.STEP_STATUS_UPDATE);
+        processExecutionService.updateStepStatus(executionId.get(), step0);
 
-        // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
         UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
@@ -159,7 +143,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId.get(), step1, MessageType.STEP_STATUS_UPDATE);
+        processExecutionService.updateStepStatus(executionId.get(), step1);
 
         // Verify both steps were added to database with correct data
         execution = executionRepository.findById(executionId.get()).orElse(null);
@@ -172,16 +156,10 @@ class MonitorIntegrationTest {
         assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId1);
         assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId1);
 
-        // Complete the execution via message
+        // Complete the execution via direct service call
         Instant startedAt = Instant.now();
         Instant completedAt = Instant.now();
-        ProcessExecutionStatusUpdate finalStatus = ProcessExecutionStatusUpdate.builder()
-                .status(ProcessStatus.COMPLETED)
-                .executionEnvName("test-env")
-                .startedAt(startedAt)
-                .completedAt(completedAt)
-                .build();
-        sendMessage(executionId.get(), finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
+        processExecutionService.updateExecutionStatus(executionId.get(), ProcessStatus.COMPLETED, "test-env", startedAt, completedAt);
 
         // Verify final state persisted
         execution = executionRepository.findById(executionId.get()).orElse(null);
@@ -235,15 +213,6 @@ class MonitorIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0]").value(result0))
                 .andExpect(jsonPath("$[1]").value(result1));
-    }
-
-    private void sendMessage(UUID executionId, Object step, MessageType messageType) throws Exception {
-        Message<String> message = MessageBuilder
-                .withPayload(objectMapper.writeValueAsString(step))
-                .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, messageType.toString())
-                .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
-                .build();
-        consumerService.consumeMonitorUpdate().accept(message);
     }
 
     @Test

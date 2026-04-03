@@ -7,12 +7,10 @@
 package org.gridsuite.monitor.server.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.types.messaging.MessageType;
-import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
-import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
-import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.server.orchestrator.ProcessExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +19,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 
 import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
+ * Consumes self-sent {@link ProcessRunMessage} from RabbitMQ and triggers process orchestration.
+ *
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Configuration
@@ -33,63 +31,28 @@ public class ConsumerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerService.class);
 
-    public static final String HEADER_MESSAGE_TYPE = "messageType";
-    public static final String HEADER_EXECUTION_ID = "executionId";
-
-    private final ProcessExecutionService processExecutionService;
+    private final ProcessExecutor processExecutor;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public ConsumerService(ProcessExecutionService processExecutionService, ObjectMapper objectMapper) {
-        this.processExecutionService = processExecutionService;
+    public ConsumerService(ProcessExecutor processExecutor, ObjectMapper objectMapper) {
+        this.processExecutor = processExecutor;
         this.objectMapper = objectMapper;
     }
 
     @Bean
-    public Consumer<Message<String>> consumeMonitorUpdate() {
+    public Consumer<Message<String>> consumeRun() {
         return message -> {
-            String messageTypeStr = message.getHeaders().get(HEADER_MESSAGE_TYPE, String.class);
-            MessageType messageType = MessageType.valueOf(messageTypeStr);
-            String executionIdStr = message.getHeaders().get(HEADER_EXECUTION_ID, String.class);
-            UUID executionId = UUID.fromString(executionIdStr);
-
-            switch (messageType) {
-                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message);
-                case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, message);
-                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, message);
-                default -> LOGGER.warn("Unknown message type: {}", messageType);
+            try {
+                ProcessRunMessage<? extends ProcessConfig> runMessage = objectMapper.readValue(
+                    message.getPayload(),
+                    ProcessRunMessage.class
+                );
+                LOGGER.info("Received process run message for execution {}", runMessage.executionId());
+                processExecutor.executeProcess(runMessage);
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException("Failed to parse ProcessRunMessage", e);
             }
         };
-    }
-
-    private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
-        ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
-        processExecutionService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getStartedAt(), payload.getCompletedAt());
-    }
-
-    private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
-        ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        processExecutionService.updateStepStatus(executionId, processExecutionStep);
-    }
-
-    private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
-        List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
-        processExecutionService.updateStepsStatuses(executionId, processExecutionSteps);
-    }
-
-    private <T> T parsePayload(String payload, Class<T> clazz) {
-        try {
-            return objectMapper.readValue(payload, clazz);
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException("Failed to parse payload as " + clazz.getSimpleName(), e);
-        }
-    }
-
-    private <T> T parsePayload(String payload, TypeReference<T> typeReference) {
-        try {
-            return objectMapper.readValue(payload, typeReference);
-        } catch (JsonProcessingException e) {
-            throw new UncheckedIOException("Failed to parse payload as " + typeReference.getType().getTypeName(), e);
-        }
     }
 }

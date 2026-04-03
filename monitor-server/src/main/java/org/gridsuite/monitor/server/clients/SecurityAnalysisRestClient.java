@@ -45,4 +45,21 @@ public class SecurityAnalysisRestClient {
             .retrieve()
             .toBodilessEntity();
     }
+
+    /**
+     * Runs a security analysis on a network stored in S3.
+     *
+     * @param caseS3Key the S3 key of the network
+     * @param securityAnalysisParametersUuid the SA parameters UUID
+     * @param loadflowParametersUuid the load flow parameters UUID
+     * @return the result UUID
+     */
+    public UUID run(String caseS3Key, UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid) {
+        // TODO: call security-analysis-server's run endpoint with S3 reference
+        // Expected API: POST /run
+        //   Body: { "caseS3Key": "...", "securityAnalysisParametersUuid": "...", "loadflowParametersUuid": "..." }
+        //   Returns: result UUID
+        // Then poll for completion or wait for callback
+        throw new UnsupportedOperationException("Not yet implemented: security-analysis-server run API");
+    }
 }

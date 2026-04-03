@@ -61,7 +61,7 @@ class NotificationServiceTest {
         notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, debugFileLocation);
 
         verify(publisher).send(
-                eq("publishRunSecurityAnalysis-out-0"),
+                eq("publishRun-out-0"),
                 argThat((ProcessRunMessage<?> message) ->
                         message.executionId().equals(executionId) &&
                         message.caseUuid().equals(caseUuid) &&

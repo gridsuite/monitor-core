@@ -6,12 +6,15 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -41,6 +44,17 @@ public class ReportRestClient {
     public void deleteReport(UUID reportId) {
         restClient.delete()
             .uri("/{reportId}", reportId)
+            .retrieve()
+            .toBodilessEntity();
+    }
+
+    public void sendReport(ReportInfos reportInfos) {
+        Objects.requireNonNull(reportInfos);
+
+        restClient.put()
+            .uri("/{reportUuid}", reportInfos.reportUuid())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(reportInfos.reportNode())
             .retrieve()
             .toBodilessEntity();
     }

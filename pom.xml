@@ -36,7 +36,6 @@
     <modules>
         <module>monitor-commons</module>
         <module>monitor-server</module>
-        <module>monitor-worker-server</module>
     </modules>
 
     <properties>

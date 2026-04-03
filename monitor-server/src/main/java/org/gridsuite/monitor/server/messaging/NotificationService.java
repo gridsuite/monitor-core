@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
+ * Publishes a {@link ProcessRunMessage} to a self-consumed RabbitMQ queue
+ * for asynchronous process orchestration.
+ *
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
@@ -24,10 +27,7 @@ public class NotificationService {
     private final StreamBridge publisher;
 
     public void sendProcessRunMessage(UUID caseUuid, ProcessConfig processConfig, UUID executionId, String debugFileLocation) {
-        String bindingName = switch (processConfig.processType()) {
-            case SECURITY_ANALYSIS -> "publishRunSecurityAnalysis-out-0";
-        };
         ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, debugFileLocation);
-        publisher.send(bindingName, message);
+        publisher.send("publishRun-out-0", message);
     }
 }

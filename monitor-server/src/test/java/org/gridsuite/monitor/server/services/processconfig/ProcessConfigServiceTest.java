@@ -15,6 +15,7 @@ import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparis
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
+import org.gridsuite.monitor.server.repositories.SecurityAnalysisProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,9 @@ import static org.mockito.Mockito.*;
 class ProcessConfigServiceTest {
     @Mock
     private ProcessConfigRepository processConfigRepository;
+
+    @Mock
+    private SecurityAnalysisProcessConfigRepository securityAnalysisProcessConfigRepository;
 
     @InjectMocks
     private ProcessConfigService processConfigService;
@@ -236,12 +240,12 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID());
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity2 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig2);
 
-        when(processConfigRepository.findAllByProcessType(ProcessType.SECURITY_ANALYSIS))
+        when(securityAnalysisProcessConfigRepository.findAll())
                 .thenReturn(List.of(securityAnalysisConfigEntity1, securityAnalysisConfigEntity2));
 
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
-        verify(processConfigRepository).findAllByProcessType(ProcessType.SECURITY_ANALYSIS);
+        verify(securityAnalysisProcessConfigRepository).findAll();
         assertThat(processConfigs).hasSize(2);
         assertThat(processConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
         assertThat(processConfigs.get(1).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
@@ -257,11 +261,11 @@ class ProcessConfigServiceTest {
 
     @Test
     void getSecurityAnalysisConfigsNotFound() {
-        when(processConfigRepository.findAllByProcessType(ProcessType.SECURITY_ANALYSIS)).thenReturn(List.of());
+        when(securityAnalysisProcessConfigRepository.findAll()).thenReturn(List.of());
 
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 
-        verify(processConfigRepository).findAllByProcessType(ProcessType.SECURITY_ANALYSIS);
+        verify(securityAnalysisProcessConfigRepository).findAll();
         assertThat(processConfigs).isEmpty();
     }
 

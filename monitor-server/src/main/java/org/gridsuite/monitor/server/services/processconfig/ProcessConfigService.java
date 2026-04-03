@@ -13,10 +13,11 @@ import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
+import org.gridsuite.monitor.server.repositories.SecurityAnalysisProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,10 +29,12 @@ import java.util.*;
 @Service
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
+    private final SecurityAnalysisProcessConfigRepository securityAnalysisProcessConfigRepository;
     private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisProcessConfigRepository securityAnalysisProcessConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
         this.processConfigRepository = processConfigRepository;
+        this.securityAnalysisProcessConfigRepository = securityAnalysisProcessConfigRepository;
         this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
     }
 
@@ -95,26 +98,32 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return processConfigRepository.findAllByProcessType(processType).stream()
-                .map(this::toPersistedProcessConfig)
-                .toList();
+        switch (processType) {
+            case SECURITY_ANALYSIS -> {
+                return securityAnalysisProcessConfigRepository.findAll()
+                        .stream()
+                        .map(this::toPersistedProcessConfig)
+                        .toList();
+            }
+            default -> throw new IllegalArgumentException("Unsupported process type: " + processType);
+        }
     }
 
-    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
+    private ProcessConfig toProcessConfig(AbstractProcessConfigEntity entity) {
         return switch (entity) {
             case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         };
     }
 
-    private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
+    private PersistedProcessConfig toPersistedProcessConfig(AbstractProcessConfigEntity entity) {
         return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
     }
 
     @Transactional(readOnly = true)
     public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        Optional<ProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
-        Optional<ProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
+        Optional<AbstractProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
+        Optional<AbstractProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
 
         if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
             return Optional.empty();

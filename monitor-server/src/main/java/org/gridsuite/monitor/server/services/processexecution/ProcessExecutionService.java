@@ -20,7 +20,7 @@ import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionSt
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
-import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
+import org.gridsuite.monitor.server.repositories.processexecution.ProcessExecutionRepository;
 import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.result.ResultService;

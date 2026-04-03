@@ -11,7 +11,7 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
-import org.gridsuite.monitor.server.repositories.SecurityAnalysisProcessConfigRepository;
+import org.gridsuite.monitor.server.repositories.processconfig.SecurityAnalysisProcessConfigRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

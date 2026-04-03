@@ -26,4 +26,13 @@ public interface ProcessExecutor {
      *                          update execution status accordingly before propagating)
      */
     <T extends ProcessConfig> void executeProcess(ProcessRunMessage<T> runMessage);
+
+    /**
+     * Resume execution after an async step has completed via RabbitMQ callback.
+     * Reconstructs the execution context from DB and the callback message,
+     * then continues from the step following the completed one.
+     *
+     * @param result the async step result received from the computation server
+     */
+    void resumeAfterAsyncStep(AsyncStepResult result);
 }

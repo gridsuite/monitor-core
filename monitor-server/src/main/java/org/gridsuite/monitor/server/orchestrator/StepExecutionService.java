@@ -53,12 +53,17 @@ public class StepExecutionService implements StepExecutor {
 
         try {
             step.execute(context);
-            updateStepStatus(context, StepStatus.COMPLETED, step);
+            if (!step.isAsync()) {
+                updateStepStatus(context, StepStatus.COMPLETED, step);
+            }
+            // For async steps: step stays RUNNING, will be completed via callback
         } catch (Exception e) {
             updateStepStatus(context, StepStatus.FAILED, step);
             throw e;
         } finally {
-            reportRestClient.sendReport(context.getReportInfos());
+            if (!step.isAsync()) {
+                reportRestClient.sendReport(context.getReportInfos());
+            }
         }
     }
 

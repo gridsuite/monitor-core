@@ -9,14 +9,18 @@ package org.gridsuite.monitor.server.orchestrator;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.orchestrator.context.ProcessExecutionContext;
 import org.gridsuite.monitor.server.orchestrator.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.server.orchestrator.process.Process;
 import org.gridsuite.monitor.server.orchestrator.process.ProcessStep;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +35,11 @@ import java.util.stream.IntStream;
 
 /**
  * Orchestrates the execution of a process by iterating over its steps.
+ * Supports both synchronous (blocking) and asynchronous (fire-and-forget) steps.
+ * <p>
+ * For async steps, the orchestrator stops the loop after firing and waits for a
+ * RabbitMQ callback via {@link #resumeAfterAsyncStep(AsyncStepResult)}.
+ * <p>
  * Moved from monitor-worker-server and adapted for server-side execution.
  *
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -43,16 +52,22 @@ public class ProcessOrchestrationService implements ProcessExecutor {
     private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
     private final StepExecutor stepExecutor;
     private final Notificator notificationService;
+    private final ProcessExecutionService processExecutionService;
+    private final ProcessConfigService processConfigService;
     private final String executionEnvName;
 
     public ProcessOrchestrationService(List<Process<? extends ProcessConfig>> processList,
                                        StepExecutor stepExecutor,
                                        Notificator notificationService,
+                                       ProcessExecutionService processExecutionService,
+                                       ProcessConfigService processConfigService,
                                        @Value("${monitor.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));
         this.stepExecutor = stepExecutor;
         this.notificationService = notificationService;
+        this.processExecutionService = processExecutionService;
+        this.processConfigService = processConfigService;
         this.executionEnvName = executionEnvName;
     }
 
@@ -74,11 +89,87 @@ public class ProcessOrchestrationService implements ProcessExecutor {
 
         try {
             initializeSteps(process, context);
-            executeSteps(process, context);
         } catch (Exception e) {
             updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
             throw e;
         }
+
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+        executeStepsFrom(process, context, 0);
+    }
+
+    @Override
+    public void resumeAfterAsyncStep(AsyncStepResult result) {
+        ProcessExecutionEntity entity = processExecutionService.findById(result.executionId())
+            .orElseThrow(() -> new IllegalStateException("Execution not found: " + result.executionId()));
+
+        ProcessConfig config = processConfigService.getProcessConfig(entity.getProcessConfigId())
+            .orElseThrow(() -> new IllegalStateException("Config not found: " + entity.getProcessConfigId()))
+            .processConfig();
+
+        ProcessType processType = ProcessType.valueOf(entity.getType());
+
+        completeAsyncStep(entity, result);
+
+        if (!result.success()) {
+            updateExecutionStatus(result.executionId(), entity.getExecutionEnvName(), ProcessStatus.FAILED);
+            doSkipRemainingSteps(processType, config, entity, result);
+            return;
+        }
+
+        doResumeExecution(processType, config, entity, result);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends ProcessConfig> void doResumeExecution(ProcessType processType, ProcessConfig config,
+                                                             ProcessExecutionEntity entity, AsyncStepResult result) {
+        Process<T> process = (Process<T>) processes.get(processType);
+        ProcessExecutionContext<T> context = reconstructContext(result, (T) config, entity);
+        executeStepsFrom(process, context, result.completedStepIndex() + 1);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends ProcessConfig> void doSkipRemainingSteps(ProcessType processType, ProcessConfig config,
+                                                                ProcessExecutionEntity entity, AsyncStepResult result) {
+        Process<T> process = (Process<T>) processes.get(processType);
+        ProcessExecutionContext<T> context = reconstructContext(result, (T) config, entity);
+        skipRemainingSteps(process, context, result.completedStepIndex() + 1);
+    }
+
+    private <T extends ProcessConfig> ProcessExecutionContext<T> reconstructContext(AsyncStepResult result,
+                                                                                    T config,
+                                                                                    ProcessExecutionEntity entity) {
+        ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
+            result.executionId(),
+            entity.getCaseUuid(),
+            config,
+            entity.getExecutionEnvName(),
+            entity.getDebugFileLocation()
+        );
+        context.setCaseS3Key(result.caseS3Key());
+        return context;
+    }
+
+    private void completeAsyncStep(ProcessExecutionEntity entity, AsyncStepResult result) {
+        ProcessExecutionStepEntity stepEntity = entity.getSteps().stream()
+            .filter(s -> s.getStepOrder() == result.completedStepIndex())
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(
+                "Step not found at index " + result.completedStepIndex() + " for execution " + result.executionId()));
+
+        ProcessExecutionStep completed = ProcessExecutionStep.builder()
+            .id(stepEntity.getId())
+            .stepType(stepEntity.getStepType())
+            .stepOrder(stepEntity.getStepOrder())
+            .status(result.success() ? StepStatus.COMPLETED : StepStatus.FAILED)
+            .resultId(result.resultUuid())
+            .resultType(result.resultType())
+            .reportId(stepEntity.getReportId())
+            .startedAt(stepEntity.getStartedAt())
+            .completedAt(Instant.now())
+            .build();
+
+        notificationService.updateStepStatus(result.executionId(), completed);
     }
 
     private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
@@ -94,32 +185,45 @@ public class ProcessOrchestrationService implements ProcessExecutor {
                         .toList());
     }
 
-    private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
-        doExecuteSteps(process, context);
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
-    }
-
-    private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
+    /**
+     * Executes steps starting from {@code fromIndex}.
+     * <p>
+     * For sync steps: executes and continues to the next step.
+     * For async steps: fires the step and returns immediately (thread released).
+     * Execution will resume via {@link #resumeAfterAsyncStep(AsyncStepResult)}.
+     */
+    private <T extends ProcessConfig> void executeStepsFrom(Process<T> process, ProcessExecutionContext<T> context, int fromIndex) {
         List<ProcessStep<T>> steps = process.getSteps();
-        boolean skipRemaining = false;
 
-        for (int i = 0; i < steps.size(); i++) {
+        for (int i = fromIndex; i < steps.size(); i++) {
             ProcessStep<T> step = steps.get(i);
             ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
-
-            if (skipRemaining) {
-                stepExecutor.skipStep(stepContext, step);
-                continue;
-            }
 
             try {
                 stepExecutor.executeStep(stepContext, step);
             } catch (Exception e) {
                 LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
                 updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
-                skipRemaining = true;
+                skipRemainingSteps(process, context, i + 1);
+                return;
             }
+
+            if (step.isAsync()) {
+                // Async step was fired; execution will resume via callback
+                return;
+            }
+        }
+
+        // All steps completed successfully
+        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
+    }
+
+    private <T extends ProcessConfig> void skipRemainingSteps(Process<T> process, ProcessExecutionContext<T> context, int fromIndex) {
+        List<ProcessStep<T>> steps = process.getSteps();
+        for (int i = fromIndex; i < steps.size(); i++) {
+            ProcessStep<T> step = steps.get(i);
+            ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
+            stepExecutor.skipStep(stepContext, step);
         }
     }
 

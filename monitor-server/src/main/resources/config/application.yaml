@@ -9,6 +9,9 @@ spring:
         consumeRun-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run
           group: monitorRunGroup
+        consumeStepResult-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.step.result
+          group: monitorStepResultGroup
 
 monitor:
   execution-env-name: ${MONITOR_EXECUTION_ENV_NAME:default-env}

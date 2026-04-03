@@ -9,6 +9,8 @@ package org.gridsuite.monitor.server.clients;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -47,19 +49,24 @@ public class SecurityAnalysisRestClient {
     }
 
     /**
-     * Runs a security analysis on a network stored in S3.
+     * Fires a security analysis run on SA-server (fire-and-forget).
+     * SA-server runs the computation asynchronously and sends a RabbitMQ callback
+     * to the specified receiver destination with the provided headers.
      *
-     * @param caseS3Key the S3 key of the network
+     * @param caseS3Key                     the S3 key of the network
      * @param securityAnalysisParametersUuid the SA parameters UUID
-     * @param loadflowParametersUuid the load flow parameters UUID
-     * @return the result UUID
+     * @param loadflowParametersUuid        the load flow parameters UUID
+     * @param resultUuid                    the UUID to use for storing the result
+     * @param receiver                      the RabbitMQ destination for the completion callback
+     * @param receiverHeaders               metadata headers to echo back in the callback
      */
-    public UUID run(String caseS3Key, UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid) {
-        // TODO: call security-analysis-server's run endpoint with S3 reference
-        // Expected API: POST /run
+    public void run(String caseS3Key, UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid,
+                    UUID resultUuid, String receiver, Map<String, String> receiverHeaders) {
+        // TODO: call security-analysis-server's run endpoint with S3 reference and receiver info
+        // Expected API: POST /run?resultUuid={resultUuid}&receiver={receiver}
+        //   + receiver headers passed as query params (e.g., headerExecutionId, headerCaseS3Key, ...)
         //   Body: { "caseS3Key": "...", "securityAnalysisParametersUuid": "...", "loadflowParametersUuid": "..." }
-        //   Returns: result UUID
-        // Then poll for completion or wait for callback
+        //   Returns: 200 OK (fire-and-forget, result delivered via callback)
         throw new UnsupportedOperationException("Not yet implemented: security-analysis-server run API");
     }
 }

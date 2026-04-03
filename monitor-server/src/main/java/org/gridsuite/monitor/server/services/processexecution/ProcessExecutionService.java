@@ -200,6 +200,11 @@ public class ProcessExecutionService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<ProcessExecutionEntity> findById(UUID executionId) {
+        return processExecutionRepository.findById(executionId);
+    }
+
+    @Transactional(readOnly = true)
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return processExecutionRepository.findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(processType.name()).stream()
             .map(processExecutionMapper::toDto).toList();

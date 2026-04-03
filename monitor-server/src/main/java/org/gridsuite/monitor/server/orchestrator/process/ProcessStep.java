@@ -35,6 +35,21 @@ public interface ProcessStep<C extends ProcessConfig> {
     UUID getId();
 
     /**
+     * Whether this step is asynchronous.
+     * <p>
+     * An async step fires off work to an external server and returns immediately.
+     * The orchestrator will stop iterating after an async step and wait for a
+     * RabbitMQ callback to resume execution from the next step.
+     * <p>
+     * Sync steps (default) block until their work is complete.
+     *
+     * @return {@code true} if this step is async, {@code false} otherwise
+     */
+    default boolean isAsync() {
+        return false;
+    }
+
+    /**
      * Executes the step business logic.
      *
      * @param context step execution context for the current run

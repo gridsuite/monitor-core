@@ -10,5 +10,7 @@ package org.gridsuite.monitor.commons.types.processexecution;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public enum ProcessType {
-    SECURITY_ANALYSIS
+    SECURITY_ANALYSIS,
+    LOADFLOW
 }
+

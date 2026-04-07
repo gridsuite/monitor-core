@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
@@ -98,7 +99,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void getSecurityAnalysisConfigNotFound() throws Exception {
+    void getProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -203,7 +204,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void deleteSecurityAnalysisConfig() throws Exception {
+    void deleteProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
@@ -216,7 +217,7 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void deleteSecurityAnalysisConfigNotFound() throws Exception {
+    void deleteProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
@@ -270,6 +271,129 @@ class ProcessConfigControllerTest {
             .andExpect(content().json("[]"));
 
         verify(processConfigService).getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void createLoadFlowConfig() throws Exception {
+        UUID processConfigId = UUID.randomUUID();
+        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID(), UUID.randomUUID())
+        );
+
+        when(processConfigService.createProcessConfig(any(ProcessConfig.class)))
+            .thenReturn(processConfigId);
+
+        mockMvc.perform(post("/v1/process-configs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loadFlowConfig)))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").value(processConfigId.toString()));
+
+        verify(processConfigService).createProcessConfig(any(LoadFlowConfig.class));
+    }
+
+    @Test
+    void getLoadFlowConfig() throws Exception {
+        UUID processConfigId = UUID.randomUUID();
+        PersistedProcessConfig loadFlowConfig = new PersistedProcessConfig(UUID.randomUUID(), new LoadFlowConfig(
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID(), UUID.randomUUID())
+        ));
+
+        String expectedJson = objectMapper.writeValueAsString(loadFlowConfig);
+
+        when(processConfigService.getProcessConfig(any(UUID.class)))
+            .thenReturn(Optional.of(loadFlowConfig));
+
+        mockMvc.perform(get("/v1/process-configs/{uuid}", processConfigId)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(expectedJson));
+
+        verify(processConfigService).getProcessConfig(any(UUID.class));
+    }
+
+    @Test
+    void updateLoadFlowConfig() throws Exception {
+        UUID processConfigId = UUID.randomUUID();
+        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID(), UUID.randomUUID())
+        );
+
+        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
+            .thenReturn(Boolean.TRUE);
+
+        mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loadFlowConfig)))
+            .andExpect(status().isOk());
+
+        verify(processConfigService).updateProcessConfig(any(UUID.class), any(LoadFlowConfig.class));
+    }
+
+    @Test
+    void updateLoadFlowConfigNotFound() throws Exception {
+        UUID processConfigId = UUID.randomUUID();
+        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID(), UUID.randomUUID())
+        );
+
+        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
+            .thenReturn(Boolean.FALSE);
+
+        mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loadFlowConfig)))
+            .andExpect(status().isNotFound());
+
+        verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
+    }
+
+    @Test
+    void getAllLoadFlowConfigs() throws Exception {
+        List<PersistedProcessConfig> loadFlowConfigs = List.of(
+            new PersistedProcessConfig(UUID.randomUUID(), new LoadFlowConfig(
+                UUID.randomUUID(),
+                List.of(UUID.randomUUID(), UUID.randomUUID())
+            )),
+            new PersistedProcessConfig(UUID.randomUUID(), new LoadFlowConfig(
+                UUID.randomUUID(),
+                List.of(UUID.randomUUID())
+            ))
+        );
+        String expectedJson = objectMapper.writeValueAsString(loadFlowConfigs);
+
+        when(processConfigService.getProcessConfigs(ProcessType.LOADFLOW))
+            .thenReturn(loadFlowConfigs);
+
+        mockMvc.perform(get("/v1/process-configs")
+                .param("processType", ProcessType.LOADFLOW.name())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(expectedJson));
+
+        verify(processConfigService).getProcessConfigs(ProcessType.LOADFLOW);
+    }
+
+    @Test
+    void getAllLoadFlowConfigsNotFound() throws Exception {
+        when(processConfigService.getProcessConfigs(ProcessType.LOADFLOW))
+            .thenReturn(List.of());
+
+        mockMvc.perform(get("/v1/process-configs")
+                .param("processType", ProcessType.LOADFLOW.name())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json("[]"));
+
+        verify(processConfigService).getProcessConfigs(ProcessType.LOADFLOW);
     }
 
     @Test
@@ -336,6 +460,79 @@ class ProcessConfigControllerTest {
             .andExpect(jsonPath("$.identical").value(false))
             .andExpect(jsonPath("$.differences[0].field").value("modifications"))
             .andExpect(jsonPath("$.differences[0].identical").value(false));
+
+        verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
+    }
+
+    @Test
+    void compareLoadFlowConfigsShouldReturnComparisonResult() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        List<UUID> modificationUuids = List.of(UUID.randomUUID());
+
+        ProcessConfigComparison comparison = new ProcessConfigComparison(
+            uuid1,
+            uuid2,
+            true,
+            List.of(
+                new ProcessConfigFieldComparison("modifications", true, modificationUuids, modificationUuids),
+                new ProcessConfigFieldComparison("loadflowParameters", true, loadflowParametersUuid, loadflowParametersUuid)
+            )
+        );
+
+        when(processConfigService.compareProcessConfigs(uuid1, uuid2))
+            .thenReturn(Optional.of(comparison));
+
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", uuid1.toString())
+                .param("uuid2", uuid2.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.processConfigUuid1").value(uuid1.toString()))
+            .andExpect(jsonPath("$.processConfigUuid2").value(uuid2.toString()))
+            .andExpect(jsonPath("$.identical").value(true))
+            .andExpect(jsonPath("$.differences").isArray())
+            .andExpect(jsonPath("$.differences.length()").value(2))
+            .andExpect(jsonPath("$.differences[0].field").value("modifications"))
+            .andExpect(jsonPath("$.differences[1].field").value("loadflowParameters"));
+
+        verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
+    }
+
+    @Test
+    void compareLoadFlowConfigsShouldReturnDifferences() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        List<UUID> modificationUuids1 = List.of(UUID.randomUUID());
+        List<UUID> modificationUuids2 = List.of(UUID.randomUUID());
+        UUID loadflowParametersUuid1 = UUID.randomUUID();
+        UUID loadflowParametersUuid2 = UUID.randomUUID();
+
+        ProcessConfigComparison comparison = new ProcessConfigComparison(
+            uuid1,
+            uuid2,
+            false,
+            List.of(
+                new ProcessConfigFieldComparison("modifications", false, modificationUuids1, modificationUuids2),
+                new ProcessConfigFieldComparison("loadflowParameters", false, loadflowParametersUuid1, loadflowParametersUuid2)
+            )
+        );
+
+        when(processConfigService.compareProcessConfigs(uuid1, uuid2))
+            .thenReturn(Optional.of(comparison));
+
+        mockMvc.perform(get("/v1/process-configs/compare")
+                .param("uuid1", uuid1.toString())
+                .param("uuid2", uuid2.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.identical").value(false))
+            .andExpect(jsonPath("$.differences[0].field").value("modifications"))
+            .andExpect(jsonPath("$.differences[0].identical").value(false))
+            .andExpect(jsonPath("$.differences[1].field").value("loadflowParameters"))
+            .andExpect(jsonPath("$.differences[1].identical").value(false));
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }

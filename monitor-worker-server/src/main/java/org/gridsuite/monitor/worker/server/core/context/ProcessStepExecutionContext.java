@@ -10,10 +10,10 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import lombok.Getter;
 import lombok.Setter;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
+import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -23,6 +23,7 @@ import java.util.UUID;
  */
 public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
+    @Getter
     private final ProcessExecutionContext<C> processContext;
 
     @Getter
@@ -30,7 +31,7 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     @Getter
     private final int stepOrder;
     @Getter
-    private final ReportInfos reportInfos;
+    private final ReportNode reportNode;
     @Getter
     private final Instant startedAt = Instant.now();
     @Getter
@@ -44,11 +45,15 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
         this.processContext = processContext;
         this.stepExecutionId = stepId;
         this.processStepType = processStepType;
-        this.reportInfos = new ReportInfos(UUID.randomUUID(), ReportNode.newRootReportNode()
+        this.reportNode = ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()
-                .withMessageTemplate("monitor.worker.server.stepType")
-                .withUntypedValue("stepType", processStepType.getName())
-                .build());
+                .withMessageTemplate("monitor.worker.server.step.execution")
+                .build();
+        reportNode.newReportNode()
+            .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
+            .withMessageTemplate("monitor.worker.server.stepType")
+            .withUntypedValue("stepType", processStepType.getName())
+            .add();
         this.stepOrder = stepOrder;
     }
 
@@ -62,6 +67,10 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
     public UUID getCaseUuid() {
         return processContext.getCaseUuid();
+    }
+
+    public UUID getProcessReportId() {
+        return processContext.getReportId();
     }
 
     public Network getNetwork() {

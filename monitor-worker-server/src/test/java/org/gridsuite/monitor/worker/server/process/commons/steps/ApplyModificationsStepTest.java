@@ -18,7 +18,6 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
@@ -71,17 +70,17 @@ class ApplyModificationsStepTest {
     private static final UUID MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID MISSING_MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID REPORT_UUID = UUID.randomUUID();
-    private ReportInfos reportInfos;
+    private ReportNode reportNode;
 
     @BeforeEach
     void setUp() {
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, s3Service, filterService);
         when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
         when(stepContext.getConfig()).thenReturn(config);
-        reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+        reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
-                .build());
+                .build();
     }
 
     @Test
@@ -94,7 +93,7 @@ class ApplyModificationsStepTest {
 
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(stepContext.getReportNode()).thenReturn(reportNode);
         when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
         doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
@@ -112,7 +111,7 @@ class ApplyModificationsStepTest {
 
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(stepContext.getReportNode()).thenReturn(reportNode);
         when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
 
         assertThrows(PowsyblException.class, () -> applyModificationsStep.execute(stepContext), "Some network composite modifications are missing");
@@ -142,7 +141,7 @@ class ApplyModificationsStepTest {
 
         Network network = mock(Network.class);
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+        when(stepContext.getReportNode()).thenReturn(reportNode);
         when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
         doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 

@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.process.commons.steps;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.services.NetworkConversionService;
@@ -48,11 +47,11 @@ class LoadNetworkStepTest {
     void setUp() {
         loadNetworkStep = new LoadNetworkStep<>(networkConversionService);
         when(stepContext.getCaseUuid()).thenReturn(CASE_UUID);
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+        ReportNode reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
-                .build());
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+                .build();
+        when(stepContext.getReportNode()).thenReturn(reportNode);
     }
 
     @Test
@@ -67,7 +66,7 @@ class LoadNetworkStepTest {
         assertEquals("LOAD_NETWORK", stepType);
         verify(networkConversionService).createNetwork(eq(CASE_UUID), any(ReportNode.class));
         verify(stepContext).setNetwork(expectedNetwork);
-        ReportNode stepReportNode = stepContext.getReportInfos().reportNode();
+        ReportNode stepReportNode = stepContext.getReportNode();
         ReportNode importReportNode = stepReportNode.getChildren().getFirst();
         assertEquals("monitor.worker.server.importCase", importReportNode.getMessageKey());
     }

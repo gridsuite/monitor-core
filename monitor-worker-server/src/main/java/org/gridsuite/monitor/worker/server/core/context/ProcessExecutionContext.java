@@ -23,15 +23,17 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
     private final UUID executionId;
     private final UUID caseUuid;
     private final C config;
+    private final UUID reportId;
     @Setter
     private Network network;
     private final String executionEnvName;
     private final String debugFileLocation;
 
-    public ProcessExecutionContext(UUID executionId, UUID caseUuid, C config, String executionEnvName, String debugFileLocation) {
+    public ProcessExecutionContext(UUID executionId, UUID caseUuid, C config, UUID reportId, String executionEnvName, String debugFileLocation) {
         this.executionId = executionId;
         this.caseUuid = caseUuid;
         this.config = config;
+        this.reportId = reportId;
         this.executionEnvName = executionEnvName;
         this.debugFileLocation = debugFileLocation;
     }

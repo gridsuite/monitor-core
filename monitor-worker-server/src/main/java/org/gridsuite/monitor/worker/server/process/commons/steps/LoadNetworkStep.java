@@ -32,7 +32,7 @@ public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessSte
     @Override
     public void execute(ProcessStepExecutionContext<C> context) {
         UUID caseId = context.getCaseUuid();
-        Network network = loadNetworkFromCase(caseId, context.getReportInfos().reportNode());
+        Network network = loadNetworkFromCase(caseId, context.getReportNode());
         context.setNetwork(network);
     }
 

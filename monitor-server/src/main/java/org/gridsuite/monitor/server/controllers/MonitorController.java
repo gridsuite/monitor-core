@@ -57,9 +57,8 @@ public class MonitorController {
     @GetMapping("/executions/{executionId}/reports")
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports")})
-    public ResponseEntity<List<ReportPage>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<ReportPage> reports = processExecutionService.getReports(executionId);
-        return ResponseEntity.ok(reports);
+    public ResponseEntity<ReportPage> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return ResponseEntity.ok(processExecutionService.getReports(executionId));
     }
 
     @GetMapping("/executions/{executionId}/results")

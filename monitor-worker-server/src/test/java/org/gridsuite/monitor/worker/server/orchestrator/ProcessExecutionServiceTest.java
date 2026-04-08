@@ -56,7 +56,7 @@ class ProcessExecutionServiceTest {
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         StepExecutor stepExecutor = new StepExecutionService(notificationService, reportRestClient);
-        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, EXECUTION_ENV_NAME);
+        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, EXECUTION_ENV_NAME);
     }
 
     private static ProcessStep<ProcessConfig> mockStep(UUID id, String typeName) {
@@ -72,6 +72,7 @@ class ProcessExecutionServiceTest {
     void executeProcessShouldCompleteSuccessfullyWhenAllStepsSucceed() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
         UUID step1Id = UUID.randomUUID();
         UUID step2Id = UUID.randomUUID();
         UUID step3Id = UUID.randomUUID();
@@ -80,7 +81,7 @@ class ProcessExecutionServiceTest {
         ProcessStep<ProcessConfig> step3 = mockStep(step3Id, "STEP_3");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         processExecutionService.executeProcess(runMessage);
 
@@ -119,6 +120,7 @@ class ProcessExecutionServiceTest {
     void executeProcessShouldSkipRemainingStepsAndSendFailedStatusWhenFirstStepFails() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
         ProcessStep<ProcessConfig> step1 = mockStep(UUID.randomUUID(), "STEP_1");
         ProcessStep<ProcessConfig> step2 = mockStep(UUID.randomUUID(), "STEP_2");
         ProcessStep<ProcessConfig> step3 = mockStep(UUID.randomUUID(), "STEP_3");
@@ -126,7 +128,7 @@ class ProcessExecutionServiceTest {
         doThrow(stepException).when(step1).execute(any());
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         processExecutionService.executeProcess(runMessage);
 
@@ -146,7 +148,7 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         when(processConfig.processType()).thenReturn(null);
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
             .isInstanceOf(IllegalArgumentException.class)

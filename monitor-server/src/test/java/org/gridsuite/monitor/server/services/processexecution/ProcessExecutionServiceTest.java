@@ -90,12 +90,14 @@ class ProcessExecutionServiceTest {
     private SecurityAnalysisConfig securityAnalysisConfig;
     private UUID caseUuid;
     private UUID executionId;
+    private UUID reportId;
     private String userId;
 
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
+        reportId = UUID.randomUUID();
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
@@ -124,10 +126,11 @@ class ProcessExecutionServiceTest {
                         execution.getStartedAt() == null
         ));
         verify(notificationService).sendProcessRunMessage(
-                caseUuid,
-                securityAnalysisConfig,
-                result.get(),
-                debugFileLocation
+                eq(caseUuid),
+                eq(securityAnalysisConfig),
+                eq(result.get()),
+                any(UUID.class),
+                eq(debugFileLocation)
         );
         verify(s3PathResolver).toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class));
     }
@@ -138,6 +141,7 @@ class ProcessExecutionServiceTest {
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
+                .reportId(reportId)
                 .userId(userId)
                 .status(ProcessStatus.SCHEDULED)
                 .scheduledAt(Instant.now())
@@ -151,6 +155,7 @@ class ProcessExecutionServiceTest {
         assertThat(execution.getExecutionEnvName()).isNull();
         assertThat(execution.getStartedAt()).isNull();
         assertThat(execution.getCompletedAt()).isNull();
+        assertThat(execution.getReportId()).isEqualTo(reportId);
         verify(executionRepository).save(execution);
     }
 
@@ -160,6 +165,7 @@ class ProcessExecutionServiceTest {
                 .id(executionId)
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
+                .reportId(reportId)
                 .userId(userId)
                 .status(ProcessStatus.RUNNING)
                 .scheduledAt(Instant.now())
@@ -176,6 +182,7 @@ class ProcessExecutionServiceTest {
         assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
         assertThat(execution.getStartedAt()).isEqualTo(startedAt);
         assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
+        assertThat(execution.getReportId()).isEqualTo(reportId);
         verify(executionRepository).save(execution);
     }
 
@@ -202,7 +209,6 @@ class ProcessExecutionServiceTest {
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         UUID stepId = UUID.randomUUID();
         UUID resultId = UUID.randomUUID();
-        UUID reportId = UUID.randomUUID();
         Instant startedAt = Instant.now();
         ProcessExecutionStep processExecutionStep = ProcessExecutionStep.builder()
                 .id(stepId)
@@ -210,7 +216,6 @@ class ProcessExecutionServiceTest {
                 .status(StepStatus.RUNNING)
                 .resultId(resultId)
                 .resultType(ResultType.SECURITY_ANALYSIS)
-                .reportId(reportId)
                 .startedAt(startedAt)
                 .build();
 
@@ -224,7 +229,6 @@ class ProcessExecutionServiceTest {
         assertThat(addedStep.getStatus()).isEqualTo(StepStatus.RUNNING);
         assertThat(addedStep.getResultId()).isEqualTo(resultId);
         assertThat(addedStep.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
-        assertThat(addedStep.getReportId()).isEqualTo(reportId);
         assertThat(addedStep.getStartedAt()).isEqualTo(startedAt);
         verify(executionRepository).save(execution);
     }
@@ -234,7 +238,6 @@ class ProcessExecutionServiceTest {
         UUID stepId = UUID.randomUUID();
         UUID originalResultId = UUID.randomUUID();
         UUID newResultId = UUID.randomUUID();
-        UUID newReportId = UUID.randomUUID();
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
         ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
@@ -259,7 +262,6 @@ class ProcessExecutionServiceTest {
                 .status(StepStatus.COMPLETED)
                 .resultId(newResultId)
                 .resultType(ResultType.SECURITY_ANALYSIS)
-                .reportId(newReportId)
                 .startedAt(startedAt)
                 .completedAt(completedAt)
                 .build();
@@ -274,7 +276,6 @@ class ProcessExecutionServiceTest {
         assertThat(updatedStep.getStatus()).isEqualTo(StepStatus.COMPLETED);
         assertThat(updatedStep.getResultId()).isEqualTo(newResultId);
         assertThat(updatedStep.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
-        assertThat(updatedStep.getReportId()).isEqualTo(newReportId);
         assertThat(updatedStep.getCompletedAt()).isEqualTo(completedAt);
         verify(executionRepository).save(execution);
     }
@@ -287,8 +288,6 @@ class ProcessExecutionServiceTest {
         UUID originalResultId2 = UUID.randomUUID();
         UUID newResultId1 = UUID.randomUUID();
         UUID newResultId2 = UUID.randomUUID();
-        UUID newReportId1 = UUID.randomUUID();
-        UUID newReportId2 = UUID.randomUUID();
         Instant startedAt1 = Instant.now().minusSeconds(60);
         Instant startedAt2 = Instant.now().minusSeconds(40);
         Instant completedAt1 = Instant.now();
@@ -323,7 +322,6 @@ class ProcessExecutionServiceTest {
             .status(StepStatus.COMPLETED)
             .resultId(newResultId1)
             .resultType(ResultType.SECURITY_ANALYSIS)
-            .reportId(newReportId1)
             .startedAt(startedAt1)
             .completedAt(completedAt1)
             .build();
@@ -333,7 +331,6 @@ class ProcessExecutionServiceTest {
             .status(StepStatus.COMPLETED)
             .resultId(newResultId2)
             .resultType(ResultType.SECURITY_ANALYSIS)
-            .reportId(newReportId2)
             .startedAt(startedAt2)
             .completedAt(completedAt2)
             .build();
@@ -347,7 +344,6 @@ class ProcessExecutionServiceTest {
         assertThat(updatedStep1.getStatus()).isEqualTo(StepStatus.COMPLETED);
         assertThat(updatedStep1.getResultId()).isEqualTo(newResultId1);
         assertThat(updatedStep1.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
-        assertThat(updatedStep1.getReportId()).isEqualTo(newReportId1);
         assertThat(updatedStep1.getCompletedAt()).isEqualTo(completedAt1);
 
         ProcessExecutionStepEntity updatedStep2 = execution.getSteps().get(1);
@@ -356,7 +352,6 @@ class ProcessExecutionServiceTest {
         assertThat(updatedStep2.getStatus()).isEqualTo(StepStatus.COMPLETED);
         assertThat(updatedStep2.getResultId()).isEqualTo(newResultId2);
         assertThat(updatedStep2.getResultType()).isEqualTo(ResultType.SECURITY_ANALYSIS);
-        assertThat(updatedStep2.getReportId()).isEqualTo(newReportId2);
         assertThat(updatedStep2.getCompletedAt()).isEqualTo(completedAt2);
 
         verify(executionRepository).save(execution);
@@ -364,39 +359,34 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getReportsShouldReturnReports() {
-        UUID reportId1 = UUID.randomUUID();
-        UUID reportId2 = UUID.randomUUID();
         ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
                 .stepOrder(0)
-                .reportId(reportId1)
                 .build();
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
                 .id(UUID.randomUUID())
                 .stepOrder(1)
-                .reportId(reportId2)
                 .build();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)
+                .reportId(reportId)
                 .userId(userId)
                 .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        ReportPage reportPage1 = new ReportPage(1, List.of(
-            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
-            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
-        ReportPage reportPage2 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
+        ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
+        ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
+        ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
+        ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
 
-        when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
-        when(reportRestClient.getReport(reportId2)).thenReturn(reportPage2);
+        when(reportRestClient.getReport(reportId)).thenReturn(reportPage);
 
-        List<ReportPage> result = processExecutionService.getReports(executionId);
+        ReportPage result = processExecutionService.getReports(executionId);
 
-        assertThat(result).hasSize(2).containsExactly(reportPage1, reportPage2);
+        assertThat(result).isEqualTo(reportPage);
         verify(executionRepository).findById(executionId);
-        verify(reportRestClient).getReport(reportId1);
-        verify(reportRestClient).getReport(reportId2);
+        verify(reportRestClient).getReport(reportId);
     }
 
     @Test
@@ -440,6 +430,7 @@ class ProcessExecutionServiceTest {
         UUID execution1Uuid = UUID.randomUUID();
         UUID case1Uuid = UUID.randomUUID();
         UUID config1Uuid = UUID.randomUUID();
+        UUID report1Uuid = UUID.randomUUID();
         Instant scheduledAt1 = Instant.now().minusSeconds(60);
         Instant startedAt1 = Instant.now().minusSeconds(30);
         Instant completedAt1 = Instant.now();
@@ -453,12 +444,14 @@ class ProcessExecutionServiceTest {
             .scheduledAt(scheduledAt1)
             .startedAt(startedAt1)
             .completedAt(completedAt1)
+            .reportId(report1Uuid)
             .userId("user1")
             .build();
 
         UUID execution2Uuid = UUID.randomUUID();
         UUID case2Uuid = UUID.randomUUID();
         UUID config2Uuid = UUID.randomUUID();
+        UUID report2Uuid = UUID.randomUUID();
         Instant scheduledAt2 = Instant.now().minusSeconds(90);
         Instant startedAt2 = Instant.now().minusSeconds(80);
         ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
@@ -470,6 +463,7 @@ class ProcessExecutionServiceTest {
             .executionEnvName("env2")
             .scheduledAt(scheduledAt2)
             .startedAt(startedAt2)
+            .reportId(report2Uuid)
             .userId("user2")
             .build();
 
@@ -477,8 +471,8 @@ class ProcessExecutionServiceTest {
 
         List<ProcessExecution> result = processExecutionService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
 
-        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, "user1");
-        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, "user2");
+        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1, startedAt1, completedAt1, report1Uuid, "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.SECURITY_ANALYSIS.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2, startedAt2, null, report2Uuid, "user2");
 
         assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
         verify(executionRepository).findByTypeAndStartedAtIsNotNullOrderByStartedAtDesc(ProcessType.SECURITY_ANALYSIS.name());
@@ -501,8 +495,8 @@ class ProcessExecutionServiceTest {
 
         Optional<List<ProcessExecutionStep>> result = processExecutionService.getStepsInfos(executionUuid);
 
-        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, null, startedAt1, null);
-        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null, null);
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, startedAt1, null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null);
 
         assertThat(result).isPresent();
         assertThat(result.get()).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
@@ -538,33 +532,29 @@ class ProcessExecutionServiceTest {
 
     @Test
     void deleteExecutionShouldDeleteResultsAndReports() {
-        UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
-        UUID reportId2 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
             .id(UUID.randomUUID())
             .stepOrder(0)
-            .reportId(reportId1)
             .resultId(resultId1)
             .build();
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
             .id(UUID.randomUUID())
             .stepOrder(1)
-            .reportId(reportId2)
             .resultId(resultId2)
             .resultType(ResultType.SECURITY_ANALYSIS)
             .build();
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .id(executionId)
+            .reportId(reportId)
             .steps(List.of(step0, step1))
             .build();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         doNothing().when(executionRepository).delete(execution);
 
-        doNothing().when(reportRestClient).deleteReport(reportId1);
-        doNothing().when(reportRestClient).deleteReport(reportId2);
+        doNothing().when(reportRestClient).deleteReport(reportId);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
         boolean done = processExecutionService.deleteExecution(executionId);
@@ -572,8 +562,7 @@ class ProcessExecutionServiceTest {
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).delete(execution);
-        verify(reportRestClient).deleteReport(reportId1);
-        verify(reportRestClient).deleteReport(reportId2);
+        verify(reportRestClient).deleteReport(reportId);
         verify(resultService, times(1)).deleteResult(any(ResultInfos.class));
     }
 

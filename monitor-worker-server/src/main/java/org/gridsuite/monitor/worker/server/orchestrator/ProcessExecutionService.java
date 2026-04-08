@@ -6,11 +6,13 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
+import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
@@ -42,16 +44,19 @@ public class ProcessExecutionService implements ProcessExecutor {
     private final StepExecutor stepExecutor;
     private final Notificator notificationService;
     private final String executionEnvName;
+    private final ReportRestClient reportRestClient;
 
     public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
                                    StepExecutor stepExecutor,
                                    Notificator notificationService,
+                                   ReportRestClient reportRestClient,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));
         this.stepExecutor = stepExecutor;
         this.notificationService = notificationService;
         this.executionEnvName = executionEnvName;
+        this.reportRestClient = reportRestClient;
     }
 
     @Override
@@ -66,6 +71,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             runMessage.executionId(),
             runMessage.caseUuid(),
             runMessage.config(),
+            runMessage.reportId(),
             executionEnvName,
             runMessage.debugFileLocation()
         );
@@ -101,6 +107,14 @@ public class ProcessExecutionService implements ProcessExecutor {
     private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
         List<ProcessStep<T>> steps = process.getSteps();
         boolean skipRemaining = false;
+
+        // create process report and send it to the report-server
+        ReportNode processReportNode = ReportNode.newRootReportNode()
+                .withAllResourceBundlesFromClasspath()
+                .withMessageTemplate("monitor.worker.server.process")
+                .withUntypedValue("executionId", context.getExecutionId().toString())
+                .build();
+        reportRestClient.sendReport(context.getReportId(), processReportNode);
 
         for (int i = 0; i < steps.size(); i++) {
             ProcessStep<T> step = steps.get(i);

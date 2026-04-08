@@ -124,19 +124,18 @@ class MonitorIntegrationTest {
         // Verify execution persisted with correct initial state
         ProcessExecutionEntity execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution).isNotNull();
+        assertThat(execution.getReportId()).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
         assertThat(execution.getSteps()).isEmpty();
 
         // Simulate first step creation via message with both report and result
         UUID stepId0 = UUID.randomUUID();
-        UUID reportId0 = UUID.randomUUID();
         UUID resultId0 = UUID.randomUUID();
         ProcessExecutionStep step0 = ProcessExecutionStep.builder()
                 .id(stepId0)
                 .stepType("LOAD_NETWORK")
                 .stepOrder(0)
                 .status(StepStatus.COMPLETED)
-                .reportId(reportId0)
                 .resultId(resultId0)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .startedAt(Instant.now())
@@ -146,14 +145,12 @@ class MonitorIntegrationTest {
 
         // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
-        UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
         ProcessExecutionStep step1 = ProcessExecutionStep.builder()
                 .id(stepId1)
                 .stepType("SECURITY_ANALYSIS")
                 .stepOrder(1)
                 .status(StepStatus.COMPLETED)
-                .reportId(reportId1)
                 .resultId(resultId1)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .startedAt(Instant.now())
@@ -166,10 +163,8 @@ class MonitorIntegrationTest {
         assertThat(execution.getSteps()).hasSize(2);
         assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
-        assertThat(execution.getSteps().get(0).getReportId()).isEqualTo(reportId0);
         assertThat(execution.getSteps().get(0).getResultId()).isEqualTo(resultId0);
         assertThat(execution.getSteps().get(1).getId()).isEqualTo(stepId1);
-        assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId1);
         assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId1);
 
         // Complete the execution via message
@@ -191,36 +186,30 @@ class MonitorIntegrationTest {
         assertThat(execution.getCompletedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(completedAt.truncatedTo(ChronoUnit.MILLIS));
 
         // Mock the report service responses
-        ReportPage reportPage0 = new ReportPage(1, List.of(
-            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
-            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
-        ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
+        ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
+        ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
+        ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
+        ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
 
-        when(reportRestClient.getReport(reportId0)).thenReturn(reportPage0);
-        when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestClient.getReport(execution.getReportId())).thenReturn(reportPage);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].number").value(1))
-                .andExpect(jsonPath("$[0].content", hasSize(2)))
-                .andExpect(jsonPath("$[0].content[0].message").value("message1"))
-                .andExpect(jsonPath("$[0].content[0].severity").value(Severity.INFO.toString()))
-                .andExpect(jsonPath("$[0].content[0].depth").value(1))
-                .andExpect(jsonPath("$[0].content[1].message").value("message2"))
-                .andExpect(jsonPath("$[0].content[1].severity").value(Severity.WARN.toString()))
-                .andExpect(jsonPath("$[0].content[1].depth").value(2))
-                .andExpect(jsonPath("$[0].totalElements").value(100))
-                .andExpect(jsonPath("$[0].totalPages").value(10))
-                .andExpect(jsonPath("$[1].number").value(2))
-                .andExpect(jsonPath("$[1].content", hasSize(1)))
-                .andExpect(jsonPath("$[1].content[0].message").value("message3"))
-                .andExpect(jsonPath("$[1].content[0].severity").value(Severity.ERROR.toString()))
-                .andExpect(jsonPath("$[1].content[0].depth").value(3))
-                .andExpect(jsonPath("$[1].totalElements").value(200))
-                .andExpect(jsonPath("$[1].totalPages").value(20));
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("number").value(1))
+            .andExpect(jsonPath("content", hasSize(3)))
+            .andExpect(jsonPath("content[0].message").value("message1"))
+            .andExpect(jsonPath("content[0].severity").value(Severity.INFO.toString()))
+            .andExpect(jsonPath("content[0].depth").value(1))
+            .andExpect(jsonPath("content[1].message").value("message2"))
+            .andExpect(jsonPath("content[1].severity").value(Severity.WARN.toString()))
+            .andExpect(jsonPath("content[1].depth").value(2))
+            .andExpect(jsonPath("content[2].message").value("message3"))
+            .andExpect(jsonPath("content[2].severity").value(Severity.ERROR.toString()))
+            .andExpect(jsonPath("content[2].depth").value(1))
+            .andExpect(jsonPath("totalElements").value(100))
+            .andExpect(jsonPath("totalPages").value(10));
 
         // Mock the result service responses
         String result0 = "{\"result\": \"success\"}";

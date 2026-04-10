@@ -69,7 +69,6 @@ class ApplyModificationsStepTest {
 
     private static final UUID MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID MISSING_MODIFICATION_UUID = UUID.randomUUID();
-    private static final UUID REPORT_UUID = UUID.randomUUID();
     private ReportNode reportNode;
 
     @BeforeEach

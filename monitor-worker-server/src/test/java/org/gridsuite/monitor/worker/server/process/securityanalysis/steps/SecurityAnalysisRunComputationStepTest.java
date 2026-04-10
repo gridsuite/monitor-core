@@ -56,7 +56,6 @@ class SecurityAnalysisRunComputationStepTest {
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID LOADFLOW_PARAMS_UUID = UUID.randomUUID();
-    private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {

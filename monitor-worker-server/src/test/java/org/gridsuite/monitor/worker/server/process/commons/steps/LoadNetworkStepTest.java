@@ -41,7 +41,6 @@ class LoadNetworkStepTest {
     private ProcessStepExecutionContext<ProcessConfig> stepContext;
 
     private static final UUID CASE_UUID = UUID.randomUUID();
-    private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {

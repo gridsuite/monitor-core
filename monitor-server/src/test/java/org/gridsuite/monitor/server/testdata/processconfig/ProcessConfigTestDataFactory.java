@@ -1,4 +1,4 @@
-package org.gridsuite.monitor.server.dataprovider.processconfig;
+package org.gridsuite.monitor.server.testdata.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;

@@ -1,8 +1,8 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.server.dataprovider.processconfig.ProcessConfigProvider;
-import org.gridsuite.monitor.server.dataprovider.processconfig.ProcessConfigProviders;
+import org.gridsuite.monitor.server.testdata.processconfig.ProcessConfigProvider;
+import org.gridsuite.monitor.server.testdata.processconfig.ProcessConfigProviders;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;

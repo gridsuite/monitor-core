@@ -1,4 +1,4 @@
-package org.gridsuite.monitor.server.dataprovider.processconfig;
+package org.gridsuite.monitor.server.testdata.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;

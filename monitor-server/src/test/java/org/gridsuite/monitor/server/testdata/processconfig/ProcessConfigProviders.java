@@ -1,4 +1,4 @@
-package org.gridsuite.monitor.server.dataprovider.processconfig;
+package org.gridsuite.monitor.server.testdata.processconfig;
 
 import java.util.List;
 

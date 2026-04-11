@@ -1,4 +1,4 @@
-package org.gridsuite.monitor.server.dataprovider.processconfig;
+package org.gridsuite.monitor.server.testdata.processconfig;
 
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;

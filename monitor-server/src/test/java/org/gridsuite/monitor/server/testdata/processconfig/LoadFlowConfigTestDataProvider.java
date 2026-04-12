@@ -9,7 +9,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor
-public class LoadFlowConfigProvider implements ProcessConfigProvider<LoadFlowConfig, LoadFlowConfigEntity> {
+public class LoadFlowConfigTestDataProvider implements ProcessConfigTestDataProvider<LoadFlowConfig, LoadFlowConfigEntity> {
 
     @Override
     public LoadFlowConfig createDto() {
@@ -38,27 +38,13 @@ public class LoadFlowConfigProvider implements ProcessConfigProvider<LoadFlowCon
     }
 
     @Override
-    public UUID getId(LoadFlowConfigEntity entity) {
-        return entity.getId();
-    }
-
-    @Override
-    public void assertEntityEquals(LoadFlowConfigEntity expected, LoadFlowConfigEntity actual) {
-        assertThat(actual)
-                .usingRecursiveComparison()
-                .ignoringFields("id")
-                .isEqualTo(expected);
-    }
-
-    @Override
-    public void assertDtoEquals(LoadFlowConfig expected, LoadFlowConfig actual) {
-        assertThat(actual)
-                .usingRecursiveComparison()
-                .isEqualTo(expected);
+    public Class<LoadFlowConfig> dtoType() {
+        return LoadFlowConfig.class;
     }
 
     @Override
     public void assertDtoEntityEquivalent(LoadFlowConfig dto, LoadFlowConfigEntity entity) {
+        ProcessConfigTestDataProvider.super.assertDtoEntityEquivalent(dto, entity);
         assertThat(entity.getLoadflowParametersUuid())
                 .isEqualTo(dto.loadflowParametersUuid());
     }

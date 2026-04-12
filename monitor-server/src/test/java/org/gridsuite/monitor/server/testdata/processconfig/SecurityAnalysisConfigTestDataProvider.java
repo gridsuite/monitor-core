@@ -9,7 +9,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor
-public class SecurityAnalysisConfigProvider implements ProcessConfigProvider<SecurityAnalysisConfig, SecurityAnalysisConfigEntity> {
+public class SecurityAnalysisConfigTestDataProvider implements ProcessConfigTestDataProvider<SecurityAnalysisConfig, SecurityAnalysisConfigEntity> {
 
     @Override
     public SecurityAnalysisConfig createDto() {
@@ -39,32 +39,16 @@ public class SecurityAnalysisConfigProvider implements ProcessConfigProvider<Sec
     }
 
     @Override
-    public UUID getId(SecurityAnalysisConfigEntity entity) {
-        return entity.getId();
-    }
-
-    @Override
-    public void assertEntityEquals(SecurityAnalysisConfigEntity expected, SecurityAnalysisConfigEntity actual) {
-        assertThat(actual)
-                .usingRecursiveComparison()
-                .ignoringFields("id")
-                .isEqualTo(expected);
-    }
-
-    @Override
-    public void assertDtoEquals(SecurityAnalysisConfig expected, SecurityAnalysisConfig actual) {
-        assertThat(actual)
-                .usingRecursiveComparison()
-                .isEqualTo(expected);
+    public Class<SecurityAnalysisConfig> dtoType() {
+        return SecurityAnalysisConfig.class;
     }
 
     @Override
     public void assertDtoEntityEquivalent(SecurityAnalysisConfig dto, SecurityAnalysisConfigEntity entity) {
+        ProcessConfigTestDataProvider.super.assertDtoEntityEquivalent(dto, entity);
         assertThat(entity.getLoadflowParametersUuid())
                 .isEqualTo(dto.loadflowParametersUuid());
         assertThat(entity.getSecurityAnalysisParametersUuid())
                 .isEqualTo(dto.securityAnalysisParametersUuid());
-        assertThat(entity.getModificationUuids())
-                .isEqualTo(dto.modificationUuids());
     }
 }

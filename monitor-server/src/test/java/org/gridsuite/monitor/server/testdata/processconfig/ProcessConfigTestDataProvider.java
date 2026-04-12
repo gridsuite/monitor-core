@@ -5,7 +5,7 @@ import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public interface ProcessConfigTestDataProvider<D extends ProcessConfig, E extends ProcessConfigEntity> {-
+public interface ProcessConfigTestDataProvider<D extends ProcessConfig, E extends ProcessConfigEntity> {
 
     D createDto();
 

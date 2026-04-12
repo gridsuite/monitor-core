@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor
@@ -17,19 +15,8 @@ public class LoadFlowConfigTestDataProvider implements ProcessConfigTestDataProv
     }
 
     @Override
-    public LoadFlowConfig updateDto(LoadFlowConfig dto) {
-        return new LoadFlowConfig(UUID.randomUUID(), dto.modificationUuids());
-    }
-
-    @Override
     public LoadFlowConfigEntity createEntity() {
         return ProcessConfigTestDataFactory.loadFlowEntity();
-    }
-
-    @Override
-    public LoadFlowConfigEntity updateEntity(LoadFlowConfigEntity entity) {
-        entity.setLoadflowParametersUuid(UUID.randomUUID());
-        return entity;
     }
 
     @Override

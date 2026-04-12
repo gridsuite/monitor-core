@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor
@@ -17,20 +15,8 @@ public class SecurityAnalysisConfigTestDataProvider implements ProcessConfigTest
     }
 
     @Override
-    public SecurityAnalysisConfig updateDto(SecurityAnalysisConfig dto) {
-        return new SecurityAnalysisConfig(UUID.randomUUID(), dto.modificationUuids(), UUID.randomUUID());
-    }
-
-    @Override
     public SecurityAnalysisConfigEntity createEntity() {
         return ProcessConfigTestDataFactory.securityAnalysisEntity();
-    }
-
-    @Override
-    public SecurityAnalysisConfigEntity updateEntity(SecurityAnalysisConfigEntity entity) {
-        entity.setLoadflowParametersUuid(UUID.randomUUID());
-        entity.setSecurityAnalysisParametersUuid(UUID.randomUUID());
-        return entity;
     }
 
     @Override

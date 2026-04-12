@@ -34,10 +34,10 @@ class ProcessConfigServiceCrudTest {
     private ProcessConfigRepository processConfigRepository;
 
     @Spy
-    private LoadFlowConfigMapper loadFlowMapper = Mappers.getMapper(LoadFlowConfigMapper.class);
+    private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper = Mappers.getMapper(SecurityAnalysisConfigMapper.class);
 
     @Spy
-    private SecurityAnalysisConfigMapper securityMapper = Mappers.getMapper(SecurityAnalysisConfigMapper.class);
+    private final LoadFlowConfigMapper loadFlowConfigMapper = Mappers.getMapper(LoadFlowConfigMapper.class);
 
     @InjectMocks
     private ProcessConfigService processConfigService;
@@ -138,7 +138,5 @@ class ProcessConfigServiceCrudTest {
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository).deleteById(processConfigId);
     }
-
-
 
 }

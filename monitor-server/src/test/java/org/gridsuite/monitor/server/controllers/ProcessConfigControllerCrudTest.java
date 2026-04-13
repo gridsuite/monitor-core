@@ -80,7 +80,7 @@ class ProcessConfigControllerCrudTest {
 
     @ParameterizedTest
     @MethodSource("providerStream")
-    void getSecurityAnalysisConfig(ProcessConfigTestDataProvider<ProcessConfig, ProcessConfigEntity> provider) throws Exception {
+    void getProcessConfig(ProcessConfigTestDataProvider<ProcessConfig, ProcessConfigEntity> provider) throws Exception {
         UUID processConfigId = UUID.randomUUID();
         PersistedProcessConfig persistedProcessConfig = new PersistedProcessConfig(UUID.randomUUID(), provider.createDto());
 

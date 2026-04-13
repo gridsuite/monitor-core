@@ -151,10 +151,7 @@ public class ProcessConfigService {
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
     }
 
-    private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
-        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
-
-        // Compare modifications
+    private void compareConfigsModifications(ProcessConfig config1, ProcessConfig config2, List<ProcessConfigFieldComparison> differences) {
         boolean modificationsIdentical = Objects.equals(config1.modificationUuids(), config2.modificationUuids());
         differences.add(new ProcessConfigFieldComparison(
             "modifications",
@@ -162,6 +159,13 @@ public class ProcessConfigService {
             config1.modificationUuids(),
             config2.modificationUuids()
         ));
+    }
+
+    private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
+        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
+
+        // Compare modifications
+        compareConfigsModifications(config1, config2, differences);
 
         // Compare security analysis parameters
         boolean securityAnalysisParametersIdentical = Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid());
@@ -188,13 +192,7 @@ public class ProcessConfigService {
         List<ProcessConfigFieldComparison> differences = new ArrayList<>();
 
         // Compare modifications
-        boolean modificationsIdentical = Objects.equals(config1.modificationUuids(), config2.modificationUuids());
-        differences.add(new ProcessConfigFieldComparison(
-            "modifications",
-            modificationsIdentical,
-            config1.modificationUuids(),
-            config2.modificationUuids()
-        ));
+        compareConfigsModifications(config1, config2, differences);
 
         // Compare loadflow parameters
         boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());

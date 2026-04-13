@@ -20,7 +20,7 @@ public interface LoadFlowConfigMapper {
     @Mapping(target = "processType", expression = "java(dto.processType())")
     LoadFlowConfigEntity toEntity(LoadFlowConfig dto);
 
-    LoadFlowConfig toDto(LoadFlowConfigEntity dto);
+    LoadFlowConfig toDto(LoadFlowConfigEntity entity);
 
     void updateEntityFromDto(LoadFlowConfig dto, @MappingTarget LoadFlowConfigEntity entity);
 }

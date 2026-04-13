@@ -367,8 +367,7 @@ class ProcessConfigServiceTest {
 
         Optional<UUID> newProcessConfigId = processConfigService.duplicateProcessConfig(processConfigId);
 
-        assertThat(newProcessConfigId).isPresent();
-        assertThat(newProcessConfigId.get()).isEqualTo(expectedNewProcessConfigId);
+        assertThat(newProcessConfigId).contains(expectedNewProcessConfigId);
 
         verify(processConfigRepository).findById(processConfigId);
         ArgumentCaptor<LoadFlowConfigEntity> captor = ArgumentCaptor.forClass(LoadFlowConfigEntity.class);

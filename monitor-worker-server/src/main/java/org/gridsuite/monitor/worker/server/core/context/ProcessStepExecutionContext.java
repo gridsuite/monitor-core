@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.core.context;
 
 import com.powsybl.commons.report.ReportNode;
+import com.powsybl.commons.report.TypedValue;
 import com.powsybl.iidm.network.Network;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +24,6 @@ import java.util.UUID;
  */
 public class ProcessStepExecutionContext<C extends ProcessConfig> {
 
-    @Getter
     private final ProcessExecutionContext<C> processContext;
 
     @Getter
@@ -52,9 +52,14 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
         reportNode.newReportNode()
             .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
             .withMessageTemplate("monitor.worker.server.stepType")
+            .withSeverity(TypedValue.INFO_SEVERITY)
             .withUntypedValue("stepType", processStepType.getName())
             .add();
         this.stepOrder = stepOrder;
+    }
+
+    public ProcessExecutionContext<C> getProcessContext() {
+        return processContext;
     }
 
     public UUID getProcessExecutionId() {

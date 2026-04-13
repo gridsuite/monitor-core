@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import com.powsybl.commons.report.ReportNode;
+import com.powsybl.commons.report.TypedValue;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.*;
@@ -112,6 +113,7 @@ public class ProcessExecutionService implements ProcessExecutor {
         ReportNode processReportNode = ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()
                 .withMessageTemplate("monitor.worker.server.process")
+                .withSeverity(TypedValue.INFO_SEVERITY)
                 .withUntypedValue("executionId", context.getExecutionId().toString())
                 .build();
         reportRestClient.sendReport(context.getReportId(), processReportNode);

@@ -391,12 +391,24 @@ class ProcessExecutionServiceTest {
         when(reportRestClient.getReport(reportId1)).thenReturn(reportPage1);
         when(reportRestClient.getReport(reportId2)).thenReturn(reportPage2);
 
-        List<ReportPage> result = processExecutionService.getReports(executionId);
+        Optional<List<ReportPage>> result = processExecutionService.getReports(executionId);
 
-        assertThat(result).hasSize(2).containsExactly(reportPage1, reportPage2);
+        assertThat(result).isPresent();
+        assertThat(result.get()).hasSize(2).containsExactly(reportPage1, reportPage2);
         verify(executionRepository).findById(executionId);
         verify(reportRestClient).getReport(reportId1);
         verify(reportRestClient).getReport(reportId2);
+    }
+
+    @Test
+    void getReportsShouldReturnEmptyWhenExecutionNotFound() {
+        UUID executionUuid = UUID.randomUUID();
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
+
+        Optional<List<ReportPage>> reports = processExecutionService.getReports(executionUuid);
+
+        assertThat(reports).isEmpty();
+        verify(executionRepository).findById(executionUuid);
     }
 
     @Test
@@ -428,11 +440,23 @@ class ProcessExecutionServiceTest {
         when(resultService.getResult(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)))
                 .thenReturn(result2);
 
-        List<String> results = processExecutionService.getResults(executionId);
+        Optional<List<String>> results = processExecutionService.getResults(executionId);
 
-        assertThat(results).hasSize(2).containsExactly(result1, result2);
+        assertThat(results).isPresent();
+        assertThat(results.get()).hasSize(2).containsExactly(result1, result2);
         verify(executionRepository).findById(executionId);
         verify(resultService, times(2)).getResult(any(ResultInfos.class));
+    }
+
+    @Test
+    void getResultsShouldReturnEmptyWhenExecutionNotFound() {
+        UUID executionUuid = UUID.randomUUID();
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
+
+        Optional<List<String>> results = processExecutionService.getResults(executionUuid);
+
+        assertThat(results).isEmpty();
+        verify(executionRepository).findById(executionUuid);
     }
 
     @Test
@@ -567,8 +591,9 @@ class ProcessExecutionServiceTest {
         doNothing().when(reportRestClient).deleteReport(reportId2);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
-        boolean done = processExecutionService.deleteExecution(executionId);
-        assertThat(done).isTrue();
+        Optional<UUID> deletedExecution = processExecutionService.deleteExecution(executionId);
+        assertThat(deletedExecution).isPresent();
+        assertThat(deletedExecution.get()).isEqualTo(executionId);
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).delete(execution);
@@ -581,8 +606,8 @@ class ProcessExecutionServiceTest {
     void deleteExecutionShouldReturnFalseWhenExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        boolean done = processExecutionService.deleteExecution(executionId);
-        assertThat(done).isFalse();
+        Optional<UUID> deletedExecution = processExecutionService.deleteExecution(executionId);
+        assertThat(deletedExecution).isNotPresent();
 
         verify(executionRepository).findById(executionId);
         verifyNoMoreInteractions(executionRepository);

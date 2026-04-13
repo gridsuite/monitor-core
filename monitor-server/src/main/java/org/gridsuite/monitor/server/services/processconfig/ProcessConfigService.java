@@ -62,7 +62,7 @@ public class ProcessConfigService {
     }
 
     @Transactional
-    public boolean updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
+    public Optional<UUID> updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
                 if (entity.getProcessType() != processConfig.processType()) {
@@ -73,9 +73,8 @@ public class ProcessConfigService {
                         securityAnalysisConfigMapper.updateEntityFromDto(sac, (SecurityAnalysisConfigEntity) entity);
                     default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
-                return true;
-            })
-            .orElse(false);
+                return processConfigUuid;
+            });
     }
 
     @Transactional
@@ -85,12 +84,13 @@ public class ProcessConfigService {
     }
 
     @Transactional
-    public boolean deleteProcessConfig(UUID processConfigUuid) {
+    public Optional<UUID> deleteProcessConfig(UUID processConfigUuid) {
         if (processConfigRepository.existsById(processConfigUuid)) {
             processConfigRepository.deleteById(processConfigUuid);
-            return true;
+            return Optional.of(processConfigUuid);
+        } else {
+            return Optional.empty();
         }
-        return false;
     }
 
     @Transactional(readOnly = true)

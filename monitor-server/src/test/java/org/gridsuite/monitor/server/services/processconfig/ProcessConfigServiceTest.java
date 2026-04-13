@@ -140,8 +140,8 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
 
-        boolean done = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
-        assertThat(done).isTrue();
+        Optional<UUID> updatedConfigId = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
+        assertThat(updatedConfigId).isPresent();
 
         verify(processConfigRepository).findById(processConfigId);
 
@@ -161,8 +161,8 @@ class ProcessConfigServiceTest {
                 List.of(UUID.randomUUID()),
                 UUID.randomUUID()
         );
-        boolean done = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
-        assertThat(done).isFalse();
+        Optional<UUID> updatedProcessConfigId = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
+        assertThat(updatedProcessConfigId).isEmpty();
 
         verify(processConfigRepository).findById(processConfigId);
     }
@@ -209,8 +209,9 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.TRUE);
         doNothing().when(processConfigRepository).deleteById(processConfigId);
 
-        boolean done = processConfigService.deleteProcessConfig(processConfigId);
-        assertThat(done).isTrue();
+        Optional<UUID> deletedProcessConfigId = processConfigService.deleteProcessConfig(processConfigId);
+        assertThat(deletedProcessConfigId).isPresent();
+        assertThat(deletedProcessConfigId.get()).isEqualTo(processConfigId);
 
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository).deleteById(processConfigId);
@@ -222,8 +223,8 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.FALSE);
 
-        boolean done = processConfigService.deleteProcessConfig(processConfigId);
-        assertThat(done).isFalse();
+        Optional<UUID> deletedProcessConfigId = processConfigService.deleteProcessConfig(processConfigId);
+        assertThat(deletedProcessConfigId).isEmpty();
 
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository, never()).deleteById(processConfigId);

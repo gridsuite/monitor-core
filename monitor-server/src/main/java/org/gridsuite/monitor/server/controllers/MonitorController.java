@@ -51,23 +51,25 @@ public class MonitorController {
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
         Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
-        return executionId.isPresent() ? ResponseEntity.ok(executionId.get()) : ResponseEntity.notFound().build();
+        return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/executions/{executionId}/reports")
     @Operation(summary = "Get reports for an execution")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports"),
+                           @ApiResponse(responseCode = "404", description = "execution if was not found")})
     public ResponseEntity<List<ReportPage>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<ReportPage> reports = processExecutionService.getReports(executionId);
-        return ResponseEntity.ok(reports);
+        Optional<List<ReportPage>> reports = processExecutionService.getReports(executionId);
+        return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/executions/{executionId}/results")
     @Operation(summary = "Get results for an execution")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results"),
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<String> results = processExecutionService.getResults(executionId);
-        return ResponseEntity.ok(results);
+        Optional<List<String>> results = processExecutionService.getResults(executionId);
+        return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/executions")
@@ -106,11 +108,10 @@ public class MonitorController {
     @DeleteMapping("/executions/{executionId}")
     @Operation(summary = "Delete an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
-        @ApiResponse(responseCode = "404", description = "Execution was not found")})
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
-        return processExecutionService.deleteExecution(executionId) ?
-            ResponseEntity.ok().build() :
-            ResponseEntity.notFound().build();
+        Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
+        return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 }
 

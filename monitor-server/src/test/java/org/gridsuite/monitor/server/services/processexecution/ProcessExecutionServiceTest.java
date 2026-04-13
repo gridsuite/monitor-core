@@ -591,9 +591,8 @@ class ProcessExecutionServiceTest {
         doNothing().when(reportRestClient).deleteReport(reportId2);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
-        Optional<UUID> deletedExecution = processExecutionService.deleteExecution(executionId);
-        assertThat(deletedExecution).isPresent();
-        assertThat(deletedExecution.get()).isEqualTo(executionId);
+        Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
+        assertThat(deletedExecutionId).contains(executionId);
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).delete(execution);

@@ -152,28 +152,27 @@ public class ProcessExecutionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReportPage> getReports(UUID executionId) {
-        List<UUID> reportIds = getReportIds(executionId);
-        return reportIds.stream()
+    public Optional<List<ReportPage>> getReports(UUID executionId) {
+        Optional<List<UUID>> reportIds = getReportIds(executionId);
+        return reportIds.map(ids -> ids.stream()
                 .map(reportRestClient::getReport)
-                .toList();
+                .toList());
     }
 
-    private List<UUID> getReportIds(UUID executionId) {
+    private Optional<List<UUID>> getReportIds(UUID executionId) {
         return processExecutionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .map(ProcessExecutionStepEntity::getReportId)
                 .filter(java.util.Objects::nonNull)
-                .toList())
-            .orElse(List.of());
+                .toList());
     }
 
     @Transactional(readOnly = true)
-    public List<String> getResults(UUID executionId) {
-        List<ResultInfos> resultInfos = getResultInfos(executionId);
-        return resultInfos.stream()
+    public Optional<List<String>> getResults(UUID executionId) {
+        Optional<List<ResultInfos>> resultInfos = getResultInfos(executionId);
+        return resultInfos.map(results -> results.stream()
                 .map(resultService::getResult)
-                .toList();
+                .toList());
     }
 
     @Transactional(readOnly = true)
@@ -190,13 +189,12 @@ public class ProcessExecutionService {
             });
     }
 
-    private List<ResultInfos> getResultInfos(UUID executionId) {
+    private Optional<List<ResultInfos>> getResultInfos(UUID executionId) {
         return processExecutionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .filter(step -> step.getResultId() != null)
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
-                .toList())
-            .orElse(List.of());
+                .toList());
     }
 
     @Transactional(readOnly = true)
@@ -218,7 +216,7 @@ public class ProcessExecutionService {
     }
 
     @Transactional
-    public boolean deleteExecution(UUID executionId) {
+    public Optional<UUID> deleteExecution(UUID executionId) {
         List<ResultInfos> resultIds = new ArrayList<>();
         List<UUID> reportIds = new ArrayList<>();
 
@@ -238,8 +236,8 @@ public class ProcessExecutionService {
 
             processExecutionRepository.delete(entity);
 
-            return true;
+            return Optional.of(executionId);
         }
-        return false;
+        return Optional.empty();
     }
 }

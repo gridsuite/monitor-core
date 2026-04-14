@@ -160,18 +160,17 @@ public class ProcessExecutionService {
     }
 
     @Transactional(readOnly = true)
-    public ReportPage getReports(UUID executionId) {
+    public Optional<ReportPage> getReports(UUID executionId) {
         return processExecutionRepository.findById(executionId)
-            .map(execution -> reportRestClient.getReport(execution.getReportId()))
-            .orElse(null);
+            .map(execution -> reportRestClient.getReport(execution.getReportId()));
     }
 
     @Transactional(readOnly = true)
-    public List<String> getResults(UUID executionId) {
-        List<ResultInfos> resultInfos = getResultInfos(executionId);
-        return resultInfos.stream()
+    public Optional<List<String>> getResults(UUID executionId) {
+        Optional<List<ResultInfos>> resultInfos = getResultInfos(executionId);
+        return resultInfos.map(results -> results.stream()
                 .map(resultService::getResult)
-                .toList();
+                .toList());
     }
 
     @Transactional(readOnly = true)
@@ -188,13 +187,12 @@ public class ProcessExecutionService {
             });
     }
 
-    private List<ResultInfos> getResultInfos(UUID executionId) {
+    private Optional<List<ResultInfos>> getResultInfos(UUID executionId) {
         return processExecutionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
                 .filter(step -> step.getResultId() != null)
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
-                .toList())
-            .orElse(List.of());
+                .toList());
     }
 
     @Transactional(readOnly = true)
@@ -216,7 +214,7 @@ public class ProcessExecutionService {
     }
 
     @Transactional
-    public boolean deleteExecution(UUID executionId) {
+    public Optional<UUID> deleteExecution(UUID executionId) {
         List<ResultInfos> resultIds = new ArrayList<>();
 
         Optional<ProcessExecutionEntity> executionEntity = processExecutionRepository.findById(executionId);
@@ -232,8 +230,8 @@ public class ProcessExecutionService {
 
             processExecutionRepository.delete(entity);
 
-            return true;
+            return Optional.of(executionId);
         }
-        return false;
+        return Optional.empty();
     }
 }

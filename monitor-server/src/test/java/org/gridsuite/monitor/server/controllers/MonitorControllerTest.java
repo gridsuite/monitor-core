@@ -129,7 +129,7 @@ class MonitorControllerTest {
         ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
         ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
         when(processExecutionService.getReports(executionId))
-                .thenReturn(reportPage);
+                .thenReturn(Optional.of(reportPage));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
             .andExpect(status().isOk())
@@ -152,12 +152,24 @@ class MonitorControllerTest {
     }
 
     @Test
+    void getExecutionReportsReturnsNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getReports(executionId))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(processExecutionService).getReports(executionId);
+    }
+
+    @Test
     void getExecutionResultsShouldReturnListOfResults() throws Exception {
         UUID executionId = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
         when(processExecutionService.getResults(executionId))
-                .thenReturn(List.of(result1, result2));
+                .thenReturn(Optional.of(List.of(result1, result2)));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
@@ -165,6 +177,18 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0]").value(result1))
                 .andExpect(jsonPath("$[1]").value(result2));
+
+        verify(processExecutionService).getResults(executionId);
+    }
+
+    @Test
+    void getExecutionResultsReturnsNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getResults(executionId))
+            .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
+            .andExpect(status().isNotFound());
 
         verify(processExecutionService).getResults(executionId);
     }
@@ -219,10 +243,10 @@ class MonitorControllerTest {
     }
 
     @Test
-    void deleteExecutionShouldReturnTrue() throws Exception {
+    void deleteExecutionReturnsOK() throws Exception {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Boolean.TRUE);
+            .thenReturn(Optional.of(executionId));
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
@@ -231,10 +255,10 @@ class MonitorControllerTest {
     }
 
     @Test
-    void deleteExecutionShouldReturnFalse() throws Exception {
+    void deleteExecutionReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Boolean.FALSE);
+            .thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());

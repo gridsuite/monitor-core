@@ -85,9 +85,8 @@ public class ProcessConfigController {
     public ResponseEntity<Void> updateProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid,
             @RequestBody ProcessConfig processConfig) {
-        return processConfigService.updateProcessConfig(processConfigUuid, processConfig) ?
-            ResponseEntity.ok().build() :
-            ResponseEntity.notFound().build();
+        Optional<UUID> processConfigUpdated = processConfigService.updateProcessConfig(processConfigUuid, processConfig);
+        return processConfigUpdated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     @PostMapping(value = "/duplication", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -110,9 +109,8 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config was not found")})
     public ResponseEntity<Void> deleteProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
-        return processConfigService.deleteProcessConfig(processConfigUuid) ?
-            ResponseEntity.ok().build() :
-            ResponseEntity.notFound().build();
+        Optional<UUID> deletedProcessConfigId = processConfigService.deleteProcessConfig(processConfigUuid);
+        return deletedProcessConfigId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)

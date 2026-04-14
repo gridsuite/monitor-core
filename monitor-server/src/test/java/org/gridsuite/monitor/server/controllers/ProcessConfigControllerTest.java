@@ -143,7 +143,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
-            .thenReturn(Boolean.TRUE);
+            .thenReturn(Optional.of(processConfigId));
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -163,7 +163,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
-            .thenReturn(Boolean.FALSE);
+            .thenReturn(Optional.empty());
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -207,7 +207,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
-            .thenReturn(Boolean.TRUE);
+            .thenReturn(Optional.of(processConfigId));
 
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isOk());
@@ -220,7 +220,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
-            .thenReturn(Boolean.FALSE);
+            .thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isNotFound());

@@ -272,14 +272,15 @@ class MonitorIntegrationTest {
                 List.of(updatedModificationUuid),
                 updatedLoadflowParametersUuid
         );
-        boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
-        assertThat(updated).isTrue();
+        Optional<UUID> updatedProcessConfigId = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
+        assertThat(updatedProcessConfigId).contains(configId);
         Optional<PersistedProcessConfig> updatedConfig = configService.getProcessConfig(configId);
         assertThat(updatedConfig).isNotEmpty();
         assertThat(updatedConfig.get().processConfig()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
 
-        boolean deleted = configService.deleteProcessConfig(configId);
-        assertThat(deleted).isTrue();
+        Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId);
+        assertThat(deletedProcessConfigId).contains(configId);
+
         Optional<PersistedProcessConfig> deletedConfig = configService.getProcessConfig(configId);
         assertThat(deletedConfig).isEmpty();
     }
@@ -331,15 +332,15 @@ class MonitorIntegrationTest {
         assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
-        boolean deleted = configService.deleteProcessConfig(configId1);
-        assertThat(deleted).isTrue();
+        Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId1);
+        assertThat(deletedProcessConfigId).contains(configId1);
 
         List<PersistedProcessConfig> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(remainingConfigs).hasSize(1);
         assertThat(remainingConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
-        boolean deletedSecond = configService.deleteProcessConfig(configId2);
-        assertThat(deletedSecond).isTrue();
+        deletedProcessConfigId = configService.deleteProcessConfig(configId2);
+        assertThat(deletedProcessConfigId).contains(configId2);
 
         List<PersistedProcessConfig> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(noConfigs).isEmpty();

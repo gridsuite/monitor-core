@@ -214,7 +214,7 @@ class ProcessConfigServiceTest {
     }
 
     @Test
-    void deleteProcesConfig() {
+    void deleteProcessConfig() {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.TRUE);

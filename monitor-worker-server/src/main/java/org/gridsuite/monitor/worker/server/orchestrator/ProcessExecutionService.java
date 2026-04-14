@@ -136,6 +136,8 @@ public class ProcessExecutionService implements ProcessExecutor {
                 skipRemaining = true;
             }
         }
+
+        reportRestClient.sendReport(context.getReportId(), context.getReportNode());
     }
 
     private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {

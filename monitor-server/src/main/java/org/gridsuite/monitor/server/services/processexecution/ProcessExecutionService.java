@@ -162,6 +162,7 @@ public class ProcessExecutionService {
     @Transactional(readOnly = true)
     public Optional<ReportPage> getReports(UUID executionId) {
         return processExecutionRepository.findById(executionId)
+            .filter(execution -> Objects.nonNull(execution.getReportId()))
             .map(execution -> reportRestClient.getReport(execution.getReportId()));
     }
 
@@ -226,7 +227,9 @@ public class ProcessExecutionService {
                 }
             });
             resultIds.forEach(resultService::deleteResult);
-            reportRestClient.deleteReport(entity.getReportId());
+            if (entity.getReportId() != null) {
+                reportRestClient.deleteReport(entity.getReportId());
+            }
 
             processExecutionRepository.delete(entity);
 

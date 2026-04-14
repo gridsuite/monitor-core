@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.core.context;
 
+import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
@@ -52,6 +53,7 @@ class ProcessStepExecutionContextTest {
         when(processContext.getNetwork()).thenReturn(network);
         when(processContext.getConfig()).thenReturn(config);
         when(processContext.getReportId()).thenReturn(reportId);
+        when(processContext.getReportNode()).thenReturn(ReportNode.newRootReportNode().withMessageTemplate("test").build());
 
         when(processContext.getDebugFileLocation()).thenReturn("debug/file/location");
 
@@ -65,9 +67,7 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
         assertThat(stepContext.getReportNode()).isNotNull();
-        assertThat(stepContext.getReportNode().getMessageKey()).isEqualTo("monitor.worker.server.step.execution");
-        assertThat(stepContext.getReportNode().getChildren()).hasSize(1);
-        assertThat(stepContext.getReportNode().getChildren().getFirst().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
+        assertThat(stepContext.getReportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
         assertThat(stepContext.getProcessReportId()).isEqualTo(reportId);
         assertThat(stepContext.getCaseUuid()).isEqualTo(caseUuid);
@@ -80,6 +80,7 @@ class ProcessStepExecutionContextTest {
         int stepOrder = 1;
         UUID stepId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
+        when(processContext.getReportNode()).thenReturn(ReportNode.newRootReportNode().withMessageTemplate("test").build());
         ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepId, stepOrder);
 
         Network newNetwork = mock(Network.class);

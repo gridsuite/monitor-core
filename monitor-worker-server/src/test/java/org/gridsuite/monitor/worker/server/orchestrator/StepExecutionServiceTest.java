@@ -106,7 +106,7 @@ class StepExecutionServiceTest {
     void skipStepShouldSendSkippedStatusWithoutExecutingStep() {
         UUID executionId = UUID.randomUUID();
         int stepOrder = 3;
-        ProcessStepExecutionContext<ProcessConfig> context = createSkippedStepExecutionContext(executionId, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, stepOrder);
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("SKIPPED_STEP");
 
@@ -121,16 +121,6 @@ class StepExecutionServiceTest {
     }
 
     private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, int stepOrder) {
-        ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
-        when(context.getProcessExecutionId()).thenReturn(executionId);
-        when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
-        when(context.getStartedAt()).thenReturn(java.time.Instant.now());
-        when(context.getStepOrder()).thenReturn(stepOrder);
-
-        return context;
-    }
-
-    private ProcessStepExecutionContext<ProcessConfig> createSkippedStepExecutionContext(UUID executionId, int stepOrder) {
         ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
         when(context.getProcessExecutionId()).thenReturn(executionId);
         when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());

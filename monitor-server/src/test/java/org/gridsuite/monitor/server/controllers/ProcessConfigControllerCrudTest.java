@@ -68,7 +68,7 @@ class ProcessConfigControllerCrudTest {
         ProcessConfig processConfig = provider.createDto();
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(provider.dtoType())))
-                .thenReturn(Boolean.TRUE);
+                .thenReturn(Optional.of(processConfigId));
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -103,7 +103,7 @@ class ProcessConfigControllerCrudTest {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
-                .thenReturn(Boolean.TRUE);
+                .thenReturn(Optional.of(processConfigId));
 
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
                 .andExpect(status().isOk());

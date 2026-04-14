@@ -324,8 +324,8 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(loadFlowConfigEntity));
 
-        boolean done = processConfigService.updateProcessConfig(processConfigId, newLoadFlowConfig);
-        assertThat(done).isTrue();
+        Optional<UUID> updatedProcessConfigId = processConfigService.updateProcessConfig(processConfigId, newLoadFlowConfig);
+        assertThat(updatedProcessConfigId).contains(processConfigId);
 
         verify(processConfigRepository).findById(processConfigId);
 
@@ -345,8 +345,8 @@ class ProcessConfigServiceTest {
             List.of(UUID.randomUUID(), UUID.randomUUID())
         );
 
-        boolean done = processConfigService.updateProcessConfig(processConfigId, newLoadFlowConfig);
-        assertThat(done).isFalse();
+        Optional<UUID> updatedProcessConfigId = processConfigService.updateProcessConfig(processConfigId, newLoadFlowConfig);
+        assertThat(updatedProcessConfigId).isNotPresent();
 
         verify(processConfigRepository).findById(processConfigId);
     }

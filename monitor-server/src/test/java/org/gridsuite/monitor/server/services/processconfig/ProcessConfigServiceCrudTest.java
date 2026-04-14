@@ -90,10 +90,10 @@ class ProcessConfigServiceCrudTest {
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(processConfigEntity));
 
         // --- Call method under test --- //
-        boolean done = processConfigService.updateProcessConfig(processConfigId, newProcessConfig);
+        Optional<UUID> updatedProcessConfigId = processConfigService.updateProcessConfig(processConfigId, newProcessConfig);
 
         // --- Check results --- //
-        assertThat(done).isTrue();
+        assertThat(updatedProcessConfigId).contains(processConfigId);
 
         verify(processConfigRepository).findById(processConfigId);
 
@@ -132,8 +132,8 @@ class ProcessConfigServiceCrudTest {
         when(processConfigRepository.existsById(processConfigId)).thenReturn(Boolean.TRUE);
         doNothing().when(processConfigRepository).deleteById(processConfigId);
 
-        boolean done = processConfigService.deleteProcessConfig(processConfigId);
-        assertThat(done).isTrue();
+        Optional<UUID> deletedProcessConfigId = processConfigService.deleteProcessConfig(processConfigId);
+        assertThat(deletedProcessConfigId).contains(processConfigId);
 
         verify(processConfigRepository).existsById(processConfigId);
         verify(processConfigRepository).deleteById(processConfigId);

@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.server.services.processexecution;
 
-import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
@@ -17,6 +16,7 @@ import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
@@ -33,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DOWNLOAD_DEBUG_FILE_ERROR;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -184,7 +186,7 @@ public class ProcessExecutionService {
                 try {
                     return s3RestClient.downloadDirectoryAsZip(debugFileLocation);
                 } catch (IOException e) {
-                    throw new PowsyblException("An error occurred while downloading debug files", e);
+                    throw new MonitorServerException(DOWNLOAD_DEBUG_FILE_ERROR, "An error occurred while downloading debug files", e);
                 }
             });
     }

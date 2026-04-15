@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.services.result;
 
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -17,7 +18,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.ThrowableAssert.catchThrowable;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_RESULT_TYPE;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,9 +57,9 @@ class ResultServiceTest {
 
         ResultService emptyService = new ResultService(List.of());
 
-        assertThatThrownBy(() -> emptyService.getResult(resultInfos))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
+        MonitorServerException exception = (MonitorServerException) catchThrowable(() -> emptyService.getResult(resultInfos));
+        assertThat(exception.getErrorCode()).isEqualTo(UNSUPPORTED_RESULT_TYPE);
+        assertThat(exception.getBusinessErrorValues()).containsEntry("resultType", ResultType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -80,8 +82,8 @@ class ResultServiceTest {
 
         ResultService emptyService = new ResultService(List.of());
 
-        assertThatThrownBy(() -> emptyService.deleteResult(resultInfos))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
+        MonitorServerException exception = (MonitorServerException) catchThrowable(() -> emptyService.deleteResult(resultInfos));
+        assertThat(exception.getErrorCode()).isEqualTo(UNSUPPORTED_RESULT_TYPE);
+        assertThat(exception.getBusinessErrorValues()).containsEntry("resultType", ResultType.SECURITY_ANALYSIS);
     }
 }

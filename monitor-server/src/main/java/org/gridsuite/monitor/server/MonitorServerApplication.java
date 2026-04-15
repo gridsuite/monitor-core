@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server;
 
+import org.gridsuite.monitor.server.error.MonitorServerExceptionHandler;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -13,7 +14,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-@SpringBootApplication
+@SpringBootApplication(scanBasePackageClasses = {MonitorServerApplication.class, MonitorServerExceptionHandler.class})
 public class MonitorServerApplication {
 
     public static void main(String[] args) {

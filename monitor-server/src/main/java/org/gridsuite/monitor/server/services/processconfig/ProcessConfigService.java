@@ -15,12 +15,18 @@ import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparis
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_TYPE_MISMATCH;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROCESS_CONFIG_ENTITY_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -45,7 +51,7 @@ public class ProcessConfigService {
             case SecurityAnalysisConfig sac -> {
                 return processConfigRepository.save(securityAnalysisConfigMapper.toEntity(sac)).getId();
             }
-            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
+            default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type", Map.of("processConfigType", processConfig.processType()));
         }
     }
 
@@ -66,12 +72,12 @@ public class ProcessConfigService {
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
                 if (entity.getProcessType() != processConfig.processType()) {
-                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
+                    throw new MonitorServerException(PROCESS_CONFIG_TYPE_MISMATCH, "Process config type mismatch", Map.of("processConfigType", entity.getProcessType()));
                 }
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
                         securityAnalysisConfigMapper.updateEntityFromDto(sac, (SecurityAnalysisConfigEntity) entity);
-                    default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
+                    default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type", Map.of("processConfigType", processConfig.processType()));
                 }
                 return processConfigUuid;
             });
@@ -103,7 +109,7 @@ public class ProcessConfigService {
     private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
         return switch (entity) {
             case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
-            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
+            default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_ENTITY_TYPE, "Unsupported process config entity type", Map.of("processConfigEntityType", entity.getProcessType()));
         };
     }
 
@@ -124,12 +130,13 @@ public class ProcessConfigService {
         ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
 
         if (processConfig1.processType() != processConfig2.processType()) {
-            throw new IllegalArgumentException("Cannot compare different process config types: " + processConfig1.processType() + " vs " + processConfig2.processType());
+            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
+                Map.of("processConfigEntity1Type", processConfig1.processType(), "processConfigEntity2Type", processConfig2.processType()));
         }
 
         List<ProcessConfigFieldComparison> differences = switch (processConfig1) {
             case SecurityAnalysisConfig sac1 -> compareSecurityAnalysisConfigs(sac1, (SecurityAnalysisConfig) processConfig2);
-            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig1.processType());
+            default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type", Map.of("processConfigType", processConfig1.processType()));
         };
 
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);

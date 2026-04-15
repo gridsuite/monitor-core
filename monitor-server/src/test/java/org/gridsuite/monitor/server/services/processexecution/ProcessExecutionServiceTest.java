@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.server.services.processexecution;
 
-import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
@@ -22,6 +21,7 @@ import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DOWNLOAD_DEBUG_FILE_ERROR;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -653,11 +654,12 @@ class ProcessExecutionServiceTest {
 
         when(s3RestClient.downloadDirectoryAsZip("debug/file/location")).thenThrow(new IOException("S3 error"));
 
-        PowsyblException exception = assertThrows(
-            PowsyblException.class,
+        MonitorServerException exception = assertThrows(
+            MonitorServerException.class,
             () -> processExecutionService.getDebugInfos(executionId)
         );
 
+        assertThat(exception.getBusinessErrorCode()).isEqualTo(DOWNLOAD_DEBUG_FILE_ERROR);
         assertThat(exception.getMessage()).contains("An error occurred while downloading debug files");
 
         verify(executionRepository).findById(executionId);

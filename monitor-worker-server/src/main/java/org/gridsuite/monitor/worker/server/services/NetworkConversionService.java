@@ -36,14 +36,7 @@ public class NetworkConversionService {
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
         LOGGER.info("Creating network");
-
         CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerBaseUri, caseUuid);
-
-        Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
-        if (importer == null) {
-            throw new PowsyblException("No importer found");
-        } else {
-            return importer.importData(dataSource, NetworkFactory.findDefault(), new Properties(), reporter);
-        }
+        return Network.read(dataSource, reporter);
     }
 }

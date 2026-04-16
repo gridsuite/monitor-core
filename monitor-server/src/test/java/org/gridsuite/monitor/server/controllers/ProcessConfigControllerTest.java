@@ -105,7 +105,8 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void getProcessConfigsMetadata() throws Exception {        UUID processConfigId1 = UUID.randomUUID();
+    void getProcessConfigsMetadata() throws Exception {
+        UUID processConfigId1 = UUID.randomUUID();
         UUID processConfigId2 = UUID.randomUUID();
 
         List<MetadataInfos> expectedMetadata = List.of(

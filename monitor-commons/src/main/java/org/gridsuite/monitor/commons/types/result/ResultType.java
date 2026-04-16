@@ -11,4 +11,5 @@ package org.gridsuite.monitor.commons.types.result;
  */
 public enum ResultType {
     SECURITY_ANALYSIS,
+    LOADFLOW
 }

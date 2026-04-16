@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.server.mappers.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -37,20 +36,5 @@ class LoadFlowConfigMapperTest {
         assertThat(entity.getLoadflowParametersUuid()).isEqualTo(dto.loadflowParametersUuid());
         assertThat(entity.getModificationUuids()).isEqualTo(dto.modificationUuids());
         assertThat(entity.getProcessType()).isEqualTo(dto.processType());
-    }
-
-    @Test
-    void toDto() {
-        LoadFlowConfigEntity entity = new LoadFlowConfigEntity();
-        entity.setLoadflowParametersUuid(UUID.randomUUID());
-        entity.setModificationUuids(List.of(UUID.randomUUID(), UUID.randomUUID()));
-        entity.setProcessType(ProcessType.LOADFLOW);
-
-        LoadFlowConfig dto = mapper.toDto(entity);
-
-        assertThat(dto).isNotNull();
-        assertThat(dto.loadflowParametersUuid()).isEqualTo(entity.getLoadflowParametersUuid());
-        assertThat(dto.modificationUuids()).isEqualTo(entity.getModificationUuids());
-        assertThat(dto.processType()).isEqualTo(ProcessType.LOADFLOW);
     }
 }

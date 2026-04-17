@@ -162,8 +162,8 @@ public class ProcessExecutionService {
     @Transactional(readOnly = true)
     public Optional<ReportPage> getReports(UUID executionId) {
         return processExecutionRepository.findById(executionId)
-            .filter(execution -> Objects.nonNull(execution.getReportId()))
-            .map(execution -> reportRestClient.getReport(execution.getReportId()));
+            .map(ProcessExecutionEntity::getReportId)
+            .map(reportRestClient::getReport);
     }
 
     @Transactional(readOnly = true)

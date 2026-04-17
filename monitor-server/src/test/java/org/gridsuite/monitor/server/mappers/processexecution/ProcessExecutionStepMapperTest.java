@@ -35,7 +35,8 @@ class ProcessExecutionStepMapperTest {
                 ResultType.SECURITY_ANALYSIS,
                 UUID.randomUUID(),
                 Instant.now(),
-                Instant.now().plusSeconds(10)
+                Instant.now().plusSeconds(10),
+                UUID.randomUUID()
         );
 
         UUID targetID = UUID.randomUUID();
@@ -48,7 +49,8 @@ class ProcessExecutionStepMapperTest {
                 ResultType.SECURITY_ANALYSIS,
                 UUID.randomUUID(),
                 Instant.now().plusSeconds(20),
-                Instant.now().plusSeconds(30)
+                Instant.now().plusSeconds(30),
+                UUID.randomUUID()
         );
 
         mapper.updateEntityFromEntity(source, target);

@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
@@ -239,5 +240,25 @@ public class ProcessExecutionService {
             return Optional.of(executionId);
         }
         return Optional.empty();
+    }
+
+    @Transactional
+    public UUID executeProcessUsingServers(UUID caseUuid, String userId, ProcessConfig processConfig) {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .type(processConfig.processType().name())
+            .caseUuid(caseUuid)
+            .status(ProcessStatus.SCHEDULED)
+            .scheduledAt(Instant.now())
+            .userId(userId)
+            .executionEnvName("using-servers-env")
+            .build();
+        processExecutionRepository.save(execution);
+
+        String bindingName = switch (processConfig.processType()) {
+            case SECURITY_ANALYSIS -> "publishRunSecurityAnalysisUsingServers-out-0";
+        };
+        notificationService.sendProcessRunMessage(caseUuid, processConfig, execution.getId(), null, bindingName);
+
+        return execution.getId();
     }
 }

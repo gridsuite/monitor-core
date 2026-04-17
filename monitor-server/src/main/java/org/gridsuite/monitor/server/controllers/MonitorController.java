@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
@@ -112,6 +113,17 @@ public class MonitorController {
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
         Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/execute/security-analysis-using-servers")
+    @Operation(summary = "Execute a security analysis process using existing servers (network-modification-server and security-analysis-server)")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The security analysis execution has been started")})
+    public ResponseEntity<UUID> executeSecurityAnalysisUsingServers(
+            @RequestParam UUID caseUuid,
+            @RequestBody SecurityAnalysisConfig securityAnalysisConfig,
+            @RequestHeader(HEADER_USER_ID) String userId) {
+        UUID executionId = processExecutionService.executeProcessUsingServers(caseUuid, userId, securityAnalysisConfig);
+        return ResponseEntity.ok(executionId);
     }
 }
 

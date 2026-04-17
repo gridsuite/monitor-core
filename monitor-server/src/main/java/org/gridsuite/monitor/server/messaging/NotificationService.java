@@ -28,6 +28,10 @@ public class NotificationService {
             case SECURITY_ANALYSIS -> "publishRunSecurityAnalysis-out-0";
             case LOADFLOW -> "publishRunLoadFlow-out-0";
         };
+        sendProcessRunMessage(caseUuid, processConfig, executionId, bindingName, debugFileLocation);
+    }
+
+    public void sendProcessRunMessage(UUID caseUuid, ProcessConfig processConfig, UUID executionId, String bindingName, String debugFileLocation) {
         ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, debugFileLocation);
         publisher.send(bindingName, message);
     }

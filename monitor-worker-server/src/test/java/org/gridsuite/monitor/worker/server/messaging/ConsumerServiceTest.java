@@ -42,7 +42,7 @@ class ConsumerServiceTest {
 
     @Test
     void consumeRun() {
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
         Message<ProcessRunMessage<ProcessConfig>> message = MessageBuilder.withPayload(runMessage).build();
         var consumer = consumerService.consumeRun();
 

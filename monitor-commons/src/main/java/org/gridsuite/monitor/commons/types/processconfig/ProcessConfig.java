@@ -22,7 +22,7 @@ import java.util.UUID;
 )
 @JsonSubTypes({
     @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
-    @JsonSubTypes.Type(value = LoadFlowConfig.class, name = "LOADFLOW"),
+    @JsonSubTypes.Type(value = LoadflowConfig.class, name = "LOADFLOW"),
 
 })
 public interface ProcessConfig {

@@ -14,7 +14,7 @@ import java.util.UUID;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-public record LoadFlowConfig(
+public record LoadflowConfig(
     UUID loadflowParametersUuid,
     List<UUID> modificationUuids
 ) implements ProcessConfig {

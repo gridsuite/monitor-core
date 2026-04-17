@@ -8,7 +8,7 @@ package org.gridsuite.monitor.worker.server.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadflowParametersInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,10 +28,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RestClientTest(LoadFlowRestClient.class)
-class LoadFlowRestClientTest {
+@RestClientTest(LoadflowRestClient.class)
+class LoadflowRestClientTest {
     @Autowired
-    private LoadFlowRestClient loadFlowRestClient;
+    private LoadflowRestClient loadflowRestClient;
 
     @Autowired
     private MockRestServiceServer server;
@@ -49,7 +49,7 @@ class LoadFlowRestClientTest {
 
     @Test
     void getParameters() throws JsonProcessingException {
-        LoadFlowParametersInfos expectedParameters = LoadFlowParametersInfos.builder()
+        LoadflowParametersInfos expectedParameters = LoadflowParametersInfos.builder()
             .provider("OpenLoadFlow")
             .build();
 
@@ -60,7 +60,7 @@ class LoadFlowRestClientTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(expectedParameters)));
 
-        LoadFlowParametersInfos result = loadFlowRestClient.getParameters(PARAMETERS_UUID);
+        LoadflowParametersInfos result = loadflowRestClient.getParameters(PARAMETERS_UUID);
 
         assertThat(result).usingRecursiveComparison().isEqualTo(expectedParameters);
     }
@@ -72,7 +72,7 @@ class LoadFlowRestClientTest {
                 "http://loadflow-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> loadFlowRestClient.getParameters(PARAMETERS_ERROR_UUID))
+        assertThatThrownBy(() -> loadflowRestClient.getParameters(PARAMETERS_ERROR_UUID))
             .isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
 }

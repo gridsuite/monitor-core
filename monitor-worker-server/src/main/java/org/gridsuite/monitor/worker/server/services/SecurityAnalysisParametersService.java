@@ -14,9 +14,9 @@ import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.evaluation.ContingencyInfos;
 import org.gridsuite.monitor.worker.server.clients.ActionsRestClient;
 import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
-import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
+import org.gridsuite.monitor.worker.server.clients.LoadflowRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
-import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadflowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
@@ -34,25 +34,25 @@ import java.util.UUID;
 @Service
 public class SecurityAnalysisParametersService {
     private final SecurityAnalysisRestClient securityAnalysisRestClient;
-    private final LoadFlowRestClient loadFlowRestClient;
+    private final LoadflowRestClient loadflowRestClient;
     private final ActionsRestClient actionsRestClient;
     private final FilterRestClient filterRestClient;
 
     public SecurityAnalysisParametersService(SecurityAnalysisRestClient securityAnalysisRestClient,
-                                             LoadFlowRestClient loadFlowRestClient,
+                                             LoadflowRestClient loadflowRestClient,
                                              ActionsRestClient actionsRestClient,
                                              FilterRestClient filterRestClient) {
         this.securityAnalysisRestClient = securityAnalysisRestClient;
-        this.loadFlowRestClient = loadFlowRestClient;
+        this.loadflowRestClient = loadflowRestClient;
         this.actionsRestClient = actionsRestClient;
         this.filterRestClient = filterRestClient;
     }
 
     public SecurityAnalysisInputData buildSecurityAnalysisInputData(UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid, Network network) {
         SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestClient.getParameters(securityAnalysisParametersUuid);
-        LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestClient.getParameters(loadflowParametersUuid);
+        LoadflowParametersInfos loadflowParametersInfos = loadflowRestClient.getParameters(loadflowParametersUuid);
 
-        SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues);
+        SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadflowParametersInfos, securityAnalysisParametersValues);
 
         List<ContingencyListsInfos> contingencyListInfos = securityAnalysisParametersValues.getContingencyListsInfos();
         List<UUID> contingenciesListUuids = contingencyListInfos != null
@@ -76,10 +76,10 @@ public class SecurityAnalysisParametersService {
         return new SecurityAnalysisInputData(securityAnalysisParameters, contingencyList);
     }
 
-    private static SecurityAnalysisParameters buildSecurityAnalysisParameters(LoadFlowParametersInfos loadFlowParametersInfos,
+    private static SecurityAnalysisParameters buildSecurityAnalysisParameters(LoadflowParametersInfos loadflowParametersInfos,
                                                                               SecurityAnalysisParametersValues securityAnalysisParametersValues) {
         SecurityAnalysisParameters securityAnalysisParameters = new SecurityAnalysisParameters();
-        securityAnalysisParameters.setLoadFlowParameters(loadFlowParametersInfos.getCommonParameters());
+        securityAnalysisParameters.setLoadFlowParameters(loadflowParametersInfos.getCommonParameters());
         SecurityAnalysisParameters.IncreasedViolationsParameters increasedViolationsParameters =
             new SecurityAnalysisParameters.IncreasedViolationsParameters(
                 securityAnalysisParametersValues.getLowVoltageAbsoluteThreshold(),

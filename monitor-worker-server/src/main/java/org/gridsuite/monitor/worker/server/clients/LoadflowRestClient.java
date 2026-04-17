@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.clients;
 
 import com.powsybl.commons.PowsyblException;
-import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadflowParametersInfos;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -18,27 +18,27 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class LoadFlowRestClient {
+public class LoadflowRestClient {
     static final String LOADFLOW_API_VERSION = "v1";
 
     private final RestClient restClient;
 
-    public LoadFlowRestClient(
+    public LoadflowRestClient(
         RestClient.Builder restClientBuilder,
-        @Value("${gridsuite.services.loadflow-server.base-uri:http://loadflow-server/}") String loadFlowServerBaseUri) {
+        @Value("${gridsuite.services.loadflow-server.base-uri:http://loadflow-server/}") String loadflowServerBaseUri) {
         this.restClient = restClientBuilder
-            .baseUrl(loadFlowServerBaseUri + "/" + LOADFLOW_API_VERSION)
+            .baseUrl(loadflowServerBaseUri + "/" + LOADFLOW_API_VERSION)
             .build();
     }
 
-    public LoadFlowParametersInfos getParameters(UUID loadFlowParametersUuid) {
-        if (loadFlowParametersUuid == null) {
+    public LoadflowParametersInfos getParameters(UUID loadflowParametersUuid) {
+        if (loadflowParametersUuid == null) {
             throw new PowsyblException("Loadflow parameters UUID is null !!");
         }
 
         return restClient.get()
-            .uri("/parameters/{loadFlowParametersUuid}", loadFlowParametersUuid)
+            .uri("/parameters/{loadflowParametersUuid}", loadflowParametersUuid)
             .retrieve()
-            .body(LoadFlowParametersInfos.class);
+            .body(LoadflowParametersInfos.class);
     }
 }

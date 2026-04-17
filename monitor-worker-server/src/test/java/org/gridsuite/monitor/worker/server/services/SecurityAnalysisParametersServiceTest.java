@@ -15,9 +15,9 @@ import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.contingency.IdBasedContingencyList;
 import org.gridsuite.monitor.worker.server.clients.ActionsRestClient;
 import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
-import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
+import org.gridsuite.monitor.worker.server.clients.LoadflowRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
-import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
+import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadflowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
@@ -47,7 +47,7 @@ class SecurityAnalysisParametersServiceTest {
     private SecurityAnalysisRestClient securityAnalysisRestClient;
 
     @Mock
-    private LoadFlowRestClient loadFlowRestClient;
+    private LoadflowRestClient loadflowRestClient;
 
     @Mock
     private ActionsRestClient actionsRestClient;
@@ -59,7 +59,7 @@ class SecurityAnalysisParametersServiceTest {
 
     @BeforeEach
     void setUp() {
-        securityAnalysisParametersService = new SecurityAnalysisParametersService(securityAnalysisRestClient, loadFlowRestClient, actionsRestClient, filterRestClient);
+        securityAnalysisParametersService = new SecurityAnalysisParametersService(securityAnalysisRestClient, loadflowRestClient, actionsRestClient, filterRestClient);
     }
 
     @Test
@@ -81,7 +81,7 @@ class SecurityAnalysisParametersServiceTest {
                 .flowProportionalThreshold(14)
                 .contingencyListsInfos(contingencyListsInfos)
                 .build();
-        LoadFlowParametersInfos loadFlowParametersInfos = LoadFlowParametersInfos.builder()
+        LoadflowParametersInfos loadflowParametersInfos = LoadflowParametersInfos.builder()
             .commonParameters(LoadFlowParameters.load())
             .specificParametersPerProvider(Map.of())
             .build();
@@ -91,19 +91,19 @@ class SecurityAnalysisParametersServiceTest {
         List<AbstractContingencyList> persistentContingencyList = List.of(idBasedContingencyList);
 
         when(securityAnalysisRestClient.getParameters(securityAnalysisParametersUuid)).thenReturn(securityAnalysisParametersValues);
-        when(loadFlowRestClient.getParameters(loadflowParametersUuid)).thenReturn(loadFlowParametersInfos);
+        when(loadflowRestClient.getParameters(loadflowParametersUuid)).thenReturn(loadflowParametersInfos);
         when(actionsRestClient.getPersistentContingencyLists(contingencyListUuids)).thenReturn(persistentContingencyList);
 
         SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(securityAnalysisParametersUuid, loadflowParametersUuid, network);
 
-        assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters()).usingRecursiveComparison().isEqualTo(loadFlowParametersInfos.getCommonParameters());
+        assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters()).usingRecursiveComparison().isEqualTo(loadflowParametersInfos.getCommonParameters());
         assertThat(inputData.contingencies()).hasSize(1);
         assertThat(inputData.contingencies().get(0).getId()).isEqualTo("c1");
         assertThat(inputData.contingencies().get(0).getElements()).hasSize(1);
         assertThat(inputData.contingencies().get(0).getElements().get(0).getId()).isEqualTo("GEN");
 
         verify(securityAnalysisRestClient, times(1)).getParameters(securityAnalysisParametersUuid);
-        verify(loadFlowRestClient, times(1)).getParameters(loadflowParametersUuid);
+        verify(loadflowRestClient, times(1)).getParameters(loadflowParametersUuid);
         verify(actionsRestClient, times(1)).getPersistentContingencyLists(contingencyListUuids);
     }
 }

@@ -6,8 +6,8 @@
  */
 package org.gridsuite.monitor.server.mappers.processconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
-import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
+import org.gridsuite.monitor.commons.types.processconfig.LoadflowConfig;
+import org.gridsuite.monitor.server.entities.processconfig.LoadflowConfigEntity;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
@@ -19,18 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-class LoadFlowConfigMapperTest {
+class LoadflowConfigMapperTest {
 
-    private final LoadFlowConfigMapper mapper = Mappers.getMapper(LoadFlowConfigMapper.class);
+    private final LoadflowConfigMapper mapper = Mappers.getMapper(LoadflowConfigMapper.class);
 
     @Test
     void toEntity() {
-        LoadFlowConfig dto = new LoadFlowConfig(
+        LoadflowConfig dto = new LoadflowConfig(
             UUID.randomUUID(),
             List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
         );
 
-        LoadFlowConfigEntity entity = mapper.toEntity(dto);
+        LoadflowConfigEntity entity = mapper.toEntity(dto);
 
         assertThat(entity).isNotNull();
         assertThat(entity.getLoadflowParametersUuid()).isEqualTo(dto.loadflowParametersUuid());

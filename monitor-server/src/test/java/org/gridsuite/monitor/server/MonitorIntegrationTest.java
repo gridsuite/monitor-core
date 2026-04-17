@@ -288,23 +288,23 @@ class MonitorIntegrationTest {
     @Test
     void processConfigsIT() {
         UUID parametersUuid1 = UUID.randomUUID();
-        UUID loadFlowParametersUuid1 = UUID.randomUUID();
+        UUID loadflowParametersUuid1 = UUID.randomUUID();
         UUID modificationUuid1 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig1 = new SecurityAnalysisConfig(
             parametersUuid1,
             List.of(modificationUuid1),
-            loadFlowParametersUuid1
+            loadflowParametersUuid1
         );
         UUID configId1 = configService.createProcessConfig(securityAnalysisConfig1);
         assertThat(processConfigRepository.findById(configId1)).isNotEmpty();
 
         UUID parametersUuid2 = UUID.randomUUID();
-        UUID loadFlowParametersUuid2 = UUID.randomUUID();
+        UUID loadflowParametersUuid2 = UUID.randomUUID();
         UUID modificationUuid2 = UUID.randomUUID();
         SecurityAnalysisConfig securityAnalysisConfig2 = new SecurityAnalysisConfig(
             parametersUuid2,
             List.of(modificationUuid2),
-            loadFlowParametersUuid2
+            loadflowParametersUuid2
         );
         UUID configId2 = configService.createProcessConfig(securityAnalysisConfig2);
         assertThat(processConfigRepository.findById(configId2)).isNotEmpty();
@@ -325,11 +325,11 @@ class MonitorIntegrationTest {
         SecurityAnalysisConfig retrievedSecurityAnalysisConfig2 = (SecurityAnalysisConfig) retrievedConfig2.processConfig();
 
         assertThat(retrievedSecurityAnalysisConfig1.securityAnalysisParametersUuid()).isEqualTo(parametersUuid1);
-        assertThat(retrievedSecurityAnalysisConfig1.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid1);
+        assertThat(retrievedSecurityAnalysisConfig1.loadflowParametersUuid()).isEqualTo(loadflowParametersUuid1);
         assertThat(retrievedSecurityAnalysisConfig1.modificationUuids()).isEqualTo(List.of(modificationUuid1));
 
         assertThat(retrievedSecurityAnalysisConfig2.securityAnalysisParametersUuid()).isEqualTo(parametersUuid2);
-        assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
+        assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadflowParametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
         Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId1);

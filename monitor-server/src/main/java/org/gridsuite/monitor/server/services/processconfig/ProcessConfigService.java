@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.LoadflowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -14,10 +14,10 @@ import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.LoadflowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
-import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
+import org.gridsuite.monitor.server.mappers.processconfig.LoadflowConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
@@ -32,14 +32,14 @@ import java.util.*;
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
     private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
-    private final LoadFlowConfigMapper loadFlowConfigMapper;
+    private final LoadflowConfigMapper loadflowConfigMapper;
 
     public ProcessConfigService(ProcessConfigRepository processConfigRepository,
                                 SecurityAnalysisConfigMapper securityAnalysisConfigMapper,
-                                LoadFlowConfigMapper loadFlowConfigMapper) {
+                                LoadflowConfigMapper loadflowConfigMapper) {
         this.processConfigRepository = processConfigRepository;
         this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
-        this.loadFlowConfigMapper = loadFlowConfigMapper;
+        this.loadflowConfigMapper = loadflowConfigMapper;
     }
 
     @Transactional
@@ -52,8 +52,8 @@ public class ProcessConfigService {
             case SecurityAnalysisConfig sac -> {
                 return processConfigRepository.save(securityAnalysisConfigMapper.toEntity(sac)).getId();
             }
-            case LoadFlowConfig lfc -> {
-                return processConfigRepository.save(loadFlowConfigMapper.toEntity(lfc)).getId();
+            case LoadflowConfig lfc -> {
+                return processConfigRepository.save(loadflowConfigMapper.toEntity(lfc)).getId();
             }
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         }
@@ -81,8 +81,8 @@ public class ProcessConfigService {
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
                         securityAnalysisConfigMapper.updateEntityFromDto(sac, (SecurityAnalysisConfigEntity) entity);
-                    case LoadFlowConfig lfc ->
-                        loadFlowConfigMapper.updateEntityFromDto(lfc, (LoadFlowConfigEntity) entity);
+                    case LoadflowConfig lfc ->
+                        loadflowConfigMapper.updateEntityFromDto(lfc, (LoadflowConfigEntity) entity);
                     default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
                 return processConfigUuid;
@@ -115,7 +115,7 @@ public class ProcessConfigService {
     private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
         return switch (entity) {
             case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
-            case LoadFlowConfigEntity lfe -> loadFlowConfigMapper.toDto(lfe);
+            case LoadflowConfigEntity lfe -> loadflowConfigMapper.toDto(lfe);
             default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         };
     }
@@ -142,7 +142,7 @@ public class ProcessConfigService {
 
         List<ProcessConfigFieldComparison> differences = switch (processConfig1) {
             case SecurityAnalysisConfig sac1 -> compareSecurityAnalysisConfigs(sac1, (SecurityAnalysisConfig) processConfig2);
-            case LoadFlowConfig lfc1 -> compareLoadFlowConfigs(lfc1, (LoadFlowConfig) processConfig2);
+            case LoadflowConfig lfc1 -> compareLoadflowConfigs(lfc1, (LoadflowConfig) processConfig2);
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig1.processType());
         };
 
@@ -188,7 +188,7 @@ public class ProcessConfigService {
         return differences;
     }
 
-    private List<ProcessConfigFieldComparison> compareLoadFlowConfigs(LoadFlowConfig config1, LoadFlowConfig config2) {
+    private List<ProcessConfigFieldComparison> compareLoadflowConfigs(LoadflowConfig config1, LoadflowConfig config2) {
         List<ProcessConfigFieldComparison> differences = new ArrayList<>();
 
         // Compare modifications

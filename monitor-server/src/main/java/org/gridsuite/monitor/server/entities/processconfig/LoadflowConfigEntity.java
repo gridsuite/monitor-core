@@ -30,7 +30,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
-public class LoadFlowConfigEntity extends ProcessConfigEntity {
+public class LoadflowConfigEntity extends ProcessConfigEntity {
     @Column(name = "loadflow_parameters_uuid")
     private UUID loadflowParametersUuid;
 }

@@ -24,7 +24,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Builder
-public class LoadFlowParametersInfos {
+public class LoadflowParametersInfos {
     private UUID uuid;
     private String provider;
     private LoadFlowParameters commonParameters;

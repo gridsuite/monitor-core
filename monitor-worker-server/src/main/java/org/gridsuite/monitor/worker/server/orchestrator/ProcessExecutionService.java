@@ -107,7 +107,6 @@ public class ProcessExecutionService implements ProcessExecutor {
         List<ProcessStep<T>> steps = process.getSteps();
         boolean skipRemaining = false;
 
-        // send process report to the report-server
         reportRestClient.sendReport(context.getReportId(), context.getReportNode());
 
         for (int i = 0; i < steps.size(); i++) {

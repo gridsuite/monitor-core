@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
+import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
@@ -85,6 +86,7 @@ class ProcessExecutionServiceTest {
 
         processExecutionService.executeProcess(runMessage);
 
+        verify(reportRestClient, times(4)).sendReport(any(UUID.class), any(ReportNode.class));
         verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&
@@ -132,6 +134,7 @@ class ProcessExecutionServiceTest {
 
         processExecutionService.executeProcess(runMessage);
 
+        verify(reportRestClient, times(2)).sendReport(any(UUID.class), any(ReportNode.class));
         verify(step1).execute(any());
         verify(step2, never()).execute(any());
         verify(step3, never()).execute(any());
@@ -153,6 +156,7 @@ class ProcessExecutionServiceTest {
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("No process found for type");
+        verifyNoInteractions(reportRestClient);
         verifyNoInteractions(notificationService);
     }
 }

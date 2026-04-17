@@ -21,7 +21,9 @@ import java.util.UUID;
     property = "processType"
 )
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
+    @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
+    @JsonSubTypes.Type(value = LoadFlowConfig.class, name = "LOADFLOW"),
+
 })
 public interface ProcessConfig {
     ProcessType processType();

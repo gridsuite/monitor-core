@@ -58,8 +58,8 @@ public class MonitorController {
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
-    public ResponseEntity<List<ReportPage>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        Optional<List<ReportPage>> reports = processExecutionService.getReports(executionId);
+    public ResponseEntity<ReportPage> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        Optional<ReportPage> reports = processExecutionService.getReports(executionId);
         return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 

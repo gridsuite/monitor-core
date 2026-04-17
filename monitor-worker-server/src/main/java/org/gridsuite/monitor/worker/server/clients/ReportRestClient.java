@@ -6,13 +6,14 @@
  */
 package org.gridsuite.monitor.worker.server.clients;
 
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
+import com.powsybl.commons.report.ReportNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -31,13 +32,13 @@ public class ReportRestClient {
             .build();
     }
 
-    public void sendReport(ReportInfos reportInfos) {
-        Objects.requireNonNull(reportInfos);
+    public void sendReport(UUID reportId, ReportNode reportNode) {
+        Objects.requireNonNull(reportNode);
 
         restClient.put()
-            .uri("/{reportUuid}", reportInfos.reportUuid())
+            .uri("/{reportUuid}", reportId)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(reportInfos.reportNode())
+            .body(reportNode)
             .retrieve()
             .toBodilessEntity();
     }

@@ -61,7 +61,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
         List<UUID> modificationIds = context.getConfig().modificationUuids();
         Network network = context.getNetwork();
         if (CollectionUtils.isNotEmpty(modificationIds)) {
-            applyModifications(modificationIds, network, context.getReportInfos().reportNode());
+            applyModifications(modificationIds, network, context.getReportNode());
         }
         if (context.getDebugFileLocation() != null) {
             try {

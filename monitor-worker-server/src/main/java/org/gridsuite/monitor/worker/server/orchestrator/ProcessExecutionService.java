@@ -6,8 +6,6 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
-import com.powsybl.commons.report.ReportNode;
-import com.powsybl.commons.report.TypedValue;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.*;
@@ -109,14 +107,8 @@ public class ProcessExecutionService implements ProcessExecutor {
         List<ProcessStep<T>> steps = process.getSteps();
         boolean skipRemaining = false;
 
-        // create process report and send it to the report-server
-        ReportNode processReportNode = ReportNode.newRootReportNode()
-                .withAllResourceBundlesFromClasspath()
-                .withMessageTemplate("monitor.worker.server.process")
-                .withSeverity(TypedValue.INFO_SEVERITY)
-                .withUntypedValue("executionId", context.getExecutionId().toString())
-                .build();
-        reportRestClient.sendReport(context.getReportId(), processReportNode);
+        // send process report to the report-server
+        reportRestClient.sendReport(context.getReportId(), context.getReportNode());
 
         for (int i = 0; i < steps.size(); i++) {
             ProcessStep<T> step = steps.get(i);
@@ -136,8 +128,6 @@ public class ProcessExecutionService implements ProcessExecutor {
                 skipRemaining = true;
             }
         }
-
-        reportRestClient.sendReport(context.getReportId(), context.getReportNode());
     }
 
     private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {

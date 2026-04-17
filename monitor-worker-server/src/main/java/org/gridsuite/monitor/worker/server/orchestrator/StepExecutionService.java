@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -25,6 +26,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
+    private final ReportRestClient reportRestClient;
 
     @Override
     public <C extends ProcessConfig> void skipStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
@@ -56,6 +58,8 @@ public class StepExecutionService implements StepExecutor {
         } catch (Exception e) {
             updateStepStatus(context, StepStatus.FAILED, step);
             throw e;
+        } finally {
+            reportRestClient.sendReport(context.getProcessReportId(), context.getReportNode());
         }
     }
 

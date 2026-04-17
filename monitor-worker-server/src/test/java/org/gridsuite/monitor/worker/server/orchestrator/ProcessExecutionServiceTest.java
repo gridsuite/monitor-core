@@ -55,7 +55,7 @@ class ProcessExecutionServiceTest {
     @BeforeEach
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        StepExecutor stepExecutor = new StepExecutionService(notificationService);
+        StepExecutor stepExecutor = new StepExecutionService(notificationService, reportRestClient);
         processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, EXECUTION_ENV_NAME);
     }
 

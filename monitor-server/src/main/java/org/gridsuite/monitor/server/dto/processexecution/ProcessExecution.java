@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.dto.processexecution;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 
@@ -19,14 +20,21 @@ import java.util.UUID;
 @Schema(description = "Process execution data")
 @Builder
 public record ProcessExecution(
+    @NotNull
     UUID id,
+    @NotNull
     String type,
+    @NotNull
     UUID caseUuid,
+    @NotNull
     UUID processConfigId,
+    @NotNull
     ProcessStatus status,
+    @NotNull
     String executionEnvName,
     Instant scheduledAt,
     Instant startedAt,
     Instant completedAt,
+    @NotNull
     String userId
 ) { }

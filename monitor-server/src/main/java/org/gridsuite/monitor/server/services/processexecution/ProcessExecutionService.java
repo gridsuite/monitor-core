@@ -93,6 +93,7 @@ public class ProcessExecutionService {
             processExecutionRepository.save(execution);
 
             notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
+            notificationService.sendProcessUpdatedMessage(persistedProcessConfig.get().processConfig().processType(), execution.getId());
 
             return Optional.of(execution.getId());
         } else {

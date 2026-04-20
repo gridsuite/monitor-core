@@ -6,9 +6,12 @@
  */
 package org.gridsuite.monitor.commons.types.processexecution;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
+@Schema(enumAsRef = true)
 public enum ProcessStatus {
     SCHEDULED,
     RUNNING,

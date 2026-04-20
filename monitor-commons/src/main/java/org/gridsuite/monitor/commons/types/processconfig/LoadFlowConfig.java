@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.commons.types.processconfig;
 
+import jakarta.validation.constraints.NotNull;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
@@ -15,7 +16,9 @@ import java.util.UUID;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 public record LoadFlowConfig(
+    @NotNull
     UUID loadflowParametersUuid,
+    @NotNull
     List<UUID> modificationUuids
 ) implements ProcessConfig {
     @Override

@@ -32,7 +32,6 @@ public class ResultService {
     }
 
     public ResultProvider getProvider(ResultType resultType) {
-        System.out.println("PROVIDERS: " + providers);
         ResultProvider provider = providers.get(resultType);
         if (provider == null) {
             throw new IllegalArgumentException("Unsupported result type: " + resultType);

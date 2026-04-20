@@ -12,13 +12,7 @@ import com.powsybl.ws.commons.error.BusinessErrorCode;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 public enum MonitorServerBusinessErrorCode implements BusinessErrorCode {
-    DOWNLOAD_DEBUG_FILE_ERROR("monitor.server.downloadDebugFileError"),
-    UNSUPPORTED_PROCESS_CONFIG_TYPE("monitor.server.unsupportedProcessConfigType"),
-    PROCESS_CONFIG_TYPE_MISMATCH("monitor.server.processConfigTypeMismatch"),
-    UNSUPPORTED_PROCESS_CONFIG_ENTITY_TYPE("monitor.server.unsupportedProcessConfigEntityType"),
-    DIFFERENT_PROCESS_CONFIG_TYPE("monitor.server.differentProcessConfigType"),
-    UNSUPPORTED_RESULT_TYPE("monitor.server.unsupportedResultType"),
-    PARSING_MESSAGE_PAYLOAD_ERROR("monitor.server.messagePayloadParsingError");
+    DIFFERENT_PROCESS_CONFIG_TYPE("monitor.server.differentProcessConfigType");
 
     private final String code;
 

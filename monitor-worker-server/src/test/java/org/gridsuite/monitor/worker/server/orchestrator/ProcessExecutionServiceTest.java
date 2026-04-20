@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
+import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
@@ -56,7 +57,7 @@ class ProcessExecutionServiceTest {
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         StepExecutor stepExecutor = new StepExecutionService(notificationService, reportRestClient);
-        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, EXECUTION_ENV_NAME);
+        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, EXECUTION_ENV_NAME);
     }
 
     private static ProcessStep<ProcessConfig> mockStep(UUID id, String typeName) {
@@ -72,6 +73,7 @@ class ProcessExecutionServiceTest {
     void executeProcessShouldCompleteSuccessfullyWhenAllStepsSucceed() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
         UUID step1Id = UUID.randomUUID();
         UUID step2Id = UUID.randomUUID();
         UUID step3Id = UUID.randomUUID();
@@ -80,10 +82,11 @@ class ProcessExecutionServiceTest {
         ProcessStep<ProcessConfig> step3 = mockStep(step3Id, "STEP_3");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         processExecutionService.executeProcess(runMessage);
 
+        verify(reportRestClient, times(4)).sendReport(any(UUID.class), any(ReportNode.class));
         verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
             steps.size() == 3 &&
             steps.get(0).getStatus() == StepStatus.SCHEDULED &&
@@ -119,6 +122,7 @@ class ProcessExecutionServiceTest {
     void executeProcessShouldSkipRemainingStepsAndSendFailedStatusWhenFirstStepFails() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
         ProcessStep<ProcessConfig> step1 = mockStep(UUID.randomUUID(), "STEP_1");
         ProcessStep<ProcessConfig> step2 = mockStep(UUID.randomUUID(), "STEP_2");
         ProcessStep<ProcessConfig> step3 = mockStep(UUID.randomUUID(), "STEP_3");
@@ -126,10 +130,11 @@ class ProcessExecutionServiceTest {
         doThrow(stepException).when(step1).execute(any());
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         processExecutionService.executeProcess(runMessage);
 
+        verify(reportRestClient, times(2)).sendReport(any(UUID.class), any(ReportNode.class));
         verify(step1).execute(any());
         verify(step2, never()).execute(any());
         verify(step3, never()).execute(any());
@@ -146,11 +151,12 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         when(processConfig.processType()).thenReturn(null);
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, null);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("No process found for type");
+        verifyNoInteractions(reportRestClient);
         verifyNoInteractions(notificationService);
     }
 }

@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
-import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,12 +20,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 
+import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PARSING_MESSAGE_PAYLOAD_ERROR;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -76,8 +73,7 @@ public class ConsumerService {
     }
 
     private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
-        List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<>() {
-        });
+        List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
         processExecutionService.updateStepsStatuses(executionId, processExecutionSteps);
     }
 
@@ -85,7 +81,7 @@ public class ConsumerService {
         try {
             return objectMapper.readValue(payload, clazz);
         } catch (JsonProcessingException e) {
-            throw new MonitorServerException(PARSING_MESSAGE_PAYLOAD_ERROR, "Failed to parse payload", Map.of("name", clazz.getSimpleName()), e);
+            throw new UncheckedIOException("Failed to parse payload as " + clazz.getSimpleName(), e);
         }
     }
 
@@ -93,7 +89,7 @@ public class ConsumerService {
         try {
             return objectMapper.readValue(payload, typeReference);
         } catch (JsonProcessingException e) {
-            throw new MonitorServerException(PARSING_MESSAGE_PAYLOAD_ERROR, "Failed to parse payload", Map.of("name", typeReference.getType().getTypeName()), e);
+            throw new UncheckedIOException("Failed to parse payload as " + typeReference.getType().getTypeName(), e);
         }
     }
 }

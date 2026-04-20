@@ -7,13 +7,13 @@
 package org.gridsuite.monitor.server.messaging;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
-import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PARSING_MESSAGE_PAYLOAD_ERROR;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -98,9 +97,9 @@ class ConsumerServiceTest {
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
 
-        MonitorServerException exception = (MonitorServerException) catchThrowable(() -> consumer.accept(message));
-        assertThat(exception.getErrorCode()).isEqualTo(PARSING_MESSAGE_PAYLOAD_ERROR);
-        assertThat(exception.getBusinessErrorValues()).containsEntry("name", "ProcessExecutionStatusUpdate");
+        assertThatThrownBy(() -> consumer.accept(message))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
         verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
         verify(processExecutionService, never()).updateStepStatus(any(), any());
@@ -116,11 +115,9 @@ class ConsumerServiceTest {
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorUpdate();
 
-        MonitorServerException exception = (MonitorServerException) catchThrowable(() -> consumer.accept(message));
-        assertThat(exception.getErrorCode()).isEqualTo(PARSING_MESSAGE_PAYLOAD_ERROR);
-        assertThat(exception.getBusinessErrorValues())
-            .hasEntrySatisfying("name", value -> assertThat(value).asString().contains("ProcessExecutionStep")
-            );
+        assertThatThrownBy(() -> consumer.accept(message))
+            .isInstanceOf(UncheckedIOException.class)
+            .hasMessageContaining("Failed to parse payload as " + new TypeReference<List<ProcessExecutionStep>>() { }.getType().getTypeName());
 
         verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
         verify(processExecutionService, never()).updateStepsStatuses(any(), any());

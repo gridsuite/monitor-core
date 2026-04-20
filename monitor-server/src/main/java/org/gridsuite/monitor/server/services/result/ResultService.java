@@ -8,15 +8,12 @@ package org.gridsuite.monitor.server.services.result;
 
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
-import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_RESULT_TYPE;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -37,7 +34,7 @@ public class ResultService {
     public ResultProvider getProvider(ResultType resultType) {
         ResultProvider provider = providers.get(resultType);
         if (provider == null) {
-            throw new MonitorServerException(UNSUPPORTED_RESULT_TYPE, "Unsupported result type", Map.of("resultType", resultType));
+            throw new IllegalArgumentException("Unsupported result type: " + resultType);
         }
         return provider;
     }

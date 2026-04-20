@@ -14,8 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DOWNLOAD_DEBUG_FILE_ERROR;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -30,24 +29,13 @@ class MonitorServerExceptionHandlerTest {
     }
 
     @Test
-    void mapsInternalErrorBusinessErrorToStatus() {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/results-endpoint/uuid");
-        MonitorServerException exception = new MonitorServerException(DOWNLOAD_DEBUG_FILE_ERROR, "An error occurred while downloading debug files");
-        ResponseEntity<PowsyblWsProblemDetail> response = handler.handleMonitorServerException(exception, request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertEquals("monitor.server.downloadDebugFileError", response.getBody().getBusinessErrorCode());
-    }
-
-    @Test
     void mapsBadRequestBusinessErrorToStatus() {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/results-endpoint/uuid");
-        MonitorServerException exception = new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type");
+        MonitorServerException exception = new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types");
         ResponseEntity<PowsyblWsProblemDetail> response = handler.handleMonitorServerException(exception, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
-        assertEquals("monitor.server.unsupportedProcessConfigType", response.getBody().getBusinessErrorCode());
+        assertEquals("monitor.server.differentProcessConfigType", response.getBody().getBusinessErrorCode());
     }
 }

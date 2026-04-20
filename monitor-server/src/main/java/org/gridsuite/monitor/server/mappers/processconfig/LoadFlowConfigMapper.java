@@ -6,21 +6,21 @@
  */
 package org.gridsuite.monitor.server.mappers.processconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 /**
- * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
+ * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Mapper(componentModel = "spring")
-public interface SecurityAnalysisConfigMapper {
+public interface LoadFlowConfigMapper {
     @Mapping(target = "processType", expression = "java(dto.processType())")
-    SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);
+    LoadFlowConfigEntity toEntity(LoadFlowConfig dto);
 
-    SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity entity);
+    LoadFlowConfig toDto(LoadFlowConfigEntity entity);
 
-    void updateEntityFromDto(SecurityAnalysisConfig dto, @MappingTarget SecurityAnalysisConfigEntity entity);
+    void updateEntityFromDto(LoadFlowConfig dto, @MappingTarget LoadFlowConfigEntity entity);
 }

@@ -35,13 +35,7 @@ public class MonitorServerExceptionHandler extends AbstractBusinessExceptionHand
     @Override
     protected HttpStatus mapStatus(MonitorServerBusinessErrorCode errorCode) {
         return switch (errorCode) {
-            case DOWNLOAD_DEBUG_FILE_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
-            case UNSUPPORTED_PROCESS_CONFIG_TYPE,
-                 PROCESS_CONFIG_TYPE_MISMATCH,
-                 UNSUPPORTED_PROCESS_CONFIG_ENTITY_TYPE,
-                 DIFFERENT_PROCESS_CONFIG_TYPE,
-                 UNSUPPORTED_RESULT_TYPE,
-                 PARSING_MESSAGE_PAYLOAD_ERROR -> HttpStatus.BAD_REQUEST;
+            case DIFFERENT_PROCESS_CONFIG_TYPE -> HttpStatus.BAD_REQUEST;
         };
     }
 

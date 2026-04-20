@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -13,9 +14,11 @@ import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
+import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
+import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
@@ -24,9 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_TYPE_MISMATCH;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROCESS_CONFIG_ENTITY_TYPE;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -35,10 +35,14 @@ import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
     private final SecurityAnalysisConfigMapper securityAnalysisConfigMapper;
+    private final LoadFlowConfigMapper loadFlowConfigMapper;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository, SecurityAnalysisConfigMapper securityAnalysisConfigMapper) {
+    public ProcessConfigService(ProcessConfigRepository processConfigRepository,
+                                SecurityAnalysisConfigMapper securityAnalysisConfigMapper,
+                                LoadFlowConfigMapper loadFlowConfigMapper) {
         this.processConfigRepository = processConfigRepository;
         this.securityAnalysisConfigMapper = securityAnalysisConfigMapper;
+        this.loadFlowConfigMapper = loadFlowConfigMapper;
     }
 
     @Transactional
@@ -51,7 +55,10 @@ public class ProcessConfigService {
             case SecurityAnalysisConfig sac -> {
                 return processConfigRepository.save(securityAnalysisConfigMapper.toEntity(sac)).getId();
             }
-            default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type", Map.of("processConfigType", processConfig.processType()));
+            case LoadFlowConfig lfc -> {
+                return processConfigRepository.save(loadFlowConfigMapper.toEntity(lfc)).getId();
+            }
+            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
         }
     }
 
@@ -72,12 +79,14 @@ public class ProcessConfigService {
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
                 if (entity.getProcessType() != processConfig.processType()) {
-                    throw new MonitorServerException(PROCESS_CONFIG_TYPE_MISMATCH, "Process config type mismatch", Map.of("processConfigType", entity.getProcessType()));
+                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
                 switch (processConfig) {
                     case SecurityAnalysisConfig sac ->
                         securityAnalysisConfigMapper.updateEntityFromDto(sac, (SecurityAnalysisConfigEntity) entity);
-                    default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type", Map.of("processConfigType", processConfig.processType()));
+                    case LoadFlowConfig lfc ->
+                        loadFlowConfigMapper.updateEntityFromDto(lfc, (LoadFlowConfigEntity) entity);
+                    default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
                 }
                 return processConfigUuid;
             });
@@ -109,7 +118,8 @@ public class ProcessConfigService {
     private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
         return switch (entity) {
             case SecurityAnalysisConfigEntity sae -> securityAnalysisConfigMapper.toDto(sae);
-            default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_ENTITY_TYPE, "Unsupported process config entity type", Map.of("processConfigEntityType", entity.getProcessType()));
+            case LoadFlowConfigEntity lfe -> loadFlowConfigMapper.toDto(lfe);
+            default -> throw new IllegalArgumentException("Unsupported entity type: " + entity.getProcessType());
         };
     }
 
@@ -136,7 +146,8 @@ public class ProcessConfigService {
 
         List<ProcessConfigFieldComparison> differences = switch (processConfig1) {
             case SecurityAnalysisConfig sac1 -> compareSecurityAnalysisConfigs(sac1, (SecurityAnalysisConfig) processConfig2);
-            default -> throw new MonitorServerException(UNSUPPORTED_PROCESS_CONFIG_TYPE, "Unsupported process config type", Map.of("processConfigType", processConfig1.processType()));
+            case LoadFlowConfig lfc1 -> compareLoadFlowConfigs(lfc1, (LoadFlowConfig) processConfig2);
+            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig1.processType());
         };
 
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
@@ -144,10 +155,7 @@ public class ProcessConfigService {
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
     }
 
-    private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
-        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
-
-        // Compare modifications
+    private void compareConfigsModifications(ProcessConfig config1, ProcessConfig config2, List<ProcessConfigFieldComparison> differences) {
         boolean modificationsIdentical = Objects.equals(config1.modificationUuids(), config2.modificationUuids());
         differences.add(new ProcessConfigFieldComparison(
             "modifications",
@@ -155,6 +163,13 @@ public class ProcessConfigService {
             config1.modificationUuids(),
             config2.modificationUuids()
         ));
+    }
+
+    private List<ProcessConfigFieldComparison> compareSecurityAnalysisConfigs(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2) {
+        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
+
+        // Compare modifications
+        compareConfigsModifications(config1, config2, differences);
 
         // Compare security analysis parameters
         boolean securityAnalysisParametersIdentical = Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid());
@@ -164,6 +179,24 @@ public class ProcessConfigService {
             config1.securityAnalysisParametersUuid(),
             config2.securityAnalysisParametersUuid()
         ));
+
+        // Compare loadflow parameters
+        boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());
+        differences.add(new ProcessConfigFieldComparison(
+            "loadflowParameters",
+            loadflowParametersIdentical,
+            config1.loadflowParametersUuid(),
+            config2.loadflowParametersUuid()
+        ));
+
+        return differences;
+    }
+
+    private List<ProcessConfigFieldComparison> compareLoadFlowConfigs(LoadFlowConfig config1, LoadFlowConfig config2) {
+        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
+
+        // Compare modifications
+        compareConfigsModifications(config1, config2, differences);
 
         // Compare loadflow parameters
         boolean loadflowParametersIdentical = Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid());

@@ -48,7 +48,6 @@ public class StepExecutionService implements StepExecutor {
                 .stepType(step.getType().getName())
                 .stepOrder(context.getStepOrder())
                 .status(StepStatus.RUNNING)
-                .reportId(context.getReportInfos().reportUuid())
                 .startedAt(context.getStartedAt())
                 .build();
         notificationService.updateStepStatus(context.getProcessExecutionId(), executionStep);
@@ -60,7 +59,7 @@ public class StepExecutionService implements StepExecutor {
             updateStepStatus(context, StepStatus.FAILED, step);
             throw e;
         } finally {
-            reportRestClient.sendReport(context.getReportInfos());
+            reportRestClient.sendReport(context.getProcessReportId(), context.getReportNode());
         }
     }
 
@@ -72,7 +71,6 @@ public class StepExecutionService implements StepExecutor {
                 .status(status)
                 .resultId(context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null)
                 .resultType(context.getResultInfos() != null ? context.getResultInfos().resultType() : null)
-                .reportId(context.getReportInfos().reportUuid())
                 .startedAt(context.getStartedAt())
                 .completedAt(Instant.now())
                 .build();

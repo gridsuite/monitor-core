@@ -28,19 +28,19 @@ public class LoadFlowRestClient {
 
     public LoadFlowRestClient(
         RestClient.Builder restClientBuilder,
-        @Value("${gridsuite.services.loadflow-server.base-uri:http://loadflow-server/}") String loadflowServerBaseUri) {
+        @Value("${gridsuite.services.loadflow-server.base-uri:http://loadflow-server/}") String loadFlowServerBaseUri) {
         this.restClient = restClientBuilder
-            .baseUrl(loadflowServerBaseUri + "/" + LOADFLOW_API_VERSION)
+            .baseUrl(loadFlowServerBaseUri + "/" + LOADFLOW_API_VERSION)
             .build();
     }
 
-    public LoadFlowParametersInfos getParameters(UUID loadflowParametersUuid) {
-        if (loadflowParametersUuid == null) {
+    public LoadFlowParametersInfos getParameters(UUID loadFlowParametersUuid) {
+        if (loadFlowParametersUuid == null) {
             throw new PowsyblException("Loadflow parameters UUID is null !!");
         }
 
         return restClient.get()
-            .uri("/parameters/{loadflowParametersUuid}", loadflowParametersUuid)
+            .uri("/parameters/{loadFlowParametersUuid}", loadFlowParametersUuid)
             .retrieve()
             .body(LoadFlowParametersInfos.class);
     }

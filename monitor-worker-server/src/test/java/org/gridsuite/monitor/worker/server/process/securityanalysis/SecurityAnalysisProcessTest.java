@@ -8,25 +8,23 @@ package org.gridsuite.monitor.worker.server.process.securityanalysis;
 
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.worker.server.core.process.AbstractProcessTest;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.process.commons.steps.ApplyModificationsStep;
 import org.gridsuite.monitor.worker.server.process.commons.steps.LoadNetworkStep;
 import org.gridsuite.monitor.worker.server.process.securityanalysis.steps.SecurityAnalysisRunComputationStep;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class SecurityAnalysisProcessTest {
+class SecurityAnalysisProcessTest extends AbstractProcessTest<SecurityAnalysisConfig, SecurityAnalysisProcess> {
 
     @Mock
     private LoadNetworkStep<SecurityAnalysisConfig> loadNetworkStep;
@@ -37,10 +35,8 @@ class SecurityAnalysisProcessTest {
     @Mock
     private SecurityAnalysisRunComputationStep runComputationStep;
 
-    private SecurityAnalysisProcess process;
-
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         process = new SecurityAnalysisProcess(
             loadNetworkStep,
             applyModificationsStep,
@@ -48,19 +44,17 @@ class SecurityAnalysisProcessTest {
         );
     }
 
-    @Test
-    void getProcessTypeShouldReturnSecurityAnalysis() {
-        assertEquals(ProcessType.SECURITY_ANALYSIS, process.getProcessType());
+    @Override
+    protected List<ProcessStep<SecurityAnalysisConfig>> getExpectedSteps() {
+        return List.of(
+            loadNetworkStep,
+            applyModificationsStep,
+            runComputationStep
+        );
     }
 
-    @Test
-    void defineStepsShouldReturnThreeStepsInCorrectOrder() {
-        List<ProcessStep<SecurityAnalysisConfig>> steps = process.defineSteps();
-
-        assertNotNull(steps);
-        assertEquals(3, steps.size());
-        assertSame(loadNetworkStep, steps.get(0));
-        assertSame(applyModificationsStep, steps.get(1));
-        assertSame(runComputationStep, steps.get(2));
+    @Override
+    protected ProcessType getExpectedProcessType() {
+        return ProcessType.SECURITY_ANALYSIS;
     }
 }

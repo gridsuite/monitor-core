@@ -25,10 +25,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -85,5 +85,19 @@ class LoadflowRunComputationStepTest {
             resultInfos.resultUUID() != null &&
                 resultInfos.resultType() == ResultType.LOADFLOW
         ));
+    }
+
+    @Test
+    void executeRunLoadflowFailed() {
+        Network network = EurostagTutorialExample1Factory.create();
+
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(loadFlowRestClient.getParameters(any(UUID.class))).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class,
+            () -> runComputationStep.execute(stepContext));
+
+        verify(loadFlowRestClient, never()).saveResult(any());
+        verify(stepContext, never()).setResultInfos(any());
     }
 }

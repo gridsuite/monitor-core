@@ -28,5 +28,6 @@ public record ProcessExecution(
     Instant scheduledAt,
     Instant startedAt,
     Instant completedAt,
+    UUID reportId,
     String userId
 ) { }

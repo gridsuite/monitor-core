@@ -47,9 +47,6 @@ public class ProcessExecutionStepEntity {
     private ResultType resultType;
 
     @Column
-    private UUID reportId;
-
-    @Column
     private Instant startedAt;
 
     @Column

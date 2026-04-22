@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,8 +65,7 @@ class ReportRestClientTest {
                 .andExpect(MockRestRequestMatchers.content().json(expectedJson))
                 .andRespond(MockRestResponseCreators.withSuccess());
 
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, reportNode);
-        assertThatNoException().isThrownBy(() -> reportRestService.sendReport(reportInfos));
+        assertThatNoException().isThrownBy(() -> reportRestService.sendReport(REPORT_UUID, reportNode));
     }
 
     @Test
@@ -81,7 +79,6 @@ class ReportRestClientTest {
                 .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_ERROR_UUID))
                 .andRespond(MockRestResponseCreators.withServerError());
 
-        ReportInfos reportInfos = new ReportInfos(REPORT_ERROR_UUID, reportNode);
-        assertThatThrownBy(() -> reportRestService.sendReport(reportInfos)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> reportRestService.sendReport(REPORT_ERROR_UUID, reportNode)).isInstanceOf(RestClientException.class);
     }
 }

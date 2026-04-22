@@ -30,7 +30,6 @@ public class ProcessExecutionStep {
     private StepStatus status;
     private UUID resultId;
     private ResultType resultType;
-    private UUID reportId;
     private Instant startedAt;
     private Instant completedAt;
 }

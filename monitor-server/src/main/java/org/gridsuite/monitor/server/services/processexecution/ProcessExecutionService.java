@@ -76,6 +76,8 @@ public class ProcessExecutionService {
     @Transactional
     public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
         UUID executionId = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
+
         Optional<PersistedProcessConfig> persistedProcessConfig = processConfigService.getProcessConfig(processConfigId);
         if (persistedProcessConfig.isPresent()) {
             ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
@@ -85,6 +87,7 @@ public class ProcessExecutionService {
                 .processConfigId(persistedProcessConfig.get().id())
                 .status(ProcessStatus.SCHEDULED)
                 .scheduledAt(Instant.now())
+                .reportId(reportId)
                 .userId(userId)
                 .build();
             if (isDebug) {
@@ -92,7 +95,12 @@ public class ProcessExecutionService {
             }
             processExecutionRepository.save(execution);
 
-            notificationService.sendProcessRunMessage(caseUuid, persistedProcessConfig.get().processConfig(), execution.getId(), execution.getDebugFileLocation());
+            notificationService.sendProcessRunMessage(
+                caseUuid,
+                persistedProcessConfig.get().processConfig(),
+                execution.getId(),
+                execution.getReportId(),
+                execution.getDebugFileLocation());
 
             return Optional.of(execution.getId());
         } else {
@@ -152,19 +160,10 @@ public class ProcessExecutionService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<List<ReportPage>> getReports(UUID executionId) {
-        Optional<List<UUID>> reportIds = getReportIds(executionId);
-        return reportIds.map(ids -> ids.stream()
-                .map(reportRestClient::getReport)
-                .toList());
-    }
-
-    private Optional<List<UUID>> getReportIds(UUID executionId) {
+    public Optional<ReportPage> getReports(UUID executionId) {
         return processExecutionRepository.findById(executionId)
-            .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()
-                .map(ProcessExecutionStepEntity::getReportId)
-                .filter(java.util.Objects::nonNull)
-                .toList());
+            .map(ProcessExecutionEntity::getReportId)
+            .map(reportRestClient::getReport);
     }
 
     @Transactional(readOnly = true)
@@ -218,7 +217,6 @@ public class ProcessExecutionService {
     @Transactional
     public Optional<UUID> deleteExecution(UUID executionId) {
         List<ResultInfos> resultIds = new ArrayList<>();
-        List<UUID> reportIds = new ArrayList<>();
 
         Optional<ProcessExecutionEntity> executionEntity = processExecutionRepository.findById(executionId);
         if (executionEntity.isPresent()) {
@@ -227,12 +225,11 @@ public class ProcessExecutionService {
                 if (step.getResultId() != null && step.getResultType() != null) {
                     resultIds.add(new ResultInfos(step.getResultId(), step.getResultType()));
                 }
-                if (step.getReportId() != null) {
-                    reportIds.add(step.getReportId());
-                }
             });
             resultIds.forEach(resultService::deleteResult);
-            reportIds.forEach(reportRestClient::deleteReport);
+            if (entity.getReportId() != null) {
+                reportRestClient.deleteReport(entity.getReportId());
+            }
 
             processExecutionRepository.delete(entity);
 

@@ -46,7 +46,6 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith({MockitoExtension.class})
 class ProcessExecutionTxServiceTest {
-
     @Mock
     private ProcessExecutionRepository executionRepository;
 
@@ -345,7 +344,6 @@ class ProcessExecutionTxServiceTest {
                 .steps(List.of(step0, step1))
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
-
 
         Optional<UUID> result = processExecutionTxService.getReportId(executionId);
         assertThat(result).contains(reportId);

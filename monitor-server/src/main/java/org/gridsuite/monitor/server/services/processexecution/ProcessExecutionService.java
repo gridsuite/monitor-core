@@ -13,17 +13,10 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
-import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
-import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
-import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.messaging.NotificationService;
-import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.result.ResultService;
-import org.gridsuite.monitor.server.utils.S3PathResolver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;

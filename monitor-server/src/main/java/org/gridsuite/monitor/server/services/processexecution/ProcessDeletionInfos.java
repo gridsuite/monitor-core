@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-public record ProcessDeletionInfos (UUID reportId, List<ResultInfos> resultInfos) {
+public record ProcessDeletionInfos(UUID reportId, List<ResultInfos> resultInfos) {
     public static ProcessDeletionInfos fromProcessExecutionEntity(ProcessExecutionEntity entity) {
         return new ProcessDeletionInfos(
             entity.getReportId(),

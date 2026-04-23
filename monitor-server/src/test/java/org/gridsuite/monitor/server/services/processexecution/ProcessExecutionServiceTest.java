@@ -7,11 +7,16 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
+import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
@@ -25,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -94,6 +100,56 @@ class ProcessExecutionServiceTest {
             any(UUID.class),
             eq(debugFileLocation)
         );
+    }
+
+    @Test
+    void updateExecutionStatusShouldDelegateToTxService() {
+        Instant startedAt = Instant.now().minusSeconds(60);
+        Instant completedAt = Instant.now();
+        String executionEnvName = "test-env";
+
+        processExecutionService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+
+        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+    }
+
+    @Test
+    void updateStepStatusShouldDelegateToTxService() {
+        ProcessExecutionStep step = ProcessExecutionStep.builder()
+            .id(UUID.randomUUID())
+            .stepType("LOAD_FLOW")
+            .stepOrder(1)
+            .status(StepStatus.RUNNING)
+            .resultId(UUID.randomUUID())
+            .resultType(ResultType.SECURITY_ANALYSIS)
+            .startedAt(Instant.now())
+            .build();
+
+        processExecutionService.updateStepStatus(executionId, step);
+
+        verify(processExecutionTxService).updateStepStatus(executionId, step);
+    }
+
+    @Test
+    void updateStepsStatusesShouldDelegateToTxService() {
+        List<ProcessExecutionStep> steps = List.of(
+            ProcessExecutionStep.builder()
+                .id(UUID.randomUUID())
+                .stepType("LOAD_FLOW")
+                .stepOrder(1)
+                .status(StepStatus.RUNNING)
+                .build(),
+            ProcessExecutionStep.builder()
+                .id(UUID.randomUUID())
+                .stepType("SECURITY_ANALYSIS")
+                .stepOrder(2)
+                .status(StepStatus.SCHEDULED)
+                .build()
+        );
+
+        processExecutionService.updateStepsStatuses(executionId, steps);
+
+        verify(processExecutionTxService).updateStepsStatuses(executionId, steps);
     }
 
     @Test
@@ -210,6 +266,49 @@ class ProcessExecutionServiceTest {
 
         verify(processExecutionTxService).getDebugFileLocation(executionId);
         verify(s3RestClient).downloadDirectoryAsZip(debugFileLocation);
+    }
+
+    @Test
+    void getLaunchedProcessesShouldDelegateToTxService() {
+        List<ProcessExecution> executions = List.of(
+            ProcessExecution.builder()
+                .id(UUID.randomUUID())
+                .type(ProcessType.SECURITY_ANALYSIS.name())
+                .caseUuid(caseUuid)
+                .processConfigId(UUID.randomUUID())
+                .status(ProcessStatus.RUNNING)
+                .scheduledAt(Instant.now())
+                .userId(userId)
+                .build()
+        );
+
+        when(processExecutionTxService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS)).thenReturn(executions);
+
+        List<ProcessExecution> result = processExecutionService.getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+
+        assertThat(result).isEqualTo(executions);
+        verify(processExecutionTxService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getStepsInfosShouldDelegateToTxService() {
+        List<ProcessExecutionStep> steps = List.of(
+            ProcessExecutionStep.builder()
+                .id(UUID.randomUUID())
+                .stepType("LOAD_FLOW")
+                .stepOrder(1)
+                .status(StepStatus.COMPLETED)
+                .startedAt(Instant.now().minusSeconds(30))
+                .completedAt(Instant.now())
+                .build()
+        );
+
+        when(processExecutionTxService.getStepsInfos(executionId)).thenReturn(Optional.of(steps));
+
+        Optional<List<ProcessExecutionStep>> result = processExecutionService.getStepsInfos(executionId);
+
+        assertThat(result).contains(steps);
+        verify(processExecutionTxService).getStepsInfos(executionId);
     }
 
     @Test

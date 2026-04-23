@@ -15,6 +15,7 @@ import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
@@ -34,6 +35,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -701,7 +704,9 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(uuid1)).thenReturn(Optional.of(entity1));
         when(processConfigRepository.findById(uuid2)).thenReturn(Optional.of(entity2));
 
-        assertThatThrownBy(() -> processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .isInstanceOf(IllegalArgumentException.class);
+        MonitorServerException exception = (MonitorServerException) catchThrowable(() -> processConfigService.compareProcessConfigs(uuid1, uuid2));
+        assertThat(exception.getErrorCode()).isEqualTo(DIFFERENT_PROCESS_CONFIG_TYPE);
+        assertThat(exception.getBusinessErrorValues()).containsEntry("processConfigEntity1Type", ProcessType.SECURITY_ANALYSIS);
+        assertThat(exception.getBusinessErrorValues()).containsEntry("processConfigEntity2Type", ProcessType.LOADFLOW);
     }
 }

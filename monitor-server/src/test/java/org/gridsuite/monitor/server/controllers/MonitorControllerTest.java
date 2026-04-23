@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
@@ -47,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(MonitorController.class)
+@WebMvcTest(controllers = { MonitorController.class, PropertyServerNameProvider.class })
 class MonitorControllerTest {
 
     @Autowired

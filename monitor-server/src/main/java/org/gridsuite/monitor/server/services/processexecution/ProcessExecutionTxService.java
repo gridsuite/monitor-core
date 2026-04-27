@@ -17,7 +17,7 @@ import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionSt
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.processconfig.ProcessConfigTxService;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,22 +39,24 @@ public class ProcessExecutionTxService {
     private final ProcessExecutionRepository processExecutionRepository;
     private final ProcessExecutionStepMapper processExecutionStepMapper;
     private final ProcessExecutionMapper processExecutionMapper;
-    private final ProcessConfigTxService processConfigTxService;
+    private final ProcessConfigService processConfigService;
     private final S3PathResolver s3PathResolver;
 
     public ProcessExecutionTxService(ProcessExecutionRepository processExecutionRepository,
                                      ProcessExecutionStepMapper processExecutionStepMapper,
-                                     ProcessExecutionMapper processExecutionMapper, ProcessConfigTxService processConfigTxService, S3PathResolver s3PathResolver) {
+                                     ProcessExecutionMapper processExecutionMapper,
+                                     ProcessConfigService processConfigService,
+                                     S3PathResolver s3PathResolver) {
         this.processExecutionRepository = processExecutionRepository;
         this.processExecutionStepMapper = processExecutionStepMapper;
         this.processExecutionMapper = processExecutionMapper;
-        this.processConfigTxService = processConfigTxService;
+        this.processConfigService = processConfigService;
         this.s3PathResolver = s3PathResolver;
     }
 
     @Transactional
     public Optional<ProcessCreationResult> createExecution(UUID caseUuid, String userId, UUID processConfigId, UUID executionId, UUID reportId, boolean isDebug) {
-        Optional<PersistedProcessConfig> persistedProcessConfigOpt = processConfigTxService.getProcessConfig(processConfigId);
+        Optional<PersistedProcessConfig> persistedProcessConfigOpt = processConfigService.getProcessConfig(processConfigId);
         if (persistedProcessConfigOpt.isPresent()) {
             PersistedProcessConfig persistedProcessConfig = persistedProcessConfigOpt.get();
 

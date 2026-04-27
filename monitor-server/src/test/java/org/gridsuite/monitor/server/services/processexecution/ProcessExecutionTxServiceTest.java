@@ -20,7 +20,7 @@ import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionSt
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.processconfig.ProcessConfigTxService;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class ProcessExecutionTxServiceTest {
     private ProcessExecutionRepository executionRepository;
 
     @Mock
-    private ProcessConfigTxService processConfigTxService;
+    private ProcessConfigService processConfigService;
 
     @Mock
     private S3PathResolver s3PathResolver;
@@ -87,12 +87,12 @@ class ProcessExecutionTxServiceTest {
     void executeProcessCreateExecutionAndSendNotification() {
         String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
-        when(processConfigTxService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
+        when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
         Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true);
 
         assertThat(result).isNotEmpty();
-        verify(processConfigTxService).getProcessConfig(any(UUID.class));
+        verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&

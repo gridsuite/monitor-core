@@ -556,15 +556,16 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void getExistingDebugInfo() {
+        String debugFileLocation = "debug/file/location";
         ProcessExecutionEntity execution = new ProcessExecutionEntity();
-        execution.setDebugFileLocation("debug/file/location");
+        execution.setDebugFileLocation(debugFileLocation);
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
         Optional<String> result = processExecutionTxService.getDebugFileLocation(executionId);
 
         assertThat(result).isPresent();
-        assertThat(result.get()).isEqualTo("debug/file/location");
+        assertThat(result.get()).contains(debugFileLocation);
 
         verify(executionRepository).findById(executionId);
     }

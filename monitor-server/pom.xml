@@ -14,7 +14,10 @@
 
     <properties>
         <liquibase-hibernate-package>org.gridsuite.monitor.server</liquibase-hibernate-package>
-        <spring-cloud-aws-starter-s3>3.3.1</spring-cloud-aws-starter-s3>
+        <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <lombok-mapstruct-bindings.version>0.2.0</lombok-mapstruct-bindings.version>
+        <aws-sdk.version>2.29.52</aws-sdk.version>
     </properties>
 
     <build>
@@ -27,6 +30,28 @@
                         <classpathDependencyExcludes>
                             <classpathDependencyExclude>com.powsybl:powsybl-config-classic</classpathDependencyExclude>
                         </classpathDependencyExcludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <parameters>${maven.compiler.parameters}</parameters>
+                        <annotationProcessorPaths combine.children="append">
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>${mapstruct.version}</version>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok-mapstruct-binding</artifactId>
+                                <version>${lombok-mapstruct-bindings.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
             </plugins>
@@ -59,6 +84,15 @@
             <version>${mapstruct.version}</version>
         </dependency>
         <!-- Compilation dependencies -->
+        <!-- downgrade of sdk from 2.31.78 to 2.29.52 is needed since spring-cloud-aws-starter-s3 3.3 to 3.4 upgrade -->
+        <!-- See https://github.com/aws/aws-sdk-java-v2/discussions/5802  -->
+        <!-- Is there an easier way to to be compatible with 3rd party aws implementations? -->
+        <!-- maybe we should look for a less opinionated/more compatible s3 client than awssdk ? -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>${aws-sdk.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-ws-commons</artifactId>

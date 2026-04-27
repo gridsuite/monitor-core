@@ -11,11 +11,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.gridsuite.monitor.commons.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.server.dto.ProcessExecution;
-import org.gridsuite.monitor.server.dto.ReportPage;
-import org.gridsuite.monitor.server.services.MonitorService;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,12 +33,12 @@ import java.util.UUID;
 @Tag(name = "Monitor server")
 public class MonitorController {
 
-    private final MonitorService monitorService;
+    private final ProcessExecutionService processExecutionService;
 
     public static final String HEADER_USER_ID = "userId";
 
-    public MonitorController(MonitorService monitorService) {
-        this.monitorService = monitorService;
+    public MonitorController(ProcessExecutionService processExecutionService) {
+        this.processExecutionService = processExecutionService;
     }
 
     @PostMapping("/execute")
@@ -50,31 +50,33 @@ public class MonitorController {
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        Optional<UUID> executionId = monitorService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
-        return executionId.isPresent() ? ResponseEntity.ok(executionId.get()) : ResponseEntity.notFound().build();
+        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+        return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/executions/{executionId}/reports")
     @Operation(summary = "Get reports for an execution")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports")})
-    public ResponseEntity<List<ReportPage>> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<ReportPage> reports = monitorService.getReports(executionId);
-        return ResponseEntity.ok(reports);
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports"),
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    public ResponseEntity<ReportPage> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        Optional<ReportPage> reports = processExecutionService.getReports(executionId);
+        return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/executions/{executionId}/results")
     @Operation(summary = "Get results for an execution")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results"),
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        List<String> results = monitorService.getResults(executionId);
-        return ResponseEntity.ok(results);
+        Optional<List<String>> results = processExecutionService.getResults(executionId);
+        return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/executions")
     @Operation(summary = "Get launched processes")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The launched processes")})
     public ResponseEntity<List<ProcessExecution>> getLaunchedProcesses(@Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
-        return ResponseEntity.ok(monitorService.getLaunchedProcesses(processType));
+        return ResponseEntity.ok(processExecutionService.getLaunchedProcesses(processType));
     }
 
     @GetMapping("/executions/{executionId}/step-infos")
@@ -83,7 +85,7 @@ public class MonitorController {
         @ApiResponse(responseCode = "200", description = "The execution steps statuses"),
         @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        return monitorService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
+        return processExecutionService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
             .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -93,7 +95,7 @@ public class MonitorController {
         @ApiResponse(responseCode = "200", description = "Debug file downloaded"),
         @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<byte[]> getDebugInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        return monitorService.getDebugInfos(executionId)
+        return processExecutionService.getDebugInfos(executionId)
             .map(bytes -> ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"archive.zip\"")
@@ -106,11 +108,10 @@ public class MonitorController {
     @DeleteMapping("/executions/{executionId}")
     @Operation(summary = "Delete an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
-        @ApiResponse(responseCode = "404", description = "Execution was not found")})
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
-        return monitorService.deleteExecution(executionId) ?
-            ResponseEntity.ok().build() :
-            ResponseEntity.notFound().build();
+        Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
+        return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 }
 

@@ -12,6 +12,10 @@ import com.powsybl.security.SecurityAnalysisParameters;
 import org.gridsuite.actions.ContingencyListEvaluator;
 import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.evaluation.ContingencyInfos;
+import org.gridsuite.monitor.worker.server.clients.ActionsRestClient;
+import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
+import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
+import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
@@ -29,24 +33,24 @@ import java.util.UUID;
  */
 @Service
 public class SecurityAnalysisParametersService {
-    private final SecurityAnalysisRestService securityAnalysisRestService;
-    private final LoadFlowRestService loadFlowRestService;
-    private final ActionsRestService actionsRestService;
-    private final FilterRestService filterRestService;
+    private final SecurityAnalysisRestClient securityAnalysisRestClient;
+    private final LoadFlowRestClient loadFlowRestClient;
+    private final ActionsRestClient actionsRestClient;
+    private final FilterRestClient filterRestClient;
 
-    public SecurityAnalysisParametersService(SecurityAnalysisRestService securityAnalysisRestService,
-                                             LoadFlowRestService loadFlowRestService,
-                                             ActionsRestService actionsRestService,
-                                             FilterRestService filterRestService) {
-        this.securityAnalysisRestService = securityAnalysisRestService;
-        this.loadFlowRestService = loadFlowRestService;
-        this.actionsRestService = actionsRestService;
-        this.filterRestService = filterRestService;
+    public SecurityAnalysisParametersService(SecurityAnalysisRestClient securityAnalysisRestClient,
+                                             LoadFlowRestClient loadFlowRestClient,
+                                             ActionsRestClient actionsRestClient,
+                                             FilterRestClient filterRestClient) {
+        this.securityAnalysisRestClient = securityAnalysisRestClient;
+        this.loadFlowRestClient = loadFlowRestClient;
+        this.actionsRestClient = actionsRestClient;
+        this.filterRestClient = filterRestClient;
     }
 
     public SecurityAnalysisInputData buildSecurityAnalysisInputData(UUID securityAnalysisParametersUuid, UUID loadflowParametersUuid, Network network) {
-        SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestService.getParameters(securityAnalysisParametersUuid);
-        LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestService.getParameters(loadflowParametersUuid);
+        SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestClient.getParameters(securityAnalysisParametersUuid);
+        LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestClient.getParameters(loadflowParametersUuid);
 
         SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues);
 
@@ -54,10 +58,11 @@ public class SecurityAnalysisParametersService {
         List<UUID> contingenciesListUuids = contingencyListInfos != null
             ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList()
             : List.of();
-        List<AbstractContingencyList> persistentContingencyLists = actionsRestService.getPersistentContingencyLists(contingenciesListUuids);
+
+        List<AbstractContingencyList> persistentContingencyLists = actionsRestClient.getPersistentContingencyLists(contingenciesListUuids);
 
         List<Contingency> contingencyList = new ArrayList<>();
-        ContingencyListEvaluator contingencyListEvaluator = new ContingencyListEvaluator(filterRestService);
+        ContingencyListEvaluator contingencyListEvaluator = new ContingencyListEvaluator(filterRestClient);
 
         persistentContingencyLists.forEach(persistentContingencyList -> {
             List<Contingency> contingencies = contingencyListEvaluator.evaluateContingencyList(persistentContingencyList, network)

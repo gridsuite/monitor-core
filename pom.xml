@@ -40,11 +40,9 @@
     </modules>
 
     <properties>
-        <gridsuite-dependencies.version>49.1.0-SNAPSHOT</gridsuite-dependencies.version>
+        <gridsuite-dependencies.version>50.1.0-SNAPSHOT</gridsuite-dependencies.version>
         <sonar.organization>gridsuite</sonar.organization>
         <sonar.projectKey>org.gridsuite:monitor-core</sonar.projectKey>
-        <mapstruct.version>1.6.3</mapstruct.version>
-        <lombok-mapstruct-bindings.version>0.2.0</lombok-mapstruct-bindings.version>
     </properties>
 
     <dependencyManagement>
@@ -83,28 +81,6 @@
                         <classpathDependencyExcludes>
                             <classpathDependencyExclude>com.powsybl:powsybl-config-classic</classpathDependencyExclude>
                         </classpathDependencyExcludes>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <parameters>${maven.compiler.parameters}</parameters>
-                        <annotationProcessorPaths combine.children="append">
-                            <path>
-                                <groupId>org.mapstruct</groupId>
-                                <artifactId>mapstruct-processor</artifactId>
-                                <version>${mapstruct.version}</version>
-                            </path>
-                            <path>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok</artifactId>
-                            </path>
-                            <path>
-                                <groupId>org.projectlombok</groupId>
-                                <artifactId>lombok-mapstruct-binding</artifactId>
-                                <version>${lombok-mapstruct-bindings.version}</version>
-                            </path>
-                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
             </plugins>

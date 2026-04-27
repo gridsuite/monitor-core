@@ -6,11 +6,11 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.commons.ProcessStatus;
-import org.gridsuite.monitor.commons.ProcessType;
-import org.gridsuite.monitor.commons.StepStatus;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
-import org.gridsuite.monitor.server.entities.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -86,6 +86,7 @@ class ProcessExecutionRepositoryTest {
         Instant scheduledAt1 = Instant.now().minusSeconds(60);
         Instant startedAt1 = Instant.now().minusSeconds(30);
         Instant completedAt1 = Instant.now();
+        UUID report1Uuid = UUID.randomUUID();
         ProcessExecutionEntity execution1 = ProcessExecutionEntity.builder()
             .id(UUID.randomUUID())
             .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -95,12 +96,14 @@ class ProcessExecutionRepositoryTest {
             .scheduledAt(scheduledAt1)
             .startedAt(startedAt1)
             .completedAt(completedAt1)
+            .reportId(report1Uuid)
             .userId("user1")
             .build();
 
         UUID case2Uuid = UUID.randomUUID();
         Instant scheduledAt2 = Instant.now().minusSeconds(90);
         Instant startedAt2 = Instant.now().minusSeconds(20);
+        UUID report2Uuid = UUID.randomUUID();
         ProcessExecutionEntity execution2 = ProcessExecutionEntity.builder()
             .id(UUID.randomUUID())
             .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -109,11 +112,13 @@ class ProcessExecutionRepositoryTest {
             .executionEnvName("env2")
             .scheduledAt(scheduledAt2)
             .startedAt(startedAt2)
+            .reportId(report2Uuid)
             .userId("user2")
             .build();
 
         UUID case3Uuid = UUID.randomUUID();
         Instant scheduledAt3 = Instant.now().minusSeconds(90);
+        UUID report3Uuid = UUID.randomUUID();
         ProcessExecutionEntity execution3 = ProcessExecutionEntity.builder()
             .id(UUID.randomUUID())
             .type(ProcessType.SECURITY_ANALYSIS.name())
@@ -121,6 +126,7 @@ class ProcessExecutionRepositoryTest {
             .status(ProcessStatus.SCHEDULED)
             .executionEnvName("env3")
             .scheduledAt(scheduledAt3)
+            .reportId(report3Uuid)
             .userId("user3")
             .build();
 
@@ -140,6 +146,7 @@ class ProcessExecutionRepositoryTest {
         assertThat(retrieved.get(0).getScheduledAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(scheduledAt2.truncatedTo(ChronoUnit.MILLIS));
         assertThat(retrieved.get(0).getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt2.truncatedTo(ChronoUnit.MILLIS));
         assertThat(retrieved.get(0).getCompletedAt()).isNull();
+        assertThat(retrieved.get(0).getReportId()).isEqualTo(report2Uuid);
         assertThat(retrieved.get(0).getUserId()).isEqualTo("user2");
 
         assertThat(retrieved.get(1).getType()).isEqualTo(ProcessType.SECURITY_ANALYSIS.name());
@@ -149,6 +156,7 @@ class ProcessExecutionRepositoryTest {
         assertThat(retrieved.get(1).getScheduledAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(scheduledAt1.truncatedTo(ChronoUnit.MILLIS));
         assertThat(retrieved.get(1).getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt1.truncatedTo(ChronoUnit.MILLIS));
         assertThat(retrieved.get(1).getCompletedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(completedAt1.truncatedTo(ChronoUnit.MILLIS));
+        assertThat(retrieved.get(1).getReportId()).isEqualTo(report1Uuid);
         assertThat(retrieved.get(1).getUserId()).isEqualTo("user1");
     }
 }

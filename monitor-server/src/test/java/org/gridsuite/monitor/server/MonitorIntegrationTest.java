@@ -7,14 +7,26 @@
 package org.gridsuite.monitor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.monitor.commons.*;
-import org.gridsuite.monitor.server.dto.ReportLog;
-import org.gridsuite.monitor.server.dto.ReportPage;
-import org.gridsuite.monitor.server.dto.Severity;
-import org.gridsuite.monitor.server.entities.ProcessExecutionEntity;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.*;
+import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
+import org.gridsuite.monitor.commons.types.messaging.MessageType;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.result.ResultInfos;
+import org.gridsuite.monitor.commons.types.result.ResultType;
+import org.gridsuite.monitor.server.clients.ReportRestClient;
+import org.gridsuite.monitor.server.dto.report.ReportLog;
+import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.messaging.ConsumerService;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
-import org.gridsuite.monitor.server.services.*;
+import org.gridsuite.monitor.server.clients.S3RestClient;
+import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +62,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MonitorIntegrationTest {
 
     @Autowired
-    private MonitorService monitorService;
+    private ProcessExecutionService processExecutionService;
 
     @Autowired
     private ProcessConfigService configService;
@@ -74,13 +86,13 @@ class MonitorIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ReportRestService reportRestService;
+    private ReportRestClient reportRestClient;
 
     @MockitoBean
     private ResultService resultService;
 
     @MockitoBean
-    private S3RestService s3RestService;
+    private S3RestClient s3RestClient;
 
     private UUID caseUuid;
 
@@ -103,7 +115,7 @@ class MonitorIntegrationTest {
                 UUID.randomUUID());
         UUID processConfigId = configService.createProcessConfig(securityAnalysisConfig);
 
-        Optional<UUID> executionId = monitorService.executeProcess(caseUuid, userId, processConfigId, false);
+        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigId, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
@@ -112,19 +124,18 @@ class MonitorIntegrationTest {
         // Verify execution persisted with correct initial state
         ProcessExecutionEntity execution = executionRepository.findById(executionId.get()).orElse(null);
         assertThat(execution).isNotNull();
+        assertThat(execution.getReportId()).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
         assertThat(execution.getSteps()).isEmpty();
 
         // Simulate first step creation via message with both report and result
         UUID stepId0 = UUID.randomUUID();
-        UUID reportId0 = UUID.randomUUID();
         UUID resultId0 = UUID.randomUUID();
         ProcessExecutionStep step0 = ProcessExecutionStep.builder()
                 .id(stepId0)
                 .stepType("LOAD_NETWORK")
                 .stepOrder(0)
                 .status(StepStatus.COMPLETED)
-                .reportId(reportId0)
                 .resultId(resultId0)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .startedAt(Instant.now())
@@ -134,14 +145,12 @@ class MonitorIntegrationTest {
 
         // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
-        UUID reportId1 = UUID.randomUUID();
         UUID resultId1 = UUID.randomUUID();
         ProcessExecutionStep step1 = ProcessExecutionStep.builder()
                 .id(stepId1)
                 .stepType("SECURITY_ANALYSIS")
                 .stepOrder(1)
                 .status(StepStatus.COMPLETED)
-                .reportId(reportId1)
                 .resultId(resultId1)
                 .resultType(ResultType.SECURITY_ANALYSIS)
                 .startedAt(Instant.now())
@@ -154,10 +163,8 @@ class MonitorIntegrationTest {
         assertThat(execution.getSteps()).hasSize(2);
         assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
-        assertThat(execution.getSteps().get(0).getReportId()).isEqualTo(reportId0);
         assertThat(execution.getSteps().get(0).getResultId()).isEqualTo(resultId0);
         assertThat(execution.getSteps().get(1).getId()).isEqualTo(stepId1);
-        assertThat(execution.getSteps().get(1).getReportId()).isEqualTo(reportId1);
         assertThat(execution.getSteps().get(1).getResultId()).isEqualTo(resultId1);
 
         // Complete the execution via message
@@ -179,36 +186,30 @@ class MonitorIntegrationTest {
         assertThat(execution.getCompletedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(completedAt.truncatedTo(ChronoUnit.MILLIS));
 
         // Mock the report service responses
-        ReportPage reportPage0 = new ReportPage(1, List.of(
-            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
-            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
-        ReportPage reportPage1 = new ReportPage(2, List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID())), 200, 20);
+        ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
+        ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
+        ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
+        ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
 
-        when(reportRestService.getReport(reportId0)).thenReturn(reportPage0);
-        when(reportRestService.getReport(reportId1)).thenReturn(reportPage1);
+        when(reportRestClient.getReport(execution.getReportId())).thenReturn(reportPage);
 
         // Test the reports endpoint fetches correctly from database
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].number").value(1))
-                .andExpect(jsonPath("$[0].content", hasSize(2)))
-                .andExpect(jsonPath("$[0].content[0].message").value("message1"))
-                .andExpect(jsonPath("$[0].content[0].severity").value(Severity.INFO.toString()))
-                .andExpect(jsonPath("$[0].content[0].depth").value(1))
-                .andExpect(jsonPath("$[0].content[1].message").value("message2"))
-                .andExpect(jsonPath("$[0].content[1].severity").value(Severity.WARN.toString()))
-                .andExpect(jsonPath("$[0].content[1].depth").value(2))
-                .andExpect(jsonPath("$[0].totalElements").value(100))
-                .andExpect(jsonPath("$[0].totalPages").value(10))
-                .andExpect(jsonPath("$[1].number").value(2))
-                .andExpect(jsonPath("$[1].content", hasSize(1)))
-                .andExpect(jsonPath("$[1].content[0].message").value("message3"))
-                .andExpect(jsonPath("$[1].content[0].severity").value(Severity.ERROR.toString()))
-                .andExpect(jsonPath("$[1].content[0].depth").value(3))
-                .andExpect(jsonPath("$[1].totalElements").value(200))
-                .andExpect(jsonPath("$[1].totalPages").value(20));
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("number").value(1))
+            .andExpect(jsonPath("content", hasSize(3)))
+            .andExpect(jsonPath("content[0].message").value("message1"))
+            .andExpect(jsonPath("content[0].severity").value(Severity.INFO.toString()))
+            .andExpect(jsonPath("content[0].depth").value(1))
+            .andExpect(jsonPath("content[1].message").value("message2"))
+            .andExpect(jsonPath("content[1].severity").value(Severity.WARN.toString()))
+            .andExpect(jsonPath("content[1].depth").value(2))
+            .andExpect(jsonPath("content[2].message").value("message3"))
+            .andExpect(jsonPath("content[2].severity").value(Severity.ERROR.toString()))
+            .andExpect(jsonPath("content[2].depth").value(1))
+            .andExpect(jsonPath("totalElements").value(100))
+            .andExpect(jsonPath("totalPages").value(10));
 
         // Mock the result service responses
         String result0 = "{\"result\": \"success\"}";
@@ -260,14 +261,15 @@ class MonitorIntegrationTest {
                 List.of(updatedModificationUuid),
                 updatedLoadflowParametersUuid
         );
-        boolean updated = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
-        assertThat(updated).isTrue();
+        Optional<UUID> updatedProcessConfigId = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
+        assertThat(updatedProcessConfigId).contains(configId);
         Optional<PersistedProcessConfig> updatedConfig = configService.getProcessConfig(configId);
         assertThat(updatedConfig).isNotEmpty();
         assertThat(updatedConfig.get().processConfig()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
 
-        boolean deleted = configService.deleteProcessConfig(configId);
-        assertThat(deleted).isTrue();
+        Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId);
+        assertThat(deletedProcessConfigId).contains(configId);
+
         Optional<PersistedProcessConfig> deletedConfig = configService.getProcessConfig(configId);
         assertThat(deletedConfig).isEmpty();
     }
@@ -319,15 +321,15 @@ class MonitorIntegrationTest {
         assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
-        boolean deleted = configService.deleteProcessConfig(configId1);
-        assertThat(deleted).isTrue();
+        Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId1);
+        assertThat(deletedProcessConfigId).contains(configId1);
 
         List<PersistedProcessConfig> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(remainingConfigs).hasSize(1);
         assertThat(remainingConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
-        boolean deletedSecond = configService.deleteProcessConfig(configId2);
-        assertThat(deletedSecond).isTrue();
+        deletedProcessConfigId = configService.deleteProcessConfig(configId2);
+        assertThat(deletedProcessConfigId).contains(configId2);
 
         List<PersistedProcessConfig> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(noConfigs).isEmpty();

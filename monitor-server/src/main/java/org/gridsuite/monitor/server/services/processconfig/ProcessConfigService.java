@@ -111,8 +111,8 @@ public class ProcessConfigService {
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
         return processConfigRepository.findAllByProcessType(processType).stream()
-                .map(this::toPersistedProcessConfig)
-                .toList();
+            .map(this::toPersistedProcessConfig)
+            .toList();
     }
 
     private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {

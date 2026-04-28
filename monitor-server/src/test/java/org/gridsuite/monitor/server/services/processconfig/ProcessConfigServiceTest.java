@@ -63,13 +63,13 @@ class ProcessConfigServiceTest {
     @BeforeEach
     void setUp() {
         securityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
-                List.of(UUID.randomUUID()),
-                UUID.randomUUID()
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID()),
+            UUID.randomUUID()
         );
         loadFlowConfig = new LoadFlowConfig(
-                UUID.randomUUID(),
-                List.of(UUID.randomUUID())
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID())
         );
     }
 
@@ -149,9 +149,9 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig);
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
-                List.of(UUID.randomUUID()),
-                UUID.randomUUID()
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID()),
+            UUID.randomUUID()
         );
 
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.of(securityAnalysisConfigEntity));
@@ -173,9 +173,9 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigId)).thenReturn(Optional.empty());
 
         SecurityAnalysisConfig newSecurityAnalysisConfig = new SecurityAnalysisConfig(
-                UUID.randomUUID(),
-                List.of(UUID.randomUUID()),
-                UUID.randomUUID()
+            UUID.randomUUID(),
+            List.of(UUID.randomUUID()),
+            UUID.randomUUID()
         );
         Optional<UUID> updatedProcessConfigId = processConfigService.updateProcessConfig(processConfigId, newSecurityAnalysisConfig);
         assertThat(updatedProcessConfigId).isEmpty();
@@ -259,7 +259,7 @@ class ProcessConfigServiceTest {
         SecurityAnalysisConfigEntity securityAnalysisConfigEntity2 = securityAnalysisConfigMapper.toEntity(securityAnalysisConfig2);
 
         when(processConfigRepository.findAllByProcessType(ProcessType.SECURITY_ANALYSIS))
-                .thenReturn(List.of(securityAnalysisConfigEntity1, securityAnalysisConfigEntity2));
+            .thenReturn(List.of(securityAnalysisConfigEntity1, securityAnalysisConfigEntity2));
 
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
 

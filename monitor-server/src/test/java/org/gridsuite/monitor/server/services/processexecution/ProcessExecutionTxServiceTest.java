@@ -84,7 +84,7 @@ class ProcessExecutionTxServiceTest {
     }
 
     @Test
-    void executeProcessCreateExecutionAndSendNotification() {
+    void executeProcessCreateExecution() {
         String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));

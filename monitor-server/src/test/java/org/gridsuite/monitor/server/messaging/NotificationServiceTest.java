@@ -39,6 +39,7 @@ class NotificationServiceTest {
     private UUID caseUuid;
     private UUID parametersUuid;
     private UUID executionId;
+    private UUID reportId;
     private UUID loadflowParametersUuid;
 
     @BeforeEach
@@ -46,6 +47,7 @@ class NotificationServiceTest {
         caseUuid = UUID.randomUUID();
         parametersUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
+        reportId = UUID.randomUUID();
         loadflowParametersUuid = UUID.randomUUID();
 
         securityAnalysisConfig = new SecurityAnalysisConfig(
@@ -58,13 +60,14 @@ class NotificationServiceTest {
     @Test
     void sendProcessRunMessage() {
         String debugFileLocation = "debug/file/location";
-        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, debugFileLocation);
+        notificationService.sendProcessRunMessage(caseUuid, securityAnalysisConfig, executionId, reportId, debugFileLocation);
 
         verify(publisher).send(
                 eq("publishRunSecurityAnalysis-out-0"),
                 argThat((ProcessRunMessage<?> message) ->
                         message.executionId().equals(executionId) &&
                         message.caseUuid().equals(caseUuid) &&
+                        message.reportId().equals(reportId) &&
                         message.config().equals(securityAnalysisConfig) &&
                         message.debugFileLocation().equals(debugFileLocation))
         );

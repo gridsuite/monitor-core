@@ -45,7 +45,7 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
     public void execute(ProcessStepExecutionContext<SecurityAnalysisConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 
-        ReportNode reportNode = context.getReportInfos().reportNode();
+        ReportNode reportNode = context.getReportNode();
 
         try {
             SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(

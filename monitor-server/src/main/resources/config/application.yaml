@@ -6,6 +6,8 @@ spring:
       bindings:
         publishRunSecurityAnalysis-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
+        publishRunLoadFlow-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run
         publishMonitorUpdateFront-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update.front
         consumeMonitorUpdate-in-0:

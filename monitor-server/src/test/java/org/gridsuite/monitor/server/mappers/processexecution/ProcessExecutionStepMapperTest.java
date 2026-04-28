@@ -33,7 +33,6 @@ class ProcessExecutionStepMapperTest {
                 StepStatus.RUNNING,
                 UUID.randomUUID(),
                 ResultType.SECURITY_ANALYSIS,
-                UUID.randomUUID(),
                 Instant.now(),
                 Instant.now().plusSeconds(10)
         );
@@ -46,7 +45,6 @@ class ProcessExecutionStepMapperTest {
                 StepStatus.COMPLETED,
                 UUID.randomUUID(),
                 ResultType.SECURITY_ANALYSIS,
-                UUID.randomUUID(),
                 Instant.now().plusSeconds(20),
                 Instant.now().plusSeconds(30)
         );

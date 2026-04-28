@@ -8,6 +8,7 @@ package org.gridsuite.monitor.commons.types.messaging;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -22,9 +23,11 @@ public record ProcessRunMessage<T extends ProcessConfig>(
     UUID caseUuid,
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "processType")
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS")
+        @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
+        @JsonSubTypes.Type(value = LoadFlowConfig.class, name = "LOADFLOW")
     })
     T config,
+    UUID reportId,
     String debugFileLocation
 ) {
     public ProcessType processType() {

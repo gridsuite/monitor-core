@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,11 +7,14 @@
 package org.gridsuite.monitor.worker.server.clients;
 
 import com.powsybl.commons.PowsyblException;
+import com.powsybl.loadflow.LoadFlowResult;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -40,5 +43,15 @@ public class LoadFlowRestClient {
             .uri("/parameters/{loadFlowParametersUuid}", loadFlowParametersUuid)
             .retrieve()
             .body(LoadFlowParametersInfos.class);
+    }
+
+    public UUID saveResult(LoadFlowResult result) {
+        Objects.requireNonNull(result);
+        return restClient.post()
+            .uri("/results")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(result)
+            .retrieve()
+            .body(UUID.class);
     }
 }

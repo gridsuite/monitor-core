@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
@@ -47,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(MonitorController.class)
+@WebMvcTest(controllers = { MonitorController.class, PropertyServerNameProvider.class })
 class MonitorControllerTest {
 
     @Autowired
@@ -122,38 +123,31 @@ class MonitorControllerTest {
     }
 
     @Test
-    void getExecutionReportsShouldReturnListOfReports() throws Exception {
+    void getExecutionReportsShouldReturnReports() throws Exception {
         UUID executionId = UUID.randomUUID();
-        List<ReportLog> reportLogs1 = List.of(
-            new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
-            new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID()));
-        ReportPage reportPage1 = new ReportPage(1, reportLogs1, 100, 10);
-        List<ReportLog> reportLogs2 = List.of(new ReportLog("message3", Severity.ERROR, 3, UUID.randomUUID()));
-        ReportPage reportPage2 = new ReportPage(2, reportLogs2, 200, 20);
+        ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
+        ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
+        ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
+        ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
         when(processExecutionService.getReports(executionId))
-                .thenReturn(Optional.of(List.of(reportPage1, reportPage2)));
+                .thenReturn(Optional.of(reportPage));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].number").value(1))
-                .andExpect(jsonPath("$[0].content", hasSize(2)))
-                .andExpect(jsonPath("$[0].content[0].message").value("message1"))
-                .andExpect(jsonPath("$[0].content[0].severity").value(Severity.INFO.toString()))
-                .andExpect(jsonPath("$[0].content[0].depth").value(1))
-                .andExpect(jsonPath("$[0].content[1].message").value("message2"))
-                .andExpect(jsonPath("$[0].content[1].severity").value(Severity.WARN.toString()))
-                .andExpect(jsonPath("$[0].content[1].depth").value(2))
-                .andExpect(jsonPath("$[0].totalElements").value(100))
-                .andExpect(jsonPath("$[0].totalPages").value(10))
-                .andExpect(jsonPath("$[1].number").value(2))
-                .andExpect(jsonPath("$[1].content", hasSize(1)))
-                .andExpect(jsonPath("$[1].content[0].message").value("message3"))
-                .andExpect(jsonPath("$[1].content[0].severity").value(Severity.ERROR.toString()))
-                .andExpect(jsonPath("$[1].content[0].depth").value(3))
-                .andExpect(jsonPath("$[1].totalElements").value(200))
-                .andExpect(jsonPath("$[1].totalPages").value(20));
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("number").value(1))
+            .andExpect(jsonPath("content", hasSize(3)))
+            .andExpect(jsonPath("content[0].message").value("message1"))
+            .andExpect(jsonPath("content[0].severity").value(Severity.INFO.toString()))
+            .andExpect(jsonPath("content[0].depth").value(1))
+            .andExpect(jsonPath("content[1].message").value("message2"))
+            .andExpect(jsonPath("content[1].severity").value(Severity.WARN.toString()))
+            .andExpect(jsonPath("content[1].depth").value(2))
+            .andExpect(jsonPath("content[2].message").value("message3"))
+            .andExpect(jsonPath("content[2].severity").value(Severity.ERROR.toString()))
+            .andExpect(jsonPath("content[2].depth").value(1))
+            .andExpect(jsonPath("totalElements").value(100))
+            .andExpect(jsonPath("totalPages").value(10));
 
         verify(processExecutionService).getReports(executionId);
     }
@@ -202,9 +196,9 @@ class MonitorControllerTest {
 
     @Test
     void getLaunchedProcesses() throws Exception {
-        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), "user1");
-        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, "user2");
-        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, "user3");
+        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), UUID.randomUUID(), "user1");
+        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, UUID.randomUUID(), "user2");
+        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, UUID.randomUUID(), "user3");
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 
@@ -222,9 +216,9 @@ class MonitorControllerTest {
     @Test
     void getStepsInfos() throws Exception {
         UUID executionId = UUID.randomUUID();
-        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, UUID.randomUUID(), Instant.now(), null);
-        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(UUID.randomUUID(), "applyModifs", 1, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
-        ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, UUID.randomUUID(), null, null);
+        ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(UUID.randomUUID(), "loadNetwork", 0, StepStatus.RUNNING, null, null, Instant.now(), null);
+        ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(UUID.randomUUID(), "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null);
+        ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, null, null);
         List<ProcessExecutionStep> processExecutionStepList = List.of(processExecutionStep1, processExecutionStep2, processExecutionStep3);
 
         when(processExecutionService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));

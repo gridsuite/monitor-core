@@ -14,7 +14,6 @@ import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
@@ -57,7 +56,6 @@ class SecurityAnalysisRunComputationStepTest {
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID LOADFLOW_PARAMS_UUID = UUID.randomUUID();
-    private static final UUID REPORT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -67,11 +65,11 @@ class SecurityAnalysisRunComputationStepTest {
         when(config.securityAnalysisParametersUuid()).thenReturn(PARAMS_UUID);
         when(config.loadflowParametersUuid()).thenReturn(LOADFLOW_PARAMS_UUID);
 
-        ReportInfos reportInfos = new ReportInfos(REPORT_UUID, ReportNode.newRootReportNode()
+        ReportNode reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
                 .withMessageTemplate("test")
-                .build());
-        when(stepContext.getReportInfos()).thenReturn(reportInfos);
+                .build();
+        when(stepContext.getReportNode()).thenReturn(reportNode);
     }
 
     @Test

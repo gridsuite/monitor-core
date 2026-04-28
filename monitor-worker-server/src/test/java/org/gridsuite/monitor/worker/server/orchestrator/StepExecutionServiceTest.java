@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import com.powsybl.commons.report.ReportNode;
-import org.gridsuite.monitor.worker.server.dto.report.ReportInfos;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -62,8 +61,8 @@ class StepExecutionServiceTest {
     void executeStepShouldCompleteSuccessfullyWhenNoExceptionThrown() {
         UUID executionId = UUID.randomUUID();
         int stepOrder = 1;
-        UUID reportUuid = UUID.randomUUID();
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid, stepOrder);
+        UUID processReportId = UUID.randomUUID();
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("TEST_STEP");
         doNothing().when(processStep).execute(context);
@@ -71,7 +70,7 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(context, processStep);
 
         verify(processStep).execute(context);
-        verify(reportRestClient).sendReport(any(ReportInfos.class));
+        verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
@@ -88,9 +87,9 @@ class StepExecutionServiceTest {
     @Test
     void executeStepShouldSendFailedStatusWhenExceptionThrown() {
         UUID executionId = UUID.randomUUID();
-        UUID reportUuid = UUID.randomUUID();
+        UUID processReportId = UUID.randomUUID();
         int stepOrder = 2;
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, reportUuid, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         when(processStep.getType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("FAILING_STEP");
         RuntimeException stepException = new RuntimeException("Step execution failed");
@@ -113,7 +112,7 @@ class StepExecutionServiceTest {
                         step.getCompletedAt() != null
         ));
         // Verify report was sent on failure
-        verify(reportRestClient).sendReport(any(ReportInfos.class));
+        verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
     }
 
     @Test
@@ -128,7 +127,7 @@ class StepExecutionServiceTest {
 
         verify(processStep, never()).execute(any());
         // Verify report was NOT sent on skip
-        verify(reportRestClient, never()).sendReport(any(ReportInfos.class));
+        verify(reportRestClient, never()).sendReport(any(UUID.class), any(ReportNode.class));
         verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.SKIPPED &&
                         "SKIPPED_STEP".equals(step.getStepType()) &&
@@ -136,15 +135,14 @@ class StepExecutionServiceTest {
         ));
     }
 
-    private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID reportUuid, int stepOrder) {
-        ReportInfos reportInfos = new ReportInfos(reportUuid, reportNode);
-
+    private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID processReportId, int stepOrder) {
         ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
         when(context.getProcessExecutionId()).thenReturn(executionId);
         when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
         when(context.getStartedAt()).thenReturn(java.time.Instant.now());
-        when(context.getReportInfos()).thenReturn(reportInfos);
+        when(context.getReportNode()).thenReturn(reportNode);
         when(context.getStepOrder()).thenReturn(stepOrder);
+        when(context.getProcessReportId()).thenReturn(processReportId);
 
         return context;
     }

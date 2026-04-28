@@ -55,6 +55,9 @@ public class ProcessExecutionEntity {
     private Instant completedAt;
 
     @Column
+    private UUID reportId;
+
+    @Column
     private String userId;
 
     @Column

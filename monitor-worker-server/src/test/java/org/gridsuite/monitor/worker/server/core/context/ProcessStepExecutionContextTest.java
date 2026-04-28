@@ -44,12 +44,15 @@ class ProcessStepExecutionContextTest {
         int stepOrder = 2;
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
         UUID stepExecutionId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
         when(processContext.getExecutionId()).thenReturn(executionId);
         when(processContext.getCaseUuid()).thenReturn(caseUuid);
         when(processContext.getNetwork()).thenReturn(network);
         when(processContext.getConfig()).thenReturn(config);
+        when(processContext.getReportId()).thenReturn(reportId);
+
         when(processContext.getDebugFileLocation()).thenReturn("debug/file/location");
 
         ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepExecutionId, stepOrder);
@@ -61,9 +64,12 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getConfig()).isEqualTo(config);
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
-        assertThat(stepContext.getReportInfos()).isNotNull();
-        assertThat(stepContext.getReportInfos().reportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
+        assertThat(stepContext.getReportNode()).isNotNull();
+        assertThat(stepContext.getReportNode().getMessageKey()).isEqualTo("monitor.worker.server.step.execution");
+        assertThat(stepContext.getReportNode().getChildren()).hasSize(1);
+        assertThat(stepContext.getReportNode().getChildren().getFirst().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
+        assertThat(stepContext.getProcessReportId()).isEqualTo(reportId);
         assertThat(stepContext.getCaseUuid()).isEqualTo(caseUuid);
         assertThat(stepContext.getNetwork()).isEqualTo(network);
         assertThat(stepContext.getDebugFileLocation()).isEqualTo(processContext.getDebugFileLocation());

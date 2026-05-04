@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
@@ -53,7 +54,7 @@ public class ProcessConfigController {
     @Operation(summary = "Create process config")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was created")})
-    public ResponseEntity<UUID> createProcessConfig(@RequestBody ProcessConfig processConfig) {
+    public ResponseEntity<UUID> createProcessConfig(@Valid @RequestBody ProcessConfig processConfig) {
         return ResponseEntity.ok().body(processConfigService.createProcessConfig(processConfig));
     }
 
@@ -84,7 +85,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config was not found")})
     public ResponseEntity<Void> updateProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid,
-            @RequestBody ProcessConfig processConfig) {
+            @Valid @RequestBody ProcessConfig processConfig) {
         Optional<UUID> processConfigUpdated = processConfigService.updateProcessConfig(processConfigUuid, processConfig);
         return processConfigUpdated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }

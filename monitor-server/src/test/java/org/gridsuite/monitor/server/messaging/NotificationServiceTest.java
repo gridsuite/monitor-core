@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.messaging;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.messaging.Message;
 
 import java.util.List;
 import java.util.UUID;
@@ -70,6 +72,20 @@ class NotificationServiceTest {
                         message.reportId().equals(reportId) &&
                         message.config().equals(securityAnalysisConfig) &&
                         message.debugFileLocation().equals(debugFileLocation))
+        );
+    }
+
+    @Test
+    void sendProcessUpdatedMessage() {
+        notificationService.sendProcessUpdatedMessage(ProcessType.SECURITY_ANALYSIS, executionId);
+
+        verify(publisher).send(
+                eq("publishMonitorUpdate-out-0"),
+                argThat((Message<?> message) ->
+                        message.getPayload().equals("") &&
+                        message.getHeaders().get("updateType").equals("PROCESS_EXECUTION_UPDATED") &&
+                        message.getHeaders().get("processType").equals(ProcessType.SECURITY_ANALYSIS.name()) &&
+                        message.getHeaders().get("processExecutionId").equals(executionId))
         );
     }
 }

@@ -9,8 +9,8 @@ spring:
         consumeRun-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.${worker.process}.run
           group: process${worker.process}RunGroup
-        publishMonitorUpdate-out-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
+        publishMonitorWorkerUpdate-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
 
 worker:
   execution-env-name: "default-env"

@@ -25,7 +25,7 @@ import java.util.UUID;
 public class NotificationService implements Notificator {
 
     private final StreamBridge updatePublisher;
-    private static final String PROCESS_UPDATE_BINDING = "publishMonitorUpdate-out-0";
+    private static final String PROCESS_UPDATE_BINDING = "publishMonitorWorkerUpdate-out-0";
 
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";

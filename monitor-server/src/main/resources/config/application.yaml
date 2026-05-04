@@ -8,11 +8,11 @@ spring:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
         publishRunLoadFlow-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run
-        publishMonitorUpdateFront-out-0:
-          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update.front
-        consumeMonitorUpdate-in-0:
+        publishMonitorUpdate-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
-          group: monitorUpdateGroup
+        consumeMonitorWorkerUpdate-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
+          group: monitorWorkerUpdateGroup
 
 powsybl-ws:
   database:

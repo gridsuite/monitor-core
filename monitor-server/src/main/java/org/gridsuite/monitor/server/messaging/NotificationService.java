@@ -36,7 +36,7 @@ public class NotificationService {
     }
 
     public void sendProcessUpdatedMessage(ProcessType processType, UUID executionId) {
-        String bindingName = "publishMonitorUpdateFront-out-0";
+        String bindingName = "publishMonitorUpdate-out-0";
         Message<?> message = MessageBuilder.withPayload("")
             .setHeader("updateType", "PROCESS_EXECUTION_UPDATED")
             .setHeader("processType", processType.name())

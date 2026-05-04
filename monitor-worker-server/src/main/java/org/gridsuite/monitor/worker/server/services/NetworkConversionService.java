@@ -7,12 +7,8 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.cases.datasource.CaseDataSourceClient;
-import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
-import com.powsybl.computation.local.LocalComputationManager;
-import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.NetworkFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,14 +32,7 @@ public class NetworkConversionService {
 
     public Network createNetwork(UUID caseUuid, ReportNode reporter) {
         LOGGER.info("Creating network");
-
         CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerBaseUri, caseUuid);
-
-        Importer importer = Importer.find(dataSource, LocalComputationManager.getDefault());
-        if (importer == null) {
-            throw new PowsyblException("No importer found");
-        } else {
-            return importer.importData(dataSource, NetworkFactory.findDefault(), new Properties(), reporter);
-        }
+        return Network.read(dataSource, new Properties(), reporter);
     }
 }

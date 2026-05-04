@@ -8,6 +8,8 @@ package org.gridsuite.monitor.worker.server.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.loadflow.LoadFlowResult;
+import com.powsybl.loadflow.LoadFlowResultImpl;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +21,12 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 
+import java.util.Map;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -39,6 +42,7 @@ class LoadFlowRestClientTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final UUID PARAMETERS_UUID = UUID.randomUUID();
     private static final UUID PARAMETERS_ERROR_UUID = UUID.randomUUID();
 
@@ -74,5 +78,40 @@ class LoadFlowRestClientTest {
 
         assertThatThrownBy(() -> loadFlowRestClient.getParameters(PARAMETERS_ERROR_UUID))
             .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+    }
+
+    @Test
+    void saveResult() throws JsonProcessingException {
+        LoadFlowResult result = new LoadFlowResultImpl(true, Map.of(), "");
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+            .andExpect(MockRestRequestMatchers.requestTo("http://loadflow-server/v1/results"))
+            .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(result)))
+            .andRespond(MockRestResponseCreators.withSuccess()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(RESULT_UUID)));
+
+        UUID returnedUuid = loadFlowRestClient.saveResult(result);
+
+        assertThat(returnedUuid).isEqualTo(RESULT_UUID);
+    }
+
+    @Test
+    void saveNullResultShouldReturnNullPointerException() {
+        assertThatThrownBy(() -> loadFlowRestClient.saveResult(null))
+            .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void saveResultFailed() {
+        LoadFlowResult result = new LoadFlowResultImpl(true, Map.of(), "");
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+            .andExpect(MockRestRequestMatchers.requestTo("http://loadflow-server/v1/results"))
+            .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> loadFlowRestClient.saveResult(result))
+            .isInstanceOf(RestClientException.class);
     }
 }

@@ -17,6 +17,7 @@ import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
@@ -24,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -108,8 +111,8 @@ public class ProcessConfigService {
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
         return processConfigRepository.findAllByProcessType(processType).stream()
-                .map(this::toPersistedProcessConfig)
-                .toList();
+            .map(this::toPersistedProcessConfig)
+            .toList();
     }
 
     private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
@@ -137,7 +140,8 @@ public class ProcessConfigService {
         ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
 
         if (processConfig1.processType() != processConfig2.processType()) {
-            throw new IllegalArgumentException("Cannot compare different process config types: " + processConfig1.processType() + " vs " + processConfig2.processType());
+            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
+                Map.of("processConfigEntity1Type", processConfig1.processType(), "processConfigEntity2Type", processConfig2.processType()));
         }
 
         List<ProcessConfigFieldComparison> differences = switch (processConfig1) {

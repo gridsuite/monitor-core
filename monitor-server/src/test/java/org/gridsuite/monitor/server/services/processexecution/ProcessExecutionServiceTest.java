@@ -84,7 +84,7 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void executeProcessCreateExecutionAndSendNotification() {
+    void executeProcessCreateExecutionAndSendNotifications() {
         String debugFileLocation = "debug/file/location";
 
         doReturn(Optional.of(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig)))
@@ -99,6 +99,10 @@ class ProcessExecutionServiceTest {
             eq(result.get()),
             any(UUID.class),
             eq(debugFileLocation)
+        );
+        verify(notificationService).sendProcessUpdatedMessage(
+            ProcessType.SECURITY_ANALYSIS,
+            result.get()
         );
     }
 

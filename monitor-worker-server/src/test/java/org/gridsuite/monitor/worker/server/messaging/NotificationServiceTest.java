@@ -49,7 +49,7 @@ class NotificationServiceTest {
         notificationService.updateExecutionStatus(executionId, payload);
 
         verify(streamBridge).send(
-                eq("publishMonitorUpdate-out-0"),
+                eq("publishMonitorWorkerUpdate-out-0"),
                 argThat((Message<?> message) -> {
                     assertThat(message.getPayload()).isSameAs(payload);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE);
@@ -67,7 +67,7 @@ class NotificationServiceTest {
         notificationService.updateStepStatus(executionId, payload);
 
         verify(streamBridge).send(
-                eq("publishMonitorUpdate-out-0"),
+                eq("publishMonitorWorkerUpdate-out-0"),
                 argThat((Message<?> message) -> {
                     assertThat(message.getPayload()).isSameAs(payload);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE);
@@ -85,7 +85,7 @@ class NotificationServiceTest {
         notificationService.updateStepsStatuses(executionId, payload);
 
         verify(streamBridge).send(
-            eq("publishMonitorUpdate-out-0"),
+            eq("publishMonitorWorkerUpdate-out-0"),
             argThat((Message<?> message) -> {
                 assertThat(message.getPayload()).isSameAs(payload);
                 assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE);

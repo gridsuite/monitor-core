@@ -232,7 +232,7 @@ class MonitorIntegrationTest {
                 .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, messageType.toString())
                 .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
                 .build();
-        consumerService.consumeMonitorUpdate().accept(message);
+        consumerService.consumeMonitorWorkerUpdate().accept(message);
     }
 
     @Test

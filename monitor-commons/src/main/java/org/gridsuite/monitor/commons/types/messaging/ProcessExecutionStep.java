@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultType;
-
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -24,9 +24,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProcessExecutionStep {
+    @NotNull
     private UUID id;
+    @NotNull
     private String stepType;
+    @NotNull
     private Integer stepOrder;
+    @NotNull
     private StepStatus status;
     private UUID resultId;
     private ResultType resultType;

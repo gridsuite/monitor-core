@@ -65,7 +65,7 @@ class ActionsRestClientTest {
 
         IdBasedContingencyList idBasedContingencyList = new IdBasedContingencyList(CONTINGENCY_1_UUID, Instant.now(), null);
         FilterBasedContingencyList filterBasedContingencyList = new FilterBasedContingencyList(CONTINGENCY_2_UUID, Instant.now(),
-            List.of(new FilterAttributes(UUID.randomUUID(), EquipmentType.GENERATOR, "gen1")),
+            List.of(new FilterAttributes(UUID.randomUUID(), EquipmentType.GENERATOR)),
             List.of(new EquipmentTypesByFilter(UUID.randomUUID(), Set.of(IdentifiableType.GENERATOR))));
         List<AbstractContingencyList> abstractContingencyLists = List.of(idBasedContingencyList, filterBasedContingencyList);
         String jsonResponse = objectMapper.writeValueAsString(abstractContingencyLists);

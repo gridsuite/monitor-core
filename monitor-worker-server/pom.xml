@@ -15,6 +15,8 @@
     <properties>
         <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
         <aws-sdk.version>2.29.52</aws-sdk.version>
+        <!-- FIXME to remove at next upgrade of gridsuite-dependencies -->
+        <gridsuite-actions.version>0.7.0</gridsuite-actions.version>
     </properties>
 
     <build>
@@ -50,6 +52,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- overrides of imports -->
+            <!-- FIXME to remove at next upgrade of gridsuite-dependencies -->
+            <dependency>
+                <groupId>org.gridsuite</groupId>
+                <artifactId>gridsuite-actions</artifactId>
+                <version>${gridsuite-actions.version}</version>
+            </dependency>
+            <!-- imports -->
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Compilation dependencies -->

@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -23,7 +24,7 @@ import java.util.List;
 @Getter
 @Setter
 public class ContingencyListsInfos {
-    private List<IdNameInfos> contingencyLists;
+    private List<UUID> contingencyLists;
     private String description;
     private boolean activated;
 }

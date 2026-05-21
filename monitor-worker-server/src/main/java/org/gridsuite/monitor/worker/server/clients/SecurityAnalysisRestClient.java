@@ -48,7 +48,6 @@ public class SecurityAnalysisRestClient {
         return restClient.get()
             .uri("/parameters/{securityAnalysisParametersUuid}",
                 securityAnalysisParametersUuid)
-            .header("userId", "user1")
             .retrieve()
             .body(SecurityAnalysisParametersValues.class);
     }

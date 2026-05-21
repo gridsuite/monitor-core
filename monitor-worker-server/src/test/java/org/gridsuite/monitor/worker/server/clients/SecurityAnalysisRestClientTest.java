@@ -88,7 +88,6 @@ class SecurityAnalysisRestClientTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
                 "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID))
-            .andExpect(MockRestRequestMatchers.header("userId", "user1"))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(expectedParameters)));
@@ -103,7 +102,6 @@ class SecurityAnalysisRestClientTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
                 "http://security-analysis-server/v1/parameters/" + PARAMETERS_ERROR_UUID))
-            .andExpect(MockRestRequestMatchers.header("userId", "user1"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> securityAnalysisRestClient.getParameters(PARAMETERS_ERROR_UUID))

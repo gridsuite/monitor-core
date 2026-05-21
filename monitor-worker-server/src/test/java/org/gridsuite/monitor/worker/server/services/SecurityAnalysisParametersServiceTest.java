@@ -19,7 +19,6 @@ import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
-import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +69,7 @@ class SecurityAnalysisParametersServiceTest {
 
         UUID contingencyListId = UUID.randomUUID();
         List<ContingencyListsInfos> contingencyListsInfos = List.of(new ContingencyListsInfos(
-                List.of(new IdNameInfos(contingencyListId, "contingencyList")),
+                List.of(contingencyListId),
                 "activated contingency lists",
                 true));
         SecurityAnalysisParametersValues securityAnalysisParametersValues = SecurityAnalysisParametersValues.builder()

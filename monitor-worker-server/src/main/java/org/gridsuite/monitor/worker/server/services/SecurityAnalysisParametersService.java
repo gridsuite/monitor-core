@@ -18,7 +18,6 @@ import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.ContingencyListsInfos;
-import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.IdNameInfos;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.springframework.stereotype.Service;
@@ -56,7 +55,7 @@ public class SecurityAnalysisParametersService {
 
         List<ContingencyListsInfos> contingencyListInfos = securityAnalysisParametersValues.getContingencyListsInfos();
         List<UUID> contingenciesListUuids = contingencyListInfos != null
-            ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream().map(IdNameInfos::getId)).toList()
+            ? contingencyListInfos.stream().flatMap(contingencyListsInfos -> contingencyListsInfos.getContingencyLists().stream()).toList()
             : List.of();
 
         List<AbstractContingencyList> persistentContingencyLists = actionsRestClient.getPersistentContingencyLists(contingenciesListUuids);

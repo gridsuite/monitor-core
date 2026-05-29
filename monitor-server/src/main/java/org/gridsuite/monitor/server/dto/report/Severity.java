@@ -29,6 +29,7 @@ public enum Severity {
         return level;
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch")
     public static Severity fromValue(String value) {
         if (value == null) {
             return UNKNOWN;

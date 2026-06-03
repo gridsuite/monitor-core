@@ -90,7 +90,7 @@ public class ProcessConfigController {
         return processConfigUpdated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
-    @PostMapping(value = "/duplication", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "", params = "duplicateFrom", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Duplicate a process config")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was duplicated"),

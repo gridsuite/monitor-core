@@ -25,10 +25,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -272,7 +274,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(Optional.of(comparison));
+            .thenReturn(comparison);
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
@@ -285,12 +287,13 @@ class ProcessConfigControllerTest {
             .andExpect(jsonPath("$.identical").value(true))
             .andExpect(jsonPath("$.differences").isArray())
             .andExpect(jsonPath("$.differences.length()").value(3));
+        // TODO: remplacer les jsonPath par la récupération du MvcResult et égalité avec l'objet de référence
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }
 
     @Test
-    void compareProcessConfigsShouldReturnDifferences() throws Exception {
+    void compareProcessConfigsShouldReturnDifferences() throws Exception { // TODO: quelle différence avec le test d'avant ?
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
         List<UUID> modificationUuids1 = List.of(UUID.randomUUID());
@@ -306,7 +309,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(Optional.of(comparison));
+            .thenReturn(comparison);
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
@@ -316,6 +319,7 @@ class ProcessConfigControllerTest {
             .andExpect(jsonPath("$.identical").value(false))
             .andExpect(jsonPath("$.differences[0].field").value("modifications"))
             .andExpect(jsonPath("$.differences[0].identical").value(false));
+        // TODO: remplacer les jsonPath par la récupération du MvcResult et égalité avec l'objet de référence
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }
@@ -326,7 +330,8 @@ class ProcessConfigControllerTest {
         UUID uuid2 = UUID.randomUUID();
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(Optional.empty());
+            .thenThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found",
+                Map.of("processConfigUuid", uuid1)));
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())

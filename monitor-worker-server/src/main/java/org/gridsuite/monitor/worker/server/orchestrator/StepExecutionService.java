@@ -7,8 +7,8 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import lombok.RequiredArgsConstructor;
-import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
@@ -16,7 +16,6 @@ import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 
 /**

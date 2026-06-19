@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -37,7 +36,9 @@ public class ProcessConfigService {
                                 List<ProcessConfigHandler<?, ?>> listHandlers) {
         this.processConfigRepository = processConfigRepository;
         this.processConfigHandlers = listHandlers.stream().collect(Collectors.toMap(
-            ProcessConfigHandler::getProcessType, Function.identity()
+            ProcessConfigHandler::getProcessType, Function.identity(), (h1, h2) -> {
+                throw new IllegalStateException(String.format("Duplicate process config handlers for process type: %s", h1.getProcessType()));
+            }
         ));
     }
 
@@ -59,7 +60,7 @@ public class ProcessConfigService {
     @Transactional(readOnly = true)
     public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
         return processConfigRepository.findById(processConfigUuid)
-            .map(this::toPersistedProcessConfig); // TODO: renvoyer l'erreur not found ici au lieu de se trimbaler un Optional ?
+            .map(this::toPersistedProcessConfig);
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +86,7 @@ public class ProcessConfigService {
                 }
                 getHandler(processConfig.processType()).update(entity, processConfig);
                 return processConfigUuid;
-            }); // TODO: renvoyer l'erreur not found ici au lieu de se trimbaler un Optional ?
+            });
     }
 
     @Transactional
@@ -94,7 +95,7 @@ public class ProcessConfigService {
             .map(sourceEntity -> {
                 ProcessConfigEntity entity = getHandler(sourceEntity.getProcessType()).copyEntity(sourceEntity);
                 return processConfigRepository.save(entity).getId();
-            }); // TODO: renvoyer l'erreur not found ici au lieu de se trimbaler un Optional ?
+            });
     }
 
     @Transactional
@@ -104,7 +105,7 @@ public class ProcessConfigService {
             return Optional.of(processConfigUuid);
         } else {
             return Optional.empty();
-        } // TODO: renvoyer l'erreur not found ici au lieu de se trimbaler un Optional ?
+        }
     }
 
     private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
@@ -113,22 +114,22 @@ public class ProcessConfigService {
     }
 
     @Transactional(readOnly = true)
-    public ProcessConfigComparison compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        ProcessConfigEntity entity1 = processConfigRepository.findById(uuid1)
-            .orElseThrow(() -> new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found",
-                Map.of("processConfigUuid", uuid1)));
-        ProcessConfigEntity entity2 = processConfigRepository.findById(uuid2)
-            .orElseThrow(() -> new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found",
-                Map.of("processConfigUuid", uuid2)));
+    public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
+        Optional<ProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
+        Optional<ProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
 
-        if (entity1.getProcessType() != entity2.getProcessType()) {
-            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
-                Map.of("processConfigEntity1Type", entity1.getProcessType(), "processConfigEntity2Type", entity2.getProcessType()));
+        if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
+            return Optional.empty();
         }
 
-        List<ProcessConfigFieldComparison> differences = getHandler(entity1.getProcessType()).computeDifferences(entity1, entity2);
+        if (processConfigEntity1.get().getProcessType() != processConfigEntity2.get().getProcessType()) {
+            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
+                Map.of("processConfigEntity1Type", processConfigEntity1.get().getProcessType(), "processConfigEntity2Type", processConfigEntity2.get().getProcessType()));
+        }
+
+        List<ProcessConfigFieldComparison> differences = getHandler(processConfigEntity1.get().getProcessType()).computeDifferences(processConfigEntity1.get(), processConfigEntity2.get());
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
 
-        return new ProcessConfigComparison(uuid1, uuid2, identical, differences);
+        return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
     }
 }

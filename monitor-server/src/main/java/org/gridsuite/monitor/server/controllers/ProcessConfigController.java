@@ -18,6 +18,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -133,7 +134,7 @@ public class ProcessConfigController {
         @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
         @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {
 
-        ProcessConfigComparison comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
-        return ResponseEntity.ok().body(comparison);
+        Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
+        return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 }

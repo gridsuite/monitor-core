@@ -25,12 +25,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -274,7 +272,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(comparison);
+            .thenReturn(Optional.of(comparison));
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
@@ -309,7 +307,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(comparison);
+            .thenReturn(Optional.of(comparison));
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
@@ -330,8 +328,7 @@ class ProcessConfigControllerTest {
         UUID uuid2 = UUID.randomUUID();
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found",
-                Map.of("processConfigUuid", uuid1)));
+            .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())

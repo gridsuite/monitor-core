@@ -20,7 +20,7 @@ public interface ProcessConfigHandler<C extends ProcessConfig, E extends Process
 
     ProcessType getProcessType();
 
-    void update(E entity, C processConfig);
+    void update(C processConfig, E entity);
 
     E copyEntity(E sourceEntity);
 

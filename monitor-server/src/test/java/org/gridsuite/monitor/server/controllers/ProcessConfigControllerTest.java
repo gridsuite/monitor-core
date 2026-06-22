@@ -285,13 +285,12 @@ class ProcessConfigControllerTest {
             .andExpect(jsonPath("$.identical").value(true))
             .andExpect(jsonPath("$.differences").isArray())
             .andExpect(jsonPath("$.differences.length()").value(3));
-        // TODO: remplacer les jsonPath par la récupération du MvcResult et égalité avec l'objet de référence
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }
 
     @Test
-    void compareProcessConfigsShouldReturnDifferences() throws Exception { // TODO: quelle différence avec le test d'avant ?
+    void compareProcessConfigsShouldReturnDifferences() throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
         List<UUID> modificationUuids1 = List.of(UUID.randomUUID());
@@ -317,7 +316,6 @@ class ProcessConfigControllerTest {
             .andExpect(jsonPath("$.identical").value(false))
             .andExpect(jsonPath("$.differences[0].field").value("modifications"))
             .andExpect(jsonPath("$.differences[0].identical").value(false));
-        // TODO: remplacer les jsonPath par la récupération du MvcResult et égalité avec l'objet de référence
 
         verify(processConfigService).compareProcessConfigs(uuid1, uuid2);
     }

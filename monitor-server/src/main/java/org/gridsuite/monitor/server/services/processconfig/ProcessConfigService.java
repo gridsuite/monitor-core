@@ -84,7 +84,7 @@ public class ProcessConfigService {
                 if (entity.getProcessType() != processConfig.processType()) {
                     throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
-                getHandler(processConfig.processType()).update(entity, processConfig);
+                getHandler(processConfig.processType()).update(processConfig, entity);
                 return processConfigUuid;
             });
     }

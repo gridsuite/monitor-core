@@ -13,7 +13,9 @@ import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfi
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -31,11 +33,36 @@ public class SecurityAnalysisConfigHandler extends AbstractProcessConfigHandler<
     }
 
     @Override
-    protected void addProcessConfigSpecificFieldsComparison(SecurityAnalysisConfig config1, SecurityAnalysisConfig config2, List<ProcessConfigFieldComparison> differences) {
+    public List<ProcessConfigFieldComparison> computeDifferences(SecurityAnalysisConfigEntity entity1, SecurityAnalysisConfigEntity entity2) {
+        // error si pas bon processType
+        SecurityAnalysisConfig config1 = toProcessConfig(entity1);
+        SecurityAnalysisConfig config2 = toProcessConfig(entity2);
+        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
+
+        // Compare modifications
+        differences.add(new ProcessConfigFieldComparison(
+            "modifications",
+            Objects.equals(config1.modificationUuids(), config2.modificationUuids()),
+            config1.modificationUuids(),
+            config2.modificationUuids()
+        ));
+
         // Compare loadflow parameters
-        addFieldComparison(config1.loadflowParametersUuid(), config2.loadflowParametersUuid(), differences, "loadflowParameters");
+        differences.add(new ProcessConfigFieldComparison(
+            "loadflowParameters",
+            Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid()),
+            config1.loadflowParametersUuid(),
+            config2.loadflowParametersUuid()
+        ));
 
         // Compare security analysis parameters
-        addFieldComparison(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid(), differences, "securityAnalysisParameters");
+        differences.add(new ProcessConfigFieldComparison(
+            "securityAnalysisParameters",
+            Objects.equals(config1.securityAnalysisParametersUuid(), config2.securityAnalysisParametersUuid()),
+            config1.securityAnalysisParametersUuid(),
+            config2.securityAnalysisParametersUuid()
+        ));
+
+        return differences;
     }
 }

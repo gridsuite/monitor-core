@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.error;
+package org.gridsuite.monitor.commons.error;
 
 import com.powsybl.ws.commons.error.AbstractBusinessExceptionHandler;
 import com.powsybl.ws.commons.error.PowsyblWsProblemDetail;
@@ -20,28 +20,28 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @ControllerAdvice
-public class MonitorServerExceptionHandler extends AbstractBusinessExceptionHandler<MonitorServerException, MonitorServerBusinessErrorCode> {
+public class MonitorExceptionHandler extends AbstractBusinessExceptionHandler<MonitorException, MonitorBusinessErrorCode> {
 
-    public MonitorServerExceptionHandler(ServerNameProvider serverNameProvider) {
+    public MonitorExceptionHandler(ServerNameProvider serverNameProvider) {
         super(serverNameProvider);
     }
 
     @NonNull
     @Override
-    protected MonitorServerBusinessErrorCode getBusinessCode(MonitorServerException ex) {
+    protected MonitorBusinessErrorCode getBusinessCode(MonitorException ex) {
         return ex.getBusinessErrorCode();
     }
 
     @Override
-    protected HttpStatus mapStatus(MonitorServerBusinessErrorCode errorCode) {
+    protected HttpStatus mapStatus(MonitorBusinessErrorCode errorCode) {
         return switch (errorCode) {
-            case PROCESS_CONFIG_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case DIFFERENT_PROCESS_CONFIG_TYPE -> HttpStatus.BAD_REQUEST;
         };
     }
 
-    @ExceptionHandler(MonitorServerException.class)
+    @ExceptionHandler(MonitorException.class)
     protected ResponseEntity<PowsyblWsProblemDetail> handleMonitorServerException(
-        MonitorServerException exception, HttpServletRequest request) {
+        MonitorException exception, HttpServletRequest request) {
         return super.handleDomainException(exception, request);
     }
 }

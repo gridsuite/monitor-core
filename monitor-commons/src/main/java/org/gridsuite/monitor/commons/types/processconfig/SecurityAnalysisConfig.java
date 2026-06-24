@@ -7,10 +7,15 @@
 package org.gridsuite.monitor.commons.types.processconfig;
 
 import jakarta.validation.constraints.NotNull;
+import org.gridsuite.monitor.commons.error.MonitorException;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+
+import static org.gridsuite.monitor.commons.error.MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -26,5 +31,24 @@ public record SecurityAnalysisConfig(
     @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;
+    }
+
+    @Override
+    public List<ProcessConfigFieldComparison> compareWith(ProcessConfig other) {
+        if (!(other instanceof SecurityAnalysisConfig o)) {
+            throw new MonitorException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
+                Map.of("processConfigEntity1Type", this.processType(), "processConfigEntity2Type", other.processType()));
+        }
+        return List.of(
+            new ProcessConfigFieldComparison("modifications",
+                Objects.equals(this.modificationUuids, o.modificationUuids),
+                this.modificationUuids, o.modificationUuids),
+            new ProcessConfigFieldComparison("securityAnalysisParameters",
+                Objects.equals(this.securityAnalysisParametersUuid, o.securityAnalysisParametersUuid),
+                this.securityAnalysisParametersUuid, o.securityAnalysisParametersUuid),
+            new ProcessConfigFieldComparison("loadflowParameters",
+                Objects.equals(this.loadflowParametersUuid, o.loadflowParametersUuid),
+                this.loadflowParametersUuid, o.loadflowParametersUuid)
+        );
     }
 }

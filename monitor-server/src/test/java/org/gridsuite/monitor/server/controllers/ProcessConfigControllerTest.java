@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.error.MonitorExceptionHandler;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
@@ -14,12 +15,13 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
-import org.gridsuite.monitor.server.error.MonitorServerException;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.commons.error.MonitorException;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,7 +30,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.commons.error.MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @WebMvcTest(controllers = { ProcessConfigController.class, PropertyServerNameProvider.class })
+@Import(MonitorExceptionHandler.class)
 class ProcessConfigControllerTest {
 
     @Autowired
@@ -343,7 +346,7 @@ class ProcessConfigControllerTest {
         UUID uuid2 = UUID.randomUUID();
 
         when(processConfigService.compareProcessConfigs(any(), any()))
-            .thenThrow(new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types"));
+            .thenThrow(new MonitorException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types"));
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())

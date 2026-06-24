@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.error;
+package org.gridsuite.monitor.commons.error;
 
 import com.powsybl.ws.commons.error.PowsyblWsProblemDetail;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,22 +19,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-class MonitorServerExceptionHandlerTest {
-    private MonitorServerExceptionHandler handler;
+class MonitorExceptionHandlerTest {
+    private MonitorExceptionHandler handler;
 
     @BeforeEach
     void setUp() {
-        handler = new MonitorServerExceptionHandler(() -> "monitor-server");
+        handler = new MonitorExceptionHandler(() -> "monitor-server");
     }
 
     @Test
     void mapsBadRequestBusinessErrorToStatus() {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/results-endpoint/uuid");
-        MonitorServerException exception = new MonitorServerException(MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND, "Process config not found");
+        MonitorException exception = new MonitorException(MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types");
         ResponseEntity<PowsyblWsProblemDetail> response = handler.handleMonitorServerException(exception, request);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
-        assertEquals("monitor.server.processConfigNotFound", response.getBody().getBusinessErrorCode());
+        assertEquals("monitor.differentProcessConfigType", response.getBody().getBusinessErrorCode());
     }
 }

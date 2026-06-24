@@ -6,16 +6,18 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
-import org.gridsuite.monitor.server.error.MonitorServerException;
+import org.gridsuite.monitor.commons.error.MonitorException;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.commons.error.MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -264,7 +266,8 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.computeDifferences(processConfigEntity, processConfigEntity)).thenReturn(List.of(fieldComparison));
+        when(handler.toProcessConfig(processConfigEntity)).thenReturn(processConfig);
+        when(processConfig.compareWith(processConfig)).thenReturn(List.of(fieldComparison));
 
         Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
 
@@ -273,7 +276,8 @@ class ProcessConfigServiceTest {
             .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, true, List.of(fieldComparison)));
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).computeDifferences(processConfigEntity, processConfigEntity);
+        verify(handler, times(2)).toProcessConfig(processConfigEntity);
+        verify(processConfig).compareWith(processConfig);
     }
 
     @Test
@@ -282,13 +286,17 @@ class ProcessConfigServiceTest {
         UUID processConfigUuid2 = UUID.randomUUID();
         ProcessConfigEntity processConfigEntity1 = Mockito.mock(ProcessConfigEntity.class);
         ProcessConfigEntity processConfigEntity2 = Mockito.mock(ProcessConfigEntity.class);
+        ProcessConfig processConfig1 = Mockito.mock(ProcessConfig.class);
+        ProcessConfig processConfig2 = Mockito.mock(ProcessConfig.class);
         ProcessConfigFieldComparison fieldComparison = new ProcessConfigFieldComparison("field", false, "value1", "value2");
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
         when(processConfigEntity1.getProcessType()).thenReturn(PROCESS_TYPE);
         when(processConfigEntity2.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.computeDifferences(processConfigEntity1, processConfigEntity2)).thenReturn(List.of(fieldComparison));
+        when(handler.toProcessConfig(processConfigEntity1)).thenReturn(processConfig1);
+        when(handler.toProcessConfig(processConfigEntity2)).thenReturn(processConfig2);
+        when(processConfig1.compareWith(processConfig2)).thenReturn(List.of(fieldComparison));
 
         Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
 
@@ -297,7 +305,9 @@ class ProcessConfigServiceTest {
             .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, false, List.of(fieldComparison)));
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).computeDifferences(processConfigEntity1, processConfigEntity2);
+        verify(handler).toProcessConfig(processConfigEntity1);
+        verify(handler).toProcessConfig(processConfigEntity2);
+        verify(processConfig1).compareWith(processConfig2);
     }
 
     @Test
@@ -312,7 +322,7 @@ class ProcessConfigServiceTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid1);
-        verify(handler, never()).computeDifferences(any(), any());
+        verify(handler, never()).toProcessConfig(any());
     }
 
     @Test
@@ -331,32 +341,45 @@ class ProcessConfigServiceTest {
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).computeDifferences(any(), any());
+        verify(handler, never()).toProcessConfig(any());
     }
 
     @Test
     void compareProcessConfigsShouldThrowWhenProcessTypesAreDifferent() {
         UUID processConfigUuid1 = UUID.randomUUID();
         UUID processConfigUuid2 = UUID.randomUUID();
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(ProcessConfigEntity.class);
-        ProcessConfigEntity processConfigEntity2 = Mockito.mock(ProcessConfigEntity.class);
+        ProcessConfigEntity processConfigEntity1 = Mockito.mock(SecurityAnalysisConfigEntity.class);
+        ProcessConfigEntity processConfigEntity2 = Mockito.mock(LoadFlowConfigEntity.class);
+        ProcessConfig processConfig1 = Mockito.mock(SecurityAnalysisConfig.class);
+        ProcessConfig processConfig2 = Mockito.mock(LoadFlowConfig.class);
+        ProcessConfigHandler<ProcessConfig, ProcessConfigEntity> handler2 = Mockito.mock(ProcessConfigHandler.class);
+
+        when(handler2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
+
+        processConfigService = new ProcessConfigService(
+            processConfigRepository,
+            List.of(handler, handler2)
+        );
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
-        when(processConfigEntity1.getProcessType()).thenReturn(ProcessType.LOADFLOW);
-        when(processConfigEntity2.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(processConfigEntity1.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(handler.toProcessConfig(processConfigEntity1)).thenReturn(processConfig1);
+        when(processConfigEntity2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
+        when(handler2.toProcessConfig(processConfigEntity2)).thenReturn(processConfig2);
+        when(processConfig1.compareWith(processConfig2))
+            .thenThrow(new MonitorException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types"));
 
         assertThatThrownBy(() -> processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2))
-            .isInstanceOf(MonitorServerException.class)
+            .isInstanceOf(MonitorException.class)
             .satisfies(ex -> {
-                MonitorServerException e = (MonitorServerException) ex;
+                MonitorException e = (MonitorException) ex;
                 assertThat(e.getErrorCode()).isEqualTo(DIFFERENT_PROCESS_CONFIG_TYPE);
-                assertThat(e.getBusinessErrorValues())
-                    .containsEntry("processConfigEntity1Type", ProcessType.LOADFLOW)
-                    .containsEntry("processConfigEntity2Type", ProcessType.SECURITY_ANALYSIS);
             });
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).computeDifferences(any(), any());
+        verify(handler).toProcessConfig(processConfigEntity1);
+        verify(handler2).toProcessConfig(processConfigEntity2);
+        verify(processConfig1).compareWith(processConfig2);
     }
 }

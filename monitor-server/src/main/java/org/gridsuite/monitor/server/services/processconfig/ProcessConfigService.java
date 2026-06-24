@@ -10,10 +10,9 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
-import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -122,12 +119,10 @@ public class ProcessConfigService {
             return Optional.empty();
         }
 
-        if (processConfigEntity1.get().getProcessType() != processConfigEntity2.get().getProcessType()) {
-            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
-                Map.of("processConfigEntity1Type", processConfigEntity1.get().getProcessType(), "processConfigEntity2Type", processConfigEntity2.get().getProcessType()));
-        }
+        ProcessConfig processConfig1 = getHandler(processConfigEntity1.get().getProcessType()).toProcessConfig(processConfigEntity1.get());
+        ProcessConfig processConfig2 = getHandler(processConfigEntity2.get().getProcessType()).toProcessConfig(processConfigEntity2.get());
 
-        List<ProcessConfigFieldComparison> differences = getHandler(processConfigEntity1.get().getProcessType()).computeDifferences(processConfigEntity1.get(), processConfigEntity2.get());
+        List<ProcessConfigFieldComparison> differences = processConfig1.compareWith(processConfig2);
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
 
         return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));

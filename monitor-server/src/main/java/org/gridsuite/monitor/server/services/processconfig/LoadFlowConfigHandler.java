@@ -8,14 +8,9 @@ package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -30,30 +25,5 @@ public class LoadFlowConfigHandler extends AbstractProcessConfigHandler<LoadFlow
     @Override
     public ProcessType getProcessType() {
         return ProcessType.LOADFLOW;
-    }
-
-    @Override
-    public List<ProcessConfigFieldComparison> computeDifferences(LoadFlowConfigEntity entity1, LoadFlowConfigEntity entity2) {
-        LoadFlowConfig config1 = toProcessConfig(entity1);
-        LoadFlowConfig config2 = toProcessConfig(entity2);
-        List<ProcessConfigFieldComparison> differences = new ArrayList<>();
-
-        // Compare modifications
-        differences.add(new ProcessConfigFieldComparison(
-            "modifications",
-            Objects.equals(config1.modificationUuids(), config2.modificationUuids()),
-            config1.modificationUuids(),
-            config2.modificationUuids()
-        ));
-
-        // Compare loadflow parameters
-        differences.add(new ProcessConfigFieldComparison(
-            "loadflowParameters",
-            Objects.equals(config1.loadflowParametersUuid(), config2.loadflowParametersUuid()),
-            config1.loadflowParametersUuid(),
-            config2.loadflowParametersUuid()
-        ));
-
-        return differences;
     }
 }

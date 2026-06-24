@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.dto.processconfig;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 
 import java.util.List;
 import java.util.UUID;

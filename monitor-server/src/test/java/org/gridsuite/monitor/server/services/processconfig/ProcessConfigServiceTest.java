@@ -17,7 +17,6 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldCompa
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
-import org.gridsuite.monitor.commons.error.MonitorException;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.gridsuite.monitor.commons.error.MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -368,14 +366,10 @@ class ProcessConfigServiceTest {
         when(processConfigEntity2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
         when(handler2.toProcessConfig(processConfigEntity2)).thenReturn(processConfig2);
         when(processConfig1.compareWith(processConfig2))
-            .thenThrow(new MonitorException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types"));
+            .thenThrow(new ClassCastException());
 
         assertThatThrownBy(() -> processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2))
-            .isInstanceOf(MonitorException.class)
-            .satisfies(ex -> {
-                MonitorException e = (MonitorException) ex;
-                assertThat(e.getErrorCode()).isEqualTo(DIFFERENT_PROCESS_CONFIG_TYPE);
-            });
+            .isInstanceOf(ClassCastException.class);
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
         verify(handler).toProcessConfig(processConfigEntity1);

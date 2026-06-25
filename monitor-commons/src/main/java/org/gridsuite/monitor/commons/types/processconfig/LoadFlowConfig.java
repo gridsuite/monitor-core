@@ -7,15 +7,11 @@
 package org.gridsuite.monitor.commons.types.processconfig;
 
 import jakarta.validation.constraints.NotNull;
-import org.gridsuite.monitor.commons.error.MonitorException;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
-import static org.gridsuite.monitor.commons.error.MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -33,10 +29,7 @@ public record LoadFlowConfig(
 
     @Override
     public List<ProcessConfigFieldComparison> compareWith(ProcessConfig other) {
-        if (!(other instanceof LoadFlowConfig o)) {
-            throw new MonitorException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
-                Map.of("processConfigEntity1Type", this.processType(), "processConfigEntity2Type", other.processType()));
-        }
+        LoadFlowConfig o = (LoadFlowConfig) other;
         return List.of(
             new ProcessConfigFieldComparison("modifications",
                 Objects.equals(this.modificationUuids, o.modificationUuids),

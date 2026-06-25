@@ -6,8 +6,6 @@
  */
 package org.gridsuite.monitor.commons.types.processconfig;
 
-import org.gridsuite.monitor.commons.error.MonitorException;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,7 +13,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gridsuite.monitor.commons.error.MonitorBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -103,14 +100,6 @@ class LoadFlowConfigTest {
         LoadFlowConfig loadFlowConfig = new LoadFlowConfig(UUID.randomUUID(), List.of(UUID.randomUUID()));
         SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID());
 
-        assertThatThrownBy(() -> loadFlowConfig.compareWith(securityAnalysisConfig))
-            .isInstanceOf(MonitorException.class)
-            .satisfies(ex -> {
-                MonitorException e = (MonitorException) ex;
-                assertThat(e.getErrorCode()).isEqualTo(DIFFERENT_PROCESS_CONFIG_TYPE);
-                assertThat(e.getBusinessErrorValues())
-                    .containsEntry("processConfigEntity1Type", ProcessType.LOADFLOW)
-                    .containsEntry("processConfigEntity2Type", ProcessType.SECURITY_ANALYSIS);
-            });
+        assertThatThrownBy(() -> loadFlowConfig.compareWith(securityAnalysisConfig)).isInstanceOf(ClassCastException.class);
     }
 }

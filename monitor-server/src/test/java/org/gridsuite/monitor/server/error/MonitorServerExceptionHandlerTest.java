@@ -28,7 +28,7 @@ class MonitorServerExceptionHandlerTest {
     }
 
     @Test
-    void mapsBadRequestBusinessErrorToStatus() {
+    void mapsNotFoundBusinessErrorToStatus() {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/results-endpoint/uuid");
         MonitorServerException exception = new MonitorServerException(MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND, "Process config not found");
         ResponseEntity<PowsyblWsProblemDetail> response = handler.handleMonitorServerException(exception, request);

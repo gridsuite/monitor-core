@@ -17,6 +17,7 @@ import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionStepMapper;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
@@ -35,7 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DEBUG_INFOS_NOT_FOUND;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_EXECUTION_NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -85,11 +88,11 @@ class ProcessExecutionTxServiceTest {
     void executeProcessCreateExecution() {
         String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
-        when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
+        when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig));
 
-        Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true);
+        ProcessCreationResult result = processExecutionTxService.createExecution(caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true);
 
-        assertThat(result).isNotEmpty();
+        assertThat(result).isNotNull();
         verify(processConfigService).getProcessConfig(any(UUID.class));
         verify(executionRepository).save(argThat(execution ->
                         execution.getId() != null &&
@@ -343,8 +346,8 @@ class ProcessExecutionTxServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        Optional<UUID> result = processExecutionTxService.getReportId(executionId);
-        assertThat(result).contains(reportId);
+        UUID result = processExecutionTxService.getReportId(executionId);
+        assertThat(result).isEqualTo(reportId);
 
         verify(executionRepository).findById(executionId);
     }
@@ -354,9 +357,9 @@ class ProcessExecutionTxServiceTest {
         UUID executionUuid = UUID.randomUUID();
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
 
-        Optional<UUID> reports = processExecutionTxService.getReportId(executionUuid);
-
-        assertThat(reports).isNotPresent();
+        assertThatThrownBy(() -> processExecutionTxService.getReportId(executionUuid))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
         verify(executionRepository).findById(executionUuid);
     }
 
@@ -383,10 +386,9 @@ class ProcessExecutionTxServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        Optional<List<ResultInfos>> results = processExecutionTxService.getResultInfos(executionId);
+        List<ResultInfos> results = processExecutionTxService.getResultInfos(executionId);
 
-        assertThat(results).isPresent();
-        assertThat(results.get()).usingRecursiveComparison().isEqualTo(List.of(
+        assertThat(results).usingRecursiveComparison().isEqualTo(List.of(
                 new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS),
                 new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)
         ));
@@ -398,9 +400,9 @@ class ProcessExecutionTxServiceTest {
         UUID executionUuid = UUID.randomUUID();
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
 
-        Optional<List<ResultInfos>> results = processExecutionTxService.getResultInfos(executionUuid);
-
-        assertThat(results).isEmpty();
+        assertThatThrownBy(() -> processExecutionTxService.getResultInfos(executionUuid))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
         verify(executionRepository).findById(executionUuid);
     }
 
@@ -474,13 +476,12 @@ class ProcessExecutionTxServiceTest {
 
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
 
-        Optional<List<ProcessExecutionStep>> result = processExecutionTxService.getStepsInfos(executionUuid);
+        List<ProcessExecutionStep> result = processExecutionTxService.getStepsInfos(executionUuid);
 
         ProcessExecutionStep processExecutionStep1 = new ProcessExecutionStep(stepId1, "loadNetwork", 0, StepStatus.RUNNING, null, null, startedAt1, null);
         ProcessExecutionStep processExecutionStep2 = new ProcessExecutionStep(stepId2, "applyModifs", 1, StepStatus.SCHEDULED, null, null, null, null);
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
+        assertThat(result).hasSize(2).containsExactly(processExecutionStep1, processExecutionStep2);
         verify(executionRepository).findById(executionUuid);
     }
 
@@ -489,9 +490,9 @@ class ProcessExecutionTxServiceTest {
         UUID executionUuid = UUID.randomUUID();
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
 
-        Optional<List<ProcessExecutionStep>> result = processExecutionTxService.getStepsInfos(executionUuid);
-
-        assertThat(result).isEmpty();
+        assertThatThrownBy(() -> processExecutionTxService.getStepsInfos(executionUuid))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
         verify(executionRepository).findById(executionUuid);
     }
 
@@ -505,10 +506,9 @@ class ProcessExecutionTxServiceTest {
             .build();
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(execution));
 
-        Optional<List<ProcessExecutionStep>> result = processExecutionTxService.getStepsInfos(executionUuid);
+        List<ProcessExecutionStep> result = processExecutionTxService.getStepsInfos(executionUuid);
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -535,8 +535,8 @@ class ProcessExecutionTxServiceTest {
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
         doNothing().when(executionRepository).delete(execution);
 
-        Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.deleteExecution(executionId);
-        assertThat(processDeletionInfos.get()).usingRecursiveComparison()
+        ProcessDeletionInfos processDeletionInfos = processExecutionTxService.deleteExecution(executionId);
+        assertThat(processDeletionInfos).usingRecursiveComparison()
             .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))));
 
         verify(executionRepository).findById(executionId);
@@ -547,8 +547,9 @@ class ProcessExecutionTxServiceTest {
     void deleteExecutionShouldReturnFalseWhenExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        Optional<ProcessDeletionInfos> deletedExecution = processExecutionTxService.deleteExecution(executionId);
-        assertThat(deletedExecution).isNotPresent();
+        assertThatThrownBy(() -> processExecutionTxService.deleteExecution(executionId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
 
         verify(executionRepository).findById(executionId);
         verifyNoMoreInteractions(executionRepository);
@@ -562,10 +563,9 @@ class ProcessExecutionTxServiceTest {
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        Optional<String> result = processExecutionTxService.getDebugFileLocation(executionId);
+        String result = processExecutionTxService.getDebugFileLocation(executionId);
 
-        assertThat(result).isPresent();
-        assertThat(result.get()).contains(debugFileLocation);
+        assertThat(result).isEqualTo(debugFileLocation);
 
         verify(executionRepository).findById(executionId);
     }
@@ -574,9 +574,9 @@ class ProcessExecutionTxServiceTest {
     void getNotExistingExecutionDebugInfo() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        Optional<String> result = processExecutionTxService.getDebugFileLocation(executionId);
-
-        assertThat(result).isEmpty();
+        assertThatThrownBy(() -> processExecutionTxService.getDebugFileLocation(executionId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
 
         verify(executionRepository).findById(executionId);
     }
@@ -587,9 +587,9 @@ class ProcessExecutionTxServiceTest {
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        Optional<String> result = processExecutionTxService.getDebugFileLocation(executionId);
-
-        assertThat(result).isEmpty();
+        assertThatThrownBy(() -> processExecutionTxService.getDebugFileLocation(executionId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(DEBUG_INFOS_NOT_FOUND));
 
         verify(executionRepository).findById(executionId);
     }

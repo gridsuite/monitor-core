@@ -23,6 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -58,9 +59,8 @@ public class ProcessConfigService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
-        return processConfigRepository.findById(processConfigUuid)
-            .map(this::toPersistedProcessConfig);
+    public PersistedProcessConfig getProcessConfig(UUID processConfigUuid) {
+        return toPersistedProcessConfig(getProcessConfigEntity(processConfigUuid));
     }
 
     @Transactional(readOnly = true)
@@ -78,34 +78,28 @@ public class ProcessConfigService {
     }
 
     @Transactional
-    public Optional<UUID> updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
-        return processConfigRepository.findById(processConfigUuid)
-            .map(entity -> {
-                if (entity.getProcessType() != processConfig.processType()) {
-                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
-                }
-                getHandler(processConfig.processType()).update(processConfig, entity);
-                return processConfigUuid;
-            });
+    public void updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
+        ProcessConfigEntity entity = getProcessConfigEntity(processConfigUuid);
+        if (entity.getProcessType() != processConfig.processType()) {
+            throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
+        }
+        getHandler(processConfig.processType()).update(processConfig, entity);
     }
 
     @Transactional
-    public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
-        return processConfigRepository.findById(sourceProcessConfigUuid)
-            .map(sourceEntity -> {
-                ProcessConfigEntity entity = getHandler(sourceEntity.getProcessType()).copyEntity(sourceEntity);
-                return processConfigRepository.save(entity).getId();
-            });
+    public UUID duplicateProcessConfig(UUID sourceProcessConfigUuid) {
+        ProcessConfigEntity sourceEntity = getProcessConfigEntity(sourceProcessConfigUuid);
+        ProcessConfigEntity entity = getHandler(sourceEntity.getProcessType()).copyEntity(sourceEntity);
+        return processConfigRepository.save(entity).getId();
     }
 
     @Transactional
-    public Optional<UUID> deleteProcessConfig(UUID processConfigUuid) {
+    public void deleteProcessConfig(UUID processConfigUuid) {
         if (processConfigRepository.existsById(processConfigUuid)) {
             processConfigRepository.deleteById(processConfigUuid);
-            return Optional.of(processConfigUuid);
-        } else {
-            return Optional.empty();
+            return;
         }
+        throw processConfigNotFound(processConfigUuid);
     }
 
     private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
@@ -117,25 +111,31 @@ public class ProcessConfigService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        Optional<ProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
-        Optional<ProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
+    public ProcessConfigComparison compareProcessConfigs(UUID uuid1, UUID uuid2) {
+        ProcessConfigEntity processConfigEntity1 = getProcessConfigEntity(uuid1);
+        ProcessConfigEntity processConfigEntity2 = getProcessConfigEntity(uuid2);
 
-        if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
-            return Optional.empty();
-        }
-
-        if (processConfigEntity1.get().getProcessType() != processConfigEntity2.get().getProcessType()) {
+        if (processConfigEntity1.getProcessType() != processConfigEntity2.getProcessType()) {
             throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
-                Map.of("processConfigEntity1Type", processConfigEntity1.get().getProcessType(), "processConfigEntity2Type", processConfigEntity2.get().getProcessType()));
+                Map.of("processConfigEntity1Type", processConfigEntity1.getProcessType(), "processConfigEntity2Type", processConfigEntity2.getProcessType()));
         }
 
-        ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1.get());
-        ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
+        ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1);
+        ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2);
 
         List<ProcessConfigFieldComparison> differences = processConfig1.compareWith(processConfig2);
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
 
-        return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
+        return new ProcessConfigComparison(uuid1, uuid2, identical, differences);
+    }
+
+    private ProcessConfigEntity getProcessConfigEntity(UUID processConfigUuid) {
+        return processConfigRepository.findById(processConfigUuid)
+            .orElseThrow(() -> processConfigNotFound(processConfigUuid));
+    }
+
+    private MonitorServerException processConfigNotFound(UUID processConfigUuid) {
+        return new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found",
+            Map.of("processConfigUuid", processConfigUuid));
     }
 }

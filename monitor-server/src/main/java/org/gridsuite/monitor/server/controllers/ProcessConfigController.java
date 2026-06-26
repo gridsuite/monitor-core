@@ -18,7 +18,6 @@ import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -64,8 +62,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config was not found")})
     public ResponseEntity<PersistedProcessConfig> getProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
-        Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
-        return processConfig.map(config -> ResponseEntity.ok().body(config)).orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok().body(processConfigService.getProcessConfig(processConfigUuid));
     }
 
     @GetMapping(value = "/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -85,8 +82,8 @@ public class ProcessConfigController {
     public ResponseEntity<Void> updateProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid,
             @Valid @RequestBody ProcessConfig processConfig) {
-        Optional<UUID> processConfigUpdated = processConfigService.updateProcessConfig(processConfigUuid, processConfig);
-        return processConfigUpdated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+        processConfigService.updateProcessConfig(processConfigUuid, processConfig);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping(value = "", params = "duplicateFrom", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -96,10 +93,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config to duplicate was not found")})
     public ResponseEntity<UUID> duplicateProcessConfig(
         @Parameter(description = "UUID of the process config to duplicate") @RequestParam("duplicateFrom") UUID sourceProcessConfigUuid) {
-        Optional<UUID> newProcessConfigUuid = processConfigService.duplicateProcessConfig(sourceProcessConfigUuid);
-        return newProcessConfigUuid
-            .map(configUuid -> ResponseEntity.ok().body(configUuid))
-            .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok().body(processConfigService.duplicateProcessConfig(sourceProcessConfigUuid));
     }
 
     @DeleteMapping(value = "/{uuid}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -109,8 +103,8 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "404", description = "process config was not found")})
     public ResponseEntity<Void> deleteProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
-        Optional<UUID> deletedProcessConfigId = processConfigService.deleteProcessConfig(processConfigUuid);
-        return deletedProcessConfigId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+        processConfigService.deleteProcessConfig(processConfigUuid);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -132,7 +126,6 @@ public class ProcessConfigController {
     public ResponseEntity<ProcessConfigComparison> compareProcessConfigs(
         @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
         @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {
-        Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
-        return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        return ResponseEntity.ok(processConfigService.compareProcessConfigs(uuid1, uuid2));
     }
 }

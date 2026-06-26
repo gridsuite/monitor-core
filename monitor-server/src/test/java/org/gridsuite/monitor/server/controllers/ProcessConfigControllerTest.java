@@ -25,11 +25,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -82,7 +83,7 @@ class ProcessConfigControllerTest {
         String expectedJson = objectMapper.writeValueAsString(config);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
-            .thenReturn(Optional.of(config));
+            .thenReturn(config);
 
         mockMvc.perform(get("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -98,7 +99,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
-            .thenReturn(Optional.empty());
+            .thenThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found"));
 
         mockMvc.perform(get("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -134,9 +135,6 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID(), UUID.randomUUID()), UUID.randomUUID());
 
-        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
-            .thenReturn(Optional.of(processConfigId));
-
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(config)))
@@ -150,8 +148,8 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID());
 
-        when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
-            .thenReturn(Optional.empty());
+        doThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found"))
+            .when(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -167,7 +165,7 @@ class ProcessConfigControllerTest {
         UUID newProcessConfigId = UUID.randomUUID();
 
         when(processConfigService.duplicateProcessConfig(processConfigId))
-            .thenReturn(Optional.of(newProcessConfigId));
+            .thenReturn(newProcessConfigId);
 
         mockMvc.perform(post("/v1/process-configs?duplicateFrom={uuid}", processConfigId))
             .andExpect(status().isOk())
@@ -182,7 +180,7 @@ class ProcessConfigControllerTest {
         UUID processConfigId = UUID.randomUUID();
 
         when(processConfigService.duplicateProcessConfig(processConfigId))
-            .thenReturn(Optional.empty());
+            .thenThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found"));
 
         mockMvc.perform(post("/v1/process-configs?duplicateFrom={uuid}", processConfigId))
             .andExpect(status().isNotFound());
@@ -194,9 +192,6 @@ class ProcessConfigControllerTest {
     void deleteProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
-        when(processConfigService.deleteProcessConfig(any(UUID.class)))
-            .thenReturn(Optional.of(processConfigId));
-
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isOk());
 
@@ -207,8 +202,8 @@ class ProcessConfigControllerTest {
     void deleteProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
 
-        when(processConfigService.deleteProcessConfig(any(UUID.class)))
-            .thenReturn(Optional.empty());
+        doThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found"))
+            .when(processConfigService).deleteProcessConfig(any(UUID.class));
 
         mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isNotFound());
@@ -272,7 +267,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(Optional.of(comparison));
+            .thenReturn(comparison);
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
@@ -306,7 +301,7 @@ class ProcessConfigControllerTest {
         );
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(Optional.of(comparison));
+            .thenReturn(comparison);
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())
@@ -326,7 +321,7 @@ class ProcessConfigControllerTest {
         UUID uuid2 = UUID.randomUUID();
 
         when(processConfigService.compareProcessConfigs(uuid1, uuid2))
-            .thenReturn(Optional.empty());
+            .thenThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found"));
 
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", uuid1.toString())

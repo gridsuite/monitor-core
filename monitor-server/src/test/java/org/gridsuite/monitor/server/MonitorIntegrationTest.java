@@ -21,6 +21,7 @@ import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.messaging.ConsumerService;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.gridsuite.monitor.server.repositories.ProcessExecutionRepository;
@@ -43,9 +44,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -113,14 +114,14 @@ class MonitorIntegrationTest {
                 UUID.randomUUID());
         UUID processConfigId = configService.createProcessConfig(securityAnalysisConfig);
 
-        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigId, false);
+        UUID executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigId, false);
 
         // Verify message was published
         Message<byte[]> sentMessage = outputDestination.receive(1000, PROCESS_SA_RUN_DESTINATION);
         assertThat(sentMessage).isNotNull();
 
         // Verify execution persisted with correct initial state
-        ProcessExecutionEntity execution = executionRepository.findById(executionId.get()).orElse(null);
+        ProcessExecutionEntity execution = executionRepository.findById(executionId).orElse(null);
         assertThat(execution).isNotNull();
         assertThat(execution.getReportId()).isNotNull();
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.SCHEDULED);
@@ -139,7 +140,7 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId.get(), step0, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId, step0, MessageType.STEP_STATUS_UPDATE);
 
         // Simulate second step creation via message with both report and result
         UUID stepId1 = UUID.randomUUID();
@@ -154,10 +155,10 @@ class MonitorIntegrationTest {
                 .startedAt(Instant.now())
                 .completedAt(Instant.now())
                 .build();
-        sendMessage(executionId.get(), step1, MessageType.STEP_STATUS_UPDATE);
+        sendMessage(executionId, step1, MessageType.STEP_STATUS_UPDATE);
 
         // Verify both steps were added to database with correct data
-        execution = executionRepository.findById(executionId.get()).orElse(null);
+        execution = executionRepository.findById(executionId).orElse(null);
         assertThat(execution.getSteps()).hasSize(2);
         assertThat(execution.getSteps().get(0).getId()).isEqualTo(stepId0);
         assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
@@ -174,10 +175,10 @@ class MonitorIntegrationTest {
                 .startedAt(startedAt)
                 .completedAt(completedAt)
                 .build();
-        sendMessage(executionId.get(), finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
+        sendMessage(executionId, finalStatus, MessageType.EXECUTION_STATUS_UPDATE);
 
         // Verify final state persisted
-        execution = executionRepository.findById(executionId.get()).orElse(null);
+        execution = executionRepository.findById(executionId).orElse(null);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo("test-env");
         assertThat(execution.getStartedAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(startedAt.truncatedTo(ChronoUnit.MILLIS));
@@ -192,7 +193,7 @@ class MonitorIntegrationTest {
         when(reportRestClient.getReport(execution.getReportId())).thenReturn(reportPage);
 
         // Test the reports endpoint fetches correctly from database
-        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId.get()))
+        mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("number").value(1))
@@ -216,7 +217,7 @@ class MonitorIntegrationTest {
         when(resultService.getResult(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS))).thenReturn(result1);
 
         // Test the results endpoint fetches correctly from database
-        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId.get()))
+        mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -247,9 +248,8 @@ class MonitorIntegrationTest {
         UUID configId = configService.createProcessConfig(securityAnalysisConfig);
         assertThat(processConfigRepository.findById(configId)).isNotEmpty();
 
-        Optional<PersistedProcessConfig> config = configService.getProcessConfig(configId);
-        assertThat(config).isNotEmpty();
-        assertThat(config.get().processConfig()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
+        PersistedProcessConfig config = configService.getProcessConfig(configId);
+        assertThat(config.processConfig()).usingRecursiveComparison().isEqualTo(securityAnalysisConfig);
 
         UUID updatedParametersUuid = UUID.randomUUID();
         UUID updatedModificationUuid = UUID.randomUUID();
@@ -259,17 +259,15 @@ class MonitorIntegrationTest {
                 List.of(updatedModificationUuid),
                 updatedLoadflowParametersUuid
         );
-        Optional<UUID> updatedProcessConfigId = configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
-        assertThat(updatedProcessConfigId).contains(configId);
-        Optional<PersistedProcessConfig> updatedConfig = configService.getProcessConfig(configId);
-        assertThat(updatedConfig).isNotEmpty();
-        assertThat(updatedConfig.get().processConfig()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
+        configService.updateProcessConfig(configId, updatedSecurityAnalysisConfig);
+        PersistedProcessConfig updatedConfig = configService.getProcessConfig(configId);
+        assertThat(updatedConfig.processConfig()).usingRecursiveComparison().isEqualTo(updatedSecurityAnalysisConfig);
 
-        Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId);
-        assertThat(deletedProcessConfigId).contains(configId);
+        configService.deleteProcessConfig(configId);
 
-        Optional<PersistedProcessConfig> deletedConfig = configService.getProcessConfig(configId);
-        assertThat(deletedConfig).isEmpty();
+        assertThatThrownBy(() -> configService.getProcessConfig(configId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_CONFIG_NOT_FOUND));
     }
 
     @Test
@@ -319,15 +317,13 @@ class MonitorIntegrationTest {
         assertThat(retrievedSecurityAnalysisConfig2.loadflowParametersUuid()).isEqualTo(loadFlowParametersUuid2);
         assertThat(retrievedSecurityAnalysisConfig2.modificationUuids()).isEqualTo(List.of(modificationUuid2));
 
-        Optional<UUID> deletedProcessConfigId = configService.deleteProcessConfig(configId1);
-        assertThat(deletedProcessConfigId).contains(configId1);
+        configService.deleteProcessConfig(configId1);
 
         List<PersistedProcessConfig> remainingConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(remainingConfigs).hasSize(1);
         assertThat(remainingConfigs.get(0).processConfig().processType()).isEqualTo(ProcessType.SECURITY_ANALYSIS);
 
-        deletedProcessConfigId = configService.deleteProcessConfig(configId2);
-        assertThat(deletedProcessConfigId).contains(configId2);
+        configService.deleteProcessConfig(configId2);
 
         List<PersistedProcessConfig> noConfigs = configService.getProcessConfigs(ProcessType.SECURITY_ANALYSIS);
         assertThat(noConfigs).isEmpty();

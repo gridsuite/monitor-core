@@ -12,7 +12,10 @@ import com.powsybl.ws.commons.error.BusinessErrorCode;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 public enum MonitorServerBusinessErrorCode implements BusinessErrorCode {
-    DIFFERENT_PROCESS_CONFIG_TYPE("monitor.server.differentProcessConfigType");
+    DIFFERENT_PROCESS_CONFIG_TYPE("monitor.server.differentProcessConfigType"),
+    PROCESS_CONFIG_NOT_FOUND("monitor.server.processConfigNotFound"),
+    PROCESS_EXECUTION_NOT_FOUND("monitor.server.processExecutionNotFound"),
+    DEBUG_INFOS_NOT_FOUND("monitor.server.debugInfosNotFound");
 
     private final String code;
 

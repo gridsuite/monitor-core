@@ -89,7 +89,7 @@ public class ProcessConfigController {
         return processConfigUpdated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
-    @PostMapping(value = "/duplication", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "", params = "duplicateFrom", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Duplicate a process config")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was duplicated"),
@@ -132,7 +132,6 @@ public class ProcessConfigController {
     public ResponseEntity<ProcessConfigComparison> compareProcessConfigs(
         @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
         @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {
-
         Optional<ProcessConfigComparison> comparison = processConfigService.compareProcessConfigs(uuid1, uuid2);
         return comparison.map(c -> ResponseEntity.status(HttpStatus.OK).body(c)).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }

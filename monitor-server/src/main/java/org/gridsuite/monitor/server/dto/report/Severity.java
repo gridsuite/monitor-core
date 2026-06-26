@@ -25,18 +25,18 @@ public enum Severity {
         this.level = level;
     }
 
-    public int getLevel() {
-        return level;
-    }
-
     public static Severity fromValue(String value) {
         if (value == null) {
             return UNKNOWN;
         }
         try {
             return valueOf(value);
-        } catch (final IllegalArgumentException | NullPointerException e) {
+        } catch (IllegalArgumentException e) {
             return UNKNOWN;
         }
+    }
+
+    public int getLevel() {
+        return level;
     }
 }

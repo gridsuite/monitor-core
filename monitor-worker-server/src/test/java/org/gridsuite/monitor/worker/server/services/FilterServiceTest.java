@@ -46,8 +46,10 @@ class FilterServiceTest {
     void getUuidFilterEquipmentsMap() {
         FilterEquipments filterEquipments1 = mock(FilterEquipments.class);
         FilterEquipments filterEquipments2 = mock(FilterEquipments.class);
-        List<IdentifiableAttributes> identifiableAttributesList1 = List.of(new IdentifiableAttributes("gen1", IdentifiableType.GENERATOR, 10.), new IdentifiableAttributes("gen2", IdentifiableType.GENERATOR, 20.));
-        List<IdentifiableAttributes> identifiableAttributesList2 = List.of(new IdentifiableAttributes("load1", IdentifiableType.LOAD, 10.), new IdentifiableAttributes("load2", IdentifiableType.LOAD, 20.));
+        List<IdentifiableAttributes> identifiableAttributesList1 = List.of(new IdentifiableAttributes("gen1", IdentifiableType.GENERATOR, 10.), new IdentifiableAttributes("gen2",
+                IdentifiableType.GENERATOR, 20.));
+        List<IdentifiableAttributes> identifiableAttributesList2 = List.of(new IdentifiableAttributes("load1", IdentifiableType.LOAD, 10.), new IdentifiableAttributes("load2", IdentifiableType.LOAD,
+                20.));
 
         when(filterEquipments1.getFilterId()).thenReturn(FILTER_1_UUID);
         when(filterEquipments1.getIdentifiableAttributes()).thenReturn(identifiableAttributesList1);

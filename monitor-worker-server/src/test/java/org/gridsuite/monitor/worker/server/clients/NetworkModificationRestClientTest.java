@@ -63,7 +63,8 @@ class NetworkModificationRestClientTest {
 
         try {
             server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-                .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications-with-missing-info?uuids=" + MODIFICATION_1_UUID + "&uuids=" + MODIFICATION_2_UUID + "&onlyMetadata=false"))
+                .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications-with-missing-info?uuids=" +
+                        MODIFICATION_1_UUID + "&uuids=" + MODIFICATION_2_UUID + "&onlyMetadata=false"))
                 .andRespond(MockRestResponseCreators.withSuccess()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(objectMapper.writeValueAsString(networkModificationsWithMissingInfo)));
@@ -79,7 +80,8 @@ class NetworkModificationRestClientTest {
     @Test
     void getModificationsNotFound() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications-with-missing-info?uuids=" + MODIFICATION_ERROR_UUID + "&onlyMetadata=false"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://network-modification-server/v1/network-composite-modifications/network-modifications-with-missing-info?uuids=" +
+                    MODIFICATION_ERROR_UUID + "&onlyMetadata=false"))
             .andRespond(MockRestResponseCreators.withServerError());
 
         List<UUID> modificationsUuids = List.of(MODIFICATION_ERROR_UUID);

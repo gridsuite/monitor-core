@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -37,5 +38,16 @@ class MonitorServerExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertEquals("monitor.server.differentProcessConfigType", response.getBody().getBusinessErrorCode());
+    }
+
+    @Test
+    void mapsNotFoundBusinessErrorToStatus() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/process-configs/uuid");
+        MonitorServerException exception = new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found");
+        ResponseEntity<PowsyblWsProblemDetail> response = handler.handleMonitorServerException(exception, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).isNotNull();
+        assertEquals("monitor.server.processConfigNotFound", response.getBody().getBusinessErrorCode());
     }
 }

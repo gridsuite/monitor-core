@@ -20,6 +20,7 @@ import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,10 +33,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DEBUG_INFOS_NOT_FOUND;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_EXECUTION_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -87,22 +89,22 @@ class ProcessExecutionServiceTest {
     void executeProcessCreateExecutionAndSendNotifications() {
         String debugFileLocation = "debug/file/location";
 
-        doReturn(Optional.of(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig)))
+        doReturn(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig))
             .when(processExecutionTxService).createExecution(eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean());
 
-        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
+        UUID result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
 
-        assertThat(result).isNotEmpty();
+        assertThat(result).isNotNull();
         verify(notificationService).sendProcessRunMessage(
             eq(caseUuid),
             eq(securityAnalysisConfig),
-            eq(result.get()),
+            eq(result),
             any(UUID.class),
             eq(debugFileLocation)
         );
         verify(notificationService).sendProcessUpdatedMessage(
             ProcessType.SECURITY_ANALYSIS,
-            result.get()
+            result
         );
     }
 
@@ -158,7 +160,7 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getReportsShouldReturnReports() {
-        when(processExecutionTxService.getReportId(executionId)).thenReturn(Optional.of(reportId));
+        when(processExecutionTxService.getReportId(executionId)).thenReturn(reportId);
 
         ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
         ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
@@ -167,8 +169,8 @@ class ProcessExecutionServiceTest {
 
         when(reportRestClient.getReport(reportId)).thenReturn(reportPage);
 
-        Optional<ReportPage> result = processExecutionService.getReports(executionId);
-        assertThat(result).contains(reportPage);
+        ReportPage result = processExecutionService.getReports(executionId);
+        assertThat(result).isEqualTo(reportPage);
 
         verify(processExecutionTxService).getReportId(executionId);
         verify(reportRestClient).getReport(reportId);
@@ -185,12 +187,11 @@ class ProcessExecutionServiceTest {
             .thenReturn(result1);
         when(resultService.getResult(resultInfos.get(1)))
             .thenReturn(result2);
-        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(resultInfos);
 
-        Optional<List<String>> results = processExecutionService.getResults(executionId);
+        List<String> results = processExecutionService.getResults(executionId);
 
-        assertThat(results).isPresent();
-        assertThat(results.get()).hasSize(2).containsExactly(result1, result2);
+        assertThat(results).hasSize(2).containsExactly(result1, result2);
         verify(processExecutionTxService).getResultInfos(executionId);
         verify(resultService, times(2)).getResult(any(ResultInfos.class));
     }
@@ -200,13 +201,12 @@ class ProcessExecutionServiceTest {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         when(processExecutionTxService.deleteExecution(executionId))
-            .thenReturn(Optional.of(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)))));
+            .thenReturn(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))));
 
         doNothing().when(reportRestClient).deleteReport(reportId);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
 
-        Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
-        assertThat(deletedExecutionId).contains(executionId);
+        processExecutionService.deleteExecution(executionId);
 
         verify(reportRestClient).deleteReport(reportId);
         verify(resultService, times(2)).deleteResult(any(ResultInfos.class));
@@ -214,10 +214,12 @@ class ProcessExecutionServiceTest {
 
     @Test
     void deleteExecutionShouldReturnFalseWhenExecutionNotFound() {
-        when(processExecutionTxService.deleteExecution(executionId)).thenReturn(Optional.empty());
+        when(processExecutionTxService.deleteExecution(executionId))
+            .thenThrow(new MonitorServerException(PROCESS_EXECUTION_NOT_FOUND, "Process execution not found"));
 
-        Optional<UUID> deletedExecution = processExecutionService.deleteExecution(executionId);
-        assertThat(deletedExecution).isNotPresent();
+        assertThatThrownBy(() -> processExecutionService.deleteExecution(executionId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
 
         verify(processExecutionTxService).deleteExecution(executionId);
         verifyNoInteractions(reportRestClient);
@@ -229,13 +231,12 @@ class ProcessExecutionServiceTest {
         String debugFileLocation = "debug/file/location";
         byte[] expectedBytes = "zip-content".getBytes();
 
-        when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.of(debugFileLocation));
+        when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(debugFileLocation);
         when(s3RestClient.downloadDirectoryAsZip(debugFileLocation)).thenReturn(expectedBytes);
 
-        Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
+        byte[] result = processExecutionService.getDebugInfos(executionId);
 
-        assertThat(result).isPresent();
-        assertThat(expectedBytes).isEqualTo(result.get());
+        assertThat(result).isEqualTo(expectedBytes);
 
         verify(processExecutionTxService).getDebugFileLocation(executionId);
         verify(s3RestClient).downloadDirectoryAsZip("debug/file/location");
@@ -243,11 +244,12 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getNotExistingExecutionDebugInfo() {
-        when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.empty());
+        when(processExecutionTxService.getDebugFileLocation(executionId))
+            .thenThrow(new MonitorServerException(PROCESS_EXECUTION_NOT_FOUND, "Process execution not found"));
 
-        Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
-
-        assertThat(result).isEmpty();
+        assertThatThrownBy(() -> processExecutionService.getDebugInfos(executionId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(PROCESS_EXECUTION_NOT_FOUND));
 
         verify(processExecutionTxService).getDebugFileLocation(executionId);
         verifyNoInteractions(s3RestClient);
@@ -257,7 +259,7 @@ class ProcessExecutionServiceTest {
     void getExistingDebugInfoError() throws Exception {
         String debugFileLocation = "debug/file/location";
 
-        when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.of(debugFileLocation));
+        when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(debugFileLocation);
 
         when(s3RestClient.downloadDirectoryAsZip(debugFileLocation)).thenThrow(new IOException("S3 error"));
 
@@ -307,21 +309,22 @@ class ProcessExecutionServiceTest {
                 .build()
         );
 
-        when(processExecutionTxService.getStepsInfos(executionId)).thenReturn(Optional.of(steps));
+        when(processExecutionTxService.getStepsInfos(executionId)).thenReturn(steps);
 
-        Optional<List<ProcessExecutionStep>> result = processExecutionService.getStepsInfos(executionId);
+        List<ProcessExecutionStep> result = processExecutionService.getStepsInfos(executionId);
 
-        assertThat(result).contains(steps);
+        assertThat(result).isEqualTo(steps);
         verify(processExecutionTxService).getStepsInfos(executionId);
     }
 
     @Test
     void getExecutionWithoutDebugInfo() {
-        when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.empty());
+        when(processExecutionTxService.getDebugFileLocation(executionId))
+            .thenThrow(new MonitorServerException(DEBUG_INFOS_NOT_FOUND, "Debug infos not found"));
 
-        Optional<byte[]> result = processExecutionService.getDebugInfos(executionId);
-
-        assertThat(result).isEmpty();
+        assertThatThrownBy(() -> processExecutionService.getDebugInfos(executionId))
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> assertThat(((MonitorServerException) ex).getErrorCode()).isEqualTo(DEBUG_INFOS_NOT_FOUND));
 
         verifyNoInteractions(s3RestClient);
     }

@@ -10,7 +10,6 @@ import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
@@ -22,8 +21,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -50,32 +47,28 @@ public class ProcessExecutionService {
         this.s3RestClient = s3RestClient;
     }
 
-    public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
+    public UUID executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
         UUID executionId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
 
-        Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(
+        ProcessCreationResult result = processExecutionTxService.createExecution(
             caseUuid, userId, processConfigId, executionId, reportId, isDebug
         );
 
-        if (result.isEmpty()) {
-            return Optional.empty();
-        }
-
         notificationService.sendProcessRunMessage(
             caseUuid,
-            result.get().processConfig(),
+            result.processConfig(),
             executionId,
             reportId,
-            result.get().debugLocationFile()
+            result.debugLocationFile()
         );
 
         notificationService.sendProcessUpdatedMessage(
-            result.get().processConfig().processType(),
+            result.processConfig().processType(),
             executionId
         );
 
-        return Optional.of(executionId);
+        return executionId;
     }
 
     public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
@@ -90,47 +83,38 @@ public class ProcessExecutionService {
         processExecutionTxService.updateStepsStatuses(executionId, processExecutionSteps);
     }
 
-    public Optional<ReportPage> getReports(UUID executionId) {
-        return processExecutionTxService.getReportId(executionId)
-            .map(reportRestClient::getReport);
+    public ReportPage getReports(UUID executionId) {
+        return reportRestClient.getReport(processExecutionTxService.getReportId(executionId));
     }
 
-    public Optional<List<String>> getResults(UUID executionId) {
-        Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
-        return resultInfos.map(results -> results.stream()
+    public List<String> getResults(UUID executionId) {
+        return processExecutionTxService.getResultInfos(executionId).stream()
             .map(resultService::getResult)
-            .toList());
+            .toList();
     }
 
-    public Optional<byte[]> getDebugInfos(UUID executionId) {
-        return processExecutionTxService.getDebugFileLocation(executionId)
-            .filter(Objects::nonNull)
-            .map(debugFileLocation -> {
-                try {
-                    return s3RestClient.downloadDirectoryAsZip(debugFileLocation);
-                } catch (IOException e) {
-                    throw new PowsyblException("An error occurred while downloading debug files", e);
-                }
-            });
+    public byte[] getDebugInfos(UUID executionId) {
+        String debugFileLocation = processExecutionTxService.getDebugFileLocation(executionId);
+        try {
+            return s3RestClient.downloadDirectoryAsZip(debugFileLocation);
+        } catch (IOException e) {
+            throw new PowsyblException("An error occurred while downloading debug files", e);
+        }
     }
 
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return processExecutionTxService.getLaunchedProcesses(processType);
     }
 
-    public Optional<List<ProcessExecutionStep>> getStepsInfos(UUID executionId) {
+    public List<ProcessExecutionStep> getStepsInfos(UUID executionId) {
         return processExecutionTxService.getStepsInfos(executionId);
     }
 
-    public Optional<UUID> deleteExecution(UUID executionId) {
-        Optional<ProcessDeletionInfos> executionDeletionData = processExecutionTxService.deleteExecution(executionId);
-        if (executionDeletionData.isPresent()) {
-            executionDeletionData.get().resultInfos().forEach(resultService::deleteResult);
-            if (executionDeletionData.get().reportId() != null) {
-                reportRestClient.deleteReport(executionDeletionData.get().reportId());
-            }
-            return Optional.of(executionId);
+    public void deleteExecution(UUID executionId) {
+        ProcessDeletionInfos executionDeletionData = processExecutionTxService.deleteExecution(executionId);
+        executionDeletionData.resultInfos().forEach(resultService::deleteResult);
+        if (executionDeletionData.reportId() != null) {
+            reportRestClient.deleteReport(executionDeletionData.reportId());
         }
-        return Optional.empty();
     }
 }

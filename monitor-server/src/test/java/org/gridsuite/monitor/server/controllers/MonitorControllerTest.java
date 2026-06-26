@@ -8,16 +8,15 @@ package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
-import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.Test;
@@ -33,11 +32,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DEBUG_INFOS_NOT_FOUND;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_CONFIG_NOT_FOUND;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.PROCESS_EXECUTION_NOT_FOUND;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -72,18 +74,10 @@ class MonitorControllerTest {
         UUID loadflowParametersUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        SecurityAnalysisConfig config = new SecurityAnalysisConfig(
-                parametersUuid,
-                List.of(modificationUuid),
-                loadflowParametersUuid
-        );
-        PersistedProcessConfig persistedProcessConfig = new PersistedProcessConfig(processConfigUuid, config);
-
         boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
-        when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
         when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
-                .thenReturn(Optional.of(executionId));
+                .thenReturn(executionId);
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
@@ -107,7 +101,8 @@ class MonitorControllerTest {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false)).thenReturn(Optional.empty());
+        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false))
+            .thenThrow(new MonitorServerException(PROCESS_CONFIG_NOT_FOUND, "Process config not found"));
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
@@ -128,7 +123,7 @@ class MonitorControllerTest {
         ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
         ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
         when(processExecutionService.getReports(executionId))
-                .thenReturn(Optional.of(reportPage));
+                .thenReturn(reportPage);
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
             .andExpect(status().isOk())
@@ -154,7 +149,7 @@ class MonitorControllerTest {
     void getExecutionReportsReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.getReports(executionId))
-            .thenReturn(Optional.empty());
+            .thenThrow(new MonitorServerException(PROCESS_EXECUTION_NOT_FOUND, "Process execution not found"));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
             .andExpect(status().isNotFound());
@@ -168,7 +163,7 @@ class MonitorControllerTest {
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
         when(processExecutionService.getResults(executionId))
-                .thenReturn(Optional.of(List.of(result1, result2)));
+                .thenReturn(List.of(result1, result2));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
@@ -184,7 +179,7 @@ class MonitorControllerTest {
     void getExecutionResultsReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.getResults(executionId))
-            .thenReturn(Optional.empty());
+            .thenThrow(new MonitorServerException(PROCESS_EXECUTION_NOT_FOUND, "Process execution not found"));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
             .andExpect(status().isNotFound());
@@ -222,7 +217,7 @@ class MonitorControllerTest {
         ProcessExecutionStep processExecutionStep3 = new ProcessExecutionStep(UUID.randomUUID(), "runSA", 2, StepStatus.SCHEDULED, null, null, null, null);
         List<ProcessExecutionStep> processExecutionStepList = List.of(processExecutionStep1, processExecutionStep2, processExecutionStep3);
 
-        when(processExecutionService.getStepsInfos(executionId)).thenReturn(Optional.of(processExecutionStepList));
+        when(processExecutionService.getStepsInfos(executionId)).thenReturn(processExecutionStepList);
 
         mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
             .andExpect(status().isOk())
@@ -236,7 +231,8 @@ class MonitorControllerTest {
     @Test
     void getStepsInfosShouldReturn404WhenExecutionNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.getStepsInfos(executionId)).thenReturn(Optional.empty());
+        when(processExecutionService.getStepsInfos(executionId))
+            .thenThrow(new MonitorServerException(PROCESS_EXECUTION_NOT_FOUND, "Process execution not found"));
 
         mockMvc.perform(get("/v1/executions/{executionId}/step-infos", executionId))
             .andExpect(status().isNotFound());
@@ -247,9 +243,6 @@ class MonitorControllerTest {
     @Test
     void deleteExecutionReturnsOK() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Optional.of(executionId));
-
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
 
@@ -259,8 +252,8 @@ class MonitorControllerTest {
     @Test
     void deleteExecutionReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Optional.empty());
+        doThrow(new MonitorServerException(PROCESS_EXECUTION_NOT_FOUND, "Process execution not found"))
+            .when(processExecutionService).deleteExecution(executionId);
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());
@@ -274,7 +267,7 @@ class MonitorControllerTest {
         byte[] zipContent = "dummy-zip-content".getBytes();
 
         when(processExecutionService.getDebugInfos(executionId))
-            .thenReturn(Optional.of(zipContent));
+            .thenReturn(zipContent);
 
         mockMvc.perform(get("/v1/executions/{executionId}/debug-infos", executionId))
             .andExpect(status().isOk())
@@ -292,7 +285,8 @@ class MonitorControllerTest {
 
     @Test
     void getDebugFilesReturnsNotFound() throws Exception {
-        when(processExecutionService.getDebugInfos(any())).thenReturn(Optional.empty());
+        when(processExecutionService.getDebugInfos(any()))
+            .thenThrow(new MonitorServerException(DEBUG_INFOS_NOT_FOUND, "Debug infos not found"));
 
         mockMvc.perform(get("/v1/executions/{executionId}/debug-infos", UUID.randomUUID()))
             .andExpect(status().isNotFound());

@@ -169,7 +169,7 @@ class ProcessConfigControllerTest {
         when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.of(newProcessConfigId));
 
-        mockMvc.perform(post("/v1/process-configs?duplicateFrom={uuid}", processConfigId))
+        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(newProcessConfigId.toString()));
@@ -184,7 +184,7 @@ class ProcessConfigControllerTest {
         when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/v1/process-configs?duplicateFrom={uuid}", processConfigId))
+        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId))
             .andExpect(status().isNotFound());
 
         verify(processConfigService).duplicateProcessConfig(processConfigId);

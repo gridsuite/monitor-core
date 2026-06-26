@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -24,5 +25,18 @@ public record LoadFlowConfig(
     @Override
     public ProcessType processType() {
         return ProcessType.LOADFLOW;
+    }
+
+    @Override
+    public List<ProcessConfigFieldComparison> compareWith(ProcessConfig other) {
+        LoadFlowConfig o = (LoadFlowConfig) other;
+        return List.of(
+            new ProcessConfigFieldComparison("modifications",
+                Objects.equals(this.modificationUuids, o.modificationUuids),
+                this.modificationUuids, o.modificationUuids),
+            new ProcessConfigFieldComparison("loadflowParameters",
+                Objects.equals(this.loadflowParametersUuid, o.loadflowParametersUuid),
+                this.loadflowParametersUuid, o.loadflowParametersUuid)
+        );
     }
 }

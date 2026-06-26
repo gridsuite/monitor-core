@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -26,5 +27,21 @@ public record SecurityAnalysisConfig(
     @Override
     public ProcessType processType() {
         return ProcessType.SECURITY_ANALYSIS;
+    }
+
+    @Override
+    public List<ProcessConfigFieldComparison> compareWith(ProcessConfig other) {
+        SecurityAnalysisConfig o = (SecurityAnalysisConfig) other;
+        return List.of(
+            new ProcessConfigFieldComparison("modifications",
+                Objects.equals(this.modificationUuids, o.modificationUuids),
+                this.modificationUuids, o.modificationUuids),
+            new ProcessConfigFieldComparison("securityAnalysisParameters",
+                Objects.equals(this.securityAnalysisParametersUuid, o.securityAnalysisParametersUuid),
+                this.securityAnalysisParametersUuid, o.securityAnalysisParametersUuid),
+            new ProcessConfigFieldComparison("loadflowParameters",
+                Objects.equals(this.loadflowParametersUuid, o.loadflowParametersUuid),
+                this.loadflowParametersUuid, o.loadflowParametersUuid)
+        );
     }
 }

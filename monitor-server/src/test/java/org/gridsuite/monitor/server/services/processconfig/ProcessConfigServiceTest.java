@@ -6,9 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
@@ -17,6 +15,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldCompa
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -348,32 +348,20 @@ class ProcessConfigServiceTest {
         UUID processConfigUuid2 = UUID.randomUUID();
         ProcessConfigEntity processConfigEntity1 = Mockito.mock(SecurityAnalysisConfigEntity.class);
         ProcessConfigEntity processConfigEntity2 = Mockito.mock(LoadFlowConfigEntity.class);
-        ProcessConfig processConfig1 = Mockito.mock(SecurityAnalysisConfig.class);
-        ProcessConfig processConfig2 = Mockito.mock(LoadFlowConfig.class);
-        ProcessConfigHandler<ProcessConfig, ProcessConfigEntity> handler2 = Mockito.mock(ProcessConfigHandler.class);
-
-        when(handler2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
-
-        processConfigService = new ProcessConfigService(
-            processConfigRepository,
-            List.of(handler, handler2)
-        );
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
         when(processConfigEntity1.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(handler.toDto(processConfigEntity1)).thenReturn(processConfig1);
         when(processConfigEntity2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
-        when(handler2.toDto(processConfigEntity2)).thenReturn(processConfig2);
-        when(processConfig1.compareWith(processConfig2))
-            .thenThrow(new ClassCastException());
 
         assertThatThrownBy(() -> processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2))
-            .isInstanceOf(ClassCastException.class);
+            .isInstanceOf(MonitorServerException.class)
+            .satisfies(ex -> {
+                MonitorServerException e = (MonitorServerException) ex;
+                assertThat(e.getErrorCode()).isEqualTo(DIFFERENT_PROCESS_CONFIG_TYPE);
+            });
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).toDto(processConfigEntity1);
-        verify(handler2).toDto(processConfigEntity2);
-        verify(processConfig1).compareWith(processConfig2);
+        verify(handler, never()).toDto(any());
     }
 }

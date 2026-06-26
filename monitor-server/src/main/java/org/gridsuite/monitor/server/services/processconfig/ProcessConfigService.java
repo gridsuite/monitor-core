@@ -13,6 +13,7 @@ import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -120,6 +123,11 @@ public class ProcessConfigService {
 
         if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
             return Optional.empty();
+        }
+
+        if (processConfigEntity1.get().getProcessType() != processConfigEntity2.get().getProcessType()) {
+            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
+                Map.of("processConfigEntity1Type", processConfigEntity1.get().getProcessType(), "processConfigEntity2Type", processConfigEntity2.get().getProcessType()));
         }
 
         ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1.get());

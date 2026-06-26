@@ -25,6 +25,15 @@ import java.util.UUID;
  */
 @ExtendWith(MockitoExtension.class)
 class LoadFlowConfigHandlerTest extends AbstractProcessConfigHandlerTest<LoadFlowConfig, LoadFlowConfigEntity, LoadFlowConfigMapper, LoadFlowConfigHandler> {
+
+    @Override
+    @BeforeEach
+    protected void setUp() {
+        LoadFlowConfigMapper realMapper = Mappers.getMapper(LoadFlowConfigMapper.class);
+        mapper = Mockito.spy(realMapper);
+        handler = new LoadFlowConfigHandler(mapper);
+    }
+
     @Override
     ProcessType getProcessType() {
         return ProcessType.LOADFLOW;
@@ -38,13 +47,5 @@ class LoadFlowConfigHandlerTest extends AbstractProcessConfigHandlerTest<LoadFlo
     @Override
     LoadFlowConfigEntity createProcessConfigEntity() {
         return new LoadFlowConfigEntity();
-    }
-
-    @Override
-    @BeforeEach
-    protected void setUp() {
-        LoadFlowConfigMapper realMapper = Mappers.getMapper(LoadFlowConfigMapper.class);
-        mapper = Mockito.spy(realMapper);
-        handler = new LoadFlowConfigHandler(mapper);
     }
 }

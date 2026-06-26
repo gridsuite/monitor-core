@@ -106,8 +106,11 @@ public class ProcessConfigService {
     }
 
     private PersistedProcessConfig toPersistedProcessConfig(ProcessConfigEntity entity) {
-        ProcessConfig processConfig = getHandler(entity.getProcessType()).toProcessConfig(entity);
-        return new PersistedProcessConfig(entity.getId(), processConfig);
+        return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
+    }
+
+    private ProcessConfig toProcessConfig(ProcessConfigEntity entity) {
+        return getHandler(entity.getProcessType()).toDto(entity);
     }
 
     @Transactional(readOnly = true)
@@ -119,8 +122,8 @@ public class ProcessConfigService {
             return Optional.empty();
         }
 
-        ProcessConfig processConfig1 = getHandler(processConfigEntity1.get().getProcessType()).toProcessConfig(processConfigEntity1.get());
-        ProcessConfig processConfig2 = getHandler(processConfigEntity2.get().getProcessType()).toProcessConfig(processConfigEntity2.get());
+        ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1.get());
+        ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
 
         List<ProcessConfigFieldComparison> differences = processConfig1.compareWith(processConfig2);
         boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);

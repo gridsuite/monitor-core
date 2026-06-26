@@ -84,7 +84,7 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toProcessConfig(processConfigEntity)).thenReturn(processConfig);
+        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfigEntity.getId()).thenReturn(processConfigUuid);
 
         Optional<PersistedProcessConfig> result = processConfigService.getProcessConfig(processConfigUuid);
@@ -92,7 +92,7 @@ class ProcessConfigServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get().processConfig()).isEqualTo(processConfig);
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).toProcessConfig(processConfigEntity);
+        verify(handler).toDto(processConfigEntity);
     }
 
     @Test
@@ -105,7 +105,7 @@ class ProcessConfigServiceTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).toProcessConfig(any());
+        verify(handler, never()).toDto(any());
     }
 
     @Test
@@ -114,7 +114,7 @@ class ProcessConfigServiceTest {
 
         when(processConfigRepository.findAllByProcessType(PROCESS_TYPE)).thenReturn(List.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toProcessConfig(processConfigEntity)).thenReturn(processConfig);
+        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfigEntity.getId()).thenReturn(processConfigUuid);
 
         List<PersistedProcessConfig> result = processConfigService.getProcessConfigs(PROCESS_TYPE);
@@ -122,7 +122,7 @@ class ProcessConfigServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().processConfig()).isEqualTo(processConfig);
         verify(processConfigRepository).findAllByProcessType(PROCESS_TYPE);
-        verify(handler).toProcessConfig(processConfigEntity);
+        verify(handler).toDto(processConfigEntity);
     }
 
     @Test
@@ -264,7 +264,7 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toProcessConfig(processConfigEntity)).thenReturn(processConfig);
+        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfig.compareWith(processConfig)).thenReturn(List.of(fieldComparison));
 
         Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
@@ -274,7 +274,7 @@ class ProcessConfigServiceTest {
             .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, true, List.of(fieldComparison)));
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, times(2)).toProcessConfig(processConfigEntity);
+        verify(handler, times(2)).toDto(processConfigEntity);
         verify(processConfig).compareWith(processConfig);
     }
 
@@ -292,8 +292,8 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
         when(processConfigEntity1.getProcessType()).thenReturn(PROCESS_TYPE);
         when(processConfigEntity2.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toProcessConfig(processConfigEntity1)).thenReturn(processConfig1);
-        when(handler.toProcessConfig(processConfigEntity2)).thenReturn(processConfig2);
+        when(handler.toDto(processConfigEntity1)).thenReturn(processConfig1);
+        when(handler.toDto(processConfigEntity2)).thenReturn(processConfig2);
         when(processConfig1.compareWith(processConfig2)).thenReturn(List.of(fieldComparison));
 
         Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
@@ -303,8 +303,8 @@ class ProcessConfigServiceTest {
             .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, false, List.of(fieldComparison)));
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).toProcessConfig(processConfigEntity1);
-        verify(handler).toProcessConfig(processConfigEntity2);
+        verify(handler).toDto(processConfigEntity1);
+        verify(handler).toDto(processConfigEntity2);
         verify(processConfig1).compareWith(processConfig2);
     }
 
@@ -320,7 +320,7 @@ class ProcessConfigServiceTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid1);
-        verify(handler, never()).toProcessConfig(any());
+        verify(handler, never()).toDto(any());
     }
 
     @Test
@@ -339,7 +339,7 @@ class ProcessConfigServiceTest {
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).toProcessConfig(any());
+        verify(handler, never()).toDto(any());
     }
 
     @Test
@@ -362,9 +362,9 @@ class ProcessConfigServiceTest {
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
         when(processConfigEntity1.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(handler.toProcessConfig(processConfigEntity1)).thenReturn(processConfig1);
+        when(handler.toDto(processConfigEntity1)).thenReturn(processConfig1);
         when(processConfigEntity2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
-        when(handler2.toProcessConfig(processConfigEntity2)).thenReturn(processConfig2);
+        when(handler2.toDto(processConfigEntity2)).thenReturn(processConfig2);
         when(processConfig1.compareWith(processConfig2))
             .thenThrow(new ClassCastException());
 
@@ -372,8 +372,8 @@ class ProcessConfigServiceTest {
             .isInstanceOf(ClassCastException.class);
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).toProcessConfig(processConfigEntity1);
-        verify(handler2).toProcessConfig(processConfigEntity2);
+        verify(handler).toDto(processConfigEntity1);
+        verify(handler2).toDto(processConfigEntity2);
         verify(processConfig1).compareWith(processConfig2);
     }
 }

@@ -24,6 +24,15 @@ import java.util.UUID;
  */
 @ExtendWith(MockitoExtension.class)
 class SecurityAnalysisConfigHandlerTest extends AbstractProcessConfigHandlerTest<SecurityAnalysisConfig, SecurityAnalysisConfigEntity, SecurityAnalysisConfigMapper, SecurityAnalysisConfigHandler> {
+
+    @Override
+    @BeforeEach
+    protected void setUp() {
+        SecurityAnalysisConfigMapper realMapper = Mappers.getMapper(SecurityAnalysisConfigMapper.class);
+        mapper = Mockito.spy(realMapper);
+        handler = new SecurityAnalysisConfigHandler(mapper);
+    }
+
     @Override
     ProcessType getProcessType() {
         return ProcessType.SECURITY_ANALYSIS;
@@ -37,13 +46,5 @@ class SecurityAnalysisConfigHandlerTest extends AbstractProcessConfigHandlerTest
     @Override
     SecurityAnalysisConfigEntity createProcessConfigEntity() {
         return new SecurityAnalysisConfigEntity();
-    }
-
-    @Override
-    @BeforeEach
-    protected void setUp() {
-        SecurityAnalysisConfigMapper realMapper = Mappers.getMapper(SecurityAnalysisConfigMapper.class);
-        mapper = Mockito.spy(realMapper);
-        handler = new SecurityAnalysisConfigHandler(mapper);
     }
 }

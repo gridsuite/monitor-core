@@ -23,5 +23,5 @@ public interface ProcessConfigHandler<C extends ProcessConfig, E extends Process
 
     E toEntity(C processConfig);
 
-    C toProcessConfig(E entity);
+    C toDto(E entity);
 }

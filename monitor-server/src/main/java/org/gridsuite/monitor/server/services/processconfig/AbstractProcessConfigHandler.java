@@ -29,7 +29,7 @@ public abstract class AbstractProcessConfigHandler<C extends ProcessConfig, E ex
 
     @Override
     public E copyEntity(E sourceEntity) {
-        return toEntity(toProcessConfig(sourceEntity));
+        return toEntity(toDto(sourceEntity));
     }
 
     @Override
@@ -38,7 +38,7 @@ public abstract class AbstractProcessConfigHandler<C extends ProcessConfig, E ex
     }
 
     @Override
-    public C toProcessConfig(E entity) {
+    public C toDto(E entity) {
         return mapper.toDto(entity);
     }
 }

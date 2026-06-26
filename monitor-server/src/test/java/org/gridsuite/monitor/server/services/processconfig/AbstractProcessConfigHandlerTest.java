@@ -84,13 +84,13 @@ public abstract class AbstractProcessConfigHandlerTest<
     }
 
     @Test
-    void toProcessConfigTest() {
+    void toDtoTest() {
         E processConfigEntity = createProcessConfigEntity();
         C expectedProcessConfig = createProcessConfig();
 
         when(mapper.toDto(processConfigEntity)).thenReturn(expectedProcessConfig);
 
-        ProcessConfig result = handler.toProcessConfig(processConfigEntity);
+        ProcessConfig result = handler.toDto(processConfigEntity);
 
         assertThat(result).isEqualTo(expectedProcessConfig);
         verify(mapper).toDto(processConfigEntity);

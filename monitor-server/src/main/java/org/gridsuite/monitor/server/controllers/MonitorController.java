@@ -79,6 +79,14 @@ public class MonitorController {
         return ResponseEntity.ok(processExecutionService.getLaunchedProcesses(processType));
     }
 
+    @GetMapping("/executions/{executionId}")
+    @Operation(summary = "Get an execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The launched process")})
+    public ResponseEntity<ProcessExecution> getExecution(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        Optional<ProcessExecution> execution = processExecutionService.getExecution(executionId);
+        return execution.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/executions/{executionId}/step-infos")
     @Operation(summary = "Get execution steps statuses")
     @ApiResponses(value = {

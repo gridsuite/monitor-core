@@ -70,11 +70,6 @@ public class ProcessExecutionService {
             result.get().debugLocationFile()
         );
 
-        notificationService.sendProcessUpdatedMessage(
-            result.get().processConfig().processType(),
-            executionId
-        );
-
         return Optional.of(executionId);
     }
 
@@ -116,6 +111,10 @@ public class ProcessExecutionService {
 
     public List<ProcessExecution> getLaunchedProcesses(ProcessType processType) {
         return processExecutionTxService.getLaunchedProcesses(processType);
+    }
+
+    public Optional<ProcessExecution> getExecution(UUID executionId) {
+        return processExecutionTxService.getExecution(executionId);
     }
 
     public Optional<List<ProcessExecutionStep>> getStepsInfos(UUID executionId) {

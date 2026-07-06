@@ -37,11 +37,13 @@ public class ConsumerService {
     public static final String HEADER_EXECUTION_ID = "executionId";
 
     private final ProcessExecutionService processExecutionService;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public ConsumerService(ProcessExecutionService processExecutionService, ObjectMapper objectMapper) {
+    public ConsumerService(ProcessExecutionService processExecutionService, NotificationService notificationService, ObjectMapper objectMapper) {
         this.processExecutionService = processExecutionService;
+        this.notificationService = notificationService;
         this.objectMapper = objectMapper;
     }
 
@@ -54,7 +56,7 @@ public class ConsumerService {
             UUID executionId = UUID.fromString(executionIdStr);
 
             switch (messageType) {
-                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message);
+                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message, messageType);
                 case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, message);
                 case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, message);
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
@@ -62,9 +64,10 @@ public class ConsumerService {
         };
     }
 
-    private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
+    private void handleExecutionStatusUpdate(UUID executionId, Message<String> message, MessageType messageType) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
         processExecutionService.updateExecutionStatus(executionId, payload.getStatus(), payload.getExecutionEnvName(), payload.getStartedAt(), payload.getCompletedAt());
+        notificationService.sendProcessUpdatedMessage(executionId, messageType, payload);
     }
 
     private void handleStepStatusUpdate(UUID executionId, Message<String> message) {

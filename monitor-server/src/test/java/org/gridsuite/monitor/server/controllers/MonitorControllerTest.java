@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
@@ -212,6 +213,33 @@ class MonitorControllerTest {
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
         verify(processExecutionService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getExecutionShouldReturn() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        ProcessExecution processExecution = Mockito.mock(ProcessExecution.class);
+
+        when(processExecutionService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
+
+        mockMvc.perform(get("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecution)));
+
+        verify(processExecutionService).getExecution(executionId);
+    }
+
+    @Test
+    void getExecutionShouldReturnNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+
+        when(processExecutionService.getExecution(executionId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(processExecutionService).getExecution(executionId);
     }
 
     @Test

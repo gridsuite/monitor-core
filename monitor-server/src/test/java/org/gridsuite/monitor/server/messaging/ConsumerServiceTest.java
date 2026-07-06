@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
+import org.springframework.messaging.support.MessageBuilder;
 
 import java.io.UncheckedIOException;
 import java.time.Instant;
@@ -46,6 +47,9 @@ class ConsumerServiceTest {
     @Mock
     private ProcessExecutionService processExecutionService;
 
+    @Mock
+    private NotificationService notificationService;
+
     private ObjectMapper objectMapper;
     private ConsumerService consumerService;
 
@@ -53,7 +57,7 @@ class ConsumerServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
-        consumerService = new ConsumerService(processExecutionService, objectMapper);
+        consumerService = new ConsumerService(processExecutionService, notificationService, objectMapper);
     }
 
     @Test
@@ -68,11 +72,12 @@ class ConsumerServiceTest {
                 .startedAt(startedAt)
                 .completedAt(completedAt)
                 .build();
+
         String payload = objectMapper.writeValueAsString(statusUpdate);
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
-        headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
-        Message<String> message = new GenericMessage<>(payload, headers);
+        Message<String> message = MessageBuilder.withPayload(payload)
+            .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString())
+            .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
+            .build();
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
         consumer.accept(message);
@@ -84,6 +89,7 @@ class ConsumerServiceTest {
                 startedAt,
                 completedAt
         );
+        verify(notificationService).sendProcessUpdatedMessage(executionId, MessageType.EXECUTION_STATUS_UPDATE, statusUpdate);
         verify(processExecutionService, never()).updateStepStatus(any(), any());
     }
 
@@ -102,6 +108,7 @@ class ConsumerServiceTest {
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
         verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(notificationService, never()).sendProcessUpdatedMessage(any(), any(), any());
         verify(processExecutionService, never()).updateStepStatus(any(), any());
     }
 

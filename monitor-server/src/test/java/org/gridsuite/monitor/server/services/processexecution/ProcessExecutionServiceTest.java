@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -99,10 +100,6 @@ class ProcessExecutionServiceTest {
             eq(result.get()),
             any(UUID.class),
             eq(debugFileLocation)
-        );
-        verify(notificationService).sendProcessUpdatedMessage(
-            ProcessType.SECURITY_ANALYSIS,
-            result.get()
         );
     }
 
@@ -292,6 +289,28 @@ class ProcessExecutionServiceTest {
 
         assertThat(result).isEqualTo(executions);
         verify(processExecutionTxService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getExecutionReturnsExecution() {
+        ProcessExecution processExecution = Mockito.mock(ProcessExecution.class);
+
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
+
+        Optional<ProcessExecution> result = processExecutionService.getExecution(executionId);
+
+        assertThat(result).contains(processExecution);
+        verify(processExecutionTxService).getExecution(executionId);
+    }
+
+    @Test
+    void getExecutionNotFoundReturnsEmpty() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.empty());
+
+        Optional<ProcessExecution> result = processExecutionService.getExecution(executionId);
+
+        assertThat(result).isEmpty();
+        verify(processExecutionTxService).getExecution(executionId);
     }
 
     @Test

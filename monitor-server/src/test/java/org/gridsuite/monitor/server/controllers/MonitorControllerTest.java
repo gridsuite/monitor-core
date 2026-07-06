@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
@@ -39,8 +38,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -218,7 +216,7 @@ class MonitorControllerTest {
     @Test
     void getExecutionShouldReturn() throws Exception {
         UUID executionId = UUID.randomUUID();
-        ProcessExecution processExecution = Mockito.mock(ProcessExecution.class);
+        ProcessExecution processExecution = mock(ProcessExecution.class);
 
         when(processExecutionService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
 

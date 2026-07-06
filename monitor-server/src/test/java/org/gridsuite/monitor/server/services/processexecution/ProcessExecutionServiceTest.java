@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -293,7 +292,7 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getExecutionReturnsExecution() {
-        ProcessExecution processExecution = Mockito.mock(ProcessExecution.class);
+        ProcessExecution processExecution = mock(ProcessExecution.class);
 
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
 

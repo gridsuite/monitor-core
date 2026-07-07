@@ -15,14 +15,13 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
-import org.gridsuite.monitor.worker.server.services.FilterService;
-import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
 import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
+import org.gridsuite.monitor.worker.server.services.FilterService;
+import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;

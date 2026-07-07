@@ -16,7 +16,7 @@ import org.mapstruct.MappingTarget;
  * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
 @Mapper(componentModel = "spring")
-public interface SecurityAnalysisConfigMapper {
+public interface SecurityAnalysisConfigMapper extends ProcessConfigMapper<SecurityAnalysisConfig, SecurityAnalysisConfigEntity> {
     @Mapping(target = "processType", expression = "java(dto.processType())")
     SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);
 

@@ -16,7 +16,7 @@ import org.mapstruct.MappingTarget;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Mapper(componentModel = "spring")
-public interface LoadFlowConfigMapper {
+public interface LoadFlowConfigMapper extends ProcessConfigMapper<LoadFlowConfig, LoadFlowConfigEntity> {
     @Mapping(target = "processType", expression = "java(dto.processType())")
     LoadFlowConfigEntity toEntity(LoadFlowConfig dto);
 

@@ -7,9 +7,9 @@
 package org.gridsuite.monitor.worker.server.config;
 
 import com.fasterxml.jackson.databind.InjectableValues;
+import com.powsybl.action.json.ActionJsonModule;
 import com.powsybl.commons.report.ReportNodeDeserializer;
 import com.powsybl.commons.report.ReportNodeJsonModule;
-import com.powsybl.action.json.ActionJsonModule;
 import com.powsybl.contingency.json.ContingencyJsonModule;
 import com.powsybl.loadflow.json.LoadFlowParametersJsonModule;
 import com.powsybl.loadflow.json.LoadFlowResultJsonModule;

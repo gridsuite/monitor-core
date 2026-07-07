@@ -123,4 +123,3 @@ public class MonitorController {
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 }
-

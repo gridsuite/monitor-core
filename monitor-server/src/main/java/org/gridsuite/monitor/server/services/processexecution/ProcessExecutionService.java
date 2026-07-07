@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -73,8 +74,9 @@ public class ProcessExecutionService {
         return Optional.of(executionId);
     }
 
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt, ProcessExecutionStatusUpdate payload) {
         processExecutionTxService.updateExecutionStatus(executionId, status, executionEnvName, startedAt, completedAt);
+        notificationService.sendProcessUpdatedMessage(executionId, payload);
     }
 
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {

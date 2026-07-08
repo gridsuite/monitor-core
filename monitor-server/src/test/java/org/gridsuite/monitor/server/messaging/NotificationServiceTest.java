@@ -76,7 +76,7 @@ class NotificationServiceTest {
 
     @Test
     void sendProcessUpdatedMessage() {
-        notificationService.sendProcessUpdatedMessage(executionId, "");
+        notificationService.sendProcessUpdatedMessage(executionId);
 
         verify(publisher).send(
                 eq("publishMonitorUpdate-out-0"),

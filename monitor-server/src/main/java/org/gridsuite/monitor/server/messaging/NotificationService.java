@@ -33,9 +33,9 @@ public class NotificationService {
         publisher.send(bindingName, message);
     }
 
-    public <T> void sendProcessUpdatedMessage(UUID executionId, T payload) {
+    public void sendProcessUpdatedMessage(UUID executionId) {
         String bindingName = "publishMonitorUpdate-out-0";
-        Message<T> message = MessageBuilder.withPayload(payload)
+        Message<?> message = MessageBuilder.withPayload("")
             .setHeader("updateType", "PROCESS_EXECUTION_UPDATED")
             .setHeader("processExecutionId", executionId).build();
 

@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
+import org.springframework.messaging.support.MessageBuilder;
 
 import java.io.UncheckedIOException;
 import java.time.Instant;
@@ -68,11 +69,12 @@ class ConsumerServiceTest {
                 .startedAt(startedAt)
                 .completedAt(completedAt)
                 .build();
+
         String payload = objectMapper.writeValueAsString(statusUpdate);
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
-        headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
-        Message<String> message = new GenericMessage<>(payload, headers);
+        Message<String> message = MessageBuilder.withPayload(payload)
+            .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString())
+            .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
+            .build();
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
         consumer.accept(message);

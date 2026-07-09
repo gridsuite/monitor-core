@@ -38,8 +38,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -212,6 +211,33 @@ class MonitorControllerTest {
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
         verify(processExecutionService).getLaunchedProcesses(ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void getExecutionShouldReturn() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        ProcessExecution processExecution = mock(ProcessExecution.class);
+
+        when(processExecutionService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
+
+        mockMvc.perform(get("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(objectMapper.writeValueAsString(processExecution)));
+
+        verify(processExecutionService).getExecution(executionId);
+    }
+
+    @Test
+    void getExecutionShouldReturnNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+
+        when(processExecutionService.getExecution(executionId)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/v1/executions/{executionId}", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(processExecutionService).getExecution(executionId);
     }
 
     @Test

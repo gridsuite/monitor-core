@@ -100,6 +100,7 @@ class ProcessExecutionServiceTest {
             any(UUID.class),
             eq(debugFileLocation)
         );
+        verify(notificationService).sendProcessUpdatedMessage(any(UUID.class));
     }
 
     @Test

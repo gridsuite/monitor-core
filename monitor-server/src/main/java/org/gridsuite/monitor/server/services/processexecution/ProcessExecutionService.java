@@ -70,6 +70,8 @@ public class ProcessExecutionService {
             result.get().debugLocationFile()
         );
 
+        notificationService.sendProcessUpdatedMessage(executionId);
+
         return Optional.of(executionId);
     }
 

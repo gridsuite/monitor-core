@@ -8,7 +8,6 @@ package org.gridsuite.monitor.server.messaging;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,15 +76,14 @@ class NotificationServiceTest {
 
     @Test
     void sendProcessUpdatedMessage() {
-        notificationService.sendProcessUpdatedMessage(ProcessType.SECURITY_ANALYSIS, executionId);
+        notificationService.sendProcessUpdatedMessage(executionId);
 
         verify(publisher).send(
                 eq("publishMonitorUpdate-out-0"),
                 argThat((Message<?> message) ->
                         message.getPayload().equals("") &&
-                        message.getHeaders().get("updateType").equals("PROCESS_EXECUTION_UPDATED") &&
-                        message.getHeaders().get("processType").equals(ProcessType.SECURITY_ANALYSIS.name()) &&
-                        message.getHeaders().get("processExecutionId").equals(executionId))
+                            "PROCESS_EXECUTION_UPDATED".equals(message.getHeaders().get("updateType")) &&
+                            executionId.equals(message.getHeaders().get("processExecutionId")))
         );
     }
 }

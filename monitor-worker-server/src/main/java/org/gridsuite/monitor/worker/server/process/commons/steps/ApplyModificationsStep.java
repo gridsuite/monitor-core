@@ -96,10 +96,13 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
                 .withSeverity(TypedValue.INFO_SEVERITY)
                 .add();
         }
-        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo =
-            networkModificationRestClient.getModifications(modifications.stream()
-                .filter(ModificationInfo::active)
-                .map(ModificationInfo::modificationUuid).toList());
+
+        List<UUID> activeModificationUuids = modifications.stream().filter(ModificationInfo::active).map(ModificationInfo::modificationUuid).toList();
+        if (activeModificationUuids.isEmpty()) {
+            return;
+        }
+
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = networkModificationRestClient.getModifications(activeModificationUuids);
         if (CollectionUtils.isNotEmpty(networkModificationsWithMissingInfo.missingCompositeModifications())) {
             String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
 

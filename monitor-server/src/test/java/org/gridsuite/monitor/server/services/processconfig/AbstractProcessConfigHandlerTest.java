@@ -66,8 +66,8 @@ public abstract class AbstractProcessConfigHandlerTest<
         ProcessConfigEntity result = handler.copyEntity(processConfigEntity1);
 
         assertThat(result).isEqualTo(expectedProcessConfigEntity);
-        verify(mapper).toDto(processConfigEntity1);
-        verify(mapper).toEntity(any());
+        verify(mapper, times(2)).toDto(processConfigEntity1);
+        verify(mapper, times(2)).toEntity(any());
     }
 
     @Test
@@ -80,7 +80,7 @@ public abstract class AbstractProcessConfigHandlerTest<
         ProcessConfigEntity result = handler.toEntity(processConfig);
 
         assertThat(result).isEqualTo(expectedProcessConfigEntity);
-        verify(mapper).toEntity(processConfig);
+        verify(mapper, times(2)).toEntity(processConfig);
     }
 
     @Test
@@ -93,6 +93,6 @@ public abstract class AbstractProcessConfigHandlerTest<
         ProcessConfig result = handler.toDto(processConfigEntity);
 
         assertThat(result).isEqualTo(expectedProcessConfig);
-        verify(mapper).toDto(processConfigEntity);
+        verify(mapper, times(2)).toDto(processConfigEntity);
     }
 }

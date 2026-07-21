@@ -11,6 +11,7 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.commons.report.TypedValue;
 import com.powsybl.iidm.network.Network;
 import org.apache.commons.collections4.CollectionUtils;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
@@ -57,10 +58,10 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     @Override
     public void execute(ProcessStepExecutionContext<C> context) {
-        List<UUID> modificationIds = context.getConfig().modificationUuids();
+        List<ModificationInfo> modifications = context.getConfig().modifications();
         Network network = context.getNetwork();
-        if (CollectionUtils.isNotEmpty(modificationIds)) {
-            applyModifications(modificationIds, network, context.getReportNode());
+        if (CollectionUtils.isNotEmpty(modifications)) {
+            applyModifications(modifications, network, context.getReportNode());
         }
         if (context.getDebugFileLocation() != null) {
             try {
@@ -84,8 +85,21 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
         );
     }
 
-    private void applyModifications(List<UUID> modificationIds, Network network, ReportNode reportNode) {
-        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = networkModificationRestClient.getModifications(modificationIds);
+    private void applyModifications(List<ModificationInfo> modifications, Network network, ReportNode reportNode) {
+        List<UUID> modificationUuidsNotApplied = modifications.stream()
+            .filter(m -> !m.active()).map(ModificationInfo::modificationUuid).toList();
+        if (!modificationUuidsNotApplied.isEmpty()) {
+            reportNode.newReportNode()
+                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
+                .withMessageTemplate("monitor.worker.server.modifications.not.applied")
+                .withUntypedValue("uuids", modificationUuidsNotApplied.stream().map(UUID::toString).collect(Collectors.joining(", ")))
+                .withSeverity(TypedValue.INFO_SEVERITY)
+                .add();
+        }
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo =
+            networkModificationRestClient.getModifications(modifications.stream()
+                .filter(ModificationInfo::active)
+                .map(ModificationInfo::modificationUuid).toList());
         if (CollectionUtils.isNotEmpty(networkModificationsWithMissingInfo.missingCompositeModifications())) {
             String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
 

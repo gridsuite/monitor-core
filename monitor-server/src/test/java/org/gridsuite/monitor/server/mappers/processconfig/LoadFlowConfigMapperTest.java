@@ -7,7 +7,9 @@
 package org.gridsuite.monitor.server.mappers.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.ModificationInfoEmbeddable;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
@@ -27,14 +29,21 @@ class LoadFlowConfigMapperTest {
     void toEntity() {
         LoadFlowConfig dto = new LoadFlowConfig(
             UUID.randomUUID(),
-            List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+            List.of(new ModificationInfo(UUID.randomUUID(), "descr1", true),
+                new ModificationInfo(UUID.randomUUID(), "descr2", true),
+                new ModificationInfo(UUID.randomUUID(), "descr3", true))
         );
 
         LoadFlowConfigEntity entity = mapper.toEntity(dto);
 
         assertThat(entity).isNotNull();
         assertThat(entity.getLoadflowParametersUuid()).isEqualTo(dto.loadflowParametersUuid());
-        assertThat(entity.getModificationUuids()).isEqualTo(dto.modificationUuids());
+        assertThat(entity.getModifications().stream().map(ModificationInfoEmbeddable::getModificationUuid).toList())
+            .isEqualTo(dto.modifications().stream().map(ModificationInfo::modificationUuid).toList());
+        assertThat(entity.getModifications().stream().map(ModificationInfoEmbeddable::getDescription).toList())
+            .isEqualTo(dto.modifications().stream().map(ModificationInfo::description).toList());
+        assertThat(entity.getModifications().stream().map(ModificationInfoEmbeddable::isActive).toList())
+            .isEqualTo(dto.modifications().stream().map(ModificationInfo::active).toList());
         assertThat(entity.getProcessType()).isEqualTo(dto.processType());
     }
 }

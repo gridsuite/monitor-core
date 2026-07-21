@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -58,7 +59,9 @@ class ProcessConfigControllerTest {
     @Test
     void createProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID(), UUID.randomUUID()), UUID.randomUUID());
+        SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr1", true),
+                new ModificationInfo(UUID.randomUUID(), "descr2", true)),
+            UUID.randomUUID());
 
         when(processConfigService.createProcessConfig(any(ProcessConfig.class)))
             .thenReturn(processConfigId);
@@ -77,8 +80,11 @@ class ProcessConfigControllerTest {
     void getProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
         PersistedProcessConfig config = new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(
-            UUID.randomUUID(), List.of(UUID.randomUUID(), UUID.randomUUID()), UUID.randomUUID()
-        ));
+            UUID.randomUUID(), List.of(
+                new ModificationInfo(UUID.randomUUID(), "descr1", true),
+                new ModificationInfo(UUID.randomUUID(), "descr2", true)),
+            UUID.randomUUID())
+        );
         String expectedJson = objectMapper.writeValueAsString(config);
 
         when(processConfigService.getProcessConfig(any(UUID.class)))
@@ -132,7 +138,10 @@ class ProcessConfigControllerTest {
     @Test
     void updateProcessConfig() throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID(), UUID.randomUUID()), UUID.randomUUID());
+        SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(),
+            List.of(new ModificationInfo(UUID.randomUUID(), "descr1", true),
+                new ModificationInfo(UUID.randomUUID(), "descr2", true)),
+            UUID.randomUUID());
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
             .thenReturn(Optional.of(processConfigId));
@@ -148,7 +157,9 @@ class ProcessConfigControllerTest {
     @Test
     void updateProcessConfigNotFound() throws Exception {
         UUID processConfigId = UUID.randomUUID();
-        SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID());
+        SecurityAnalysisConfig config = new SecurityAnalysisConfig(UUID.randomUUID(),
+            List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)),
+            UUID.randomUUID());
 
         when(processConfigService.updateProcessConfig(any(UUID.class), any(ProcessConfig.class)))
             .thenReturn(Optional.empty());
@@ -219,8 +230,8 @@ class ProcessConfigControllerTest {
     @Test
     void getAllProcessConfigs() throws Exception {
         List<PersistedProcessConfig> configs = List.of(
-            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID())),
-            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID()))
+            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr1", true)), UUID.randomUUID())),
+            new PersistedProcessConfig(UUID.randomUUID(), new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr2", true)), UUID.randomUUID()))
         );
         String expectedJson = objectMapper.writeValueAsString(configs);
 

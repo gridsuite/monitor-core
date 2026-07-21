@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -73,7 +74,7 @@ class MonitorControllerTest {
 
         SecurityAnalysisConfig config = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of(modificationUuid),
+                List.of(new ModificationInfo(modificationUuid, "descr", true)),
                 loadflowParametersUuid
         );
         PersistedProcessConfig persistedProcessConfig = new PersistedProcessConfig(processConfigUuid, config);

@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
@@ -40,7 +41,8 @@ class SecurityAnalysisConfigHandlerTest extends AbstractProcessConfigHandlerTest
 
     @Override
     SecurityAnalysisConfig createProcessConfig() {
-        return new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID());
+        return new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)),
+            UUID.randomUUID());
     }
 
     @Override

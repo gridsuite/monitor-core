@@ -53,9 +53,8 @@ public class ProcessConfigEntity {
     @CollectionTable(name = "process_config_modifications",
                     joinColumns = @JoinColumn(name = "process_config_id"),
                     foreignKey = @ForeignKey(name = "AbstractProcessConfigEntity_modificationUuids_fk1"))
-    @Column(name = "modification_uuid")
     @OrderColumn(name = "pos_modifications")
-    private List<UUID> modificationUuids;
+    private List<ModificationInfoEmbeddable> modifications;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "process_type", insertable = false, updatable = false)

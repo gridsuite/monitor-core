@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -163,6 +164,31 @@ class ApplyModificationsStepTest {
         ReportNode applyReportNode = reportNode.getChildren().getFirst();
         assertEquals("monitor.worker.server.modifications.not.applied", applyReportNode.getMessageKey());
         assertEquals("Some network composite modifications are not applied intentionally (see process-config) : " + MODIFICATION_UUID_2,
+            applyReportNode.getMessage());
+    }
+
+    @Test
+    void executeApplyModificationsWhenAllModificationsAreInactive() {
+        // all modifications are inactive
+        when(config.modifications()).thenReturn(List.of(
+            new ModificationInfo(MODIFICATION_UUID, "descr1", false),
+            new ModificationInfo(MODIFICATION_UUID_2, "descr2", false),
+            new ModificationInfo(MODIFICATION_UUID_3, "descr3", false)));
+
+        when(stepContext.getReportNode()).thenReturn(reportNode);
+
+        applyModificationsStep.execute(stepContext);
+
+        verifyNoInteractions(networkModificationService);
+        verifyNoInteractions(networkModificationRestClient);
+        verifyNoInteractions(filterService);
+        verifyNoInteractions(s3Service);
+
+        // verify report added for all modifications not applied
+        ReportNode applyReportNode = reportNode.getChildren().getFirst();
+        assertEquals("monitor.worker.server.modifications.not.applied", applyReportNode.getMessageKey());
+        assertEquals("Some network composite modifications are not applied intentionally (see process-config) : " +
+                Stream.of(MODIFICATION_UUID, MODIFICATION_UUID_2, MODIFICATION_UUID_3).map(UUID::toString).collect(java.util.stream.Collectors.joining(", ")),
             applyReportNode.getMessage());
     }
 

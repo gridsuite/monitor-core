@@ -79,6 +79,15 @@ public class MonitorController {
         return ResponseEntity.ok(processExecutionService.getLaunchedProcesses(processType));
     }
 
+    @GetMapping("/executions/{executionId}")
+    @Operation(summary = "Get an execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process execution"),
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    public ResponseEntity<ProcessExecution> getExecution(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        Optional<ProcessExecution> execution = processExecutionService.getExecution(executionId);
+        return execution.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/executions/{executionId}/step-infos")
     @Operation(summary = "Get execution steps statuses")
     @ApiResponses(value = {
@@ -114,4 +123,3 @@ public class MonitorController {
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 }
-

@@ -145,6 +145,11 @@ public class ProcessExecutionTxService {
             .toList();
     }
 
+    public Optional<ProcessExecution> getExecution(UUID executionId) {
+        return processExecutionRepository.findById(executionId)
+            .map(processExecutionMapper::toDto);
+    }
+
     public Optional<List<ProcessExecutionStep>> getStepsInfos(UUID executionId) {
         return processExecutionRepository.findById(executionId)
             .map(execution -> Optional.ofNullable(execution.getSteps()).orElse(List.of()).stream()

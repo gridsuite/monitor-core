@@ -460,6 +460,50 @@ class ProcessExecutionTxServiceTest {
     }
 
     @Test
+    void getExecutionReturnsExecution() {
+        UUID executionUuid = UUID.randomUUID();
+        UUID configUuid = UUID.randomUUID();
+        UUID reportUuid = UUID.randomUUID();
+        Instant scheduledAt = Instant.now().minusSeconds(60);
+        Instant startedAt = Instant.now().minusSeconds(30);
+        Instant completedAt = Instant.now();
+        ProcessExecutionEntity processExecutionEntity = ProcessExecutionEntity.builder()
+            .id(executionUuid)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(caseUuid)
+            .processConfigId(configUuid)
+            .status(ProcessStatus.COMPLETED)
+            .executionEnvName("env1")
+            .scheduledAt(scheduledAt)
+            .startedAt(startedAt)
+            .completedAt(completedAt)
+            .reportId(reportUuid)
+            .userId("user1")
+            .build();
+        ProcessExecution processExecution = new ProcessExecution(executionUuid, ProcessType.SECURITY_ANALYSIS.name(), caseUuid, configUuid, ProcessStatus.COMPLETED, "env1", scheduledAt,
+            startedAt, completedAt, reportUuid, "user1");
+
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(processExecutionEntity));
+
+        Optional<ProcessExecution> result = processExecutionTxService.getExecution(executionUuid);
+
+        assertThat(result).contains(processExecution);
+        verify(executionRepository).findById(executionUuid);
+    }
+
+    @Test
+    void getExecutionNotFoundReturnsEmpty() {
+        UUID executionUuid = UUID.randomUUID();
+
+        when(executionRepository.findById(executionUuid)).thenReturn(Optional.empty());
+
+        Optional<ProcessExecution> result = processExecutionTxService.getExecution(executionUuid);
+
+        assertThat(result).isEmpty();
+        verify(executionRepository).findById(executionUuid);
+    }
+
+    @Test
     void getStepsInfos() {
         UUID executionUuid = UUID.randomUUID();
         UUID stepId1 = UUID.randomUUID();

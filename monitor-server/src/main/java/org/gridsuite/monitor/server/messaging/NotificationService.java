@@ -9,7 +9,6 @@ package org.gridsuite.monitor.server.messaging;
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -34,12 +33,12 @@ public class NotificationService {
         publisher.send(bindingName, message);
     }
 
-    public void sendProcessUpdatedMessage(ProcessType processType, UUID executionId) {
+    public void sendProcessUpdatedMessage(UUID executionId) {
         String bindingName = "publishMonitorUpdate-out-0";
         Message<?> message = MessageBuilder.withPayload("")
             .setHeader("updateType", "PROCESS_EXECUTION_UPDATED")
-            .setHeader("processType", processType.name())
             .setHeader("processExecutionId", executionId).build();
+
         publisher.send(bindingName, message);
     }
 }

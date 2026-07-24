@@ -126,7 +126,7 @@ class ApplyModificationsStepTest {
     }
 
     @Test
-    void executeDoesNothingWhenModificationUuidsEmpty() {
+    void executeDoesNothingWhenModificationsEmpty() {
         when(config.modifications()).thenReturn(Collections.emptyList());
 
         applyModificationsStep.execute(stepContext);

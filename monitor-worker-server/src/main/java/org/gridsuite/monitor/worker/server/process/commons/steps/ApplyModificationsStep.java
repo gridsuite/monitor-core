@@ -59,9 +59,8 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     @Override
     public void execute(ProcessStepExecutionContext<C> context) {
         List<ModificationInfo> modifications = context.getConfig().modifications();
-        Network network = context.getNetwork();
         if (CollectionUtils.isNotEmpty(modifications)) {
-            applyModifications(modifications, network, context.getReportNode());
+            applyModifications(modifications, context.getNetwork(), context.getReportNode());
         }
         if (context.getDebugFileLocation() != null) {
             try {

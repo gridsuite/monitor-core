@@ -60,14 +60,14 @@ public abstract class AbstractProcessConfigHandlerTest<
         E expectedProcessConfigEntity = createProcessConfigEntity();
         C processConfig = createProcessConfig();
 
-        when(mapper.toDto(processConfigEntity1)).thenReturn(processConfig);
-        when(mapper.toEntity(processConfig)).thenReturn(expectedProcessConfigEntity);
+        doReturn(processConfig).when(mapper).toDto(processConfigEntity1);
+        doReturn(expectedProcessConfigEntity).when(mapper).toEntity(processConfig);
 
         ProcessConfigEntity result = handler.copyEntity(processConfigEntity1);
 
         assertThat(result).isEqualTo(expectedProcessConfigEntity);
-        verify(mapper, times(2)).toDto(processConfigEntity1);
-        verify(mapper, times(2)).toEntity(any());
+        verify(mapper).toDto(processConfigEntity1);
+        verify(mapper).toEntity(any());
     }
 
     @Test
@@ -75,12 +75,12 @@ public abstract class AbstractProcessConfigHandlerTest<
         E expectedProcessConfigEntity = createProcessConfigEntity();
         C processConfig = createProcessConfig();
 
-        when(mapper.toEntity(processConfig)).thenReturn(expectedProcessConfigEntity);
+        doReturn(expectedProcessConfigEntity).when(mapper).toEntity(processConfig);
 
         ProcessConfigEntity result = handler.toEntity(processConfig);
 
         assertThat(result).isEqualTo(expectedProcessConfigEntity);
-        verify(mapper, times(2)).toEntity(processConfig);
+        verify(mapper).toEntity(processConfig);
     }
 
     @Test
@@ -88,11 +88,11 @@ public abstract class AbstractProcessConfigHandlerTest<
         E processConfigEntity = createProcessConfigEntity();
         C expectedProcessConfig = createProcessConfig();
 
-        when(mapper.toDto(processConfigEntity)).thenReturn(expectedProcessConfig);
+        doReturn(expectedProcessConfig).when(mapper).toDto(processConfigEntity);
 
         ProcessConfig result = handler.toDto(processConfigEntity);
 
         assertThat(result).isEqualTo(expectedProcessConfig);
-        verify(mapper, times(2)).toDto(processConfigEntity);
+        verify(mapper).toDto(processConfigEntity);
     }
 }

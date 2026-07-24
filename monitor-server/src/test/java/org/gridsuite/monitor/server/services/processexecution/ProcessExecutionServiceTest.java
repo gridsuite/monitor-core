@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -78,7 +79,7 @@ class ProcessExecutionServiceTest {
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
-            List.of(UUID.randomUUID()),
+            List.of(new ModificationInfo(UUID.randomUUID(), "descr1", true)),
             UUID.randomUUID()
         );
     }

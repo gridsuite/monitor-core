@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.messaging;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,8 @@ class NotificationServiceTest {
 
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 parametersUuid,
-                List.of(UUID.randomUUID(), UUID.randomUUID()),
+                List.of(new ModificationInfo(UUID.randomUUID(), "descr1", true),
+                    new ModificationInfo(UUID.randomUUID(), "descr2", true)),
                 loadflowParametersUuid
         );
     }

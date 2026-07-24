@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
@@ -40,7 +41,7 @@ class LoadFlowConfigHandlerTest extends AbstractProcessConfigHandlerTest<LoadFlo
 
     @Override
     LoadFlowConfig createProcessConfig() {
-        return new LoadFlowConfig(UUID.randomUUID(), List.of(UUID.randomUUID()));
+        return new LoadFlowConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
     }
 
     @Override

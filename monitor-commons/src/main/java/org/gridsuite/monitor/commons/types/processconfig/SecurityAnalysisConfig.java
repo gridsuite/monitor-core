@@ -20,7 +20,7 @@ public record SecurityAnalysisConfig(
     @NotNull
     UUID securityAnalysisParametersUuid,
     @NotNull
-    List<UUID> modificationUuids,
+    List<ModificationInfo> modifications,
     @NotNull
     UUID loadflowParametersUuid
 ) implements ProcessConfig {
@@ -34,8 +34,8 @@ public record SecurityAnalysisConfig(
         SecurityAnalysisConfig o = (SecurityAnalysisConfig) other;
         return List.of(
             new ProcessConfigFieldComparison("modifications",
-                Objects.equals(this.modificationUuids, o.modificationUuids),
-                this.modificationUuids, o.modificationUuids),
+                Objects.equals(this.modifications, o.modifications),
+                this.modifications, o.modifications),
             new ProcessConfigFieldComparison("securityAnalysisParameters",
                 Objects.equals(this.securityAnalysisParametersUuid, o.securityAnalysisParametersUuid),
                 this.securityAnalysisParametersUuid, o.securityAnalysisParametersUuid),

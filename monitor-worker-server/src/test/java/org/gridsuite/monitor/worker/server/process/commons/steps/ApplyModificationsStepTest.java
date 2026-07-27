@@ -14,6 +14,7 @@ import org.gridsuite.modification.dto.AttributeModification;
 import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.dto.OperationType;
+import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
@@ -34,6 +35,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -69,12 +71,15 @@ class ApplyModificationsStepTest {
 
     private static final UUID MODIFICATION_UUID = UUID.randomUUID();
     private static final UUID MISSING_MODIFICATION_UUID = UUID.randomUUID();
+    private static final UUID MODIFICATION_UUID_2 = UUID.randomUUID();
+    private static final UUID MODIFICATION_UUID_3 = UUID.randomUUID();
+
     private ReportNode reportNode;
 
     @BeforeEach
     void setUp() {
         applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, s3Service, filterService);
-        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID));
+        when(config.modifications()).thenReturn(List.of(new ModificationInfo(MODIFICATION_UUID, "descr", true)));
         when(stepContext.getConfig()).thenReturn(config);
         reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -103,7 +108,9 @@ class ApplyModificationsStepTest {
 
     @Test
     void executeApplyModificationsFailWhenModificationsAreMissing() {
-        when(config.modificationUuids()).thenReturn(List.of(MODIFICATION_UUID, MISSING_MODIFICATION_UUID));
+        when(config.modifications()).thenReturn(List.of(
+            new ModificationInfo(MODIFICATION_UUID, "descr1", true),
+            new ModificationInfo(MISSING_MODIFICATION_UUID, "descr2", true)));
 
         List<ModificationInfos> modificationInfos = List.of(LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build());
         NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of(MISSING_MODIFICATION_UUID));
@@ -119,8 +126,8 @@ class ApplyModificationsStepTest {
     }
 
     @Test
-    void executeDoesNothingWhenModificationUuidsEmpty() {
-        when(config.modificationUuids()).thenReturn(Collections.emptyList());
+    void executeDoesNothingWhenModificationsEmpty() {
+        when(config.modifications()).thenReturn(Collections.emptyList());
 
         applyModificationsStep.execute(stepContext);
 
@@ -128,6 +135,61 @@ class ApplyModificationsStepTest {
         verifyNoInteractions(networkModificationRestClient);
         verifyNoInteractions(filterService);
         verifyNoInteractions(s3Service);
+    }
+
+    @Test
+    void executeApplyModificationsWhenModificationsAreNotApplied() {
+        List<ModificationInfos> modificationInfos = List.of(
+            LoadModificationInfos.builder().equipmentId("load1").q0(new AttributeModification<>(300., OperationType.SET)).build(),
+            LoadModificationInfos.builder().equipmentId("load2").p0(new AttributeModification<>(500., OperationType.SET)).build(),
+            LoadModificationInfos.builder().equipmentId("load3").q0(new AttributeModification<>(200., OperationType.SET)).build());
+        NetworkModificationsWithMissingInfo networkModificationsWithMissingInfo = new NetworkModificationsWithMissingInfo(modificationInfos, List.of());
+
+        when(config.modifications()).thenReturn(List.of(
+            new ModificationInfo(MODIFICATION_UUID, "descr1", true),
+            new ModificationInfo(MODIFICATION_UUID_2, "descr2", false),  // this modification will not be applied
+            new ModificationInfo(MODIFICATION_UUID_3, "descr3", true)));
+
+        Network network = EurostagTutorialExample1Factory.create();
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(stepContext.getReportNode()).thenReturn(reportNode);
+        when(networkModificationRestClient.getModifications(any(List.class))).thenReturn(networkModificationsWithMissingInfo);
+        doNothing().when(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
+
+        applyModificationsStep.execute(stepContext);
+        verify(networkModificationRestClient).getModifications(any(List.class));
+        verify(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
+
+        // verify report added for modification MODIFICATION_UUID_2 not applied
+        ReportNode applyReportNode = reportNode.getChildren().getFirst();
+        assertEquals("monitor.worker.server.modifications.not.applied", applyReportNode.getMessageKey());
+        assertEquals("Some network composite modifications are not applied intentionally (see process-config) : " + MODIFICATION_UUID_2,
+            applyReportNode.getMessage());
+    }
+
+    @Test
+    void executeApplyModificationsWhenAllModificationsAreInactive() {
+        // all modifications are inactive
+        when(config.modifications()).thenReturn(List.of(
+            new ModificationInfo(MODIFICATION_UUID, "descr1", false),
+            new ModificationInfo(MODIFICATION_UUID_2, "descr2", false),
+            new ModificationInfo(MODIFICATION_UUID_3, "descr3", false)));
+
+        when(stepContext.getReportNode()).thenReturn(reportNode);
+
+        applyModificationsStep.execute(stepContext);
+
+        verifyNoInteractions(networkModificationService);
+        verifyNoInteractions(networkModificationRestClient);
+        verifyNoInteractions(filterService);
+        verifyNoInteractions(s3Service);
+
+        // verify report added for all modifications not applied
+        ReportNode applyReportNode = reportNode.getChildren().getFirst();
+        assertEquals("monitor.worker.server.modifications.not.applied", applyReportNode.getMessageKey());
+        assertEquals("Some network composite modifications are not applied intentionally (see process-config) : " +
+                Stream.of(MODIFICATION_UUID, MODIFICATION_UUID_2, MODIFICATION_UUID_3).map(UUID::toString).collect(java.util.stream.Collectors.joining(", ")),
+            applyReportNode.getMessage());
     }
 
     @Test

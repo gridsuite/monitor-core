@@ -20,7 +20,7 @@ public record LoadFlowConfig(
     @NotNull
     UUID loadflowParametersUuid,
     @NotNull
-    List<UUID> modificationUuids
+    List<ModificationInfo> modifications
 ) implements ProcessConfig {
     @Override
     public ProcessType processType() {
@@ -32,8 +32,8 @@ public record LoadFlowConfig(
         LoadFlowConfig o = (LoadFlowConfig) other;
         return List.of(
             new ProcessConfigFieldComparison("modifications",
-                Objects.equals(this.modificationUuids, o.modificationUuids),
-                this.modificationUuids, o.modificationUuids),
+                Objects.equals(this.modifications, o.modifications),
+                this.modifications, o.modifications),
             new ProcessConfigFieldComparison("loadflowParameters",
                 Objects.equals(this.loadflowParametersUuid, o.loadflowParametersUuid),
                 this.loadflowParametersUuid, o.loadflowParametersUuid)

@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -28,7 +27,7 @@ import java.util.UUID;
 public interface ProcessConfig {
     ProcessType processType();
 
-    List<UUID> modificationUuids();
+    List<ModificationInfo> modifications();
 
     List<ProcessConfigFieldComparison> compareWith(ProcessConfig other);
 }

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class LoadFlowConfigTest {
     @Test
     void compareWithShouldReturnNoDifferenceWhenConfigsAreEqual() {
-        LoadFlowConfig processConfig = new LoadFlowConfig(UUID.randomUUID(), List.of(UUID.randomUUID()));
+        LoadFlowConfig processConfig = new LoadFlowConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
 
         List<ProcessConfigFieldComparison> result = processConfig.compareWith(processConfig);
 
@@ -33,11 +33,15 @@ class LoadFlowConfigTest {
     @Test
     void compareWithShouldReturnDifferentModificationsWhenModificationsAreDifferent() {
         UUID loadflowParametersUuid = UUID.randomUUID();
-        List<UUID> modificationUuids1 = List.of(UUID.randomUUID(), UUID.randomUUID());
-        List<UUID> modificationUuids2 = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<ModificationInfo> modifications1 = List.of(
+            new ModificationInfo(UUID.randomUUID(), "descr1", true),
+            new ModificationInfo(UUID.randomUUID(), "descr2", true));
+        List<ModificationInfo> modifications2 = List.of(
+            new ModificationInfo(UUID.randomUUID(), "descr1", true),
+            new ModificationInfo(UUID.randomUUID(), "descr2", true));
 
-        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid, modificationUuids1);
-        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid, modificationUuids2);
+        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid, modifications1);
+        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid, modifications2);
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
@@ -47,8 +51,8 @@ class LoadFlowConfigTest {
             .findFirst()
             .orElseThrow();
         assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(modificationUuids1);
-        assertThat(comparison.value2()).isEqualTo(modificationUuids2);
+        assertThat(comparison.value1()).isEqualTo(modifications1);
+        assertThat(comparison.value2()).isEqualTo(modifications2);
     }
 
     @Test
@@ -56,11 +60,15 @@ class LoadFlowConfigTest {
         UUID loadflowParametersUuid = UUID.randomUUID();
         UUID mod1 = UUID.randomUUID();
         UUID mod2 = UUID.randomUUID();
-        List<UUID> modificationUuids1 = List.of(mod1, mod2);
-        List<UUID> modificationUuids2 = List.of(mod2, mod1); // Different order
+        List<ModificationInfo> modifications1 = List.of(
+            new ModificationInfo(mod1, "descr1", true),
+            new ModificationInfo(mod2, "descr2", true));
+        List<ModificationInfo> modifications2 = List.of(
+            new ModificationInfo(mod2, "descr2", true),
+            new ModificationInfo(mod1, "descr1", true)); // Different order
 
-        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid, modificationUuids1);
-        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid, modificationUuids2);
+        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid, modifications1);
+        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid, modifications2);
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
@@ -70,18 +78,20 @@ class LoadFlowConfigTest {
             .findFirst()
             .orElseThrow();
         assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(modificationUuids1);
-        assertThat(comparison.value2()).isEqualTo(modificationUuids2);
+        assertThat(comparison.value1()).isEqualTo(modifications1);
+        assertThat(comparison.value2()).isEqualTo(modifications2);
     }
 
     @Test
     void compareWithShouldReturnDifferencesWhenParametersAreDifferent() {
         UUID loadflowParametersUuid1 = UUID.randomUUID();
         UUID loadflowParametersUuid2 = UUID.randomUUID();
-        List<UUID> modificationUuids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<ModificationInfo> modifications = List.of(
+            new ModificationInfo(UUID.randomUUID(), "descr1", true),
+            new ModificationInfo(UUID.randomUUID(), "descr2", true));
 
-        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid1, modificationUuids);
-        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid2, modificationUuids);
+        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid1, modifications);
+        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid2, modifications);
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
@@ -97,8 +107,8 @@ class LoadFlowConfigTest {
 
     @Test
     void compareWithShouldThrowWhenProcessTypesAreDifferent() {
-        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(UUID.randomUUID(), List.of(UUID.randomUUID()));
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(UUID.randomUUID()), UUID.randomUUID());
+        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
+        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID());
 
         assertThatThrownBy(() -> loadFlowConfig.compareWith(securityAnalysisConfig)).isInstanceOf(ClassCastException.class);
     }

@@ -49,6 +49,7 @@ class NetworkModificationServiceTest {
     void applyModifications() {
         ModificationInfos modification1 = spy(
             LoadModificationInfos.builder()
+                .activated(true)
                 .equipmentId("load1")
                 .q0(new AttributeModification<>(300., OperationType.SET))
                 .build()
@@ -56,6 +57,7 @@ class NetworkModificationServiceTest {
 
         ModificationInfos modification2 = spy(
             LoadModificationInfos.builder()
+                .activated(true)
                 .equipmentId("load2")
                 .q0(new AttributeModification<>(null, OperationType.UNSET))
                 .build()
@@ -92,6 +94,7 @@ class NetworkModificationServiceTest {
     void applyModificationsWithException() {
         ModificationInfos modification1 = spy(
             LoadModificationInfos.builder()
+                .activated(true)
                 .equipmentId("load1")
                 .q0(new AttributeModification<>(300., OperationType.SET))
                 .build()
@@ -99,6 +102,7 @@ class NetworkModificationServiceTest {
 
         ModificationInfos modification2 = spy(
             LoadModificationInfos.builder()
+                .activated(true)
                 .equipmentId("load2")
                 .q0(new AttributeModification<>(null, OperationType.UNSET))
                 .build()

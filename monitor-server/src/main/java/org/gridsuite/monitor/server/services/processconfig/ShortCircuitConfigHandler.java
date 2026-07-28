@@ -10,10 +10,12 @@ import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.ShortCircuitConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.ShortCircuitConfigMapper;
+import org.springframework.stereotype.Service;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
+@Service
 public class ShortCircuitConfigHandler extends AbstractProcessConfigHandler<ShortCircuitConfig, ShortCircuitConfigEntity, ShortCircuitConfigMapper> {
     public ShortCircuitConfigHandler(ShortCircuitConfigMapper mapper) {
         super(mapper);

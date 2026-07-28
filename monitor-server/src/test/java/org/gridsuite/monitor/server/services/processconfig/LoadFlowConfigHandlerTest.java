@@ -14,11 +14,12 @@ import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.UUID;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -30,7 +31,7 @@ class LoadFlowConfigHandlerTest extends AbstractProcessConfigHandlerTest<LoadFlo
     @BeforeEach
     protected void setUp() {
         LoadFlowConfigMapper realMapper = Mappers.getMapper(LoadFlowConfigMapper.class);
-        mapper = Mockito.spy(realMapper);
+        mapper = spy(realMapper);
         handler = new LoadFlowConfigHandler(mapper);
     }
 

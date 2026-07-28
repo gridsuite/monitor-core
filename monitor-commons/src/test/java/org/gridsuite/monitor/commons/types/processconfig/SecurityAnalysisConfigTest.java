@@ -6,84 +6,40 @@
  */
 package org.gridsuite.monitor.commons.types.processconfig;
 
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-class SecurityAnalysisConfigTest {
-    @Test
-    void compareWithShouldReturnNoDifferenceWhenConfigsAreEqual() {
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(UUID.randomUUID(),
-            List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID());
+class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnalysisConfig> {
 
-        List<ProcessConfigFieldComparison> result = securityAnalysisConfig.compareWith(securityAnalysisConfig);
+    UUID securityAnalysisParametersUuid = UUID.randomUUID();
+    UUID loadflowParametersUuid = UUID.randomUUID();
 
-        assertThat(result)
-            .hasSize(3)
-            .allMatch(ProcessConfigFieldComparison::identical)
-            .allMatch(fieldComparison -> fieldComparison.value1().equals(fieldComparison.value2()));
+    @Override
+    ProcessType getProcessType() {
+        return ProcessType.SECURITY_ANALYSIS;
     }
 
-    @Test
-    void compareWithShouldReturnDifferentModificationsWhenModificationsAreDifferent() {
-        UUID securityAnalysisParametersUuid = UUID.randomUUID();
-        List<ModificationInfo> modifications1 = List.of(
-            new ModificationInfo(UUID.randomUUID(), "descr1", true),
-            new ModificationInfo(UUID.randomUUID(), "descr2", true));
-        List<ModificationInfo> modifications2 = List.of(
-            new ModificationInfo(UUID.randomUUID(), "descr1", true),
-            new ModificationInfo(UUID.randomUUID(), "descr2", true));
-        UUID loadflowParametersUuid = UUID.randomUUID();
-
-        SecurityAnalysisConfig processConfig1 = new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications1, loadflowParametersUuid);
-        SecurityAnalysisConfig processConfig2 = new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications2, loadflowParametersUuid);
-
-        List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
-
-        assertThat(result).hasSize(3);
-        ProcessConfigFieldComparison comparison = result.stream()
-            .filter(d -> "modifications".equals(d.field()))
-            .findFirst()
-            .orElseThrow();
-        assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(modifications1);
-        assertThat(comparison.value2()).isEqualTo(modifications2);
+    @Override
+    int getFieldsNumber() {
+        return 3;
     }
 
-    @Test
-    void compareWithShouldDetectOrderDifferenceInModifications() {
-        UUID securityAnalysisParametersUuid = UUID.randomUUID();
-        UUID mod1 = UUID.randomUUID();
-        UUID mod2 = UUID.randomUUID();
-        List<ModificationInfo> modifications1 = List.of(
-            new ModificationInfo(mod1, "descr1", true),
-            new ModificationInfo(mod2, "descr2", true));
-        List<ModificationInfo> modifications2 = List.of(
-            new ModificationInfo(mod2, "descr2", true),
-            new ModificationInfo(mod1, "descr1", true)); // Different order
+    @Override
+    SecurityAnalysisConfig createProcessConfig() {
+        return new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID());
+    }
 
-        UUID loadflowParametersUuid = UUID.randomUUID();
-
-        SecurityAnalysisConfig processConfig1 = new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications1, loadflowParametersUuid);
-        SecurityAnalysisConfig processConfig2 = new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications2, loadflowParametersUuid);
-
-        List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
-
-        assertThat(result).hasSize(3);
-        ProcessConfigFieldComparison comparison = result.stream()
-            .filter(d -> "modifications".equals(d.field()))
-            .findFirst()
-            .orElseThrow();
-        assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(modifications1);
-        assertThat(comparison.value2()).isEqualTo(modifications2);
+    @Override
+    SecurityAnalysisConfig createProcessConfig(List<ModificationInfo> modifications) {
+        return new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications, loadflowParametersUuid);
     }
 
     @Test
@@ -93,7 +49,6 @@ class SecurityAnalysisConfigTest {
         List<ModificationInfo> modifications = List.of(
             new ModificationInfo(UUID.randomUUID(), "descr1", true),
             new ModificationInfo(UUID.randomUUID(), "descr2", true));
-        UUID loadflowParametersUuid = UUID.randomUUID();
 
         SecurityAnalysisConfig processConfig1 = new SecurityAnalysisConfig(securityAnalysisParametersUuid1, modifications, loadflowParametersUuid);
         SecurityAnalysisConfig processConfig2 = new SecurityAnalysisConfig(securityAnalysisParametersUuid2, modifications, loadflowParametersUuid);
@@ -112,7 +67,6 @@ class SecurityAnalysisConfigTest {
 
     @Test
     void compareWithShouldReturnDifferencesWhenLoadflowParametersAreDifferent() {
-        UUID securityAnalysisParametersUuid = UUID.randomUUID();
         List<ModificationInfo> modifications = List.of(
             new ModificationInfo(UUID.randomUUID(), "descr1", true),
             new ModificationInfo(UUID.randomUUID(), "descr2", true));
@@ -132,13 +86,5 @@ class SecurityAnalysisConfigTest {
         assertThat(comparison.identical()).isFalse();
         assertThat(comparison.value1()).isEqualTo(loadflowParametersUuid1);
         assertThat(comparison.value2()).isEqualTo(loadflowParametersUuid2);
-    }
-
-    @Test
-    void compareWithShouldThrowWhenProcessTypesAreDifferent() {
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID());
-        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
-
-        assertThatThrownBy(() -> securityAnalysisConfig.compareWith(loadFlowConfig)).isInstanceOf(ClassCastException.class);
     }
 }

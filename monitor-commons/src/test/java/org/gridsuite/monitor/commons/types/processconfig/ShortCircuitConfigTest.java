@@ -6,80 +6,39 @@
  */
 package org.gridsuite.monitor.commons.types.processconfig;
 
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-class ShortCircuitConfigTest {
-    @Test
-    void compareWithShouldReturnNoDifferenceWhenConfigsAreEqual() {
-        ShortCircuitConfig processConfig = new ShortCircuitConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
+class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfig> {
 
-        List<ProcessConfigFieldComparison> result = processConfig.compareWith(processConfig);
+    UUID shortCircuitParametersUuid = UUID.randomUUID();
 
-        assertThat(result)
-            .hasSize(2)
-            .allMatch(ProcessConfigFieldComparison::identical)
-            .allMatch(fieldComparison -> fieldComparison.value1().equals(fieldComparison.value2()));
+    @Override
+    ProcessType getProcessType() {
+        return ProcessType.SHORT_CIRCUIT;
     }
 
-    @Test
-    void compareWithShouldReturnDifferentModificationsWhenModificationsAreDifferent() {
-        UUID shortCircuitParametersUuid = UUID.randomUUID();
-        List<ModificationInfo> modifications1 = List.of(
-            new ModificationInfo(UUID.randomUUID(), "descr1", true),
-            new ModificationInfo(UUID.randomUUID(), "descr2", true));
-        List<ModificationInfo> modifications2 = List.of(
-            new ModificationInfo(UUID.randomUUID(), "descr1", true),
-            new ModificationInfo(UUID.randomUUID(), "descr2", true));
-
-        ShortCircuitConfig processConfig1 = new ShortCircuitConfig(shortCircuitParametersUuid, modifications1);
-        ShortCircuitConfig processConfig2 = new ShortCircuitConfig(shortCircuitParametersUuid, modifications2);
-
-        List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
-
-        assertThat(result).hasSize(2);
-        ProcessConfigFieldComparison comparison = result.stream()
-            .filter(d -> "modifications".equals(d.field()))
-            .findFirst()
-            .orElseThrow();
-        assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(modifications1);
-        assertThat(comparison.value2()).isEqualTo(modifications2);
+    @Override
+    int getFieldsNumber() {
+        return 2;
     }
 
-    @Test
-    void compareWithShouldDetectOrderDifferenceInModifications() {
-        UUID shortCircuitParametersUuid = UUID.randomUUID();
-        UUID mod1 = UUID.randomUUID();
-        UUID mod2 = UUID.randomUUID();
-        List<ModificationInfo> modifications1 = List.of(
-            new ModificationInfo(mod1, "descr1", true),
-            new ModificationInfo(mod2, "descr2", true));
-        List<ModificationInfo> modifications2 = List.of(
-            new ModificationInfo(mod2, "descr2", true),
-            new ModificationInfo(mod1, "descr1", true)); // Different order
+    @Override
+    ShortCircuitConfig createProcessConfig() {
+        return new ShortCircuitConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
+    }
 
-        ShortCircuitConfig processConfig1 = new ShortCircuitConfig(shortCircuitParametersUuid, modifications1);
-        ShortCircuitConfig processConfig2 = new ShortCircuitConfig(shortCircuitParametersUuid, modifications2);
-
-        List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
-
-        assertThat(result).hasSize(2);
-        ProcessConfigFieldComparison comparison = result.stream()
-            .filter(d -> "modifications".equals(d.field()))
-            .findFirst()
-            .orElseThrow();
-        assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(modifications1);
-        assertThat(comparison.value2()).isEqualTo(modifications2);
+    @Override
+    ShortCircuitConfig createProcessConfig(List<ModificationInfo> modifications) {
+        return new ShortCircuitConfig(shortCircuitParametersUuid, modifications);
     }
 
     @Test
@@ -103,13 +62,5 @@ class ShortCircuitConfigTest {
         assertThat(comparison.identical()).isFalse();
         assertThat(comparison.value1()).isEqualTo(shortCircuitParametersUuid1);
         assertThat(comparison.value2()).isEqualTo(shortCircuitParametersUuid2);
-    }
-
-    @Test
-    void compareWithShouldThrowWhenProcessTypesAreDifferent() {
-        ShortCircuitConfig shortCircuitConfig = new ShortCircuitConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
-        SecurityAnalysisConfig securityAnalysisConfig = new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID());
-
-        assertThatThrownBy(() -> shortCircuitConfig.compareWith(securityAnalysisConfig)).isInstanceOf(ClassCastException.class);
     }
 }

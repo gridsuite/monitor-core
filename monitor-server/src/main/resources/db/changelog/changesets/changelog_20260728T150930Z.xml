@@ -1,0 +1,23 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="jeandatcar (generated)" id="1785251380901-4">
+        <createTable tableName="short_circuit_config">
+            <column name="short_circuit_parameters_uuid" type="UUID"/>
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="short_circuit_configPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="jeandatcar (generated)" id="1785251380901-5">
+        <addForeignKeyConstraint baseColumnNames="id" baseTableName="short_circuit_config" constraintName="shortCircuitConfig_id_fk_constraint" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
+    </changeSet>
+    <changeSet author="jeandatcar (generated)" id="1785251380901-1">
+        <dropDefaultValue columnDataType="boolean" columnName="active" tableName="process_config_modifications"/>
+    </changeSet>
+    <changeSet author="jeandatcar (generated)" id="1785251380901-2">
+        <dropDefaultValue columnDataType="boolean" columnName="active" tableName="process_config_modifications"/>
+    </changeSet>
+    <changeSet author="jeandatcar (generated)" id="1785251380901-3">
+        <addNotNullConstraint columnDataType="uuid" columnName="modification_uuid" tableName="process_config_modifications" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

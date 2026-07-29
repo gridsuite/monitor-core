@@ -54,7 +54,7 @@ class LoadFlowConfigTest extends AbstractProcessConfigTest<LoadFlowConfig> {
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(2);
+        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "loadflowParameters".equals(d.field()))
             .findFirst()

@@ -54,7 +54,7 @@ class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfi
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(2);
+        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "shortCircuitParameters".equals(d.field()))
             .findFirst()

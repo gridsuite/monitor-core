@@ -55,7 +55,7 @@ class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnaly
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(3);
+        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "securityAnalysisParameters".equals(d.field()))
             .findFirst()
@@ -78,7 +78,7 @@ class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnaly
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(3);
+        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "loadflowParameters".equals(d.field()))
             .findFirst()

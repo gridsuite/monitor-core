@@ -11,13 +11,4 @@
     <changeSet author="jeandatcar (generated)" id="1785251380901-5">
         <addForeignKeyConstraint baseColumnNames="id" baseTableName="short_circuit_config" constraintName="shortCircuitConfig_id_fk_constraint" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
     </changeSet>
-    <changeSet author="jeandatcar (generated)" id="1785251380901-1">
-        <dropDefaultValue columnDataType="boolean" columnName="active" tableName="process_config_modifications"/>
-    </changeSet>
-    <changeSet author="jeandatcar (generated)" id="1785251380901-2">
-        <dropDefaultValue columnDataType="boolean" columnName="active" tableName="process_config_modifications"/>
-    </changeSet>
-    <changeSet author="jeandatcar (generated)" id="1785251380901-3">
-        <addNotNullConstraint columnDataType="uuid" columnName="modification_uuid" tableName="process_config_modifications" validate="true"/>
-    </changeSet>
 </databaseChangeLog>

@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -78,7 +77,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             initializeSteps(process, context);
             executeSteps(process, context);
         } catch (Exception e) {
-            updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
+            updateExecutionStatus(context, ProcessStatus.FAILED);
             throw e;
         }
     }
@@ -97,9 +96,9 @@ public class ProcessExecutionService implements ProcessExecutor {
     }
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.RUNNING);
+        updateExecutionStatus(context, ProcessStatus.RUNNING);
         doExecuteSteps(process, context);
-        updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.COMPLETED);
+        updateExecutionStatus(context, ProcessStatus.COMPLETED);
     }
 
     private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
@@ -122,20 +121,21 @@ public class ProcessExecutionService implements ProcessExecutor {
             } catch (Exception e) {
                 // TODO better error handling
                 LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
-                updateExecutionStatus(context.getExecutionId(), context.getExecutionEnvName(), ProcessStatus.FAILED);
+                updateExecutionStatus(context, ProcessStatus.FAILED);
                 skipRemaining = true;
             }
         }
     }
 
-    private void updateExecutionStatus(UUID executionId, String envName, ProcessStatus status) {
+    private <T extends ProcessConfig> void updateExecutionStatus(ProcessExecutionContext<T> context, ProcessStatus status) {
         ProcessExecutionStatusUpdate processExecutionStatusUpdate = new ProcessExecutionStatusUpdate(
+            context.getConfig().processType(),
             status,
-            envName,
+            context.getExecutionEnvName(),
             status == ProcessStatus.RUNNING ? Instant.now() : null,
             status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
         );
 
-        notificationService.updateExecutionStatus(executionId, processExecutionStatusUpdate);
+        notificationService.updateExecutionStatus(context.getExecutionId(), processExecutionStatusUpdate);
     }
 }

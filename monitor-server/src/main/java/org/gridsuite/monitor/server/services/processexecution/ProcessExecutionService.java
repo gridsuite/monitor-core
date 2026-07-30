@@ -7,8 +7,8 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
@@ -20,7 +20,6 @@ import org.gridsuite.monitor.server.services.result.ResultService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -70,14 +69,14 @@ public class ProcessExecutionService {
             result.get().debugLocationFile()
         );
 
-        notificationService.sendProcessUpdatedMessage(executionId);
+        notificationService.sendProcessUpdatedMessage(executionId, result.get().processConfig().processType());
 
         return Optional.of(executionId);
     }
 
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
-        processExecutionTxService.updateExecutionStatus(executionId, status, executionEnvName, startedAt, completedAt);
-        notificationService.sendProcessUpdatedMessage(executionId);
+    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
+        processExecutionTxService.updateExecutionStatus(executionId, payload);
+        notificationService.sendProcessUpdatedMessage(executionId, payload.getProcessType());
     }
 
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {

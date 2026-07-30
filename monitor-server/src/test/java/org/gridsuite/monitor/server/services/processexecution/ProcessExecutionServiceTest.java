@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services.processexecution;
 
 import com.powsybl.commons.PowsyblException;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -101,7 +102,7 @@ class ProcessExecutionServiceTest {
             any(UUID.class),
             eq(debugFileLocation)
         );
-        verify(notificationService).sendProcessUpdatedMessage(any(UUID.class));
+        verify(notificationService).sendProcessUpdatedMessage(any(UUID.class), any(ProcessType.class));
     }
 
     @Test
@@ -110,10 +111,11 @@ class ProcessExecutionServiceTest {
         Instant completedAt = Instant.now();
         String executionEnvName = "test-env";
 
-        processExecutionService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+        processExecutionService.updateExecutionStatus(executionId, update);
 
-        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
-        verify(notificationService).sendProcessUpdatedMessage(executionId);
+        verify(processExecutionTxService).updateExecutionStatus(executionId, update);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test

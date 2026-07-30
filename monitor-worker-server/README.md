@@ -1,6 +1,6 @@
 # Monitor worker server
 
-## Presentation
+## Description
 
 Service dedicated to asynchronous computation execution.
 
@@ -15,12 +15,21 @@ Responsibilities:
 - handle debug mode by exporting intermediate files, such as XIIDM networks, and uploading artifacts to S3;
 - support scalability by running multiple worker instances.
 
-## Technologies
+## Technical Stack
 
-- Spring Boot
-- Spring Cloud Stream / RabbitMQ
+- Spring Boot (Web, Validation, Actuator)
+- Spring Cloud Stream with RabbitMQ
 - PowSyBL
-- AWS SDK S3
+- Micrometer / Prometheus
+- AWS SDK S3 (Spring Cloud AWS)
+
+## Development Scripts
+
+Build Docker image
+
+```shell
+mvn install -DskipTests -Dpowsybl.docker.install
+```
 
 ## Worker Configuration
 

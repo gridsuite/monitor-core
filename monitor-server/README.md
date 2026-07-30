@@ -1,6 +1,6 @@
 # Monitor server
 
-## Presentation
+## Description
 
 Main backend exposing the REST API.
 
@@ -17,16 +17,28 @@ Responsibilities:
 - coordinate with workers;
 - handle cross-cutting concerns such as user tracking, timestamps, errors, and execution states.
 
-## Technologies
+## Technical Stack
 
-- Spring Boot
-- Spring Data JPA / Hibernate
-- Spring Cloud Stream / RabbitMQ
+- Spring Boot (Web, Data JPA, Actuator)
+- Spring Cloud Stream with RabbitMQ
 - PostgreSQL
 - Liquibase
-- AWS SDK S3
+- Micrometer / Prometheus
+- AWS SDK S3 (Spring Cloud AWS)
+- MapStruct / Lombok
 
-## Status Management
+
+## Development Scripts
+
+Build Docker image
+
+```shell
+mvn install -DskipTests -Dpowsybl.docker.install
+```
+
+Please read [liquibase usage](https://github.com/powsybl/powsybl-parent/#liquibase-usage) for instructions to automatically generate changesets. After you generated a changeset do not forget to add it to git and in src/resource/db/changelog/db.changelog-master.yml
+
+# Status Management
 
 `monitor-server` stores the status of process executions and process steps.
 

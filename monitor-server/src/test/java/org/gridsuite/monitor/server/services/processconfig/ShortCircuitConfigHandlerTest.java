@@ -11,9 +11,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.ShortCircuitConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.ShortCircuitConfigMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -28,16 +26,18 @@ import static org.mockito.Mockito.*;
 class ShortCircuitConfigHandlerTest extends AbstractProcessConfigHandlerTest<ShortCircuitConfig, ShortCircuitConfigEntity, ShortCircuitConfigMapper, ShortCircuitConfigHandler> {
 
     @Override
-    @BeforeEach
-    protected void setUp() {
-        ShortCircuitConfigMapper realMapper = Mappers.getMapper(ShortCircuitConfigMapper.class);
-        mapper = spy(realMapper);
-        handler = new ShortCircuitConfigHandler(mapper);
+    ProcessType getProcessType() {
+        return ProcessType.SHORT_CIRCUIT;
     }
 
     @Override
-    ProcessType getProcessType() {
-        return ProcessType.SHORT_CIRCUIT;
+    ShortCircuitConfigMapper createMapper() {
+        return mock(ShortCircuitConfigMapper.class);
+    }
+
+    @Override
+    ShortCircuitConfigHandler createHandler(ShortCircuitConfigMapper mapper) {
+        return new ShortCircuitConfigHandler(mapper);
     }
 
     @Override

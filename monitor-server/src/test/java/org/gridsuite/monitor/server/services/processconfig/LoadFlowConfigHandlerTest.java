@@ -11,9 +11,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -28,16 +26,18 @@ import static org.mockito.Mockito.*;
 class LoadFlowConfigHandlerTest extends AbstractProcessConfigHandlerTest<LoadFlowConfig, LoadFlowConfigEntity, LoadFlowConfigMapper, LoadFlowConfigHandler> {
 
     @Override
-    @BeforeEach
-    protected void setUp() {
-        LoadFlowConfigMapper realMapper = Mappers.getMapper(LoadFlowConfigMapper.class);
-        mapper = spy(realMapper);
-        handler = new LoadFlowConfigHandler(mapper);
+    ProcessType getProcessType() {
+        return ProcessType.LOADFLOW;
     }
 
     @Override
-    ProcessType getProcessType() {
-        return ProcessType.LOADFLOW;
+    LoadFlowConfigMapper createMapper() {
+        return mock(LoadFlowConfigMapper.class);
+    }
+
+    @Override
+    LoadFlowConfigHandler createHandler(LoadFlowConfigMapper mapper) {
+        return new LoadFlowConfigHandler(mapper);
     }
 
     @Override

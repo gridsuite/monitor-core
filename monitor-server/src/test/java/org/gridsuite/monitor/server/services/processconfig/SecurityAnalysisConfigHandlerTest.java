@@ -11,9 +11,7 @@ import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mapstruct.factory.Mappers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -28,16 +26,18 @@ import static org.mockito.Mockito.*;
 class SecurityAnalysisConfigHandlerTest extends AbstractProcessConfigHandlerTest<SecurityAnalysisConfig, SecurityAnalysisConfigEntity, SecurityAnalysisConfigMapper, SecurityAnalysisConfigHandler> {
 
     @Override
-    @BeforeEach
-    protected void setUp() {
-        SecurityAnalysisConfigMapper realMapper = Mappers.getMapper(SecurityAnalysisConfigMapper.class);
-        mapper = spy(realMapper);
-        handler = new SecurityAnalysisConfigHandler(mapper);
+    ProcessType getProcessType() {
+        return ProcessType.SECURITY_ANALYSIS;
     }
 
     @Override
-    ProcessType getProcessType() {
-        return ProcessType.SECURITY_ANALYSIS;
+    SecurityAnalysisConfigMapper createMapper() {
+        return mock(SecurityAnalysisConfigMapper.class);
+    }
+
+    @Override
+    SecurityAnalysisConfigHandler createHandler(SecurityAnalysisConfigMapper mapper) {
+        return new SecurityAnalysisConfigHandler(mapper);
     }
 
     @Override

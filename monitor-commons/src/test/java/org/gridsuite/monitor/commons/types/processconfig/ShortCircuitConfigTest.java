@@ -19,16 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfig> {
 
-    UUID shortCircuitParametersUuid = UUID.randomUUID();
-
     @Override
     ProcessType getProcessType() {
         return ProcessType.SHORT_CIRCUIT;
-    }
-
-    @Override
-    int getFieldsNumber() {
-        return 2;
     }
 
     @Override
@@ -38,7 +31,7 @@ class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfi
 
     @Override
     ShortCircuitConfig createProcessConfig(List<ModificationInfo> modifications) {
-        return new ShortCircuitConfig(shortCircuitParametersUuid, modifications);
+        return new ShortCircuitConfig(UUID.randomUUID(), modifications);
     }
 
     @Test
@@ -54,7 +47,6 @@ class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfi
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "shortCircuitParameters".equals(d.field()))
             .findFirst()

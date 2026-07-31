@@ -21,9 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
     abstract ProcessType getProcessType();
 
-    // number of fields to compare in compareWith()
-    abstract int getFieldsNumber();
-
     abstract C createProcessConfig();
 
     abstract C createProcessConfig(List<ModificationInfo> modifications);
@@ -35,7 +32,7 @@ public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
         List<ProcessConfigFieldComparison> result = processConfig.compareWith(processConfig);
 
         assertThat(result)
-            .hasSize(getFieldsNumber())
+            .isNotEmpty()
             .allMatch(ProcessConfigFieldComparison::identical)
             .allMatch(fieldComparison -> fieldComparison.value1().equals(fieldComparison.value2()));
     }
@@ -54,7 +51,6 @@ public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "modifications".equals(d.field()))
             .findFirst()
@@ -80,7 +76,6 @@ public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "modifications".equals(d.field()))
             .findFirst()

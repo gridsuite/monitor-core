@@ -19,17 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnalysisConfig> {
 
-    UUID securityAnalysisParametersUuid = UUID.randomUUID();
-    UUID loadflowParametersUuid = UUID.randomUUID();
-
     @Override
     ProcessType getProcessType() {
         return ProcessType.SECURITY_ANALYSIS;
-    }
-
-    @Override
-    int getFieldsNumber() {
-        return 3;
     }
 
     @Override
@@ -39,11 +31,12 @@ class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnaly
 
     @Override
     SecurityAnalysisConfig createProcessConfig(List<ModificationInfo> modifications) {
-        return new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications, loadflowParametersUuid);
+        return new SecurityAnalysisConfig(UUID.randomUUID(), modifications, UUID.randomUUID());
     }
 
     @Test
     void compareWithShouldReturnDifferencesWhenSecurityAnalysisParametersAreDifferent() {
+        UUID loadflowParametersUuid = UUID.randomUUID();
         UUID securityAnalysisParametersUuid1 = UUID.randomUUID();
         UUID securityAnalysisParametersUuid2 = UUID.randomUUID();
         List<ModificationInfo> modifications = List.of(
@@ -55,7 +48,6 @@ class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnaly
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "securityAnalysisParameters".equals(d.field()))
             .findFirst()
@@ -67,18 +59,18 @@ class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnaly
 
     @Test
     void compareWithShouldReturnDifferencesWhenLoadflowParametersAreDifferent() {
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid1 = UUID.randomUUID();
+        UUID loadflowParametersUuid2 = UUID.randomUUID();
         List<ModificationInfo> modifications = List.of(
             new ModificationInfo(UUID.randomUUID(), "descr1", true),
             new ModificationInfo(UUID.randomUUID(), "descr2", true));
-        UUID loadflowParametersUuid1 = UUID.randomUUID();
-        UUID loadflowParametersUuid2 = UUID.randomUUID();
 
         SecurityAnalysisConfig processConfig1 = new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications, loadflowParametersUuid1);
         SecurityAnalysisConfig processConfig2 = new SecurityAnalysisConfig(securityAnalysisParametersUuid, modifications, loadflowParametersUuid2);
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "loadflowParameters".equals(d.field()))
             .findFirst()

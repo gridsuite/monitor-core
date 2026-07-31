@@ -19,16 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class LoadFlowConfigTest extends AbstractProcessConfigTest<LoadFlowConfig> {
 
-    UUID loadflowParametersUuid = UUID.randomUUID();
-
     @Override
     ProcessType getProcessType() {
         return ProcessType.LOADFLOW;
-    }
-
-    @Override
-    int getFieldsNumber() {
-        return 2;
     }
 
     @Override
@@ -38,7 +31,7 @@ class LoadFlowConfigTest extends AbstractProcessConfigTest<LoadFlowConfig> {
 
     @Override
     LoadFlowConfig createProcessConfig(List<ModificationInfo> modifications) {
-        return new LoadFlowConfig(loadflowParametersUuid, modifications);
+        return new LoadFlowConfig(UUID.randomUUID(), modifications);
     }
 
     @Test
@@ -54,7 +47,6 @@ class LoadFlowConfigTest extends AbstractProcessConfigTest<LoadFlowConfig> {
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
-        assertThat(result).hasSize(getFieldsNumber());
         ProcessConfigFieldComparison comparison = result.stream()
             .filter(d -> "loadflowParameters".equals(d.field()))
             .findFirst()

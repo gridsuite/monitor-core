@@ -26,6 +26,12 @@ public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
     abstract C createProcessConfig(List<ModificationInfo> modifications);
 
     @Test
+    void processTypeTest() {
+        C processConfig = createProcessConfig();
+        assertThat(processConfig.processType()).isEqualTo(getProcessType());
+    }
+
+    @Test
     void compareWithShouldReturnNoDifferenceWhenConfigsAreEqual() {
         C processConfig = createProcessConfig();
 

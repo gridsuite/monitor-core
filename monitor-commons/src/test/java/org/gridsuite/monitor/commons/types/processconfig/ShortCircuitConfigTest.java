@@ -17,37 +17,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-class LoadFlowConfigTest extends AbstractProcessConfigTest<LoadFlowConfig> {
+class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfig> {
 
     @Override
     ProcessType getExpectedProcessType() {
-        return ProcessType.LOADFLOW;
+        return ProcessType.SHORT_CIRCUIT;
     }
 
     @Override
-    LoadFlowConfig createProcessConfig(List<ModificationInfo> modifications) {
-        return new LoadFlowConfig(UUID.randomUUID(), modifications);
+    ShortCircuitConfig createProcessConfig(List<ModificationInfo> modifications) {
+        return new ShortCircuitConfig(UUID.randomUUID(), modifications);
     }
 
     @Test
     void compareWithShouldReturnDifferencesWhenParametersAreDifferent() {
-        UUID loadflowParametersUuid1 = UUID.randomUUID();
-        UUID loadflowParametersUuid2 = UUID.randomUUID();
+        UUID shortCircuitParametersUuid1 = UUID.randomUUID();
+        UUID shortCircuitParametersUuid2 = UUID.randomUUID();
         List<ModificationInfo> modifications = List.of(
             new ModificationInfo(UUID.randomUUID(), "descr1", true),
             new ModificationInfo(UUID.randomUUID(), "descr2", true));
 
-        LoadFlowConfig processConfig1 = new LoadFlowConfig(loadflowParametersUuid1, modifications);
-        LoadFlowConfig processConfig2 = new LoadFlowConfig(loadflowParametersUuid2, modifications);
+        ShortCircuitConfig processConfig1 = new ShortCircuitConfig(shortCircuitParametersUuid1, modifications);
+        ShortCircuitConfig processConfig2 = new ShortCircuitConfig(shortCircuitParametersUuid2, modifications);
 
         List<ProcessConfigFieldComparison> result = processConfig1.compareWith(processConfig2);
 
         ProcessConfigFieldComparison comparison = result.stream()
-            .filter(d -> "loadflowParameters".equals(d.field()))
+            .filter(d -> "shortCircuitParameters".equals(d.field()))
             .findFirst()
             .orElseThrow();
         assertThat(comparison.identical()).isFalse();
-        assertThat(comparison.value1()).isEqualTo(loadflowParametersUuid1);
-        assertThat(comparison.value2()).isEqualTo(loadflowParametersUuid2);
+        assertThat(comparison.value1()).isEqualTo(shortCircuitParametersUuid1);
+        assertThat(comparison.value2()).isEqualTo(shortCircuitParametersUuid2);
     }
 }

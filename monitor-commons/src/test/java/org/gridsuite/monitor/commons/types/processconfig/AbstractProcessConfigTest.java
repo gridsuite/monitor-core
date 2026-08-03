@@ -19,16 +19,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
 public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
-    abstract ProcessType getProcessType();
+    abstract ProcessType getExpectedProcessType();
 
-    abstract C createProcessConfig();
+    C createProcessConfig() {
+        return createProcessConfig(List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
+    }
 
     abstract C createProcessConfig(List<ModificationInfo> modifications);
 
     @Test
     void processTypeTest() {
         C processConfig = createProcessConfig();
-        assertThat(processConfig.processType()).isEqualTo(getProcessType());
+        assertThat(processConfig.processType()).isEqualTo(getExpectedProcessType());
     }
 
     @Test
@@ -94,7 +96,7 @@ public abstract class AbstractProcessConfigTest<C extends ProcessConfig> {
     @Test
     void compareWithShouldThrowWhenProcessTypesAreDifferent() {
         C processConfig1 = createProcessConfig();
-        ProcessConfig processConfig2 = getProcessType() == ProcessType.LOADFLOW
+        ProcessConfig processConfig2 = getExpectedProcessType() == ProcessType.LOADFLOW
             ? new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID())
             : new LoadFlowConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
 

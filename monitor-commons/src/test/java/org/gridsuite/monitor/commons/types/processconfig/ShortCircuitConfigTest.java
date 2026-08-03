@@ -20,13 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ShortCircuitConfigTest extends AbstractProcessConfigTest<ShortCircuitConfig> {
 
     @Override
-    ProcessType getProcessType() {
+    ProcessType getExpectedProcessType() {
         return ProcessType.SHORT_CIRCUIT;
-    }
-
-    @Override
-    ShortCircuitConfig createProcessConfig() {
-        return new ShortCircuitConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
     }
 
     @Override

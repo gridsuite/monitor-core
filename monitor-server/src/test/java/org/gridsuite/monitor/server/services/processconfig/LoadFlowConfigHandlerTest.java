@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 class LoadFlowConfigHandlerTest extends AbstractProcessConfigHandlerTest<LoadFlowConfig, LoadFlowConfigEntity, LoadFlowConfigMapper, LoadFlowConfigHandler> {
 
     @Override
-    ProcessType getProcessType() {
+    ProcessType getExpectedProcessType() {
         return ProcessType.LOADFLOW;
     }
 

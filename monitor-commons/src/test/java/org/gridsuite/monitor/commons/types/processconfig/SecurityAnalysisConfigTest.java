@@ -20,13 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SecurityAnalysisConfigTest extends AbstractProcessConfigTest<SecurityAnalysisConfig> {
 
     @Override
-    ProcessType getProcessType() {
+    ProcessType getExpectedProcessType() {
         return ProcessType.SECURITY_ANALYSIS;
-    }
-
-    @Override
-    SecurityAnalysisConfig createProcessConfig() {
-        return new SecurityAnalysisConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)), UUID.randomUUID());
     }
 
     @Override

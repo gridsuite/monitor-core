@@ -20,13 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LoadFlowConfigTest extends AbstractProcessConfigTest<LoadFlowConfig> {
 
     @Override
-    ProcessType getProcessType() {
+    ProcessType getExpectedProcessType() {
         return ProcessType.LOADFLOW;
-    }
-
-    @Override
-    LoadFlowConfig createProcessConfig() {
-        return new LoadFlowConfig(UUID.randomUUID(), List.of(new ModificationInfo(UUID.randomUUID(), "descr", true)));
     }
 
     @Override

@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 class ShortCircuitConfigHandlerTest extends AbstractProcessConfigHandlerTest<ShortCircuitConfig, ShortCircuitConfigEntity, ShortCircuitConfigMapper, ShortCircuitConfigHandler> {
 
     @Override
-    ProcessType getProcessType() {
+    ProcessType getExpectedProcessType() {
         return ProcessType.SHORT_CIRCUIT;
     }
 

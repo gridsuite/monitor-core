@@ -30,7 +30,7 @@ public abstract class AbstractProcessConfigHandlerTest<
 
     protected H handler;
 
-    abstract ProcessType getProcessType();
+    abstract ProcessType getExpectedProcessType();
 
     abstract M createMapper();
 
@@ -48,7 +48,7 @@ public abstract class AbstractProcessConfigHandlerTest<
 
     @Test
     void getProcessTypeTest() {
-        assertThat(handler.getProcessType()).isEqualTo(getProcessType());
+        assertThat(handler.getProcessType()).isEqualTo(getExpectedProcessType());
     }
 
     @Test

@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 class SecurityAnalysisConfigHandlerTest extends AbstractProcessConfigHandlerTest<SecurityAnalysisConfig, SecurityAnalysisConfigEntity, SecurityAnalysisConfigMapper, SecurityAnalysisConfigHandler> {
 
     @Override
-    ProcessType getProcessType() {
+    ProcessType getExpectedProcessType() {
         return ProcessType.SECURITY_ANALYSIS;
     }
 

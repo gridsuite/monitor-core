@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processexecution;
 
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -117,7 +118,7 @@ class ProcessExecutionTxServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.RUNNING, null, null, null);
+        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.RUNNING, null, null, null));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
@@ -144,7 +145,7 @@ class ProcessExecutionTxServiceTest {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, envName, startedAt, completedAt);
+        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, envName, startedAt, completedAt));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
@@ -159,7 +160,7 @@ class ProcessExecutionTxServiceTest {
     void updateExecutionStatusShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now());
+        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());

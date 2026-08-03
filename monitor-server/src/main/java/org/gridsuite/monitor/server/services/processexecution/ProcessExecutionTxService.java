@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processexecution;
 
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -85,17 +86,17 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessStatus status, String executionEnvName, Instant startedAt, Instant completedAt) {
+    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
-            execution.setStatus(status);
-            if (executionEnvName != null) {
-                execution.setExecutionEnvName(executionEnvName);
+            execution.setStatus(payload.getStatus());
+            if (payload.getExecutionEnvName() != null) {
+                execution.setExecutionEnvName(payload.getExecutionEnvName());
             }
-            if (startedAt != null) {
-                execution.setStartedAt(startedAt);
+            if (payload.getStartedAt() != null) {
+                execution.setStartedAt(payload.getStartedAt());
             }
-            if (completedAt != null) {
-                execution.setCompletedAt(completedAt);
+            if (payload.getCompletedAt() != null) {
+                execution.setCompletedAt(payload.getCompletedAt());
             }
             processExecutionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));

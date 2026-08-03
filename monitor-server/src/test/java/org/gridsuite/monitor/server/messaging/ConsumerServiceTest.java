@@ -79,13 +79,7 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(processExecutionService).updateExecutionStatus(
-                executionId,
-                ProcessStatus.RUNNING,
-                "env-1",
-                startedAt,
-                completedAt
-        );
+        verify(processExecutionService).updateExecutionStatus(executionId, statusUpdate);
         verify(processExecutionService, never()).updateStepStatus(any(), any());
     }
 
@@ -103,7 +97,7 @@ class ConsumerServiceTest {
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
         verify(processExecutionService, never()).updateStepStatus(any(), any());
     }
 
@@ -121,7 +115,7 @@ class ConsumerServiceTest {
             .isInstanceOf(UncheckedIOException.class)
             .hasMessageContaining("Failed to parse payload as " + new TypeReference<List<ProcessExecutionStep>>() { }.getType().getTypeName());
 
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
         verify(processExecutionService, never()).updateStepsStatuses(any(), any());
     }
 
@@ -145,7 +139,7 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(processExecutionService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
     }
 
     @Test
@@ -176,6 +170,6 @@ class ConsumerServiceTest {
 
         verify(processExecutionService).updateStepsStatuses(eq(executionId), any(List.class));
         verify(processExecutionService, never()).updateStepStatus(any(), any());
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any(), any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
     }
 }

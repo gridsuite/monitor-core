@@ -30,18 +30,25 @@ public abstract class AbstractProcessConfigHandlerTest<
 
     protected H handler;
 
-    abstract ProcessType getProcessType();
+    abstract ProcessType getExpectedProcessType();
+
+    abstract M createMapper();
+
+    abstract H createHandler(M mapper);
 
     abstract C createProcessConfig();
 
     abstract E createProcessConfigEntity();
 
     @BeforeEach
-    protected abstract void setUp();
+    protected void setUp() {
+        mapper = createMapper();
+        handler = createHandler(mapper);
+    }
 
     @Test
     void getProcessTypeTest() {
-        assertThat(handler.getProcessType()).isEqualTo(getProcessType());
+        assertThat(handler.getProcessType()).isEqualTo(getExpectedProcessType());
     }
 
     @Test
@@ -60,8 +67,8 @@ public abstract class AbstractProcessConfigHandlerTest<
         E expectedProcessConfigEntity = createProcessConfigEntity();
         C processConfig = createProcessConfig();
 
-        doReturn(processConfig).when(mapper).toDto(processConfigEntity1);
-        doReturn(expectedProcessConfigEntity).when(mapper).toEntity(processConfig);
+        when(mapper.toDto(processConfigEntity1)).thenReturn(processConfig);
+        when(mapper.toEntity(processConfig)).thenReturn(expectedProcessConfigEntity);
 
         ProcessConfigEntity result = handler.copyEntity(processConfigEntity1);
 
@@ -75,7 +82,7 @@ public abstract class AbstractProcessConfigHandlerTest<
         E expectedProcessConfigEntity = createProcessConfigEntity();
         C processConfig = createProcessConfig();
 
-        doReturn(expectedProcessConfigEntity).when(mapper).toEntity(processConfig);
+        when(mapper.toEntity(processConfig)).thenReturn(expectedProcessConfigEntity);
 
         ProcessConfigEntity result = handler.toEntity(processConfig);
 
@@ -88,7 +95,7 @@ public abstract class AbstractProcessConfigHandlerTest<
         E processConfigEntity = createProcessConfigEntity();
         C expectedProcessConfig = createProcessConfig();
 
-        doReturn(expectedProcessConfig).when(mapper).toDto(processConfigEntity);
+        when(mapper.toDto(processConfigEntity)).thenReturn(expectedProcessConfig);
 
         ProcessConfig result = handler.toDto(processConfigEntity);
 

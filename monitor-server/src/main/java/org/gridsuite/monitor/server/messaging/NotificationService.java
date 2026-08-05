@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.messaging;
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -28,16 +29,19 @@ public class NotificationService {
         String bindingName = switch (processConfig.processType()) {
             case SECURITY_ANALYSIS -> "publishRunSecurityAnalysis-out-0";
             case LOADFLOW -> "publishRunLoadFlow-out-0";
+            case SHORT_CIRCUIT -> "publishRunShortCircuit-out-0";
         };
         ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, debugFileLocation);
         publisher.send(bindingName, message);
     }
 
-    public void sendProcessUpdatedMessage(UUID executionId) {
+    public void sendProcessUpdatedMessage(UUID executionId, ProcessType processType) {
         String bindingName = "publishMonitorUpdate-out-0";
         Message<?> message = MessageBuilder.withPayload("")
             .setHeader("updateType", "PROCESS_EXECUTION_UPDATED")
-            .setHeader("processExecutionId", executionId).build();
+            .setHeader("processExecutionId", executionId)
+            .setHeader("processType", processType.name())
+            .build();
 
         publisher.send(bindingName, message);
     }

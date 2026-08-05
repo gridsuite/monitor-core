@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(enumAsRef = true)
 public enum ProcessType {
     SECURITY_ANALYSIS,
-    LOADFLOW
+    LOADFLOW,
+    SHORT_CIRCUIT,
 }
 

@@ -10,8 +10,9 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.contingency.Contingency;
 import com.powsybl.contingency.LineContingency;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisParameters;
+import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisResult;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
@@ -23,12 +24,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,26 +79,45 @@ class SecurityAnalysisRunComputationStepTest {
 
     @Test
     void executeRunSecurityAnalysis() {
-        Network network = EurostagTutorialExample1Factory.create();
+        Network network = mock(Network.class);
         Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
         SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency));
         when(stepContext.getNetwork()).thenReturn(network);
         when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
             .thenReturn(inputData);
 
-        runComputationStep.execute(stepContext);
+        SecurityAnalysisResult analysisResult = mock(SecurityAnalysisResult.class);
+        SecurityAnalysisReport analysisReport = mock(SecurityAnalysisReport.class);
+        when(analysisReport.getResult()).thenReturn(analysisResult);
+        try (MockedStatic<SecurityAnalysis> securityAnalysis = mockStatic(SecurityAnalysis.class)) {
+            securityAnalysis.when(() -> SecurityAnalysis.run(any(), any(), any()))
+                .thenReturn(analysisReport);
+
+            runComputationStep.execute(stepContext);
+        }
 
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_SA_COMPUTATION", stepType);
 
         verify(securityAnalysisParametersService).buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network);
-        verify(securityAnalysisRestClient).saveResult(
-                any(UUID.class),
-                any(SecurityAnalysisResult.class)
-        );
+        verify(securityAnalysisRestClient).saveResult(any(UUID.class), same(analysisResult));
         verify(stepContext).setResultInfos(argThat(resultInfos ->
                         resultInfos.resultUUID() != null &&
                         resultInfos.resultType() == ResultType.SECURITY_ANALYSIS
         ));
+    }
+
+    @Test
+    void executeRunSecurityAnalysisFailed() {
+        Network network = mock(Network.class);
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(
+            PARAMS_UUID, LOADFLOW_PARAMS_UUID, network)).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class,
+            () -> runComputationStep.execute(stepContext));
+
+        verify(securityAnalysisRestClient, never()).saveResult(any(UUID.class), any(SecurityAnalysisResult.class));
+        verify(stepContext, never()).setResultInfos(any());
     }
 }

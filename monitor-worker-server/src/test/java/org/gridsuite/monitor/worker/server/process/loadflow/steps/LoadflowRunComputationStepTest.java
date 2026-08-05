@@ -8,9 +8,10 @@ package org.gridsuite.monitor.worker.server.process.loadflow.steps;
 
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
+import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
 import com.powsybl.loadflow.LoadFlowResult;
+import com.powsybl.loadflow.LoadFlowRunParameters;
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
@@ -65,7 +67,7 @@ class LoadflowRunComputationStepTest {
 
     @Test
     void executeRunLoadflow() {
-        Network network = EurostagTutorialExample1Factory.create();
+        Network network = mock(Network.class);
         LoadFlowParametersInfos loadflowParametersInfos = LoadFlowParametersInfos.builder()
             .commonParameters(new LoadFlowParameters())
             .build();
@@ -74,7 +76,12 @@ class LoadflowRunComputationStepTest {
         when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(loadflowParametersInfos);
         when(loadFlowRestClient.saveResult(any(LoadFlowResult.class))).thenReturn(RESULT_UUID);
 
-        runComputationStep.execute(stepContext);
+        LoadFlowResult loadFlowResult = mock(LoadFlowResult.class);
+        try (MockedStatic<LoadFlow> loadFlow = mockStatic(LoadFlow.class)) {
+            loadFlow.when(() -> LoadFlow.run(any(), any(LoadFlowRunParameters.class))).thenReturn(loadFlowResult);
+
+            runComputationStep.execute(stepContext);
+        }
 
         String stepType = runComputationStep.getType().getName();
         assertEquals("RUN_LF_COMPUTATION", stepType);
@@ -89,8 +96,7 @@ class LoadflowRunComputationStepTest {
 
     @Test
     void executeRunLoadflowFailed() {
-        Network network = EurostagTutorialExample1Factory.create();
-
+        Network network = mock(Network.class);
         when(stepContext.getNetwork()).thenReturn(network);
         when(loadFlowRestClient.getParameters(any(UUID.class))).thenThrow(new RuntimeException());
 

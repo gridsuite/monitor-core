@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.time.Instant;
 
@@ -22,6 +23,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProcessExecutionStatusUpdate {
+    private ProcessType processType;
     private ProcessStatus status;
     private String executionEnvName;
     private Instant startedAt;

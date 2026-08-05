@@ -9,7 +9,6 @@ package org.gridsuite.monitor.server.services.result.providers;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.UUID;
 
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.*;
  */
 class SecurityAnalysisResultProviderTest {
     private final SecurityAnalysisRestClient securityAnalysisRestClient =
-        Mockito.mock(SecurityAnalysisRestClient.class);
+        mock(SecurityAnalysisRestClient.class);
 
     private final SecurityAnalysisResultProvider provider =
         new SecurityAnalysisResultProvider(securityAnalysisRestClient);

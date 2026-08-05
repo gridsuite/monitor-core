@@ -10,7 +10,6 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.contingency.Contingency;
 import com.powsybl.contingency.LineContingency;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisReport;
@@ -78,7 +77,7 @@ class SecurityAnalysisRunComputationStepTest {
 
     @Test
     void executeRunSecurityAnalysis() {
-        Network network = EurostagTutorialExample1Factory.create();
+        Network network = mock(Network.class);
         Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
         SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency));
         when(stepContext.getNetwork()).thenReturn(network);

@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.process.loadflow.steps;
 
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
 import com.powsybl.loadflow.LoadFlowResult;
@@ -68,7 +67,7 @@ class LoadflowRunComputationStepTest {
 
     @Test
     void executeRunLoadflow() {
-        Network network = EurostagTutorialExample1Factory.create();
+        Network network = mock(Network.class);
         LoadFlowParametersInfos loadflowParametersInfos = LoadFlowParametersInfos.builder()
             .commonParameters(new LoadFlowParameters())
             .build();
@@ -97,7 +96,7 @@ class LoadflowRunComputationStepTest {
 
     @Test
     void executeRunLoadflowFailed() {
-        Network network = EurostagTutorialExample1Factory.create();
+        Network network = mock(Network.class);
 
         when(stepContext.getNetwork()).thenReturn(network);
         when(loadFlowRestClient.getParameters(any(UUID.class))).thenThrow(new RuntimeException());

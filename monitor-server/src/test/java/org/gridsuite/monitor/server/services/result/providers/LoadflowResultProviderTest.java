@@ -9,7 +9,6 @@ package org.gridsuite.monitor.server.services.result.providers;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.UUID;
 
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
 class LoadflowResultProviderTest {
-    private final LoadflowRestClient loadflowRestClient = Mockito.mock(LoadflowRestClient.class);
+    private final LoadflowRestClient loadflowRestClient = mock(LoadflowRestClient.class);
     private final LoadflowResultProvider provider = new LoadflowResultProvider(loadflowRestClient);
 
     @Test

@@ -19,11 +19,8 @@ import static org.mockito.Mockito.*;
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
 class ShortCircuitResultProviderTest {
-    private final ShortCircuitRestClient shortCircuitRestClient =
-        mock(ShortCircuitRestClient.class);
-
-    private final ShortCircuitResultProvider provider =
-        new ShortCircuitResultProvider(shortCircuitRestClient);
+    private final ShortCircuitRestClient shortCircuitRestClient = mock(ShortCircuitRestClient.class);
+    private final ShortCircuitResultProvider provider = new ShortCircuitResultProvider(shortCircuitRestClient);
 
     @Test
     void getTypeShouldReturnShortCircuit() {

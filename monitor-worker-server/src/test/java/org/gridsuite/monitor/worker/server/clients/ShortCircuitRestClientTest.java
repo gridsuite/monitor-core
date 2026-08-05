@@ -57,31 +57,6 @@ class ShortCircuitRestClientTest {
     }
 
     @Test
-    void saveResultSuccess() throws JsonProcessingException {
-        ShortCircuitAnalysisResult result = mock(ShortCircuitAnalysisResult.class);
-
-        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
-            .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(result)))
-            .andRespond(MockRestResponseCreators.withSuccess()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(objectMapper.writeValueAsString(RESULT_UUID)));
-
-        assertThatNoException().isThrownBy(() -> shortCircuitRestClient.saveResult(RESULT_UUID, result));
-    }
-
-    @Test
-    void saveResultFailed() {
-        ShortCircuitAnalysisResult result = mock(ShortCircuitAnalysisResult.class);
-        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
-            .andRespond(MockRestResponseCreators.withServerError());
-
-        assertThatThrownBy(() -> shortCircuitRestClient.saveResult(RESULT_UUID, result)).isInstanceOf(RestClientException.class);
-    }
-
-    @Test
     void getParameters() throws JsonProcessingException {
         ShortCircuitParametersInfos expectedParameters = ShortCircuitParametersInfos.builder()
             .provider("Courcirc")
@@ -111,5 +86,30 @@ class ShortCircuitRestClientTest {
 
         assertThatThrownBy(() -> shortCircuitRestClient.getParameters(PARAMETERS_ERROR_UUID))
             .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+    }
+
+    @Test
+    void saveResultSuccess() throws JsonProcessingException {
+        ShortCircuitAnalysisResult result = mock(ShortCircuitAnalysisResult.class);
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(MockRestRequestMatchers.content().json(objectMapper.writeValueAsString(result)))
+            .andRespond(MockRestResponseCreators.withSuccess()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(objectMapper.writeValueAsString(RESULT_UUID)));
+
+        assertThatNoException().isThrownBy(() -> shortCircuitRestClient.saveResult(RESULT_UUID, result));
+    }
+
+    @Test
+    void saveResultFailed() {
+        ShortCircuitAnalysisResult result = mock(ShortCircuitAnalysisResult.class);
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> shortCircuitRestClient.saveResult(RESULT_UUID, result)).isInstanceOf(RestClientException.class);
     }
 }

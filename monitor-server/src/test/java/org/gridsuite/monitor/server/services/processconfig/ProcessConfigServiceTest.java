@@ -21,7 +21,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
@@ -198,7 +197,7 @@ class ProcessConfigServiceTest {
     void duplicateSecurityAnalysisConfig() {
         UUID processConfigUuid = UUID.randomUUID();
         UUID copiedProcessConfigUuid = UUID.randomUUID();
-        ProcessConfigEntity copiedProcessConfigEntity = Mockito.mock(ProcessConfigEntity.class);
+        ProcessConfigEntity copiedProcessConfigEntity = mock(ProcessConfigEntity.class);
 
         when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
@@ -282,10 +281,10 @@ class ProcessConfigServiceTest {
     void compareProcessConfigsWithDifferentProcessConfigs() {
         UUID processConfigUuid1 = UUID.randomUUID();
         UUID processConfigUuid2 = UUID.randomUUID();
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(ProcessConfigEntity.class);
-        ProcessConfigEntity processConfigEntity2 = Mockito.mock(ProcessConfigEntity.class);
-        ProcessConfig processConfig1 = Mockito.mock(ProcessConfig.class);
-        ProcessConfig processConfig2 = Mockito.mock(ProcessConfig.class);
+        ProcessConfigEntity processConfigEntity1 = mock(ProcessConfigEntity.class);
+        ProcessConfigEntity processConfigEntity2 = mock(ProcessConfigEntity.class);
+        ProcessConfig processConfig1 = mock(ProcessConfig.class);
+        ProcessConfig processConfig2 = mock(ProcessConfig.class);
         ProcessConfigFieldComparison fieldComparison = new ProcessConfigFieldComparison("field", false, "value1", "value2");
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
@@ -329,7 +328,7 @@ class ProcessConfigServiceTest {
         UUID processConfigUuid2 = UUID.randomUUID();
 
         // test when the second process config is not found
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(ProcessConfigEntity.class);
+        ProcessConfigEntity processConfigEntity1 = mock(ProcessConfigEntity.class);
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.empty());
@@ -346,8 +345,8 @@ class ProcessConfigServiceTest {
     void compareProcessConfigsShouldThrowWhenProcessTypesAreDifferent() {
         UUID processConfigUuid1 = UUID.randomUUID();
         UUID processConfigUuid2 = UUID.randomUUID();
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(SecurityAnalysisConfigEntity.class);
-        ProcessConfigEntity processConfigEntity2 = Mockito.mock(LoadFlowConfigEntity.class);
+        ProcessConfigEntity processConfigEntity1 = mock(SecurityAnalysisConfigEntity.class);
+        ProcessConfigEntity processConfigEntity2 = mock(LoadFlowConfigEntity.class);
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));

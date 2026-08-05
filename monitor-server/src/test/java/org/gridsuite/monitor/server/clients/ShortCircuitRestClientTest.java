@@ -30,6 +30,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ContextConfiguration(classes = {ShortCircuitRestClient.class})
 class ShortCircuitRestClientTest {
 
+    private static final UUID RESULT_UUID = UUID.randomUUID();
+    private static final String RESULT_BODY = "{\"status\":\"OK\"}";
+
     @Autowired
     private ShortCircuitRestClient shortCircuitRestClient;
 
@@ -43,38 +46,41 @@ class ShortCircuitRestClientTest {
 
     @Test
     void getResultSuccess() {
-        UUID resultUuid = UUID.randomUUID();
-        String expectedResult = "result";
-
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + resultUuid))
-            .andRespond(MockRestResponseCreators.withSuccess(expectedResult, MediaType.TEXT_PLAIN));
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.TEXT_PLAIN));
 
-        String result = shortCircuitRestClient.getResult(resultUuid);
+        String result = shortCircuitRestClient.getResult(RESULT_UUID);
 
-        assertThat(result).isEqualTo(expectedResult);
+        assertThat(result).isEqualTo(RESULT_BODY);
     }
 
     @Test
     void getResultFailed() {
-        UUID resultUuid = UUID.randomUUID();
-
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + resultUuid))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> shortCircuitRestClient.getResult(resultUuid))
+        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
     }
 
     @Test
     void deleteResultSuccess() {
-        UUID resultUuid = UUID.randomUUID();
-
         server.expect(MockRestRequestMatchers.method(HttpMethod.DELETE))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results?resultsUuids=" + resultUuid))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results?resultsUuids=" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withSuccess());
 
-        shortCircuitRestClient.deleteResult(resultUuid);
+        shortCircuitRestClient.deleteResult(RESULT_UUID);
+    }
+
+    @Test
+    void deleteResultFailed() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.DELETE))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results?resultsUuids=" + RESULT_UUID))
+            .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> shortCircuitRestClient.deleteResult(RESULT_UUID))
+            .isInstanceOf(RestClientException.class);
     }
 }

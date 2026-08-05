@@ -29,10 +29,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -103,5 +105,19 @@ class SecurityAnalysisRunComputationStepTest {
                         resultInfos.resultUUID() != null &&
                         resultInfos.resultType() == ResultType.SECURITY_ANALYSIS
         ));
+    }
+
+    @Test
+    void executeRunSecurityAnalysisFailed() {
+        Network network = mock(Network.class);
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(
+            PARAMS_UUID, LOADFLOW_PARAMS_UUID, network)).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class,
+            () -> runComputationStep.execute(stepContext));
+
+        verify(securityAnalysisRestClient, never()).saveResult(any(UUID.class), any(SecurityAnalysisResult.class));
+        verify(stepContext, never()).setResultInfos(any());
     }
 }

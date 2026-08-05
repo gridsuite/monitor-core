@@ -67,12 +67,11 @@ class LoadflowRunComputationStepTest {
 
     @Test
     void executeRunLoadflow() {
-        Network network = mock(Network.class);
         LoadFlowParametersInfos loadflowParametersInfos = LoadFlowParametersInfos.builder()
             .commonParameters(new LoadFlowParameters())
             .build();
 
-        when(stepContext.getNetwork()).thenReturn(network);
+        when(stepContext.getNetwork()).thenReturn(mock(Network.class));
         when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(loadflowParametersInfos);
         when(loadFlowRestClient.saveResult(any(LoadFlowResult.class))).thenReturn(RESULT_UUID);
 
@@ -96,9 +95,7 @@ class LoadflowRunComputationStepTest {
 
     @Test
     void executeRunLoadflowFailed() {
-        Network network = mock(Network.class);
-
-        when(stepContext.getNetwork()).thenReturn(network);
+        when(stepContext.getNetwork()).thenReturn(mock(Network.class));
         when(loadFlowRestClient.getParameters(any(UUID.class))).thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class,

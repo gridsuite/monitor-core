@@ -8,7 +8,7 @@ package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.ProcessConfigMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
  */
 public abstract class AbstractProcessConfigHandlerTest<
     C extends ProcessConfig,
-    E extends ProcessConfigEntity,
+    E extends AbstractProcessConfigEntity,
     M extends ProcessConfigMapper<C, E>,
     H extends ProcessConfigHandler<C, E>> {
 
@@ -70,7 +70,7 @@ public abstract class AbstractProcessConfigHandlerTest<
         when(mapper.toDto(processConfigEntity1)).thenReturn(processConfig);
         when(mapper.toEntity(processConfig)).thenReturn(expectedProcessConfigEntity);
 
-        ProcessConfigEntity result = handler.copyEntity(processConfigEntity1);
+        AbstractProcessConfigEntity result = handler.copyEntity(processConfigEntity1);
 
         assertThat(result).isEqualTo(expectedProcessConfigEntity);
         verify(mapper).toDto(processConfigEntity1);
@@ -84,7 +84,7 @@ public abstract class AbstractProcessConfigHandlerTest<
 
         when(mapper.toEntity(processConfig)).thenReturn(expectedProcessConfigEntity);
 
-        ProcessConfigEntity result = handler.toEntity(processConfig);
+        AbstractProcessConfigEntity result = handler.toEntity(processConfig);
 
         assertThat(result).isEqualTo(expectedProcessConfigEntity);
         verify(mapper).toEntity(processConfig);

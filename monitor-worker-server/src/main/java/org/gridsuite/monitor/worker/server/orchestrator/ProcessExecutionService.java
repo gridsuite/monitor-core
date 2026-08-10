@@ -97,11 +97,12 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
         updateExecutionStatus(context, ProcessStatus.RUNNING);
-        doExecuteSteps(process, context);
-        updateExecutionStatus(context, ProcessStatus.COMPLETED);
+        if (doExecuteSteps(process, context)) {
+            updateExecutionStatus(context, ProcessStatus.COMPLETED);
+        }
     }
 
-    private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
+    private <T extends ProcessConfig> boolean doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
         List<ProcessStep<T>> steps = process.getSteps();
         boolean skipRemaining = false;
 
@@ -125,6 +126,7 @@ public class ProcessExecutionService implements ProcessExecutor {
                 skipRemaining = true;
             }
         }
+        return !skipRemaining;
     }
 
     private <T extends ProcessConfig> void updateExecutionStatus(ProcessExecutionContext<T> context, ProcessStatus status) {

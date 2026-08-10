@@ -8,11 +8,8 @@ package org.gridsuite.monitor.server.entities.processconfig;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -23,14 +20,15 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+
 import java.util.List;
 import java.util.UUID;
-import static jakarta.persistence.DiscriminatorType.STRING;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -38,12 +36,11 @@ import static jakarta.persistence.DiscriminatorType.STRING;
 @Entity
 @Table(name = "process_config")
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "process_type", discriminatorType = STRING)
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class ProcessConfigEntity {
+public abstract class AbstractProcessConfigEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id")
@@ -56,8 +53,7 @@ public class ProcessConfigEntity {
     @OrderColumn(name = "pos_modifications")
     private List<ModificationInfoEmbeddable> modifications;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "process_type", insertable = false, updatable = false)
-    private ProcessType processType;
+    @Transient
+    public abstract ProcessType getProcessType();
 }
 

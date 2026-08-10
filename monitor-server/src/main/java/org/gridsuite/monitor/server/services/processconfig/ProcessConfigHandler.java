@@ -8,12 +8,12 @@ package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-public interface ProcessConfigHandler<C extends ProcessConfig, E extends ProcessConfigEntity> {
+public interface ProcessConfigHandler<C extends ProcessConfig, E extends AbstractProcessConfigEntity> {
 
     ProcessType getProcessType();
 

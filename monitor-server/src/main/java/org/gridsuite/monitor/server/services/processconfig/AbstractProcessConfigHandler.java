@@ -7,13 +7,13 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.ProcessConfigMapper;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-public abstract class AbstractProcessConfigHandler<C extends ProcessConfig, E extends ProcessConfigEntity, M extends ProcessConfigMapper<C, E>>
+public abstract class AbstractProcessConfigHandler<C extends ProcessConfig, E extends AbstractProcessConfigEntity, M extends ProcessConfigMapper<C, E>>
     implements ProcessConfigHandler<C, E> {
 
     protected final M mapper;

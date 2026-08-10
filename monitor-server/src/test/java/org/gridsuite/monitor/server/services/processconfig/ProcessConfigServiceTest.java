@@ -12,8 +12,8 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
@@ -40,7 +40,7 @@ class ProcessConfigServiceTest {
     private ProcessConfigRepository processConfigRepository;
 
     @Mock
-    private ProcessConfigHandler<ProcessConfig, ProcessConfigEntity> handler;
+    private ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> handler;
 
     private ProcessConfigService processConfigService;
 
@@ -48,7 +48,7 @@ class ProcessConfigServiceTest {
     @Mock
     private ProcessConfig processConfig;
     @Mock
-    private ProcessConfigEntity processConfigEntity;
+    private AbstractProcessConfigEntity processConfigEntity;
 
     @BeforeEach
     void setUp() {
@@ -64,7 +64,7 @@ class ProcessConfigServiceTest {
     void createProcessConfig() {
         UUID expectedProcessConfigUuid = UUID.randomUUID();
 
-        ProcessConfigEntity savedEntity = mock(ProcessConfigEntity.class);
+        AbstractProcessConfigEntity savedEntity = mock(AbstractProcessConfigEntity.class);
 
         when(processConfig.processType()).thenReturn(PROCESS_TYPE);
         when(handler.toEntity(processConfig)).thenReturn(processConfigEntity);
@@ -112,7 +112,7 @@ class ProcessConfigServiceTest {
     void getProcessConfigs() {
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(processConfigRepository.findAllByProcessType(PROCESS_TYPE)).thenReturn(List.of(processConfigEntity));
+        when(processConfigRepository.findAll()).thenReturn(List.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
         when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfigEntity.getId()).thenReturn(processConfigUuid);
@@ -121,7 +121,7 @@ class ProcessConfigServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().processConfig()).isEqualTo(processConfig);
-        verify(processConfigRepository).findAllByProcessType(PROCESS_TYPE);
+        verify(processConfigRepository).findAll();
         verify(handler).toDto(processConfigEntity);
     }
 
@@ -133,10 +133,8 @@ class ProcessConfigServiceTest {
 
         SecurityAnalysisConfigEntity saEntity = new SecurityAnalysisConfigEntity();
         saEntity.setId(saUuid);
-        saEntity.setProcessType(ProcessType.SECURITY_ANALYSIS);
         LoadFlowConfigEntity lfEntity = new LoadFlowConfigEntity();
         lfEntity.setId(lfUuid);
-        lfEntity.setProcessType(ProcessType.LOADFLOW);
 
         when(processConfigRepository.findAllById(processConfigUuids)).thenReturn(List.of(saEntity, lfEntity));
 
@@ -198,7 +196,7 @@ class ProcessConfigServiceTest {
     void duplicateSecurityAnalysisConfig() {
         UUID processConfigUuid = UUID.randomUUID();
         UUID copiedProcessConfigUuid = UUID.randomUUID();
-        ProcessConfigEntity copiedProcessConfigEntity = Mockito.mock(ProcessConfigEntity.class);
+        AbstractProcessConfigEntity copiedProcessConfigEntity = Mockito.mock(AbstractProcessConfigEntity.class);
 
         when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
@@ -282,8 +280,8 @@ class ProcessConfigServiceTest {
     void compareProcessConfigsWithDifferentProcessConfigs() {
         UUID processConfigUuid1 = UUID.randomUUID();
         UUID processConfigUuid2 = UUID.randomUUID();
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(ProcessConfigEntity.class);
-        ProcessConfigEntity processConfigEntity2 = Mockito.mock(ProcessConfigEntity.class);
+        AbstractProcessConfigEntity processConfigEntity1 = Mockito.mock(AbstractProcessConfigEntity.class);
+        AbstractProcessConfigEntity processConfigEntity2 = Mockito.mock(AbstractProcessConfigEntity.class);
         ProcessConfig processConfig1 = Mockito.mock(ProcessConfig.class);
         ProcessConfig processConfig2 = Mockito.mock(ProcessConfig.class);
         ProcessConfigFieldComparison fieldComparison = new ProcessConfigFieldComparison("field", false, "value1", "value2");
@@ -329,7 +327,7 @@ class ProcessConfigServiceTest {
         UUID processConfigUuid2 = UUID.randomUUID();
 
         // test when the second process config is not found
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(ProcessConfigEntity.class);
+        AbstractProcessConfigEntity processConfigEntity1 = Mockito.mock(AbstractProcessConfigEntity.class);
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.empty());
@@ -346,8 +344,8 @@ class ProcessConfigServiceTest {
     void compareProcessConfigsShouldThrowWhenProcessTypesAreDifferent() {
         UUID processConfigUuid1 = UUID.randomUUID();
         UUID processConfigUuid2 = UUID.randomUUID();
-        ProcessConfigEntity processConfigEntity1 = Mockito.mock(SecurityAnalysisConfigEntity.class);
-        ProcessConfigEntity processConfigEntity2 = Mockito.mock(LoadFlowConfigEntity.class);
+        AbstractProcessConfigEntity processConfigEntity1 = Mockito.mock(SecurityAnalysisConfigEntity.class);
+        AbstractProcessConfigEntity processConfigEntity2 = Mockito.mock(LoadFlowConfigEntity.class);
 
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));

@@ -6,18 +6,15 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.entities.processconfig.ProcessConfigEntity;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Repository
-public interface ProcessConfigRepository extends JpaRepository<ProcessConfigEntity, UUID> {
-    List<ProcessConfigEntity> findAllByProcessType(ProcessType processType);
+public interface ProcessConfigRepository extends JpaRepository<AbstractProcessConfigEntity, UUID> {
 }

@@ -11,16 +11,18 @@ import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfi
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.ReportingPolicy;
 
 /**
  * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface SecurityAnalysisConfigMapper extends ProcessConfigMapper<SecurityAnalysisConfig, SecurityAnalysisConfigEntity> {
-    @Mapping(target = "processType", expression = "java(dto.processType())")
+    @Mapping(target = "id", ignore = true)
     SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);
 
     SecurityAnalysisConfig toDto(SecurityAnalysisConfigEntity entity);
 
+    @Mapping(target = "id", ignore = true)
     void updateEntityFromDto(SecurityAnalysisConfig dto, @MappingTarget SecurityAnalysisConfigEntity entity);
 }

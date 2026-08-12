@@ -45,9 +45,9 @@ public class ShortCircuitRestClient {
             .body(ShortCircuitParametersInfos.class);
     }
 
-    public UUID saveResult(UUID resultUuid, ShortCircuitAnalysisResult result) {
+    public void saveResult(UUID resultUuid, ShortCircuitAnalysisResult result) {
         Objects.requireNonNull(result);
-        return restClient.post()
+        restClient.post()
             .uri("/results/{resultUuid}", resultUuid)
             .contentType(MediaType.APPLICATION_JSON)
             .body(result)

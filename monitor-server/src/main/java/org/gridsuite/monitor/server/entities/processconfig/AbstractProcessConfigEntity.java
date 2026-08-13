@@ -20,7 +20,6 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -53,7 +52,6 @@ public abstract class AbstractProcessConfigEntity {
     @OrderColumn(name = "pos_modifications")
     private List<ModificationInfoEmbeddable> modifications;
 
-    @Transient
     public abstract ProcessType getProcessType();
 }
 

@@ -16,7 +16,8 @@ import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfig
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
-import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
+import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
+import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,7 +113,7 @@ class ProcessConfigServiceTest {
     void getProcessConfigs() {
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(processConfigRepository.findAll()).thenReturn(List.of(processConfigEntity));
+        when(handler.findAll()).thenReturn(List.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
         when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfigEntity.getId()).thenReturn(processConfigUuid);
@@ -121,7 +122,7 @@ class ProcessConfigServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().processConfig()).isEqualTo(processConfig);
-        verify(processConfigRepository).findAll();
+        verify(handler).findAll();
         verify(handler).toDto(processConfigEntity);
     }
 

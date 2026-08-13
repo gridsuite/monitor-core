@@ -14,7 +14,8 @@ import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
-import org.gridsuite.monitor.server.repositories.ProcessConfigRepository;
+import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
+import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +66,7 @@ public class ProcessConfigService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return processConfigRepository.findAll().stream()
+        return getHandler(processType).findAll().stream()
             .filter(entity -> entity.getProcessType() == processType)
             .map(this::toPersistedProcessConfig)
             .toList();

@@ -88,7 +88,7 @@ class ShortCircuitRunComputationStepTest {
             .thenReturn(parametersInfos);
         when(shortCircuitParametersService.getAllBusFaults(eq(network), any()))
             .thenReturn(List.of(mock(Fault.class)));
-        doNothing().when(shortCircuitParametersService).checkInconsistentVoltageLevels(network);
+        doNothing().when(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
 
         ShortCircuitAnalysisResult analysisResult = mock(ShortCircuitAnalysisResult.class);
         try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class)) {
@@ -100,7 +100,7 @@ class ShortCircuitRunComputationStepTest {
 
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);
         verify(shortCircuitParametersService).getAllBusFaults(network, parametersInfos.getSpecificParametersPerProvider().get("Courcirc"));
-        verify(shortCircuitParametersService).checkInconsistentVoltageLevels(network);
+        verify(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
         verify(shortCircuitRestClient).saveResult(any(UUID.class), same(analysisResult));
         verify(stepContext).setResultInfos(argThat(resultInfos ->
             resultInfos.resultUUID() != null &&

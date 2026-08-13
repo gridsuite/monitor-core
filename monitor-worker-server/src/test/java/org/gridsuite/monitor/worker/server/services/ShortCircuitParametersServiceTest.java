@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.VoltageLevel;
@@ -105,6 +106,7 @@ class ShortCircuitParametersServiceTest {
     @Test
     void checkInconsistentVoltageLevelsConsistent() {
         VoltageLevel vl = mock(VoltageLevel.class);
+        ReportNode reportNode = mock(ReportNode.class);
         IdentifiableShortCircuit extension = mock(IdentifiableShortCircuit.class);
         when(vl.getExtension(IdentifiableShortCircuit.class)).thenReturn(extension);
         when(extension.getIpMin()).thenReturn(10.0);
@@ -112,12 +114,16 @@ class ShortCircuitParametersServiceTest {
 
         when(network.getVoltageLevelStream()).thenReturn(Stream.of(vl));
 
-        shortCircuitParametersService.checkInconsistentVoltageLevels(network);
+        shortCircuitParametersService.checkInconsistentVoltageLevels(network, reportNode);
     }
 
     @Test
     void checkInconsistentVoltageLevelsInconsistent() {
         VoltageLevel vl = mock(VoltageLevel.class);
+        ReportNode reportNode = ReportNode.newRootReportNode()
+            .withResourceBundles("i18n.reports")
+            .withMessageTemplate("test")
+            .build();
         when(vl.getId()).thenReturn("vl1");
         IdentifiableShortCircuit extension = mock(IdentifiableShortCircuit.class);
         when(vl.getExtension(IdentifiableShortCircuit.class)).thenReturn(extension);
@@ -126,7 +132,7 @@ class ShortCircuitParametersServiceTest {
 
         when(network.getVoltageLevelStream()).thenReturn(Stream.of(vl));
 
-        assertThatThrownBy(() -> shortCircuitParametersService.checkInconsistentVoltageLevels(network))
+        assertThatThrownBy(() -> shortCircuitParametersService.checkInconsistentVoltageLevels(network, reportNode))
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("Some voltage levels have wrong isc values");
     }

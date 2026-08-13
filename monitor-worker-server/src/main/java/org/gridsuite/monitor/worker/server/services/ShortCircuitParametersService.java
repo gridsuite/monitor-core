@@ -6,12 +6,15 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.report.ReportNode;
+import com.powsybl.commons.report.TypedValue;
 import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.VoltageLevel;
 import com.powsybl.iidm.network.extensions.IdentifiableShortCircuit;
 import com.powsybl.shortcircuit.BusFault;
 import com.powsybl.shortcircuit.Fault;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -45,7 +48,7 @@ public class ShortCircuitParametersService {
         return busesStream.map(bus -> new BusFault(bus.getId(), bus.getId())).collect(Collectors.toList());
     }
 
-    public void checkInconsistentVoltageLevels(Network network) {
+    public void checkInconsistentVoltageLevels(Network network, ReportNode reportNode) {
         List<String> inconsistentVoltageLevels = new ArrayList<>();
         network.getVoltageLevelStream().forEach(vl -> {
             IdentifiableShortCircuit<VoltageLevel> shortCircuitExtension = vl.getExtension(IdentifiableShortCircuit.class);
@@ -54,6 +57,12 @@ public class ShortCircuitParametersService {
             }
         });
         if (!inconsistentVoltageLevels.isEmpty()) {
+            reportNode.newReportNode()
+                .withMessageTemplate("monitor.worker.server.shortcircuit.step.error.VoltageLevelsWithWrongIscValuesSummarize")
+                .withUntypedValue("voltageLevels", StringUtils.join(inconsistentVoltageLevels, ", "))
+                .withSeverity(TypedValue.ERROR_SEVERITY)
+                .withTimestamp()
+                .add();
             throw new RuntimeException("Some voltage levels have wrong isc values. Check out the logs to find which ones");
         }
     }

@@ -66,7 +66,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
 
             List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
 
-            shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork());
+            shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), reportNode);
 
             ShortCircuitAnalysisResult result = ShortCircuitAnalysis.run(
                 context.getNetwork(),
@@ -75,7 +75,6 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
                 LocalComputationManager.getDefault(),
                 List.of(),
                 reportNode);
-            // TODO: use the computationManager from gridsuite-computation?
 
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
             shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);

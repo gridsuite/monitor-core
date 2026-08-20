@@ -59,10 +59,10 @@ class ShortCircuitRestClientTest {
     @Test
     void getParameters() throws JsonProcessingException {
         ShortCircuitParametersInfos expectedParameters = ShortCircuitParametersInfos.builder()
-            .provider("Courcirc")
+            .provider("ShortCircuit-provider")
             .predefinedParameters(ShortCircuitPredefinedConfiguration.ICC_MAX_WITH_CEI909)
             .commonParameters(new ShortCircuitParameters())
-            .specificParametersPerProvider(Map.of("Courcirc", Map.of("nodeCluster", "bus1")))
+            .specificParametersPerProvider(Map.of("ShortCircuit-provider", Map.of("nodeCluster", "bus1")))
             .build();
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))

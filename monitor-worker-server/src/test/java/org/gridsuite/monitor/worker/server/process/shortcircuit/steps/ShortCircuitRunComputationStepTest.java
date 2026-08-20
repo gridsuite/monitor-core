@@ -61,7 +61,7 @@ class ShortCircuitRunComputationStepTest {
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, "Courcirc");
+        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
@@ -79,8 +79,8 @@ class ShortCircuitRunComputationStepTest {
         ShortCircuitParameters commonParameters = new ShortCircuitParameters();
         ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
             .commonParameters(commonParameters)
-            .provider("Courcirc")
-            .specificParametersPerProvider(Map.of("Courcirc", Collections.emptyMap()))
+            .provider("ShortCircuit-provider")
+            .specificParametersPerProvider(Map.of("ShortCircuit-provider", Collections.emptyMap()))
             .build();
         when(stepContext.getNetwork())
             .thenReturn(network);
@@ -99,7 +99,7 @@ class ShortCircuitRunComputationStepTest {
         }
 
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);
-        verify(shortCircuitParametersService).getAllBusFaults(network, parametersInfos.getSpecificParametersPerProvider().get("Courcirc"));
+        verify(shortCircuitParametersService).getAllBusFaults(network, parametersInfos.getSpecificParametersPerProvider().get("ShortCircuit-provider"));
         verify(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
         verify(shortCircuitRestClient).saveResult(any(UUID.class), same(analysisResult));
         verify(stepContext).setResultInfos(argThat(resultInfos ->

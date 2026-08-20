@@ -8,6 +8,8 @@ spring:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run
         publishRunLoadFlow-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run
+        publishRunShortCircuit-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run
         publishMonitorUpdate-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
         consumeMonitorWorkerUpdate-in-0:

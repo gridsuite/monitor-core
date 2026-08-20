@@ -14,6 +14,7 @@ import com.powsybl.contingency.json.ContingencyJsonModule;
 import com.powsybl.loadflow.json.LoadFlowParametersJsonModule;
 import com.powsybl.loadflow.json.LoadFlowResultJsonModule;
 import com.powsybl.security.json.SecurityAnalysisJsonModule;
+import com.powsybl.shortcircuit.json.ShortCircuitAnalysisJsonModule;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,7 @@ public class MonitorWorkerConfig {
             objectMapper.registerModule(new SecurityAnalysisJsonModule());
             objectMapper.registerModule(new LoadFlowParametersJsonModule());
             objectMapper.registerModule(new LoadFlowResultJsonModule());
+            objectMapper.registerModule(new ShortCircuitAnalysisJsonModule());
             objectMapper.registerModule(new ReportNodeJsonModule());
             objectMapper.setInjectableValues(new InjectableValues.Std()
                 .addValue(ReportNodeDeserializer.DICTIONARY_VALUE_ID, null));

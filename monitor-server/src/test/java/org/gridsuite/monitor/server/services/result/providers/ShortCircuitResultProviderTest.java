@@ -7,51 +7,50 @@
 package org.gridsuite.monitor.server.services.result.providers;
 
 import org.gridsuite.monitor.commons.types.result.ResultType;
-import org.gridsuite.monitor.server.clients.LoadflowRestClient;
+import org.gridsuite.monitor.server.clients.ShortCircuitRestClient;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-class LoadflowResultProviderTest {
-    private final LoadflowRestClient loadflowRestClient = mock(LoadflowRestClient.class);
-    private final LoadflowResultProvider provider = new LoadflowResultProvider(loadflowRestClient);
+class ShortCircuitResultProviderTest {
+    private final ShortCircuitRestClient shortCircuitRestClient = mock(ShortCircuitRestClient.class);
+    private final ShortCircuitResultProvider provider = new ShortCircuitResultProvider(shortCircuitRestClient);
 
     @Test
-    void getTypeShouldReturnLoadflow() {
+    void getTypeShouldReturnShortCircuit() {
         assertThat(provider.getType())
-            .isEqualTo(ResultType.LOADFLOW);
+            .isEqualTo(ResultType.SHORT_CIRCUIT);
     }
 
     @Test
-    void getResultShouldDelegateToLoadflowService() {
+    void getResultShouldDelegateToShortCircuitService() {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(loadflowRestClient.getResult(id)).thenReturn(expected);
+        when(shortCircuitRestClient.getResult(id)).thenReturn(expected);
 
         String result = provider.getResult(id);
 
         assertThat(result).isEqualTo(expected);
-        verify(loadflowRestClient).getResult(id);
-        verifyNoMoreInteractions(loadflowRestClient);
+        verify(shortCircuitRestClient).getResult(id);
+        verifyNoMoreInteractions(shortCircuitRestClient);
     }
 
     @Test
-    void deleteResultShouldDelegateToLoadflowService() {
+    void deleteResultShouldDelegateToShortCircuitService() {
         UUID id = UUID.randomUUID();
 
-        doNothing().when(loadflowRestClient).deleteResult(id);
+        doNothing().when(shortCircuitRestClient).deleteResult(id);
 
         provider.deleteResult(id);
 
-        verify(loadflowRestClient).deleteResult(id);
-        verifyNoMoreInteractions(loadflowRestClient);
+        verify(shortCircuitRestClient).deleteResult(id);
+        verifyNoMoreInteractions(shortCircuitRestClient);
     }
 }

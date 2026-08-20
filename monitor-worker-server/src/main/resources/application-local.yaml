@@ -28,3 +28,5 @@ gridsuite:
       base-uri: http://localhost:5008
     actions-server:
       base-uri: http://localhost:5022
+    shortcircuit-server:
+      base-uri: http://localhost:5031

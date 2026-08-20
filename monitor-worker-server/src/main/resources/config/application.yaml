@@ -15,3 +15,6 @@ spring:
 worker:
   execution-env-name: "default-env"
   process: securityanalysis
+
+shortcircuit-analysis:
+  default-provider: default-provider

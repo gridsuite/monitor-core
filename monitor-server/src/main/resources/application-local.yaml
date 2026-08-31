@@ -21,3 +21,5 @@ gridsuite:
       base-uri: http://localhost:5023
     loadflow-server:
       base-uri: http://localhost:5008
+    shortcircuit-server:
+      base-uri: http://localhost:5031

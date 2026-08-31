@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import java.util.UUID;
 
@@ -23,7 +24,8 @@ public record ProcessRunMessage<T extends ProcessConfig>(
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "processType")
     @JsonSubTypes({
         @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
-        @JsonSubTypes.Type(value = LoadFlowConfig.class, name = "LOADFLOW")
+        @JsonSubTypes.Type(value = LoadFlowConfig.class, name = "LOADFLOW"),
+        @JsonSubTypes.Type(value = ShortCircuitConfig.class, name = "SHORT_CIRCUIT")
     })
     T config,
     UUID reportId,

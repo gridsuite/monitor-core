@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.*;
@@ -18,18 +19,23 @@ import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @Service
 public class ProcessExecutionService implements ProcessExecutor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProcessExecutionService.class);
 
     private final Map<ProcessType, Process<? extends ProcessConfig>> processes;
     private final StepExecutor stepExecutor;
@@ -67,13 +73,9 @@ public class ProcessExecutionService implements ProcessExecutor {
             runMessage.debugFileLocation()
         );
 
-        updateExecutionStatus(context, ProcessStatus.RUNNING);
-        reportRestClient.sendReport(context.getReportId(), context.getReportNode());
-
         try {
             initializeSteps(process, context);
             executeSteps(process, context);
-            updateExecutionStatus(context, ProcessStatus.COMPLETED);
         } catch (Exception e) {
             updateExecutionStatus(context, ProcessStatus.FAILED);
             throw e;
@@ -82,28 +84,49 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
         List<ProcessStep<T>> steps = process.getSteps();
-        stepExecutor.initializeSteps(context.getExecutionId(), steps);
+        notificationService.updateStepsStatuses(context.getExecutionId(),
+                IntStream.range(0, steps.size())
+                        .mapToObj(i -> ProcessExecutionStep.builder()
+                                .id(steps.get(i).getId())
+                                .stepType(steps.get(i).getType().getName())
+                                .stepOrder(i)
+                                .status(StepStatus.SCHEDULED)
+                                .build())
+                        .toList());
     }
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        updateExecutionStatus(context, ProcessStatus.RUNNING);
+        doExecuteSteps(process, context);
+    }
+
+    private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
         List<ProcessStep<T>> steps = process.getSteps();
+        boolean skipRemaining = false;
+
+        reportRestClient.sendReport(context.getReportId(), context.getReportNode());
 
         for (int i = 0; i < steps.size(); i++) {
             ProcessStep<T> step = steps.get(i);
             ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
 
+            if (skipRemaining) {
+                stepExecutor.skipStep(stepContext, step);
+                continue;
+            }
+
             try {
                 stepExecutor.executeStep(stepContext, step);
             } catch (Exception e) {
-                skipRemainingSteps(process, context, i + 1);
-                throw e;
+                // TODO better error handling
+                LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getExecutionId(), step.getType(), e.getMessage());
+                updateExecutionStatus(context, ProcessStatus.FAILED);
+                skipRemaining = true;
             }
         }
-    }
-
-    private <T extends ProcessConfig> void skipRemainingSteps(Process<T> process, ProcessExecutionContext<T> context, int fromIndex) {
-        List<ProcessStep<T>> steps = process.getSteps();
-        stepExecutor.skipSteps(context.getExecutionId(), steps, fromIndex);
+        if (!skipRemaining) {
+            updateExecutionStatus(context, ProcessStatus.COMPLETED);
+        }
     }
 
     private <T extends ProcessConfig> void updateExecutionStatus(ProcessExecutionContext<T> context, ProcessStatus status) {

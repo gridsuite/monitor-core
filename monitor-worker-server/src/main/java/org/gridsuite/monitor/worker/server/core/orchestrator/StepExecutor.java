@@ -23,7 +23,7 @@ public interface StepExecutor {
     /**
      * Initialize the steps of a single process execution and publish step status updates.
      *
-     * @param processExecutionId step execution identifier
+     * @param processExecutionId process execution identifier
      * @param stepsContexts contexts of the steps to initialize
      * @param <C> concrete {@link ProcessConfig} type associated with the parent process
      */

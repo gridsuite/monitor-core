@@ -17,8 +17,6 @@ import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -28,11 +26,6 @@ import java.util.UUID;
 public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
-
-    @Override
-    public <C extends ProcessConfig> void initializeSteps(UUID processExecutionId, List<ProcessStepExecutionContext<C>> stepsContexts) {
-        updateExecutionStepsStatuses(processExecutionId, stepsContexts, StepStatus.SCHEDULED);
-    }
 
     @Override
     public <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
@@ -49,11 +42,6 @@ public class StepExecutionService implements StepExecutor {
         }
     }
 
-    @Override
-    public <C extends ProcessConfig> void skipSteps(UUID processExecutionId, List<ProcessStepExecutionContext<C>> stepsContexts) {
-        updateExecutionStepsStatuses(processExecutionId, stepsContexts, StepStatus.SKIPPED);
-    }
-
     private <C extends ProcessConfig> void updateStepStatus(ProcessStepExecutionContext<C> context, StepStatus status) {
         ProcessExecutionStep updatedStep = ProcessExecutionStep.builder()
                 .id(context.getStepExecutionId())
@@ -67,20 +55,5 @@ public class StepExecutionService implements StepExecutor {
                 .build();
 
         notificationService.updateStepStatus(context.getProcessExecutionId(), updatedStep);
-    }
-
-    private <C extends ProcessConfig> void updateExecutionStepsStatuses(UUID processExecutionId, List<ProcessStepExecutionContext<C>> stepsContexts, StepStatus status) {
-        List<ProcessExecutionStep> updatedSteps = stepsContexts.stream().map(
-                context -> ProcessExecutionStep.builder()
-                        .id(context.getStepExecutionId())
-                        .stepType(context.getProcessStepType().getName())
-                        .stepOrder(context.getStepOrder())
-                        .status(status)
-                        .startedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
-                        .completedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
-                        .build()
-        ).toList();
-
-        notificationService.updateStepsStatuses(processExecutionId, updatedSteps);
     }
 }

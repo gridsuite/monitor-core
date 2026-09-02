@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.*;
@@ -82,11 +83,7 @@ public class ProcessExecutionService implements ProcessExecutor {
     }
 
     private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        List<ProcessStep<T>> steps = process.getSteps();
-        List<ProcessStepExecutionContext<T>> stepsContexts = IntStream.range(0, steps.size())
-                .mapToObj(i -> context.createStepContext(steps.get(i), i))
-                .toList();
-        stepExecutor.initializeSteps(context.getExecutionId(), stepsContexts);
+        updateExecutionStepsStatuses(context, process, StepStatus.SCHEDULED, 0);
     }
 
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
@@ -106,11 +103,7 @@ public class ProcessExecutionService implements ProcessExecutor {
     }
 
     private <T extends ProcessConfig> void skipRemainingSteps(Process<T> process, ProcessExecutionContext<T> context, int fromIndex) {
-        List<ProcessStep<T>> steps = process.getSteps();
-        List<ProcessStepExecutionContext<T>> stepsContexts = IntStream.range(fromIndex, steps.size())
-                .mapToObj(i -> context.createStepContext(steps.get(i), i))
-                .toList();
-        stepExecutor.skipSteps(context.getExecutionId(), stepsContexts);
+        updateExecutionStepsStatuses(context, process, StepStatus.SKIPPED, fromIndex);
     }
 
     private <T extends ProcessConfig> void updateExecutionStatus(ProcessExecutionContext<T> context, ProcessStatus status) {
@@ -123,5 +116,21 @@ public class ProcessExecutionService implements ProcessExecutor {
         );
 
         notificationService.updateExecutionStatus(context.getExecutionId(), processExecutionStatusUpdate);
+    }
+
+    private <T extends ProcessConfig> void updateExecutionStepsStatuses(ProcessExecutionContext<T> context, Process<T> process, StepStatus status, int fromIndex) {
+        List<ProcessStep<T>> steps = process.getSteps();
+        List<ProcessExecutionStep> updatedSteps = IntStream.range(fromIndex, steps.size())
+                .mapToObj(i -> ProcessExecutionStep.builder()
+                        .id(steps.get(i).getId())
+                        .stepType(steps.get(i).getType().getName())
+                        .stepOrder(i)
+                        .status(status)
+                        .startedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
+                        .completedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
+                        .build())
+                .toList();
+
+        notificationService.updateStepsStatuses(context.getExecutionId(), updatedSteps);
     }
 }

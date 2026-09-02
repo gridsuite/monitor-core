@@ -80,6 +80,8 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.COMPLETED &&
                         step.getCompletedAt() != null
         ));
+
+        verifyNoMoreInteractions(notificationService);
     }
 
     @Test
@@ -109,6 +111,9 @@ class StepExecutionServiceTest {
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
+
+        verifyNoMoreInteractions(notificationService);
+
         // Verify report was sent on failure
         verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
     }

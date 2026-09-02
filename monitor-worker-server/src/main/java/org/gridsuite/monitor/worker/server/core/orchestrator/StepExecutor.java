@@ -42,7 +42,7 @@ public interface StepExecutor {
     /**
      * Mark steps of a single process execution as skipped and publish the corresponding update.
      *
-     * @param processExecutionId step execution identifier
+     * @param processExecutionId process execution identifier
      * @param stepsContexts contexts of the steps to skip
      * @param <C> concrete {@link ProcessConfig} type associated with the parent process
      */

@@ -7,16 +7,16 @@
 package org.gridsuite.monitor.server.mappers.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.server.config.MapStructConfig;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
 
 /**
  * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
+@Mapper(config = MapStructConfig.class)
 public interface SecurityAnalysisConfigMapper extends ProcessConfigMapper<SecurityAnalysisConfig, SecurityAnalysisConfigEntity> {
     @Mapping(target = "id", ignore = true)
     SecurityAnalysisConfigEntity toEntity(SecurityAnalysisConfig dto);

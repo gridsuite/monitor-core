@@ -7,16 +7,16 @@
 package org.gridsuite.monitor.server.mappers.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.server.config.MapStructConfig;
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
+@Mapper(config = MapStructConfig.class)
 public interface LoadFlowConfigMapper extends ProcessConfigMapper<LoadFlowConfig, LoadFlowConfigEntity> {
     @Mapping(target = "id", ignore = true)
     LoadFlowConfigEntity toEntity(LoadFlowConfig dto);

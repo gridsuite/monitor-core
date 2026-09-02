@@ -7,16 +7,16 @@
 package org.gridsuite.monitor.server.mappers.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
+import org.gridsuite.monitor.server.config.MapStructConfig;
 import org.gridsuite.monitor.server.entities.processconfig.ShortCircuitConfigEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
 
 /**
  * @author Caroline Jeandat <caroline.jeandat at rte-france.com>
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
+@Mapper(config = MapStructConfig.class)
 public interface ShortCircuitConfigMapper extends ProcessConfigMapper<ShortCircuitConfig, ShortCircuitConfigEntity> {
     @Mapping(target = "id", ignore = true)
     ShortCircuitConfigEntity toEntity(ShortCircuitConfig dto);

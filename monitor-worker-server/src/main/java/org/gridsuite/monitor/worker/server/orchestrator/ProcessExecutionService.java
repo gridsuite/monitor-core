@@ -98,7 +98,6 @@ public class ProcessExecutionService implements ProcessExecutor {
     private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
         updateExecutionStatus(context, ProcessStatus.RUNNING);
         doExecuteSteps(process, context);
-        updateExecutionStatus(context, ProcessStatus.COMPLETED);
     }
 
     private <T extends ProcessConfig> void doExecuteSteps(Process<T> process, ProcessExecutionContext<T> context) {
@@ -124,6 +123,9 @@ public class ProcessExecutionService implements ProcessExecutor {
                 updateExecutionStatus(context, ProcessStatus.FAILED);
                 skipRemaining = true;
             }
+        }
+        if (!skipRemaining) {
+            updateExecutionStatus(context, ProcessStatus.COMPLETED);
         }
     }
 

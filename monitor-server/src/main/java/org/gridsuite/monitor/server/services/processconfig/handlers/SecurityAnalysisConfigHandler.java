@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class SecurityAnalysisConfigHandler extends AbstractProcessConfigHandler<
     SecurityAnalysisConfig,
-    SecurityAnalysisConfigEntity,
-    SecurityAnalysisConfigMapper,
-    SecurityAnalysisConfigRepository> {
+    SecurityAnalysisConfigEntity> {
 
     public SecurityAnalysisConfigHandler(SecurityAnalysisConfigMapper mapper, SecurityAnalysisConfigRepository repository) {
         super(mapper, repository);

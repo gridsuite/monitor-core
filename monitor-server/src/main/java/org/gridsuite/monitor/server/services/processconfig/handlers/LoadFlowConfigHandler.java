@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LoadFlowConfigHandler extends AbstractProcessConfigHandler<
     LoadFlowConfig,
-    LoadFlowConfigEntity,
-    LoadFlowConfigMapper,
-    LoadFlowConfigRepository> {
+    LoadFlowConfigEntity> {
 
     public LoadFlowConfigHandler(LoadFlowConfigMapper mapper, LoadFlowConfigRepository repository) {
         super(mapper, repository);

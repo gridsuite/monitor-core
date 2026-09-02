@@ -19,15 +19,15 @@ import java.util.UUID;
  */
 public abstract class AbstractProcessConfigHandler<
         C extends ProcessConfig,
-        E extends AbstractProcessConfigEntity,
-        M extends ProcessConfigMapper<C, E>,
-        R extends JpaRepository<E, UUID>
+        E extends AbstractProcessConfigEntity
     > implements ProcessConfigHandler<C, E> {
 
-    protected final M mapper;
-    protected final R repository;
+    private final ProcessConfigMapper<C, E> mapper;
+    private final JpaRepository<E, UUID> repository;
 
-    protected AbstractProcessConfigHandler(M mapper, R repository) {
+    protected AbstractProcessConfigHandler(
+            ProcessConfigMapper<C, E> mapper,
+            JpaRepository<E, UUID> repository) {
         this.mapper = mapper;
         this.repository = repository;
     }

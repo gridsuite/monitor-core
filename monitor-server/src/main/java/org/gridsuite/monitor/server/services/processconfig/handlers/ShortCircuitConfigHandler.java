@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ShortCircuitConfigHandler extends AbstractProcessConfigHandler<
     ShortCircuitConfig,
-    ShortCircuitConfigEntity,
-    ShortCircuitConfigMapper,
-    ShortCircuitConfigRepository> {
+    ShortCircuitConfigEntity> {
 
     public ShortCircuitConfigHandler(ShortCircuitConfigMapper mapper, ShortCircuitConfigRepository repository) {
         super(mapper, repository);

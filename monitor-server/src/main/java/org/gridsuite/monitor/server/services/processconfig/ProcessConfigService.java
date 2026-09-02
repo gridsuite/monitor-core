@@ -67,7 +67,6 @@ public class ProcessConfigService {
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
         return getHandler(processType).findAll().stream()
-            .filter(entity -> entity.getProcessType() == processType)
             .map(this::toPersistedProcessConfig)
             .toList();
     }

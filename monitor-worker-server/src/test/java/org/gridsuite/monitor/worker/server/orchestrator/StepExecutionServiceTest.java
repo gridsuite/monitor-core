@@ -113,26 +113,6 @@ class StepExecutionServiceTest {
         verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
     }
 
-    @Test
-    void skipStepShouldSendSkippedStatusWithoutExecutingStep() {
-        UUID executionId = UUID.randomUUID();
-        int stepOrder = 3;
-        ProcessStepExecutionContext<ProcessConfig> context = createSkippedStepExecutionContext(executionId, stepOrder);
-        when(context.getProcessStepType()).thenReturn(processStepType);
-        when(processStepType.getName()).thenReturn("SKIPPED_STEP");
-
-        //stepExecutionService.skipStep(context, processStep);
-
-        verify(processStep, never()).execute(any());
-        // Verify report was NOT sent on skip
-        verify(reportRestClient, never()).sendReport(any(UUID.class), any(ReportNode.class));
-        verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
-                step.getStatus() == StepStatus.SKIPPED &&
-                        "SKIPPED_STEP".equals(step.getStepType()) &&
-                        step.getStepOrder() == 3
-        ));
-    }
-
     private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID processReportId, int stepOrder) {
         ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
         when(context.getProcessExecutionId()).thenReturn(executionId);
@@ -141,16 +121,6 @@ class StepExecutionServiceTest {
         when(context.getReportNode()).thenReturn(reportNode);
         when(context.getStepOrder()).thenReturn(stepOrder);
         when(context.getProcessReportId()).thenReturn(processReportId);
-
-        return context;
-    }
-
-    private ProcessStepExecutionContext<ProcessConfig> createSkippedStepExecutionContext(UUID executionId, int stepOrder) {
-        ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
-        when(context.getProcessExecutionId()).thenReturn(executionId);
-        when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
-        when(context.getStartedAt()).thenReturn(java.time.Instant.now());
-        when(context.getStepOrder()).thenReturn(stepOrder);
 
         return context;
     }

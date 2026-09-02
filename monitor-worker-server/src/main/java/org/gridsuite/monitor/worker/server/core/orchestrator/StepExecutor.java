@@ -10,21 +10,24 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 
+import java.util.List;
+import java.util.UUID;
+
 /**
- * Child orchestrator interface responsible for executing a single {@link ProcessStep} within a process run.
+ * Child orchestrator interface responsible for executing a {@link ProcessStep} within a process run.
  *
  * @author Thang PHAM <quyet-thang.pham at rte-france.com>
  */
 public interface StepExecutor {
 
     /**
-     * Mark a step as skipped and publish the corresponding update.
+     * Initialize the steps of a single process execution and publish step status updates.
      *
-     * @param context step execution context
-     * @param step step definition being skipped
+     * @param processExecutionId step execution identifier
+     * @param stepsContexts contexts of the steps to initialize
      * @param <C> concrete {@link ProcessConfig} type associated with the parent process
      */
-    <C extends ProcessConfig> void skipStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step);
+    <C extends ProcessConfig> void initializeSteps(UUID processExecutionId, List<ProcessStepExecutionContext<C>> stepsContexts);
 
     /**
      * Execute a step and publish step status updates around the execution.
@@ -35,4 +38,13 @@ public interface StepExecutor {
      * @throws RuntimeException any exception thrown by the step implementation is propagated after updating status
      */
     <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step);
+
+    /**
+     * Mark steps of a single process execution as skipped and publish the corresponding update.
+     *
+     * @param processExecutionId step execution identifier
+     * @param stepsContexts contexts of the steps to skip
+     * @param <C> concrete {@link ProcessConfig} type associated with the parent process
+     */
+    <C extends ProcessConfig> void skipSteps(UUID processExecutionId, List<ProcessStepExecutionContext<C>> stepsContexts);
 }

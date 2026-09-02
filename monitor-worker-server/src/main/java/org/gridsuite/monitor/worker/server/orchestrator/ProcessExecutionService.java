@@ -69,9 +69,9 @@ public class ProcessExecutionService implements ProcessExecutor {
         );
 
         updateExecutionStatus(context, ProcessStatus.RUNNING);
-        reportRestClient.sendReport(context.getReportId(), context.getReportNode());
 
         try {
+            reportRestClient.sendReport(context.getReportId(), context.getReportNode());
             initializeSteps(process, context);
             executeSteps(process, context);
             updateExecutionStatus(context, ProcessStatus.COMPLETED);

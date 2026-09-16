@@ -10,11 +10,13 @@ import org.gridsuite.monitor.server.config.MapStructConfig;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 /**
  * @author Radouane Khouadri <radouane.khouadri at rte-france.com>
  */
 @Mapper(config = MapStructConfig.class)
 public interface ProcessExecutionMapper {
+    @Mapping(target = "userIdentity", ignore = true)
     ProcessExecution toDto(ProcessExecutionEntity entity);
 }

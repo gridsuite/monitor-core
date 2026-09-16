@@ -37,5 +37,23 @@ public record ProcessExecution(
     Instant completedAt,
     UUID reportId,
     @NotNull
-    String userId
-) { }
+    String userId,
+    String userIdentity
+) {
+    public ProcessExecution withUserIdentity(String userIdentity) {
+        return new ProcessExecution(
+                id,
+                type,
+                caseUuid,
+                processConfigId,
+                status,
+                executionEnvName,
+                scheduledAt,
+                startedAt,
+                completedAt,
+                reportId,
+                userId,
+                userIdentity
+        );
+    }
+}

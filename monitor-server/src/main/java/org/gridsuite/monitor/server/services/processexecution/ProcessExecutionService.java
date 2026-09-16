@@ -12,17 +12,23 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
+import org.gridsuite.monitor.server.clients.UserIdentityRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
+import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
+import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -35,17 +41,20 @@ public class ProcessExecutionService {
     private final ReportRestClient reportRestClient;
     private final ResultService resultService;
     private final S3RestClient s3RestClient;
+    private final UserIdentityRestClient userIdentityRestClient;
 
     public ProcessExecutionService(ProcessExecutionTxService processExecutionTxService,
                                    NotificationService notificationService,
                                    ReportRestClient reportRestClient,
                                    ResultService resultService,
-                                   S3RestClient s3RestClient) {
+                                   S3RestClient s3RestClient,
+                                   UserIdentityRestClient userIdentityRestClient) {
         this.processExecutionTxService = processExecutionTxService;
         this.notificationService = notificationService;
         this.reportRestClient = reportRestClient;
         this.resultService = resultService;
         this.s3RestClient = s3RestClient;
+        this.userIdentityRestClient = userIdentityRestClient;
     }
 
     public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
@@ -111,11 +120,24 @@ public class ProcessExecutionService {
     }
 
     public List<ProcessExecution> getProcessExecutions() {
-        return processExecutionTxService.getProcessExecutions();
+        List<ProcessExecution> processExecutions = processExecutionTxService.getProcessExecutions();
+        Set<String> userIds = processExecutions.stream().map(ProcessExecution::userId).collect(Collectors.toSet());
+        UserIdentities userIdentities = userIdentityRestClient.getUserIdentities(new ArrayList<>(userIds));
+        return processExecutions.stream().map(execution -> {
+            UserIdentity identity = userIdentities.data().get(execution.userId());
+            String fullName = identity == null ? execution.userId() : identity.firstName() + " " + identity.lastName();
+            return execution.withUserIdentity(fullName);
+        }).toList();
     }
 
     public Optional<ProcessExecution> getExecution(UUID executionId) {
-        return processExecutionTxService.getExecution(executionId);
+        Optional<ProcessExecution> processExecution = processExecutionTxService.getExecution(executionId);
+        return processExecution.map(execution -> {
+            UserIdentities userIdentities = userIdentityRestClient.getUserIdentities(List.of(execution.userId()));
+            UserIdentity identity = userIdentities.data().get(execution.userId());
+            String fullName = identity == null ? execution.userId() : identity.firstName() + " " + identity.lastName();
+            return execution.withUserIdentity(fullName);
+        });
     }
 
     public Optional<List<ProcessExecutionStep>> getStepsInfos(UUID executionId) {

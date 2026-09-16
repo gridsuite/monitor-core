@@ -195,11 +195,11 @@ class MonitorControllerTest {
     @Test
     void getProcessExecutions() throws Exception {
         ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1",
-                Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), UUID.randomUUID(), "user1");
+                Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), UUID.randomUUID(), "user1", "user1");
         ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED, "env2",
-                Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, UUID.randomUUID(), "user2");
+                Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, UUID.randomUUID(), "user2", "user2");
         ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3",
-                Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, UUID.randomUUID(), "user3");
+                Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, UUID.randomUUID(), "user3", "user3");
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 

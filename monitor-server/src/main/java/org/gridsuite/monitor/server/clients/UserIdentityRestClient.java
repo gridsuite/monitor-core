@@ -7,6 +7,8 @@
 package org.gridsuite.monitor.server.clients;
 
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -19,6 +21,8 @@ import java.util.List;
  */
 @Service
 public class UserIdentityRestClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserIdentityRestClient.class);
+
     private static final String USER_IDENTITY_API_VERSION = "v1";
     private static final String DELIMITER = "/";
 
@@ -44,6 +48,7 @@ public class UserIdentityRestClient {
                 .retrieve()
                 .body(UserIdentities.class);
         } catch (RestClientException e) {
+            LOGGER.error("Failed to fetch users identities for userIds {}", userIds);
             return new UserIdentities();
         }
     }

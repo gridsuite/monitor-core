@@ -12,5 +12,8 @@ import java.util.Map;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 public record UserIdentities(Map<String, UserIdentity> data) {
+    public UserIdentities() {
+        this(Map.of());
+    }
 }
 

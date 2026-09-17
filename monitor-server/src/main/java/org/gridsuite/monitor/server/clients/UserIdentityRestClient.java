@@ -10,6 +10,7 @@ import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 
@@ -31,12 +32,19 @@ public class UserIdentityRestClient {
     }
 
     public UserIdentities getUserIdentities(List<String> userIds) {
-        return restClient.get()
-            .uri(uriBuilder -> uriBuilder
-                .path("/users/identities")
-                .queryParam("subs", String.join(",", userIds))
-                .build())
-            .retrieve()
-            .body(UserIdentities.class);
+        if (userIds.isEmpty()) {
+            return new UserIdentities();
+        }
+        try {
+            return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/users/identities")
+                    .queryParam("subs", String.join(",", userIds))
+                    .build())
+                .retrieve()
+                .body(UserIdentities.class);
+        } catch (RestClientException e) {
+            return new UserIdentities();
+        }
     }
 }

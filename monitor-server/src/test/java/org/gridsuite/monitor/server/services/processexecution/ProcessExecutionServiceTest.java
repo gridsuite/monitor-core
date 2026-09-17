@@ -308,7 +308,7 @@ class ProcessExecutionServiceTest {
         List<ProcessExecution> executions = List.of(processExecution1, processExecution2);
 
         Map<String, UserIdentity> userIdentities = new HashMap<>();
-        userIdentities.put(userId, new UserIdentity(userId, "titi", "tutu"));
+        userIdentities.put(userId, new UserIdentity("titi", "tutu"));
 
         when(userIdentityRestClient.getUserIdentities(List.of(processExecution1.userId())))
             .thenReturn(new UserIdentities(userIdentities));
@@ -326,7 +326,7 @@ class ProcessExecutionServiceTest {
         ProcessExecution processExecution = mock(ProcessExecution.class);
         ProcessExecution processExecutionWithUserIdentity = mock(ProcessExecution.class);
         Map<String, UserIdentity> userIdentities = new HashMap<>();
-        userIdentities.put(userId, new UserIdentity(userId, "titi", "tutu"));
+        userIdentities.put(userId, new UserIdentity("titi", "tutu"));
 
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
         when(processExecution.userId()).thenReturn(userId);

@@ -20,14 +20,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
-import org.springframework.web.client.RestClientException;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -52,8 +50,8 @@ class UserIdentityRestClientTest {
     @Test
     void getUserIdentities() throws JsonProcessingException {
         Map<String, UserIdentity> userIdentitiesMap = new HashMap<>();
-        userIdentitiesMap.put("user1", new UserIdentity("user1", "titi", "tutu"));
-        userIdentitiesMap.put("user2", new UserIdentity("user2", "toto", "tata"));
+        userIdentitiesMap.put("user1", new UserIdentity("titi", "tutu"));
+        userIdentitiesMap.put("user2", new UserIdentity("toto", "tata"));
         UserIdentities userIdentities = new UserIdentities(userIdentitiesMap);
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
@@ -72,7 +70,7 @@ class UserIdentityRestClientTest {
             .andExpect(MockRestRequestMatchers.requestToUriTemplate("http://user-identity-server/v1/users/identities?subs={subs}", "user1,user2"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> userIdentityRestClient.getUserIdentities(List.of("user1", "user2"))).isInstanceOf(RestClientException.class);
+        UserIdentities userIdentitiesResult = userIdentityRestClient.getUserIdentities(List.of("user1", "user2"));
+        assertThat(userIdentitiesResult.data()).isEmpty();
     }
-
 }

@@ -9,5 +9,5 @@ package org.gridsuite.monitor.server.dto.useridentity;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-public record UserIdentity(String sub, String firstName, String lastName) {
+public record UserIdentity(String firstName, String lastName) {
 }

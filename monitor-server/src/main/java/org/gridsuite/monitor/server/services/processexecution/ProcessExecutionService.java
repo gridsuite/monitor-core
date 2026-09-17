@@ -119,24 +119,23 @@ public class ProcessExecutionService {
             });
     }
 
+    private String getFullName(UserIdentities userIdentities, String userId) {
+        UserIdentity identity = userIdentities.data().get(userId);
+        return identity == null ? userId : identity.firstName() + " " + identity.lastName();
+    }
+
     public List<ProcessExecution> getProcessExecutions() {
         List<ProcessExecution> processExecutions = processExecutionTxService.getProcessExecutions();
         Set<String> userIds = processExecutions.stream().map(ProcessExecution::userId).collect(Collectors.toSet());
         UserIdentities userIdentities = userIdentityRestClient.getUserIdentities(new ArrayList<>(userIds));
-        return processExecutions.stream().map(execution -> {
-            UserIdentity identity = userIdentities.data().get(execution.userId());
-            String fullName = identity == null ? execution.userId() : identity.firstName() + " " + identity.lastName();
-            return execution.withUserIdentity(fullName);
-        }).toList();
+        return processExecutions.stream().map(execution -> execution.withUserIdentity(getFullName(userIdentities, execution.userId()))).toList();
     }
 
     public Optional<ProcessExecution> getExecution(UUID executionId) {
         Optional<ProcessExecution> processExecution = processExecutionTxService.getExecution(executionId);
         return processExecution.map(execution -> {
             UserIdentities userIdentities = userIdentityRestClient.getUserIdentities(List.of(execution.userId()));
-            UserIdentity identity = userIdentities.data().get(execution.userId());
-            String fullName = identity == null ? execution.userId() : identity.firstName() + " " + identity.lastName();
-            return execution.withUserIdentity(fullName);
+            return execution.withUserIdentity(getFullName(userIdentities, execution.userId()));
         });
     }
 

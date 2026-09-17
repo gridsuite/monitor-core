@@ -18,10 +18,13 @@ import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
+import org.gridsuite.monitor.server.clients.UserIdentityRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
+import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
+import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +36,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,6 +64,9 @@ class ProcessExecutionServiceTest {
 
     @Mock
     private S3RestClient s3RestClient;
+
+    @Mock
+    private UserIdentityRestClient userIdentityRestClient;
 
     @Mock
     private ProcessExecutionTxService processExecutionTxService;
@@ -275,8 +283,7 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getProcessExecutionsShouldDelegateToTxService() {
-        List<ProcessExecution> executions = List.of(
-            ProcessExecution.builder()
+        ProcessExecution processExecution1 = ProcessExecution.builder()
                 .id(UUID.randomUUID())
                 .type(ProcessType.SECURITY_ANALYSIS.name())
                 .caseUuid(caseUuid)
@@ -284,8 +291,10 @@ class ProcessExecutionServiceTest {
                 .status(ProcessStatus.RUNNING)
                 .scheduledAt(Instant.now())
                 .userId(userId)
-                .build(),
-            ProcessExecution.builder()
+                .build();
+        ProcessExecution processExecution1WithUserIdentity = processExecution1.withUserIdentity("titi tutu");
+
+        ProcessExecution processExecution2 = ProcessExecution.builder()
                 .id(UUID.randomUUID())
                 .type(ProcessType.LOADFLOW.name())
                 .caseUuid(caseUuid)
@@ -293,27 +302,43 @@ class ProcessExecutionServiceTest {
                 .status(ProcessStatus.SCHEDULED)
                 .scheduledAt(Instant.now())
                 .userId(userId)
-                .build()
-        );
+                .build();
+        ProcessExecution processExecution2WithUserIdentity = processExecution2.withUserIdentity("titi tutu");
+
+        List<ProcessExecution> executions = List.of(processExecution1, processExecution2);
+
+        Map<String, UserIdentity> userIdentities = new HashMap<>();
+        userIdentities.put(userId, new UserIdentity("titi", "tutu"));
+
+        when(userIdentityRestClient.getUserIdentities(List.of(processExecution1.userId())))
+            .thenReturn(new UserIdentities(userIdentities));
 
         when(processExecutionTxService.getProcessExecutions()).thenReturn(executions);
 
         List<ProcessExecution> result = processExecutionService.getProcessExecutions();
 
-        assertThat(result).isEqualTo(executions);
+        assertThat(result).isEqualTo(List.of(processExecution1WithUserIdentity, processExecution2WithUserIdentity));
         verify(processExecutionTxService).getProcessExecutions();
     }
 
     @Test
     void getExecutionReturnsExecution() {
         ProcessExecution processExecution = mock(ProcessExecution.class);
+        ProcessExecution processExecutionWithUserIdentity = mock(ProcessExecution.class);
+        Map<String, UserIdentity> userIdentities = new HashMap<>();
+        userIdentities.put(userId, new UserIdentity("titi", "tutu"));
 
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(processExecution));
+        when(processExecution.userId()).thenReturn(userId);
+        when(userIdentityRestClient.getUserIdentities(List.of(processExecution.userId())))
+            .thenReturn(new UserIdentities(userIdentities));
+        when(processExecution.withUserIdentity("titi tutu")).thenReturn(processExecutionWithUserIdentity);
 
         Optional<ProcessExecution> result = processExecutionService.getExecution(executionId);
 
-        assertThat(result).contains(processExecution);
+        assertThat(result).contains(processExecutionWithUserIdentity);
         verify(processExecutionTxService).getExecution(executionId);
+        verify(userIdentityRestClient).getUserIdentities(List.of(processExecution.userId()));
     }
 
     @Test

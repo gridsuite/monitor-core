@@ -453,9 +453,9 @@ class ProcessExecutionTxServiceTest {
         List<ProcessExecution> result = processExecutionTxService.getProcessExecutions();
 
         ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1,
-            startedAt1, completedAt1, report1Uuid, "user1");
+            startedAt1, completedAt1, report1Uuid, "user1", null);
         ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.LOADFLOW.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2,
-            startedAt2, null, report2Uuid, "user2");
+            startedAt2, null, report2Uuid, "user2", null);
 
         assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
         verify(executionRepository).findAllByScheduledAtIsNotNullOrderByScheduledAtDesc();
@@ -483,7 +483,7 @@ class ProcessExecutionTxServiceTest {
             .userId("user1")
             .build();
         ProcessExecution processExecution = new ProcessExecution(executionUuid, ProcessType.SECURITY_ANALYSIS.name(), caseUuid, configUuid, ProcessStatus.COMPLETED, "env1", scheduledAt,
-            startedAt, completedAt, reportUuid, "user1");
+            startedAt, completedAt, reportUuid, "user1", null);
 
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(processExecutionEntity));
 

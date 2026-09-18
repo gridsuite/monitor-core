@@ -120,7 +120,7 @@ public class ProcessExecutionService {
     }
 
     private String getFullName(UserIdentities userIdentities, String userId) {
-        UserIdentity identity = userIdentities.data().get(userId);
+        UserIdentity identity = userIdentities != null && userIdentities.data() != null ? userIdentities.data().get(userId) : null;
         return identity == null ? userId : identity.firstName() + " " + identity.lastName();
     }
 

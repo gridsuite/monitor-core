@@ -11,6 +11,7 @@ spring:
           group: process${worker.process}RunGroup
         publishMonitorWorkerUpdate-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
+      output-bindings: publishMonitorWorkerUpdate-out-0
 
 worker:
   execution-env-name: "default-env"

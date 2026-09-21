@@ -15,6 +15,7 @@ spring:
         consumeMonitorWorkerUpdate-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
           group: monitorWorkerUpdateGroup
+      output-bindings: publishRunSecurityAnalysis-out-0;publishRunLoadFlow-out-0;publishRunShortCircuit-out-0;publishMonitorUpdate-out-0
 
 powsybl-ws:
   database:

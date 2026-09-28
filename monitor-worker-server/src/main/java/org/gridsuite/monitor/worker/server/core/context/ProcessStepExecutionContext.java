@@ -45,16 +45,12 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
         this.processContext = processContext;
         this.stepExecutionId = stepId;
         this.processStepType = processStepType;
-        this.reportNode = ReportNode.newRootReportNode()
-                .withAllResourceBundlesFromClasspath()
-                .withMessageTemplate("monitor.worker.server.step.execution")
-                .build();
-        reportNode.newReportNode()
-            .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
-            .withMessageTemplate("monitor.worker.server.stepType")
-            .withSeverity(TypedValue.INFO_SEVERITY)
-            .withUntypedValue("stepType", processStepType.getName())
-            .add();
+        this.reportNode = processContext.getReportNode().newReportNode()
+                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
+                .withMessageTemplate("monitor.worker.server.stepType")
+                .withSeverity(TypedValue.INFO_SEVERITY)
+                .withUntypedValue("stepType", processStepType.getName())
+                .add();
         this.stepOrder = stepOrder;
     }
 

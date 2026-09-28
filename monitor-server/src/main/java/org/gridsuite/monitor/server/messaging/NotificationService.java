@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.messaging;
 
 import lombok.RequiredArgsConstructor;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -14,6 +15,8 @@ import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -23,6 +26,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    public static final String PROCESS_EXECUTION_ID = "processExecutionId";
+    public static final String PUBLISH_MONITOR_UPDATE_OUT_0 = "publishMonitorUpdate-out-0";
+    public static final String UPDATE_TYPE = "updateType";
     private final StreamBridge publisher;
 
     public void sendProcessRunMessage(UUID caseUuid, ProcessConfig processConfig, UUID executionId, UUID reportId, String debugFileLocation) {
@@ -36,13 +42,34 @@ public class NotificationService {
     }
 
     public void sendProcessUpdatedMessage(UUID executionId, ProcessType processType) {
-        String bindingName = "publishMonitorUpdate-out-0";
         Message<?> message = MessageBuilder.withPayload("")
-            .setHeader("updateType", "PROCESS_EXECUTION_UPDATED")
-            .setHeader("processExecutionId", executionId)
+            .setHeader(UPDATE_TYPE, "PROCESS_EXECUTION_UPDATED")
+            .setHeader(PROCESS_EXECUTION_ID, executionId)
             .setHeader("processType", processType.name())
             .build();
 
-        publisher.send(bindingName, message);
+        publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
+    }
+
+    public void sendProcesStepUpdatedMessage(UUID executionId, ProcessExecutionStep step) {
+        Message<?> message = MessageBuilder.withPayload("")
+                .setHeader(UPDATE_TYPE, "PROCESS_STEP_UPDATED")
+                .setHeader(PROCESS_EXECUTION_ID, executionId)
+                .setHeader("stepId", step.getId())
+                .setHeader("stepType", step.getStepType())
+                .setHeader("stepStatus", step.getStatus())
+                .build();
+
+        publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
+    }
+
+    public void sendProcessStepsUpdatedMessage(UUID executionId, List<UUID> stepsIds) {
+        Message<?> message = MessageBuilder.withPayload("")
+                .setHeader(UPDATE_TYPE, "PROCESS_STEPS_UPDATED")
+                .setHeader(PROCESS_EXECUTION_ID, executionId)
+                .setHeader("stepsIds", stepsIds)
+                .build();
+
+        publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
     }
 }

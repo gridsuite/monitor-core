@@ -89,10 +89,12 @@ public class ProcessExecutionService {
 
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         processExecutionTxService.updateStepStatus(executionId, processExecutionStep);
+        notificationService.sendProcesStepUpdatedMessage(executionId, processExecutionStep);
     }
 
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
         processExecutionTxService.updateStepsStatuses(executionId, processExecutionSteps);
+        notificationService.sendProcessStepsUpdatedMessage(executionId, processExecutionSteps.stream().map(ProcessExecutionStep::getId).toList());
     }
 
     public Optional<ReportPage> getReports(UUID executionId) {

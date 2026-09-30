@@ -26,6 +26,12 @@
 
     <developers>
         <developer>
+            <name>Caroline Jeandat</name>
+            <email>caroline.jeandat@rte-france.com</email>
+            <organization>RTE</organization>
+            <organizationUrl>http://www.rte-france.com</organizationUrl>
+        </developer>
+        <developer>
             <name>Antoine Bouhours</name>
             <email>antoine.bouhours@rte-france.com</email>
             <organization>RTE</organization>

@@ -65,9 +65,8 @@ class ProcessStepExecutionContextTest {
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
         assertThat(stepContext.getReportNode()).isNotNull();
-        assertThat(stepContext.getReportNode().getMessageKey()).isEqualTo("monitor.worker.server.step.execution");
-        assertThat(stepContext.getReportNode().getChildren()).hasSize(1);
-        assertThat(stepContext.getReportNode().getChildren().getFirst().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
+        assertThat(stepContext.getReportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
+        assertThat(stepContext.getReportNode().getChildren()).isEmpty();
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(executionId);
         assertThat(stepContext.getProcessReportId()).isEqualTo(reportId);
         assertThat(stepContext.getCaseUuid()).isEqualTo(caseUuid);

@@ -68,7 +68,7 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(context, processStep);
 
         verify(processStep).execute(context);
-        verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
+        verify(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
@@ -115,7 +115,7 @@ class StepExecutionServiceTest {
         verifyNoMoreInteractions(notificationService);
 
         // Verify report was sent on failure
-        verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
+        verify(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
     }
 
     private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID processReportId, int stepOrder) {

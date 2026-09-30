@@ -30,9 +30,13 @@ public class NetworkConversionService {
         this.caseServerBaseUri = caseServerBaseUri;
     }
 
-    public Network createNetwork(UUID caseUuid, ReportNode reporter) {
+    public Network createNetwork(UUID caseUuid, ReportNode reportNode) {
         LOGGER.info("Creating network");
         CaseDataSourceClient dataSource = new CaseDataSourceClient(caseServerBaseUri, caseUuid);
+        ReportNode reporter = reportNode.newReportNode()
+                .withMessageTemplate("monitor.worker.server.importCase")
+                .withUntypedValue("caseName", dataSource.getBaseName())
+                .add();
         return Network.read(dataSource, new Properties(), reporter);
     }
 }

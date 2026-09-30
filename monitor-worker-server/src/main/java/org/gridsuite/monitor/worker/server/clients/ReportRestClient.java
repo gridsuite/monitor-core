@@ -32,6 +32,17 @@ public class ReportRestClient {
             .build();
     }
 
+    public void sendReportChildren(UUID reportId, ReportNode reportNode) {
+        Objects.requireNonNull(reportNode);
+
+        restClient.post()
+            .uri("/{reportUuid}/children", reportId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(reportNode)
+            .retrieve()
+            .body(UUID.class);
+    }
+
     public void sendReport(UUID reportId, ReportNode reportNode) {
         Objects.requireNonNull(reportNode);
 

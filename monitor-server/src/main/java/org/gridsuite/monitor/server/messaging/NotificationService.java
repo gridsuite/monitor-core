@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.server.messaging;
 
 import lombok.RequiredArgsConstructor;
-import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -16,7 +15,6 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -45,30 +43,8 @@ public class NotificationService {
         Message<?> message = MessageBuilder.withPayload("")
             .setHeader(UPDATE_TYPE, "PROCESS_EXECUTION_UPDATED")
             .setHeader(PROCESS_EXECUTION_ID, executionId)
-            .setHeader("processType", processType.name())
+            .setHeader("processType", processType == null ? null : processType.name())
             .build();
-
-        publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
-    }
-
-    public void sendProcesStepUpdatedMessage(UUID executionId, ProcessExecutionStep step) {
-        Message<?> message = MessageBuilder.withPayload("")
-                .setHeader(UPDATE_TYPE, "PROCESS_STEP_UPDATED")
-                .setHeader(PROCESS_EXECUTION_ID, executionId)
-                .setHeader("stepId", step.getId())
-                .setHeader("stepType", step.getStepType())
-                .setHeader("stepStatus", step.getStatus())
-                .build();
-
-        publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
-    }
-
-    public void sendProcessStepsUpdatedMessage(UUID executionId, List<UUID> stepsIds) {
-        Message<?> message = MessageBuilder.withPayload("")
-                .setHeader(UPDATE_TYPE, "PROCESS_STEPS_UPDATED")
-                .setHeader(PROCESS_EXECUTION_ID, executionId)
-                .setHeader("stepsIds", stepsIds)
-                .build();
 
         publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
     }

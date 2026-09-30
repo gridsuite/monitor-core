@@ -119,11 +119,13 @@ class ReportRestClientTest {
     void getLogsFailed() {
         UUID reportId = UUID.randomUUID();
 
+        Set<String> severities = Set.of("INFO");
+
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
                 .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs?severityLevels=INFO&paged=true&page=0&size=10"))
                 .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> reportRestClient.getLogs(reportId, null, Set.of("INFO"), 0, 10))
+        assertThatThrownBy(() -> reportRestClient.getLogs(reportId, null, severities, 0, 10))
                 .isInstanceOf(RestClientException.class);
     }
 

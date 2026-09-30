@@ -98,7 +98,7 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(context, processStep);
 
         verify(processStep).execute(context);
-        verify(reportRestClient).sendReportChildren(eq(processReportId), eq(reportNode));
+        verify(reportRestClient).sendReportChildren(processReportId, reportNode);
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->

@@ -12,6 +12,7 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ class NetworkConversionServiceTest {
     @Autowired
     private NetworkConversionService service;
 
+    @Mock
     private Network network;
 
     private ReportNode reportNode;
@@ -49,8 +51,8 @@ class NetworkConversionServiceTest {
 
     @Test
     void createNetworkShouldReadNetwork() {
-        try (MockedConstruction<CaseDataSourceClient> dataSourceMock = mockConstruction(CaseDataSourceClient.class,
-                (mock, context) -> when(mock.getBaseName()).thenReturn("case"));
+        try (MockedConstruction<CaseDataSourceClient> _ = mockConstruction(CaseDataSourceClient.class,
+                (mock, _) -> when(mock.getBaseName()).thenReturn("case"));
              MockedStatic<Network> networkMock = mockStatic(Network.class)) {
             networkMock.when(() -> Network.read(any(ReadOnlyDataSource.class), any(Properties.class), any(ReportNode.class)))
                     .thenReturn(network);

@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.dto.report.MatchPosition;
+import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -53,12 +56,51 @@ public class MonitorController {
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/executions/{executionId}/logs")
+    @Operation(summary = "Get logs for an execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution logs"),
+                           @ApiResponse(responseCode = "404", description = "report id was not found")})
+    public ResponseEntity<ReportPage> getExecutionLogs(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
+            @Parameter(description = "Report UUID") @RequestParam(required = false) UUID reportId,
+            @Parameter(description = "Filter on message. Will only return elements containing the filter message in them.") @RequestParam(required = false) String messageFilter,
+            @Parameter(description = "Filter on severity levels") @RequestParam(required = false) Set<String> severityLevelsFilter,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "0") int size) {
+        Optional<ReportPage> reports = processExecutionService.getLogs(reportId, messageFilter, severityLevelsFilter, page, size);
+        return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/executions/reports/{executionId}/logs/search")
+    @Operation(summary = "Get the positions of the search term matches in the logs")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Get the positions of the search term matches in the logs"),
+                           @ApiResponse(responseCode = "404", description = "report id was not found")})
+    public ResponseEntity<List<MatchPosition>> getExecutionLogsSearch(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
+            @Parameter(description = "Report UUID") @RequestParam(required = false) UUID reportId,
+            @Parameter(description = "Filter on message. Will only return elements containing the filter message in them.") @RequestParam(required = false) String messageFilter,
+            @Parameter(description = "Filter on severity levels") @RequestParam(required = false) Set<String> severityLevelsFilter,
+            @Parameter(description = "The search term to look for in the logs") @RequestParam(name = "searchTerm") String searchTerm,
+            @Parameter(description = "The page size for the search results") @RequestParam(name = "pageSize") int pageSize) {
+        Optional<List<MatchPosition>> reportsMatchPosition = processExecutionService.getLogsSearch(reportId, messageFilter, severityLevelsFilter, searchTerm, pageSize);
+        return reportsMatchPosition.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/executions/{executionId}/reports")
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
-    public ResponseEntity<ReportPage> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        Optional<ReportPage> reports = processExecutionService.getReports(executionId);
+    public ResponseEntity<Report> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        Optional<Report> reports = processExecutionService.getReports(executionId);
+        return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/executions/{executionId}/reports/aggregated-severities")
+    @Operation(summary = "Get reports' severities for an execution")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports' severities"),
+                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    public ResponseEntity<Set<String>> getExecutionReportsSeverities(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        Optional<Set<String>> reports = processExecutionService.getReportsSeverities(executionId);
         return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 

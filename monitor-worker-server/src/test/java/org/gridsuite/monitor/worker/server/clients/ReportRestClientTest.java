@@ -69,6 +69,12 @@ class ReportRestClientTest {
     }
 
     @Test
+    void sendReportWithNullReportNode() {
+        assertThatThrownBy(() -> reportRestService.sendReport(REPORT_UUID, null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void sendReportFailed() {
         final ReportNode reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
@@ -80,5 +86,43 @@ class ReportRestClientTest {
                 .andRespond(MockRestResponseCreators.withServerError());
 
         assertThatThrownBy(() -> reportRestService.sendReport(REPORT_ERROR_UUID, reportNode)).isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void sendReportChildren() throws JsonProcessingException {
+        final ReportNode reportNode = ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build();
+        String expectedJson = objectMapper.writeValueAsString(reportNode);
+        UUID returnedUuid = UUID.randomUUID();
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_UUID + "/children"))
+                .andExpect(MockRestRequestMatchers.content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockRestRequestMatchers.content().json(expectedJson))
+                .andRespond(MockRestResponseCreators.withSuccess(objectMapper.writeValueAsString(returnedUuid), MediaType.APPLICATION_JSON));
+
+        assertThatNoException().isThrownBy(() -> reportRestService.sendReportChildren(REPORT_UUID, reportNode));
+    }
+
+    @Test
+    void sendReportChildrenWithNullReportNode() {
+        assertThatThrownBy(() -> reportRestService.sendReportChildren(REPORT_UUID, null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void sendReportChildrenFailed() {
+        final ReportNode reportNode = ReportNode.newRootReportNode()
+                .withResourceBundles("i18n.reports")
+                .withMessageTemplate("test")
+                .build();
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + REPORT_ERROR_UUID + "/children"))
+                .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> reportRestService.sendReportChildren(REPORT_ERROR_UUID, reportNode)).isInstanceOf(RestClientException.class);
     }
 }

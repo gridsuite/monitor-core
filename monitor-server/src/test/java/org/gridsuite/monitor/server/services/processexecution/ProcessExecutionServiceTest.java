@@ -174,8 +174,8 @@ class ProcessExecutionServiceTest {
         Set<String> severities = Set.of("INFO");
         when(reportRestClient.getLogs(reportId, "filter", severities, 2, 10)).thenReturn(reportPage);
 
-        Optional<ReportPage> result = processExecutionService.getLogs(reportId, "filter", severities, 2, 10);
-        assertThat(result).contains(reportPage);
+        ReportPage result = processExecutionService.getLogs(reportId, "filter", severities, 2, 10);
+        assertThat(result).isEqualTo(reportPage);
 
         verify(reportRestClient).getLogs(reportId, "filter", severities, 2, 10);
     }
@@ -186,9 +186,9 @@ class ProcessExecutionServiceTest {
         List<MatchPosition> matches = List.of(new MatchPosition(1, 2));
         when(reportRestClient.getLogsSearch(reportId, "filter", severities, "term", 20)).thenReturn(matches);
 
-        Optional<List<MatchPosition>> result = processExecutionService.getLogsSearch(reportId, "filter", severities, "term", 20);
+        List<MatchPosition> result = processExecutionService.getLogsSearch(reportId, "filter", severities, "term", 20);
 
-        assertThat(result).contains(matches);
+        assertThat(result).isEqualTo(matches);
         verify(reportRestClient).getLogsSearch(reportId, "filter", severities, "term", 20);
     }
 

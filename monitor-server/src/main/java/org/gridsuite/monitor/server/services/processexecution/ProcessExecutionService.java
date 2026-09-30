@@ -99,12 +99,12 @@ public class ProcessExecutionService {
         notificationService.sendProcessStepsUpdatedMessage(executionId, processExecutionSteps.stream().map(ProcessExecutionStep::getId).toList());
     }
 
-    public Optional<ReportPage> getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {
-        return Optional.of(reportRestClient.getLogs(reportId, messageFilter, severityLevelsFilter, page, size));
+    public ReportPage getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {
+        return reportRestClient.getLogs(reportId, messageFilter, severityLevelsFilter, page, size);
     }
 
-    public Optional<List<MatchPosition>> getLogsSearch(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, String searchTerm, int pageSize) {
-        return Optional.of(reportRestClient.getLogsSearch(reportId, messageFilter, severityLevelsFilter, searchTerm, pageSize));
+    public List<MatchPosition> getLogsSearch(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, String searchTerm, int pageSize) {
+        return reportRestClient.getLogsSearch(reportId, messageFilter, severityLevelsFilter, searchTerm, pageSize);
     }
 
     public Optional<Report> getReports(UUID executionId) {

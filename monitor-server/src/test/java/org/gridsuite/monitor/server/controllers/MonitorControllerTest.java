@@ -158,13 +158,17 @@ class MonitorControllerTest {
 
     @Test
     void getExecutionLogsShouldReturnLogs() throws Exception {
+        UUID executionId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
         ReportPage reportPage = new ReportPage(1, List.of(new ReportLog("message", Severity.INFO, 1, UUID.randomUUID())), 1, 1);
-        when(processExecutionService.getLogs(reportId, "filter", Set.of("INFO"), 2, 10)).thenReturn(Optional.of(reportPage));
+        when(processExecutionService.getLogs(reportId, "filter", Set.of("INFO"), 2, 10)).thenReturn(reportPage);
 
-        mockMvc.perform(get("/v1/reports/{reportId}/logs", reportId)
-                .param("messageFilter", "filter").param("severityLevelsFilter", "INFO")
-                .param("page", "2").param("size", "10"))
+        mockMvc.perform(get("/v1/executions/{executionId}/logs", executionId)
+                .param("reportId", reportId.toString())
+                .param("messageFilter", "filter")
+                .param("severityLevelsFilter", "INFO")
+                .param("page", "2")
+                .param("size", "10"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("content[0].message").value("message"));
 
@@ -172,33 +176,16 @@ class MonitorControllerTest {
     }
 
     @Test
-    void getExecutionLogsReturnsNotFound() throws Exception {
-        UUID reportId = UUID.randomUUID();
-        when(processExecutionService.getLogs(reportId, null, null, 0, 0)).thenReturn(Optional.empty());
-        mockMvc.perform(get("/v1/reports/{reportId}/logs", reportId)).andExpect(status().isNotFound());
-
-        verify(processExecutionService).getLogs(reportId, null, null, 0, 0);
-    }
-
-    @Test
     void getExecutionLogsSearchShouldReturnMatches() throws Exception {
+        UUID executionId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
         when(processExecutionService.getLogsSearch(reportId, null, null, "term", 20))
-            .thenReturn(Optional.of(List.of(new MatchPosition(1, 3))));
-        mockMvc.perform(get("/v1/executions/{reportId}/logs/search", reportId)
-                .param("searchTerm", "term").param("pageSize", "20"))
+            .thenReturn(List.of(new MatchPosition(1, 3)));
+        mockMvc.perform(get("/v1/executions/{executions}/logs/search", executionId)
+                .param("reportId", reportId.toString())
+                .param("searchTerm", "term")
+                .param("pageSize", "20"))
             .andExpect(status().isOk()).andExpect(jsonPath("[0].page").value(1));
-        verify(processExecutionService).getLogsSearch(reportId, null, null, "term", 20);
-    }
-
-    @Test
-    void getExecutionLogsSearchReturnsNotFound() throws Exception {
-        UUID reportId = UUID.randomUUID();
-        when(processExecutionService.getLogsSearch(reportId, null, null, "term", 20)).thenReturn(Optional.empty());
-        mockMvc.perform(get("/v1/executions/{reportId}/logs/search", reportId)
-                .param("searchTerm", "term").param("pageSize", "20"))
-            .andExpect(status().isNotFound());
-
         verify(processExecutionService).getLogsSearch(reportId, null, null, "term", 20);
     }
 

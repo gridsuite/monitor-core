@@ -58,32 +58,31 @@ public class MonitorController {
 
     @GetMapping("/executions/{executionId}/logs")
     @Operation(summary = "Get logs for an execution")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution logs"),
-                           @ApiResponse(responseCode = "404", description = "report id was not found")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution logs")})
     public ResponseEntity<ReportPage> getExecutionLogs(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
-            @Parameter(description = "Report UUID") @RequestParam(required = false) UUID reportId,
+            @Parameter(description = "Report UUID") @RequestParam UUID reportId,
             @Parameter(description = "Filter on message. Will only return elements containing the filter message in them.") @RequestParam(required = false) String messageFilter,
             @Parameter(description = "Filter on severity levels") @RequestParam(required = false) Set<String> severityLevelsFilter,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "0") int size) {
-        Optional<ReportPage> reports = processExecutionService.getLogs(reportId, messageFilter, severityLevelsFilter, page, size);
-        return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        ReportPage reports = processExecutionService.getLogs(reportId, messageFilter, severityLevelsFilter, page, size);
+        return ResponseEntity.ok(reports);
     }
 
-    @GetMapping("/executions/reports/{executionId}/logs/search")
+    @GetMapping("/executions/{executionId}/logs/search")
     @Operation(summary = "Get the positions of the search term matches in the logs")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Get the positions of the search term matches in the logs"),
                            @ApiResponse(responseCode = "404", description = "report id was not found")})
     public ResponseEntity<List<MatchPosition>> getExecutionLogsSearch(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
-            @Parameter(description = "Report UUID") @RequestParam(required = false) UUID reportId,
+            @Parameter(description = "Report UUID") @RequestParam UUID reportId,
             @Parameter(description = "Filter on message. Will only return elements containing the filter message in them.") @RequestParam(required = false) String messageFilter,
             @Parameter(description = "Filter on severity levels") @RequestParam(required = false) Set<String> severityLevelsFilter,
             @Parameter(description = "The search term to look for in the logs") @RequestParam(name = "searchTerm") String searchTerm,
             @Parameter(description = "The page size for the search results") @RequestParam(name = "pageSize") int pageSize) {
-        Optional<List<MatchPosition>> reportsMatchPosition = processExecutionService.getLogsSearch(reportId, messageFilter, severityLevelsFilter, searchTerm, pageSize);
-        return reportsMatchPosition.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        List<MatchPosition> reportsMatchPosition = processExecutionService.getLogsSearch(reportId, messageFilter, severityLevelsFilter, searchTerm, pageSize);
+        return ResponseEntity.ok(reportsMatchPosition);
     }
 
     @GetMapping("/executions/{executionId}/reports")

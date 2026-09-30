@@ -66,7 +66,7 @@ public class StepExecutionService implements StepExecutor {
         try {
             reportRestClient.sendReportChildren(context.getProcessReportId(), context.getReportNode());
         } catch (Exception e) {
-            LOGGER.error("Execution id: {} - Step failed: {} - {}", context.getProcessExecutionId(), context.getProcessStepType().getName(), e.getMessage());
+            LOGGER.error("Execution with id: {} failed at step: {} - {}", context.getProcessExecutionId(), context.getProcessStepType().getName(), e.getMessage());
         }
     }
 }

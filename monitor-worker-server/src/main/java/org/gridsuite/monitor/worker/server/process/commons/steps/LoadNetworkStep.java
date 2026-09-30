@@ -6,7 +6,6 @@
  */
 package org.gridsuite.monitor.worker.server.process.commons.steps;
 
-import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
@@ -31,11 +30,7 @@ public class LoadNetworkStep<C extends ProcessConfig> extends AbstractProcessSte
     @Override
     public void execute(ProcessStepExecutionContext<C> context) {
         UUID caseId = context.getCaseUuid();
-        Network network = loadNetworkFromCase(caseId, context.getReportNode());
+        Network network = networkConversionService.createNetwork(caseId, context.getReportNode());
         context.setNetwork(network);
-    }
-
-    private Network loadNetworkFromCase(UUID caseUuid, ReportNode reportNode) {
-        return networkConversionService.createNetwork(caseUuid, reportNode);
     }
 }

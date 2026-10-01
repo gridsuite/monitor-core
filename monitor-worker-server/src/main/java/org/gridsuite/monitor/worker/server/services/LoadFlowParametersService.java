@@ -27,13 +27,18 @@ public final class LoadFlowParametersService {
 
     public static LoadFlowParameters buildParameters(LoadFlowParametersInfos parametersInfos) {
         Objects.requireNonNull(parametersInfos);
+        return buildParameters(parametersInfos, parametersInfos.getProvider());
+    }
+
+    public static LoadFlowParameters buildParameters(LoadFlowParametersInfos parametersInfos, String selectedProvider) {
+        Objects.requireNonNull(parametersInfos);
         LoadFlowParameters parameters = parametersInfos.getCommonParameters() != null
                 ? parametersInfos.getCommonParameters() : LoadFlowParameters.load();
         Map<String, Map<String, String>> perProvider = parametersInfos.getSpecificParametersPerProvider();
         if (perProvider == null || perProvider.isEmpty()) {
             return parameters;
         }
-        String provider = LoadFlow.find(parametersInfos.getProvider()).getName();
+        String provider = selectedProvider != null ? selectedProvider : LoadFlow.find().getName();
         Map<String, String> specificParameters = perProvider.get(provider);
         if (specificParameters == null || specificParameters.isEmpty()) {
             return parameters;

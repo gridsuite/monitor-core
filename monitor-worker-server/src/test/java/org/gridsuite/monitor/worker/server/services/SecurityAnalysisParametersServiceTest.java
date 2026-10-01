@@ -111,4 +111,29 @@ class SecurityAnalysisParametersServiceTest {
         verify(loadFlowRestClient, times(1)).getParameters(loadflowParametersUuid);
         verify(actionsRestClient, times(1)).getPersistentContingencyLists(contingencyListUuids);
     }
+
+    @Test
+    void usesSecurityAnalysisProviderWhenLoadFlowProviderDiffers() {
+        UUID securityAnalysisParametersUuid = UUID.randomUUID();
+        UUID loadflowParametersUuid = UUID.randomUUID();
+        SecurityAnalysisParametersValues securityAnalysisParametersValues = SecurityAnalysisParametersValues.builder()
+                .provider("OpenLoadFlow")
+                .build();
+        LoadFlowParametersInfos loadFlowParametersInfos = LoadFlowParametersInfos.builder()
+                .provider("DynaFlow")
+                .commonParameters(LoadFlowParameters.load())
+                .specificParametersPerProvider(Map.of(
+                        "DynaFlow", Map.of(),
+                        "OpenLoadFlow", Map.of("plausibleActivePowerLimit", "5000.0")))
+                .build();
+        when(securityAnalysisRestClient.getParameters(securityAnalysisParametersUuid)).thenReturn(securityAnalysisParametersValues);
+        when(loadFlowRestClient.getParameters(loadflowParametersUuid)).thenReturn(loadFlowParametersInfos);
+
+        SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(
+                securityAnalysisParametersUuid, loadflowParametersUuid, EurostagTutorialExample1Factory.create());
+
+        assertThat(inputData.provider()).isEqualTo("OpenLoadFlow");
+        assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters()
+                .getExtension(OpenLoadFlowParameters.class).getPlausibleActivePowerLimit()).isEqualTo(5000.0);
+    }
 }

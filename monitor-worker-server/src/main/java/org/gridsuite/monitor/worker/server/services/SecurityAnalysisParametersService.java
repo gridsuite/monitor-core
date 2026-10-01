@@ -51,7 +51,8 @@ public class SecurityAnalysisParametersService {
         SecurityAnalysisParametersValues securityAnalysisParametersValues = securityAnalysisRestClient.getParameters(securityAnalysisParametersUuid);
         LoadFlowParametersInfos loadFlowParametersInfos = loadFlowRestClient.getParameters(loadflowParametersUuid);
 
-        SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues);
+        String provider = securityAnalysisParametersValues.getProvider();
+        SecurityAnalysisParameters securityAnalysisParameters = buildSecurityAnalysisParameters(loadFlowParametersInfos, securityAnalysisParametersValues, provider);
 
         List<ContingencyListsInfos> contingencyListInfos = securityAnalysisParametersValues.getContingencyListsInfos();
         List<UUID> contingenciesListUuids = contingencyListInfos != null
@@ -72,13 +73,14 @@ public class SecurityAnalysisParametersService {
             contingencyList.addAll(contingencies);
         });
 
-        return new SecurityAnalysisInputData(securityAnalysisParameters, contingencyList, securityAnalysisParametersValues.getProvider());
+        return new SecurityAnalysisInputData(securityAnalysisParameters, contingencyList, provider);
     }
 
     private static SecurityAnalysisParameters buildSecurityAnalysisParameters(LoadFlowParametersInfos loadFlowParametersInfos,
-                                                                              SecurityAnalysisParametersValues securityAnalysisParametersValues) {
+                                                                              SecurityAnalysisParametersValues securityAnalysisParametersValues,
+                                                                              String provider) {
         SecurityAnalysisParameters securityAnalysisParameters = SecurityAnalysisParameters.load();
-        securityAnalysisParameters.setLoadFlowParameters(LoadFlowParametersService.buildParameters(loadFlowParametersInfos));
+        securityAnalysisParameters.setLoadFlowParameters(LoadFlowParametersService.buildParameters(loadFlowParametersInfos, provider));
         SecurityAnalysisParameters.IncreasedViolationsParameters increasedViolationsParameters =
             new SecurityAnalysisParameters.IncreasedViolationsParameters(
                 securityAnalysisParametersValues.getLowVoltageAbsoluteThreshold(),

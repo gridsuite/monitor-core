@@ -29,6 +29,7 @@ public class StepExecutionService implements StepExecutor {
 
     @Override
     public <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
+        context.setStartedAt(Instant.now());
         updateStepStatus(context, StepStatus.RUNNING);
 
         try {

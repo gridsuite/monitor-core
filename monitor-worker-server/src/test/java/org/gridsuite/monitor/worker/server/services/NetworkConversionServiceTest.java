@@ -13,7 +13,6 @@ import com.powsybl.iidm.network.Network;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -51,7 +50,7 @@ class NetworkConversionServiceTest {
 
     @Test
     void createNetworkShouldReadNetwork() {
-        try (MockedConstruction<CaseDataSourceClient> _ = mockConstruction(CaseDataSourceClient.class,
+        try (var mockedConstruction = mockConstruction(CaseDataSourceClient.class,
                 (mock, _) -> when(mock.getBaseName()).thenReturn("case"));
              MockedStatic<Network> networkMock = mockStatic(Network.class)) {
             networkMock.when(() -> Network.read(any(ReadOnlyDataSource.class), any(Properties.class), any(ReportNode.class)))

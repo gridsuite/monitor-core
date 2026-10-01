@@ -95,7 +95,7 @@ public class MonitorController {
     }
 
     @GetMapping("/executions/{executionId}/reports/aggregated-severities")
-    @Operation(summary = "Get reports' severities for an execution")
+    @Operation(summary = "Get reports severities for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports' severities"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<Set<String>> getExecutionReportsSeverities(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {

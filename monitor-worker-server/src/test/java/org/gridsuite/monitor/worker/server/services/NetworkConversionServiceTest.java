@@ -50,7 +50,7 @@ class NetworkConversionServiceTest {
 
     @Test
     void createNetworkShouldReadNetwork() {
-        try (var mockedConstruction = mockConstruction(CaseDataSourceClient.class,
+        try (var _ = mockConstruction(CaseDataSourceClient.class,
                 (mock, _) -> when(mock.getBaseName()).thenReturn("case"));
              MockedStatic<Network> networkMock = mockStatic(Network.class)) {
             networkMock.when(() -> Network.read(any(ReadOnlyDataSource.class), any(Properties.class), any(ReportNode.class)))

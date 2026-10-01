@@ -78,9 +78,14 @@ class LoadflowRunComputationStepTest {
 
         LoadFlowResult loadFlowResult = mock(LoadFlowResult.class);
         try (MockedStatic<LoadFlow> loadFlow = mockStatic(LoadFlow.class)) {
-            loadFlow.when(() -> LoadFlow.run(any(), any(LoadFlowRunParameters.class))).thenReturn(loadFlowResult);
+            LoadFlow.Runner runner = mock(LoadFlow.Runner.class);
+            loadFlow.when(() -> LoadFlow.find(null)).thenReturn(runner);
+            when(runner.run(any(), any(LoadFlowRunParameters.class))).thenReturn(loadFlowResult);
 
             runComputationStep.execute(stepContext);
+
+            verify(runner).run(eq(network), argThat((LoadFlowRunParameters params) ->
+                    params.getLoadFlowParameters() == loadflowParametersInfos.getCommonParameters()));
         }
 
         String stepType = runComputationStep.getType().getName();

@@ -6,6 +6,8 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.commons.config.PlatformConfig;
+import com.powsybl.commons.extensions.Extension;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.Network;
@@ -13,19 +15,27 @@ import com.powsybl.iidm.network.VoltageLevel;
 import com.powsybl.iidm.network.extensions.IdentifiableShortCircuit;
 import com.powsybl.shortcircuit.BusFault;
 import com.powsybl.shortcircuit.Fault;
+import com.powsybl.shortcircuit.ShortCircuitAnalysisProvider;
+import com.powsybl.shortcircuit.ShortCircuitParameters;
+import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -42,6 +52,38 @@ class ShortCircuitParametersServiceTest {
     @BeforeEach
     void setUp() {
         shortCircuitParametersService = new ShortCircuitParametersService();
+    }
+
+    @Test
+    void buildParametersAppliesSolverOverrides() {
+        ShortCircuitParameters commonParameters = new ShortCircuitParameters();
+        ShortCircuitParametersInfos infos = ShortCircuitParametersInfos.builder().commonParameters(commonParameters).build();
+        ShortCircuitAnalysisProvider provider = mock(ShortCircuitAnalysisProvider.class);
+        when(provider.getName()).thenReturn("ShortCircuit-provider");
+        Extension<ShortCircuitParameters> extension = mock(Extension.class);
+        when(provider.loadSpecificParameters(any(PlatformConfig.class))).thenReturn(Optional.of(extension));
+        Map<String, String> specificParameters = Map.of("solverSetting", "value");
+
+        try (MockedStatic<ShortCircuitAnalysisProvider> providers = mockStatic(ShortCircuitAnalysisProvider.class)) {
+            providers.when(ShortCircuitAnalysisProvider::findAll).thenReturn(List.of(provider));
+
+            ShortCircuitParameters parameters = shortCircuitParametersService.buildParameters(infos, "ShortCircuit-provider", specificParameters);
+
+            assertThat(parameters).isSameAs(commonParameters);
+            assertThat(parameters.isWithFortescueResult()).isFalse();
+            assertThat(parameters.isDetailedReport()).isFalse();
+            verify(provider).updateSpecificParameters(extension, Map.of("solverSetting", "value"));
+        }
+    }
+
+    @Test
+    void buildParametersUsesDefaultsIfCommonParametersMissing() {
+        ShortCircuitParameters parameters = shortCircuitParametersService.buildParameters(
+                ShortCircuitParametersInfos.builder().build(), "ShortCircuit-provider", null);
+
+        assertThat(parameters).isNotNull();
+        assertThat(parameters.isWithFortescueResult()).isFalse();
+        assertThat(parameters.isDetailedReport()).isFalse();
     }
 
     @Test

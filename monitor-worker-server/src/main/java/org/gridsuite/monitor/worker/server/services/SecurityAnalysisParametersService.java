@@ -72,13 +72,13 @@ public class SecurityAnalysisParametersService {
             contingencyList.addAll(contingencies);
         });
 
-        return new SecurityAnalysisInputData(securityAnalysisParameters, contingencyList);
+        return new SecurityAnalysisInputData(securityAnalysisParameters, contingencyList, securityAnalysisParametersValues.getProvider());
     }
 
     private static SecurityAnalysisParameters buildSecurityAnalysisParameters(LoadFlowParametersInfos loadFlowParametersInfos,
                                                                               SecurityAnalysisParametersValues securityAnalysisParametersValues) {
-        SecurityAnalysisParameters securityAnalysisParameters = new SecurityAnalysisParameters();
-        securityAnalysisParameters.setLoadFlowParameters(loadFlowParametersInfos.getCommonParameters());
+        SecurityAnalysisParameters securityAnalysisParameters = SecurityAnalysisParameters.load();
+        securityAnalysisParameters.setLoadFlowParameters(LoadFlowParametersService.buildParameters(loadFlowParametersInfos));
         SecurityAnalysisParameters.IncreasedViolationsParameters increasedViolationsParameters =
             new SecurityAnalysisParameters.IncreasedViolationsParameters(
                 securityAnalysisParametersValues.getLowVoltageAbsoluteThreshold(),

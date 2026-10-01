@@ -11,6 +11,7 @@ import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.identifiers.IdBasedNetworkElementIdentifier;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import com.powsybl.loadflow.LoadFlowParameters;
+import com.powsybl.openloadflow.OpenLoadFlowParameters;
 import org.gridsuite.actions.dto.contingency.AbstractContingencyList;
 import org.gridsuite.actions.dto.contingency.IdBasedContingencyList;
 import org.gridsuite.monitor.worker.server.clients.ActionsRestClient;
@@ -73,6 +74,7 @@ class SecurityAnalysisParametersServiceTest {
                 "activated contingency lists",
                 true));
         SecurityAnalysisParametersValues securityAnalysisParametersValues = SecurityAnalysisParametersValues.builder()
+                .provider("OpenLoadFlow")
                 .lowVoltageAbsoluteThreshold(10)
                 .lowVoltageProportionalThreshold(11)
                 .highVoltageAbsoluteThreshold(12)
@@ -82,7 +84,8 @@ class SecurityAnalysisParametersServiceTest {
                 .build();
         LoadFlowParametersInfos loadFlowParametersInfos = LoadFlowParametersInfos.builder()
             .commonParameters(LoadFlowParameters.load())
-            .specificParametersPerProvider(Map.of())
+            .provider("OpenLoadFlow")
+            .specificParametersPerProvider(Map.of("OpenLoadFlow", Map.of("plausibleActivePowerLimit", "5000.0")))
             .build();
         List<UUID> contingencyListUuids = List.of(contingencyListId);
         IdBasedContingencyList idBasedContingencyList = new IdBasedContingencyList(contingencyListId, Instant.now(),
@@ -96,6 +99,9 @@ class SecurityAnalysisParametersServiceTest {
         SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(securityAnalysisParametersUuid, loadflowParametersUuid, network);
 
         assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters()).usingRecursiveComparison().isEqualTo(loadFlowParametersInfos.getCommonParameters());
+        assertThat(inputData.securityAnalysisParameters().getLoadFlowParameters().getExtension(OpenLoadFlowParameters.class)
+                .getPlausibleActivePowerLimit()).isEqualTo(5000.0);
+        assertThat(inputData.provider()).isEqualTo("OpenLoadFlow");
         assertThat(inputData.contingencies()).hasSize(1);
         assertThat(inputData.contingencies().get(0).getId()).isEqualTo("c1");
         assertThat(inputData.contingencies().get(0).getElements()).hasSize(1);

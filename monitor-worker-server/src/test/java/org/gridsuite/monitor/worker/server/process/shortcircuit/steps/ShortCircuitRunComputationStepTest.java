@@ -86,16 +86,21 @@ class ShortCircuitRunComputationStepTest {
             .thenReturn(network);
         when(shortCircuitRestClient.getParameters(PARAMS_UUID))
             .thenReturn(parametersInfos);
+        when(shortCircuitParametersService.buildParameters(parametersInfos, "ShortCircuit-provider", Collections.emptyMap()))
+            .thenReturn(commonParameters);
         when(shortCircuitParametersService.getAllBusFaults(eq(network), any()))
             .thenReturn(List.of(mock(Fault.class)));
         doNothing().when(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
 
         ShortCircuitAnalysisResult analysisResult = mock(ShortCircuitAnalysisResult.class);
         try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class)) {
-            shortCircuitAnalysis.when(() -> ShortCircuitAnalysis.run(eq(network), any(), any(), any(), any(), any()))
-                .thenReturn(analysisResult);
+            ShortCircuitAnalysis.Runner runner = mock(ShortCircuitAnalysis.Runner.class);
+            shortCircuitAnalysis.when(() -> ShortCircuitAnalysis.find("ShortCircuit-provider")).thenReturn(runner);
+            when(runner.run(eq(network), any(), any(), any(), any(), any())).thenReturn(analysisResult);
 
             runComputationStep.execute(stepContext);
+
+            verify(runner).run(eq(network), any(), same(commonParameters), any(), any(), any());
         }
 
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);

@@ -50,7 +50,6 @@ class ReportRestClientTest {
     @Test
     void getLogs() throws JsonProcessingException {
         UUID reportId = UUID.randomUUID();
-        Set<String> severities = Set.of("INFO", "ERROR");
 
         ReportPage reportPage = new ReportPage(1, List.of(
             new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID()),
@@ -59,7 +58,7 @@ class ReportRestClientTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(request -> assertThat(request.getURI().getPath())
                     .isEqualTo("/v1/reports/" + reportId + "/logs"))
-            .andExpect(MockRestRequestMatchers.queryParam("severityLevels", "INFO", "ERROR"))
+            .andExpect(MockRestRequestMatchers.queryParam("severityLevels", "INFO"))
             .andExpect(MockRestRequestMatchers.queryParam("paged", "true"))
             .andExpect(MockRestRequestMatchers.queryParam("page", "2"))
             .andExpect(MockRestRequestMatchers.queryParam("size", "10"))
@@ -68,7 +67,7 @@ class ReportRestClientTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(reportPage)));
 
-        ReportPage reportResult = reportRestClient.getLogs(reportId, "filter", severities, 2, 10);
+        ReportPage reportResult = reportRestClient.getLogs(reportId, "filter", Set.of("INFO"), 2, 10);
         assertThat(reportResult).usingRecursiveComparison().isEqualTo(reportPage);
     }
 

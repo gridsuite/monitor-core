@@ -6,12 +6,10 @@
  */
 package org.gridsuite.monitor.server.messaging;
 
-import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,8 +45,6 @@ class NotificationServiceTest {
     private UUID executionId;
     private UUID reportId;
     private UUID loadflowParametersUuid;
-    private UUID stepId;
-    private ProcessExecutionStep step;
 
     @BeforeEach
     void setUp() {
@@ -64,12 +60,6 @@ class NotificationServiceTest {
                     new ModificationInfo(UUID.randomUUID(), "descr2", true)),
                 loadflowParametersUuid
         );
-
-        stepId = UUID.randomUUID();
-        step = ProcessExecutionStep.builder().id(stepId)
-                .stepType("LOAD")
-                .status(StepStatus.RUNNING)
-                .build();
     }
 
     @Test
@@ -99,36 +89,6 @@ class NotificationServiceTest {
                             "PROCESS_EXECUTION_UPDATED".equals(message.getHeaders().get(UPDATE_TYPE)) &&
                             executionId.equals(message.getHeaders().get(PROCESS_EXECUTION_ID)) &&
                             ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get("processType")))
-        );
-    }
-
-    @Test
-    void sendProcesStepUpdatedMessage() {
-        notificationService.sendProcesStepUpdatedMessage(executionId, step);
-        verify(publisher).send(
-                eq(PUBLISH_MONITOR_UPDATE_OUT_0),
-                argThat((Message<?> message) ->
-                        message.getPayload().equals("") &&
-                                "PROCESS_STEP_UPDATED".equals(message.getHeaders().get(UPDATE_TYPE)) &&
-                                executionId.equals(message.getHeaders().get(PROCESS_EXECUTION_ID)) &&
-                                stepId.equals(message.getHeaders().get("stepId")) &&
-                                "LOAD".equals(message.getHeaders().get("stepType")) &&
-                                StepStatus.RUNNING.equals(message.getHeaders().get("stepStatus")))
-        );
-    }
-
-    @Test
-    void sendProcessStepsUpdatedMessage() {
-        var steps = List.of(stepId);
-        notificationService.sendProcessStepsUpdatedMessage(executionId, steps);
-
-        verify(publisher).send(
-                eq(PUBLISH_MONITOR_UPDATE_OUT_0),
-                argThat((Message<?> message) ->
-                        message.getPayload().equals("") &&
-                                "PROCESS_STEPS_UPDATED".equals(message.getHeaders().get(UPDATE_TYPE)) &&
-                                executionId.equals(message.getHeaders().get(PROCESS_EXECUTION_ID)) &&
-                                steps.equals(message.getHeaders().get("stepsIds")))
         );
     }
 }

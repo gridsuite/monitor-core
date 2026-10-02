@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.cases.datasource.CaseDataSourceClient;
 import com.powsybl.commons.datasource.ReadOnlyDataSource;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
@@ -34,7 +35,6 @@ class NetworkConversionServiceTest {
     @Mock
     private Network network;
 
-    @Mock
     private ReportNode reportNode;
 
     private UUID caseUuid;
@@ -42,11 +42,17 @@ class NetworkConversionServiceTest {
     @BeforeEach
     void setUp() {
         caseUuid = UUID.randomUUID();
+        reportNode = ReportNode.newRootReportNode()
+                .withResourceBundles("org.gridsuite.monitor.worker.server.reports")
+                .withMessageTemplate("test")
+                .build();
     }
 
     @Test
     void createNetworkShouldReadNetwork() {
-        try (MockedStatic<Network> networkMock = mockStatic(Network.class)) {
+        try (var _ = mockConstruction(CaseDataSourceClient.class,
+                (mock, _) -> when(mock.getBaseName()).thenReturn("case"));
+             MockedStatic<Network> networkMock = mockStatic(Network.class)) {
             networkMock.when(() -> Network.read(any(ReadOnlyDataSource.class), any(Properties.class), any(ReportNode.class)))
                     .thenReturn(network);
 
@@ -54,6 +60,9 @@ class NetworkConversionServiceTest {
 
             assertThat(result).isSameAs(network);
             networkMock.verify(() -> Network.read(any(ReadOnlyDataSource.class), any(Properties.class), any(ReportNode.class)));
+            assertThat(reportNode.getChildren()).singleElement()
+                    .extracting(ReportNode::getMessageKey)
+                    .isEqualTo("monitor.worker.server.importCase");
         }
     }
 }

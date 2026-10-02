@@ -78,12 +78,14 @@ class ShortCircuitParametersServiceTest {
 
     @Test
     void buildParametersUsesDefaultsIfCommonParametersMissing() {
+        ShortCircuitParameters expectedParameters = ShortCircuitParameters.load();
+        expectedParameters.setWithFortescueResult(false);
+        expectedParameters.setDetailedReport(false);
+
         ShortCircuitParameters parameters = shortCircuitParametersService.buildParameters(
                 ShortCircuitParametersInfos.builder().build(), "ShortCircuit-provider", null);
 
-        assertThat(parameters).isNotNull();
-        assertThat(parameters.isWithFortescueResult()).isFalse();
-        assertThat(parameters.isDetailedReport()).isFalse();
+        assertThat(parameters).usingRecursiveComparison().isEqualTo(expectedParameters);
     }
 
     @Test

@@ -66,9 +66,10 @@ class LoadflowRunComputationStepTest {
     }
 
     @Test
-    void executeRunLoadflow() {
+    void executeRunLoadflowWithProvider() {
         Network network = mock(Network.class);
         LoadFlowParametersInfos loadflowParametersInfos = LoadFlowParametersInfos.builder()
+            .provider("TEST_PROVIDER")
             .commonParameters(new LoadFlowParameters())
             .build();
 
@@ -79,7 +80,7 @@ class LoadflowRunComputationStepTest {
         LoadFlowResult loadFlowResult = mock(LoadFlowResult.class);
         try (MockedStatic<LoadFlow> loadFlow = mockStatic(LoadFlow.class)) {
             LoadFlow.Runner runner = mock(LoadFlow.Runner.class);
-            loadFlow.when(() -> LoadFlow.find(null)).thenReturn(runner);
+            loadFlow.when(() -> LoadFlow.find("TEST_PROVIDER")).thenReturn(runner);
             when(runner.run(any(), any(LoadFlowRunParameters.class))).thenReturn(loadFlowResult);
 
             runComputationStep.execute(stepContext);

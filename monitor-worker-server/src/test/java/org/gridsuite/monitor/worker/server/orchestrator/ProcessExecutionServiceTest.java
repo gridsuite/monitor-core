@@ -207,9 +207,10 @@ class ProcessExecutionServiceTest {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step));
         doThrow(new IllegalStateException("step failed")).when(stepExecutor).executeStep(any(), same(step));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
+                executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 
-        assertThrows(IllegalStateException.class, () -> processExecutionService.executeProcess(
-                new ProcessRunMessage<>(executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null)));
+        assertThrows(IllegalStateException.class, () -> processExecutionService.executeProcess(runMessage));
 
         verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
                 steps.size() == 1 && steps.getFirst().getStatus() == StepStatus.SCHEDULED));

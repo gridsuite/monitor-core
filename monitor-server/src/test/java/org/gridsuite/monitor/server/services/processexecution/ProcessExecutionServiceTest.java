@@ -20,6 +20,8 @@ import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.clients.UserIdentityRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.dto.report.MatchPosition;
+import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
@@ -40,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -168,21 +171,71 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void getReportsShouldReturnReports() {
+    void getLogsShouldDelegateToReportClient() {
+        ReportPage reportPage = new ReportPage(1, List.of(new ReportLog("message", Severity.INFO, 1, UUID.randomUUID())), 1, 1);
+        Set<String> severities = Set.of("INFO");
+        when(reportRestClient.getLogs(reportId, "filter", severities, 2, 10)).thenReturn(reportPage);
+
+        ReportPage result = processExecutionService.getLogs(reportId, "filter", severities, 2, 10);
+        assertThat(result).isEqualTo(reportPage);
+
+        verify(reportRestClient).getLogs(reportId, "filter", severities, 2, 10);
+    }
+
+    @Test
+    void getLogsSearchShouldDelegateToReportClient() {
+        Set<String> severities = Set.of("WARN");
+        List<MatchPosition> matches = List.of(new MatchPosition(1, 2));
+        when(reportRestClient.getLogsSearch(reportId, "filter", severities, "term", 20)).thenReturn(matches);
+
+        List<MatchPosition> result = processExecutionService.getLogsSearch(reportId, "filter", severities, "term", 20);
+
+        assertThat(result).isEqualTo(matches);
+        verify(reportRestClient).getLogsSearch(reportId, "filter", severities, "term", 20);
+    }
+
+    @Test
+    void getReportsShouldReturnReport() {
+        Report report = new Report(UUID.randomUUID(), null, "root", Severity.INFO, 0, List.of());
         when(processExecutionTxService.getReportId(executionId)).thenReturn(Optional.of(reportId));
+        when(reportRestClient.getReport(reportId)).thenReturn(report);
 
-        ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
-        ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
-        ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
-        ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
-
-        when(reportRestClient.getReport(reportId)).thenReturn(reportPage);
-
-        Optional<ReportPage> result = processExecutionService.getReports(executionId);
-        assertThat(result).contains(reportPage);
+        assertThat(processExecutionService.getReports(executionId)).contains(report);
 
         verify(processExecutionTxService).getReportId(executionId);
         verify(reportRestClient).getReport(reportId);
+    }
+
+    @Test
+    void getReportsReturnsEmptyWhenExecutionHasNoReport() {
+        when(processExecutionTxService.getReportId(executionId)).thenReturn(Optional.empty());
+
+        assertThat(processExecutionService.getReports(executionId)).isEmpty();
+
+        verify(processExecutionTxService).getReportId(executionId);
+        verifyNoInteractions(reportRestClient);
+    }
+
+    @Test
+    void getReportsSeveritiesShouldReturnSeverities() {
+        Set<String> severities = Set.of("INFO", "ERROR");
+        when(processExecutionTxService.getReportId(executionId)).thenReturn(Optional.of(reportId));
+        when(reportRestClient.getReportSeverities(reportId)).thenReturn(severities);
+
+        assertThat(processExecutionService.getReportsSeverities(executionId)).contains(severities);
+
+        verify(processExecutionTxService).getReportId(executionId);
+        verify(reportRestClient).getReportSeverities(reportId);
+    }
+
+    @Test
+    void getReportsSeveritiesReturnsEmptyWhenExecutionHasNoReport() {
+        when(processExecutionTxService.getReportId(executionId)).thenReturn(Optional.empty());
+
+        assertThat(processExecutionService.getReportsSeverities(executionId)).isEmpty();
+
+        verify(processExecutionTxService).getReportId(executionId);
+        verifyNoInteractions(reportRestClient);
     }
 
     @Test

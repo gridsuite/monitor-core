@@ -9,8 +9,6 @@ package org.gridsuite.monitor.worker.server.core.process;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 
-import java.util.UUID;
-
 /**
  * Definition of a single step within a {@link Process}.
  *
@@ -26,13 +24,6 @@ public interface ProcessStep<C extends ProcessConfig> {
      * @return the step type
      */
     ProcessStepType getType();
-
-    /**
-     * Unique identifier of the step instance within a process definition.
-     *
-     * @return the step id
-     */
-    UUID getId();
 
     /**
      * Executes the step business logic.

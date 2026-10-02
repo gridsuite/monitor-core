@@ -14,6 +14,8 @@ import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.clients.UserIdentityRestClient;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.dto.report.MatchPosition;
+import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
@@ -97,9 +99,22 @@ public class ProcessExecutionService {
         notificationService.sendProcessUpdatedMessage(executionId, null);
     }
 
-    public Optional<ReportPage> getReports(UUID executionId) {
+    public ReportPage getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {
+        return reportRestClient.getLogs(reportId, messageFilter, severityLevelsFilter, page, size);
+    }
+
+    public List<MatchPosition> getLogsSearch(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, String searchTerm, int pageSize) {
+        return reportRestClient.getLogsSearch(reportId, messageFilter, severityLevelsFilter, searchTerm, pageSize);
+    }
+
+    public Optional<Report> getReports(UUID executionId) {
         return processExecutionTxService.getReportId(executionId)
-            .map(reportRestClient::getReport);
+                .map(reportRestClient::getReport);
+    }
+
+    public Optional<Set<String>> getReportsSeverities(UUID executionId) {
+        return processExecutionTxService.getReportId(executionId)
+                .map(reportRestClient::getReportSeverities);
     }
 
     public Optional<List<String>> getResults(UUID executionId) {

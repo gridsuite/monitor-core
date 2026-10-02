@@ -8,6 +8,8 @@ package org.gridsuite.monitor.server.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gridsuite.monitor.server.dto.report.MatchPosition;
+import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
@@ -23,6 +25,7 @@ import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +48,7 @@ class ReportRestClientTest {
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void getReport() throws JsonProcessingException {
+    void getLogs() throws JsonProcessingException {
         UUID reportId = UUID.randomUUID();
 
         ReportPage reportPage = new ReportPage(1, List.of(
@@ -53,24 +56,76 @@ class ReportRestClientTest {
             new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID())), 100, 10);
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs"))
+            .andExpect(request -> assertThat(request.getURI().getPath())
+                    .isEqualTo("/v1/reports/" + reportId + "/logs"))
+            .andExpect(MockRestRequestMatchers.queryParam("severityLevels", "INFO"))
+            .andExpect(MockRestRequestMatchers.queryParam("paged", "true"))
+            .andExpect(MockRestRequestMatchers.queryParam("page", "2"))
+            .andExpect(MockRestRequestMatchers.queryParam("size", "10"))
+            .andExpect(MockRestRequestMatchers.queryParam("message", "filter"))
             .andRespond(MockRestResponseCreators.withSuccess()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(objectMapper.writeValueAsString(reportPage)));
 
-        ReportPage reportResult = reportRestClient.getReport(reportId);
+        ReportPage reportResult = reportRestClient.getLogs(reportId, "filter", Set.of("INFO"), 2, 10);
         assertThat(reportResult).usingRecursiveComparison().isEqualTo(reportPage);
     }
 
     @Test
-    void getReportFailed() {
+    void getLogsSearch() throws JsonProcessingException {
         UUID reportId = UUID.randomUUID();
+        List<MatchPosition> matches = List.of(new MatchPosition(1, 4), new MatchPosition(2, 0));
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs"))
-            .andRespond(MockRestResponseCreators.withServerError());
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs/search?severityLevels=WARN&searchTerm=term&pageSize=20&message=filter"))
+                .andRespond(MockRestResponseCreators.withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(matches)));
 
-        assertThatThrownBy(() -> reportRestClient.getReport(reportId)).isInstanceOf(RestClientException.class);
+        assertThat(reportRestClient.getLogsSearch(reportId, "filter", Set.of("WARN"), "term", 20))
+                .usingRecursiveComparison().isEqualTo(matches);
+    }
+
+    @Test
+    void getReport() throws JsonProcessingException {
+        UUID reportId = UUID.randomUUID();
+        Report report = new Report(reportId, null, "root", Severity.INFO, 0, List.of());
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId))
+                .andRespond(MockRestResponseCreators.withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(report)));
+
+        assertThat(reportRestClient.getReport(reportId)).usingRecursiveComparison().isEqualTo(report);
+    }
+
+    @Test
+    void getReportSeverities() throws JsonProcessingException {
+        UUID reportId = UUID.randomUUID();
+        Set<String> severities = Set.of("INFO", "ERROR");
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/aggregated-severities"))
+                .andRespond(MockRestResponseCreators.withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(objectMapper.writeValueAsString(severities)));
+
+        assertThat(reportRestClient.getReportSeverities(reportId)).containsExactlyInAnyOrder("INFO", "ERROR");
+    }
+
+    @Test
+    void getLogsFailed() {
+        UUID reportId = UUID.randomUUID();
+
+        Set<String> severities = Set.of("INFO");
+
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+                .andExpect(MockRestRequestMatchers.requestTo("http://report-server/v1/reports/" + reportId + "/logs?severityLevels=INFO&paged=true&page=0&size=10"))
+                .andRespond(MockRestResponseCreators.withServerError());
+
+        assertThatThrownBy(() -> reportRestClient.getLogs(reportId, null, severities, 0, 10))
+                .isInstanceOf(RestClientException.class);
     }
 
     @Test

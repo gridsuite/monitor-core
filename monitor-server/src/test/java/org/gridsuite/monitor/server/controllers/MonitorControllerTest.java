@@ -16,6 +16,8 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.server.dto.report.MatchPosition;
+import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
@@ -32,10 +34,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(controllers = { MonitorController.class, PropertyServerNameProvider.class })
+@WebMvcTest(controllers = {MonitorController.class, PropertyServerNameProvider.class})
 class MonitorControllerTest {
 
     @Autowired
@@ -123,29 +128,18 @@ class MonitorControllerTest {
     @Test
     void getExecutionReportsShouldReturnReports() throws Exception {
         UUID executionId = UUID.randomUUID();
-        ReportLog reportLog1 = new ReportLog("message1", Severity.INFO, 1, UUID.randomUUID());
-        ReportLog reportLog2 = new ReportLog("message2", Severity.WARN, 2, UUID.randomUUID());
-        ReportLog reportLog3 = new ReportLog("message3", Severity.ERROR, 1, UUID.randomUUID());
-        ReportPage reportPage = new ReportPage(1, List.of(reportLog1, reportLog2, reportLog3), 100, 10);
+        UUID reportId = UUID.randomUUID();
+        Report report = new Report(reportId, null, "root", Severity.INFO, 0, List.of());
         when(processExecutionService.getReports(executionId))
-                .thenReturn(Optional.of(reportPage));
+                .thenReturn(Optional.of(report));
 
         mockMvc.perform(get("/v1/executions/{executionId}/reports", executionId))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("number").value(1))
-            .andExpect(jsonPath("content", hasSize(3)))
-            .andExpect(jsonPath("content[0].message").value("message1"))
-            .andExpect(jsonPath("content[0].severity").value(Severity.INFO.toString()))
-            .andExpect(jsonPath("content[0].depth").value(1))
-            .andExpect(jsonPath("content[1].message").value("message2"))
-            .andExpect(jsonPath("content[1].severity").value(Severity.WARN.toString()))
-            .andExpect(jsonPath("content[1].depth").value(2))
-            .andExpect(jsonPath("content[2].message").value("message3"))
-            .andExpect(jsonPath("content[2].severity").value(Severity.ERROR.toString()))
-            .andExpect(jsonPath("content[2].depth").value(1))
-            .andExpect(jsonPath("totalElements").value(100))
-            .andExpect(jsonPath("totalPages").value(10));
+            .andExpect(jsonPath("id").value(reportId.toString()))
+            .andExpect(jsonPath("message").value("root"))
+            .andExpect(jsonPath("severity").value(Severity.INFO.toString()))
+            .andExpect(jsonPath("subReports").isEmpty());
 
         verify(processExecutionService).getReports(executionId);
     }
@@ -160,6 +154,58 @@ class MonitorControllerTest {
             .andExpect(status().isNotFound());
 
         verify(processExecutionService).getReports(executionId);
+    }
+
+    @Test
+    void getExecutionLogsShouldReturnLogs() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
+        ReportPage reportPage = new ReportPage(1, List.of(new ReportLog("message", Severity.INFO, 1, UUID.randomUUID())), 1, 1);
+        when(processExecutionService.getLogs(reportId, "filter", Set.of("INFO"), 2, 10)).thenReturn(reportPage);
+
+        mockMvc.perform(get("/v1/executions/{executionId}/logs", executionId)
+                .param("reportId", reportId.toString())
+                .param("messageFilter", "filter")
+                .param("severityLevelsFilter", "INFO")
+                .param("page", "2")
+                .param("size", "10"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("content[0].message").value("message"));
+
+        verify(processExecutionService).getLogs(reportId, "filter", Set.of("INFO"), 2, 10);
+    }
+
+    @Test
+    void getExecutionLogsSearchShouldReturnMatches() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
+        when(processExecutionService.getLogsSearch(reportId, null, null, "term", 20))
+            .thenReturn(List.of(new MatchPosition(1, 3)));
+        mockMvc.perform(get("/v1/executions/{executions}/logs/search", executionId)
+                .param("reportId", reportId.toString())
+                .param("searchTerm", "term")
+                .param("pageSize", "20"))
+            .andExpect(status().isOk()).andExpect(jsonPath("[0].page").value(1));
+        verify(processExecutionService).getLogsSearch(reportId, null, null, "term", 20);
+    }
+
+    @Test
+    void getExecutionReportsSeveritiesShouldReturnSeverities() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getReportsSeverities(executionId)).thenReturn(Optional.of(Set.of("INFO", "ERROR")));
+        mockMvc.perform(get("/v1/executions/{executionId}/reports/aggregated-severities", executionId))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)));
+        verify(processExecutionService).getReportsSeverities(executionId);
+    }
+
+    @Test
+    void getExecutionReportsSeveritiesReturnsNotFound() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getReportsSeverities(executionId)).thenReturn(Optional.empty());
+        mockMvc.perform(get("/v1/executions/{executionId}/reports/aggregated-severities", executionId))
+            .andExpect(status().isNotFound());
+
+        verify(processExecutionService).getReportsSeverities(executionId);
     }
 
     @Test

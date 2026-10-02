@@ -144,6 +144,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.updateStepStatus(executionId, step);
 
         verify(processExecutionTxService).updateStepStatus(executionId, step);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, null);
     }
 
     @Test
@@ -166,6 +167,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.updateStepsStatuses(executionId, steps);
 
         verify(processExecutionTxService).updateStepsStatuses(executionId, steps);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, null);
     }
 
     @Test

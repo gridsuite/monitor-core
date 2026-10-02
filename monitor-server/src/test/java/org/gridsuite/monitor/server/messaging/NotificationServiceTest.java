@@ -22,6 +22,7 @@ import org.springframework.messaging.Message;
 import java.util.List;
 import java.util.UUID;
 
+import static org.gridsuite.monitor.server.messaging.NotificationService.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -82,11 +83,11 @@ class NotificationServiceTest {
         notificationService.sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
 
         verify(publisher).send(
-                eq("publishMonitorUpdate-out-0"),
+                eq(PUBLISH_MONITOR_UPDATE_OUT_0),
                 argThat((Message<?> message) ->
                         message.getPayload().equals("") &&
-                            "PROCESS_EXECUTION_UPDATED".equals(message.getHeaders().get("updateType")) &&
-                            executionId.equals(message.getHeaders().get("processExecutionId")) &&
+                            "PROCESS_EXECUTION_UPDATED".equals(message.getHeaders().get(UPDATE_TYPE)) &&
+                            executionId.equals(message.getHeaders().get(PROCESS_EXECUTION_ID)) &&
                             ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get("processType")))
         );
     }

@@ -12,9 +12,9 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 
@@ -28,12 +28,13 @@ public class StepExecutionService implements StepExecutor {
     private final ReportRestClient reportRestClient;
 
     @Override
-    public <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
+    public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
+        ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
         context.setStartedAt(Instant.now());
         updateStepStatus(context, StepStatus.RUNNING);
 
         try {
-            step.execute(context);
+            stepWithContext.step().execute(context);
             updateStepStatus(context, StepStatus.COMPLETED);
         } catch (Exception e) {
             updateStepStatus(context, StepStatus.FAILED);

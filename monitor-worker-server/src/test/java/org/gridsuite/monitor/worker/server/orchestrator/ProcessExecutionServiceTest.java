@@ -14,6 +14,7 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
@@ -89,9 +90,20 @@ class ProcessExecutionServiceTest {
         processExecutionService.executeProcess(runMessage);
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
-        verify(stepExecutor).executeStep(any(), eq(step1));
-        verify(stepExecutor).executeStep(any(), eq(step2));
-        verify(stepExecutor).executeStep(any(), eq(step3));
+        ArgumentCaptor<StepWithContext<ProcessConfig>> executedSteps = ArgumentCaptor.captor();
+        verify(stepExecutor, times(3)).executeStep(executedSteps.capture());
+        assertThat(executedSteps.getAllValues()).extracting(StepWithContext::step)
+                .containsExactly(step1, step2, step3);
+        ArgumentCaptor<List<ProcessExecutionStep>> scheduledSteps = ArgumentCaptor.captor();
+        verify(notificationService).updateStepsStatuses(eq(executionId), scheduledSteps.capture());
+        for (int i = 0; i < executedSteps.getAllValues().size(); i++) {
+            var context = executedSteps.getAllValues().get(i).stepExecutionContext();
+            assertThat(context.getProcessExecutionId()).isEqualTo(executionId);
+            assertThat(context.getConfig()).isSameAs(processConfig);
+            assertThat(context.getProcessStepType()).isSameAs(executedSteps.getAllValues().get(i).step().getType());
+            assertThat(context.getStepOrder()).isEqualTo(i);
+            assertThat(context.getStepExecutionId()).isEqualTo(scheduledSteps.getValue().get(i).getId());
+        }
 
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -132,7 +144,7 @@ class ProcessExecutionServiceTest {
         ProcessStep<ProcessConfig> step2 = mockStep("STEP_2");
         ProcessStep<ProcessConfig> step3 = mockStep("STEP_3");
         RuntimeException stepException = new RuntimeException("Step execution failed");
-        doThrow(stepException).when(stepExecutor).executeStep(any(), eq(step1));
+        doThrow(stepException).when(stepExecutor).executeStep(argThat(step -> step.step() == step1));
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
@@ -141,9 +153,9 @@ class ProcessExecutionServiceTest {
                 () -> processExecutionService.executeProcess(runMessage));
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
-        verify(stepExecutor).executeStep(any(), eq(step1));
-        verify(stepExecutor, never()).executeStep(any(), eq(step2));
-        verify(stepExecutor, never()).executeStep(any(), eq(step3));
+        verify(stepExecutor).executeStep(argThat(step -> step.step() == step1));
+        verify(stepExecutor, never()).executeStep(argThat(step -> step.step() == step2));
+        verify(stepExecutor, never()).executeStep(argThat(step -> step.step() == step3));
 
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -206,7 +218,7 @@ class ProcessExecutionServiceTest {
         ProcessStep<ProcessConfig> step = mockStep("STEP");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step));
-        doThrow(new IllegalStateException("step failed")).when(stepExecutor).executeStep(any(), same(step));
+        doThrow(new IllegalStateException("step failed")).when(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
                 executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 

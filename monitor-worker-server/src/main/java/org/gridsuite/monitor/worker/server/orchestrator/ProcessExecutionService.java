@@ -13,7 +13,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -98,8 +98,7 @@ public class ProcessExecutionService implements ProcessExecutor {
     private <T extends ProcessConfig> void executeSteps(UUID executionId, List<StepWithContext<T>> steps) {
         for (int i = 0; i < steps.size(); i++) {
             try {
-                StepWithContext<T> stepWithContext = steps.get(i);
-                stepExecutor.executeStep(stepWithContext.stepExecutionContext(), stepWithContext.step());
+                stepExecutor.executeStep(steps.get(i));
             } catch (Exception e) {
                 skipRemainingSteps(executionId, steps, i + 1);
                 throw e;
@@ -139,10 +138,5 @@ public class ProcessExecutionService implements ProcessExecutor {
                 .toList();
 
         notificationService.updateStepsStatuses(executionId, updatedSteps);
-    }
-
-    private record StepWithContext<C extends ProcessConfig>(
-            ProcessStep<C> step,
-            ProcessStepExecutionContext<C> stepExecutionContext) {
     }
 }

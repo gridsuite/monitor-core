@@ -13,6 +13,7 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
@@ -66,7 +67,7 @@ class StepExecutionServiceTest {
         doNothing().when(processStep).execute(context);
 
         assertThat(context.getStartedAt()).isNull();
-        stepExecutionService.executeStep(context, processStep);
+        stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         verify(processStep).execute(context);
         verify(reportRestClient).sendReport(any(UUID.class), any(ReportNode.class));
@@ -98,7 +99,7 @@ class StepExecutionServiceTest {
 
         RuntimeException thrownException = assertThrows(
             RuntimeException.class,
-            () -> stepExecutionService.executeStep(context, processStep)
+            () -> stepExecutionService.executeStep(new StepWithContext<>(processStep, context))
         );
         assertEquals("Step execution failed", thrownException.getMessage());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
@@ -131,7 +132,7 @@ class StepExecutionServiceTest {
 
         assertThat(context.getStartedAt()).isNull();
         Instant before = Instant.now();
-        stepExecutionService.executeStep(context, processStep);
+        stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         assertThat(context.getStartedAt()).isBetween(before, Instant.now());
     }

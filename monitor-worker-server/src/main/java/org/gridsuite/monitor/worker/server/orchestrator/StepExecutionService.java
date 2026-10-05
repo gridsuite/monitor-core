@@ -15,6 +15,9 @@ import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionCont
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 
@@ -24,6 +27,8 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 public class StepExecutionService implements StepExecutor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StepExecutionService.class);
+
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 
@@ -32,15 +37,16 @@ public class StepExecutionService implements StepExecutor {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
         context.setStartedAt(Instant.now());
         updateStepStatus(context, StepStatus.RUNNING);
+        StepStatus status = StepStatus.COMPLETED;
 
         try {
             stepWithContext.step().execute(context);
-            updateStepStatus(context, StepStatus.COMPLETED);
         } catch (Exception e) {
-            updateStepStatus(context, StepStatus.FAILED);
+            status = StepStatus.FAILED;
             throw e;
         } finally {
-            reportRestClient.sendReport(context.getProcessReportId(), context.getReportNode());
+            sendReportSafely(context);
+            updateStepStatus(context, status);
         }
     }
 
@@ -57,5 +63,13 @@ public class StepExecutionService implements StepExecutor {
                 .build();
 
         notificationService.updateStepStatus(context.getProcessExecutionId(), updatedStep);
+    }
+
+    private <C extends ProcessConfig> void sendReportSafely(ProcessStepExecutionContext<C> context) {
+        try {
+            reportRestClient.sendReportChildren(context.getProcessReportId(), context.getReportNode());
+        } catch (Exception e) {
+            LOGGER.error("Execution with id: {} failed at step: {} - {}", context.getProcessExecutionId(), context.getProcessStepType().getName(), e.getMessage());
+        }
     }
 }

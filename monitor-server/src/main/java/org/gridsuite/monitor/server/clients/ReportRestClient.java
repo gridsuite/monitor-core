@@ -6,12 +6,16 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.dto.report.MatchPosition;
+import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,11 +35,57 @@ public class ReportRestClient {
             .build();
     }
 
-    public ReportPage getReport(UUID reportId) {
+    public ReportPage getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {
         return restClient.get()
-            .uri("/{reportId}/logs", reportId)
-            .retrieve()
-            .body(new ParameterizedTypeReference<>() { });
+                .uri(uriBuilder -> {
+                    uriBuilder
+                            .path("/{reportId}/logs")
+                            .queryParam("severityLevels", severityLevelsFilter)
+                            .queryParam("paged", true)
+                            .queryParam("page", page)
+                            .queryParam("size", size);
+
+                    if (messageFilter != null) {
+                        uriBuilder.queryParam("message", messageFilter);
+                    }
+
+                    return uriBuilder.build(reportId);
+                })
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+    }
+
+    public List<MatchPosition> getLogsSearch(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, String searchTerm, int pageSize) {
+        return restClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder
+                            .path("/{reportId}/logs/search")
+                            .queryParam("severityLevels", severityLevelsFilter)
+                            .queryParam("searchTerm", searchTerm)
+                            .queryParam("pageSize", pageSize);
+
+                    if (messageFilter != null) {
+                        uriBuilder.queryParam("message", messageFilter);
+                    }
+
+                    return uriBuilder.build(reportId);
+                })
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+    }
+
+    public Report getReport(UUID reportId) {
+        return restClient.get()
+                .uri("/{reportId}", reportId)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
+    }
+
+    public Set<String> getReportSeverities(UUID reportId) {
+        return restClient.get()
+                .uri("/{reportId}/aggregated-severities", reportId)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() { });
     }
 
     public void deleteReport(UUID reportId) {

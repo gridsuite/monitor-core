@@ -19,6 +19,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
+import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
@@ -83,6 +84,7 @@ class ApplyModificationsStepTest {
         when(stepContext.getConfig()).thenReturn(config);
         reportNode = ReportNode.newRootReportNode()
                 .withResourceBundles("i18n.reports")
+                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
                 .withMessageTemplate("test")
                 .build();
     }

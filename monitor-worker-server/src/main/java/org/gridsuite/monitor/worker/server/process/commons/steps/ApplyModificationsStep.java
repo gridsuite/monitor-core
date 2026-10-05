@@ -17,7 +17,6 @@ import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
-import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
@@ -89,7 +88,6 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
             .filter(m -> !m.active()).map(ModificationInfo::modificationUuid).toList();
         if (!modificationUuidsNotApplied.isEmpty()) {
             reportNode.newReportNode()
-                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
                 .withMessageTemplate("monitor.worker.server.modifications.not.applied")
                 .withUntypedValue("uuids", modificationUuidsNotApplied.stream().map(UUID::toString).collect(Collectors.joining(", ")))
                 .withSeverity(TypedValue.INFO_SEVERITY)
@@ -106,7 +104,6 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
             String missingUuids = networkModificationsWithMissingInfo.missingCompositeModifications().stream().map(UUID::toString).collect(Collectors.joining(", "));
 
             reportNode.newReportNode()
-                .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
                 .withMessageTemplate("monitor.worker.server.modifications.error")
                 .withUntypedValue("uuids", missingUuids)
                 .withSeverity(TypedValue.ERROR_SEVERITY)

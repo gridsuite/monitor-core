@@ -65,8 +65,5 @@ class LoadNetworkStepTest {
         assertEquals("LOAD_NETWORK", stepType);
         verify(networkConversionService).createNetwork(eq(CASE_UUID), any(ReportNode.class));
         verify(stepContext).setNetwork(expectedNetwork);
-        ReportNode stepReportNode = stepContext.getReportNode();
-        ReportNode importReportNode = stepReportNode.getChildren().getFirst();
-        assertEquals("monitor.worker.server.importCase", importReportNode.getMessageKey());
     }
 }

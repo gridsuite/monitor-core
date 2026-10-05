@@ -15,7 +15,6 @@ import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionCont
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,8 +34,7 @@ public class StepExecutionService implements StepExecutor {
     @Override
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
-        context.setStartedAt(Instant.now());
-        updateStepStatus(context, StepStatus.RUNNING);
+        initializeStep(context);
         StepStatus status = StepStatus.COMPLETED;
 
         try {
@@ -48,6 +46,11 @@ public class StepExecutionService implements StepExecutor {
             sendReportSafely(context);
             updateStepStatus(context, status);
         }
+    }
+
+    private <C extends ProcessConfig> void initializeStep(ProcessStepExecutionContext<C> context) {
+        context.setStartedAt(Instant.now());
+        updateStepStatus(context, StepStatus.RUNNING);
     }
 
     private <C extends ProcessConfig> void updateStepStatus(ProcessStepExecutionContext<C> context, StepStatus status) {

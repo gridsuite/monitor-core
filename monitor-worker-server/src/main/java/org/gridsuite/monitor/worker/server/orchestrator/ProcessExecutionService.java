@@ -74,8 +74,7 @@ public class ProcessExecutionService implements ProcessExecutor {
 
         try {
             reportRestClient.sendReport(context.getReportId(), context.getReportNode());
-            List<ProcessStep<T>> processSteps = process.getSteps();
-            List<StepWithContext<T>> steps = initializeSteps(context, processSteps);
+            List<StepWithContext<T>> steps = initializeSteps(process, context);
             executeSteps(context.getExecutionId(), steps);
             updateExecutionStatus(context, ProcessStatus.COMPLETED);
         } catch (Exception e) {
@@ -84,7 +83,8 @@ public class ProcessExecutionService implements ProcessExecutor {
         }
     }
 
-    private <T extends ProcessConfig> List<StepWithContext<T>> initializeSteps(ProcessExecutionContext<T> context, List<ProcessStep<T>> processSteps) {
+    private <T extends ProcessConfig> List<StepWithContext<T>> initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        List<ProcessStep<T>> processSteps = process.getSteps();
         List<StepWithContext<T>> steps = IntStream.range(0, processSteps.size())
                 .mapToObj(i -> {
                     ProcessStep<T> step = processSteps.get(i);
@@ -123,18 +123,18 @@ public class ProcessExecutionService implements ProcessExecutor {
     }
 
     private <T extends ProcessConfig> void updateExecutionStepsStatuses(UUID executionId, List<StepWithContext<T>> steps, StepStatus status, int fromIndex) {
-        if (fromIndex >= steps.size()) {
-            return;
-        }
         List<ProcessExecutionStep> updatedSteps = IntStream.range(fromIndex, steps.size())
-                .mapToObj(i -> ProcessExecutionStep.builder()
-                        .id(steps.get(i).stepExecutionContext().getStepExecutionId())
-                        .stepType(steps.get(i).stepExecutionContext().getProcessStepType().getName())
-                        .stepOrder(steps.get(i).stepExecutionContext().getStepOrder())
+                .mapToObj(i -> {
+                    var stepExecutionContext = steps.get(i).stepExecutionContext();
+                    return ProcessExecutionStep.builder()
+                        .id(stepExecutionContext.getStepExecutionId())
+                        .stepType(stepExecutionContext.getProcessStepType().getName())
+                        .stepOrder(stepExecutionContext.getStepOrder())
                         .status(status)
                         .startedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
                         .completedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
-                        .build())
+                        .build();
+                })
                 .toList();
 
         notificationService.updateStepsStatuses(executionId, updatedSteps);

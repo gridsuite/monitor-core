@@ -91,16 +91,15 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         int stepOrder = 1;
         UUID processReportId = UUID.randomUUID();
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
-        when(context.getProcessStepType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         doNothing().when(processStep).execute(context);
         doThrow(new RuntimeException("Report server down")).when(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
 
-        stepExecutionService.executeStep(context, processStep);
+        stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         verify(processStep).execute(context);
-        verify(reportRestClient).sendReportChildren(processReportId, reportNode);
+        verify(reportRestClient).sendReportChildren(processReportId, context.getReportNode());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->

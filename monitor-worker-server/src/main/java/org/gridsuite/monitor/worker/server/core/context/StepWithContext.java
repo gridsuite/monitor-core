@@ -10,11 +10,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 
 /**
- * A step definition paired with its execution context for a single process run.
- *
- * @param step step definition to execute
- * @param stepExecutionContext per-run step execution context
- * @param <C> concrete process configuration type shared by the step and its context
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 public record StepWithContext<C extends ProcessConfig>(
         ProcessStep<C> step,

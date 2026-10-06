@@ -33,6 +33,7 @@ class SecurityAnalysisRestClientTest {
 
     private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final String RESULT_BODY = "{\"status\":\"OK\"}";
+    private static final UUID PARAMETERS_UUID = UUID.randomUUID();
 
     @Autowired
     private SecurityAnalysisRestClient securityAnalysisRestClient;
@@ -71,6 +72,23 @@ class SecurityAnalysisRestClientTest {
 
         assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void getParametersProvider() {
+        String securityAnalysisProvider = "OpenLoadFlow";
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID + "/provider"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(
+                securityAnalysisProvider,
+                MediaType.TEXT_PLAIN
+            ));
+
+        String result = securityAnalysisRestClient.getParameterProvider(PARAMETERS_UUID);
+
+        assertThat(result).isEqualTo(securityAnalysisProvider);
     }
 
     @Test

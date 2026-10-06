@@ -32,6 +32,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 class LoadflowRestClientTest {
     private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final String RESULT_BODY = "{\"status\":\"OK\"}";
+    private static final UUID PARAMETERS_UUID = UUID.randomUUID();
 
     @Autowired
     private LoadflowRestClient loadflowRestClient;
@@ -70,6 +71,24 @@ class LoadflowRestClientTest {
 
         assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID))
             .isInstanceOf(RestClientException.class);
+    }
+
+
+    @Test
+    void getParametersProvider() {
+        String loadflowProvider = "OpenLoadFlow";
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://loadflow-server/v1/parameters/" + PARAMETERS_UUID + "/provider"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(
+                loadflowProvider,
+                MediaType.TEXT_PLAIN
+            ));
+
+        String result = loadflowRestClient.getParameterProvider(PARAMETERS_UUID);
+
+        assertThat(result).isEqualTo(loadflowProvider);
     }
 
     @Test

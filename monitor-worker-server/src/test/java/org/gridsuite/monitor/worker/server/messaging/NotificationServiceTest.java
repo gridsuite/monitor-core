@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -75,6 +76,13 @@ class NotificationServiceTest {
                     return true;
                 })
         );
+    }
+
+    @Test
+    void updateStepsStatusesShouldNotSendMessageWhenStepsAreEmpty() {
+        notificationService.updateStepsStatuses(UUID.randomUUID(), List.of());
+
+        verifyNoInteractions(streamBridge);
     }
 
     @Test

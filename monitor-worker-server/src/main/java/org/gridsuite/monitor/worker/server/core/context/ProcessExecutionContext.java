@@ -12,7 +12,7 @@ import com.powsybl.iidm.network.Network;
 import lombok.Getter;
 import lombok.Setter;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 
 import java.util.UUID;
 
@@ -47,7 +47,7 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
                 .build();
     }
 
-    public ProcessStepExecutionContext<C> createStepContext(ProcessStep<? super C> step, int stepOrder) {
-        return new ProcessStepExecutionContext<>(this, step.getType(), step.getId(), stepOrder);
+    public ProcessStepExecutionContext<C> createStepContext(ProcessStepType stepType, int stepOrder) {
+        return new ProcessStepExecutionContext<>(this, stepType, stepOrder);
     }
 }

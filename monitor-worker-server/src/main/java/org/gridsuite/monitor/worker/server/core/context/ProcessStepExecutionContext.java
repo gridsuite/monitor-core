@@ -14,7 +14,6 @@ import lombok.Setter;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
-import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -27,34 +26,29 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     private final ProcessExecutionContext<C> processContext;
 
     @Getter
-    private final UUID stepExecutionId;
+    private final UUID stepExecutionId = UUID.randomUUID();
     @Getter
     private final int stepOrder;
     @Getter
     private final ReportNode reportNode;
     @Getter
-    private final Instant startedAt = Instant.now();
+    @Setter
+    private Instant startedAt;
     @Getter
     private final ProcessStepType processStepType;
-
     @Getter
     @Setter
     private ResultInfos resultInfos;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, UUID stepId, int stepOrder) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, int stepOrder) {
         this.processContext = processContext;
-        this.stepExecutionId = stepId;
         this.processStepType = processStepType;
         this.reportNode = ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()
-                .withMessageTemplate("monitor.worker.server.step.execution")
+                .withMessageTemplate("monitor.worker.server.stepType")
+                .withSeverity(TypedValue.INFO_SEVERITY)
+                .withUntypedValue("stepType", processStepType.getName())
                 .build();
-        reportNode.newReportNode()
-            .withResourceBundles(MonitorWorkerServerReportResourceBundle.BASE_NAME)
-            .withMessageTemplate("monitor.worker.server.stepType")
-            .withSeverity(TypedValue.INFO_SEVERITY)
-            .withUntypedValue("stepType", processStepType.getName())
-            .add();
         this.stepOrder = stepOrder;
     }
 

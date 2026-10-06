@@ -12,9 +12,11 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 
@@ -24,22 +26,31 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 public class StepExecutionService implements StepExecutor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StepExecutionService.class);
+
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 
     @Override
-    public <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        updateStepStatus(context, StepStatus.RUNNING);
+    public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
+        ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
+        initializeStep(context);
+        StepStatus status = StepStatus.COMPLETED;
 
         try {
-            step.execute(context);
-            updateStepStatus(context, StepStatus.COMPLETED);
+            stepWithContext.step().execute(context);
         } catch (Exception e) {
-            updateStepStatus(context, StepStatus.FAILED);
+            status = StepStatus.FAILED;
             throw e;
         } finally {
-            reportRestClient.sendReport(context.getProcessReportId(), context.getReportNode());
+            sendReportSafely(context);
+            updateStepStatus(context, status);
         }
+    }
+
+    private <C extends ProcessConfig> void initializeStep(ProcessStepExecutionContext<C> context) {
+        context.setStartedAt(Instant.now());
+        updateStepStatus(context, StepStatus.RUNNING);
     }
 
     private <C extends ProcessConfig> void updateStepStatus(ProcessStepExecutionContext<C> context, StepStatus status) {
@@ -55,5 +66,13 @@ public class StepExecutionService implements StepExecutor {
                 .build();
 
         notificationService.updateStepStatus(context.getProcessExecutionId(), updatedStep);
+    }
+
+    private <C extends ProcessConfig> void sendReportSafely(ProcessStepExecutionContext<C> context) {
+        try {
+            reportRestClient.sendReportChildren(context.getProcessReportId(), context.getReportNode());
+        } catch (Exception e) {
+            LOGGER.error("Execution with id: {} failed at step: {} - {}", context.getProcessExecutionId(), context.getProcessStepType().getName(), e.getMessage());
+        }
     }
 }

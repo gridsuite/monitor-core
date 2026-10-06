@@ -9,8 +9,6 @@ package org.gridsuite.monitor.worker.server.core.process;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 
-import java.util.UUID;
-
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -19,15 +17,12 @@ public abstract class AbstractProcessStep<C extends ProcessConfig> implements Pr
 
     private final ProcessStepType type;
 
-    private final UUID id;
-
     /**
-     * Creates a step with the given type and a newly generated identifier.
+     * Creates a step with the given type.
      *
      * @param type step type (name is typically used in external status updates)
      */
     protected AbstractProcessStep(ProcessStepType type) {
         this.type = type;
-        this.id = UUID.randomUUID();
     }
 }

@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.core.orchestrator;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 
 /**
@@ -20,10 +20,9 @@ public interface StepExecutor {
     /**
      * Execute a step and publish step status updates around the execution.
      *
-     * @param context step execution context
-     * @param step step definition to execute
+     * @param stepWithContext step definition paired with its execution context
      * @param <C> concrete {@link ProcessConfig} type associated with the parent process
      * @throws RuntimeException any exception thrown by the step implementation is propagated after updating status
      */
-    <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step);
+    <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext);
 }

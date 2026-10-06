@@ -67,6 +67,9 @@ public class NotificationService implements Notificator {
 
     @Override
     public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+        if (processExecutionSteps.isEmpty()) {
+            return;
+        }
         sendMonitorUpdate(
             executionId,
             MessageType.STEPS_STATUSES_UPDATE,

@@ -53,7 +53,7 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
             SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
                 .setSecurityAnalysisParameters(inputData.securityAnalysisParameters())
                 .setReportNode(reportNode);
-            SecurityAnalysisReport saReport = SecurityAnalysis.run(context.getNetwork(), inputData.contingencies(), runParameters);
+            SecurityAnalysisReport saReport = SecurityAnalysis.find(inputData.provider()).run(context.getNetwork(), inputData.contingencies(), runParameters);
 
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
             securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), saReport.getResult());

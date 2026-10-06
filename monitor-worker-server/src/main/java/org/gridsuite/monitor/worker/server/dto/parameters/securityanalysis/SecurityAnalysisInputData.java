@@ -16,6 +16,7 @@ import java.util.List;
  */
 public record SecurityAnalysisInputData(
     SecurityAnalysisParameters securityAnalysisParameters,
-    List<Contingency> contingencies
+    List<Contingency> contingencies,
+    String provider
 ) {
 }

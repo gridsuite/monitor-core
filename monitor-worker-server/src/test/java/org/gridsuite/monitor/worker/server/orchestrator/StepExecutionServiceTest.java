@@ -125,10 +125,11 @@ class StepExecutionServiceTest {
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         RuntimeException stepException = new RuntimeException("Step execution failed");
         doThrow(stepException).when(processStep).execute(context);
+        StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
 
         RuntimeException thrownException = assertThrows(
             RuntimeException.class,
-            () -> stepExecutionService.executeStep(new StepWithContext<>(processStep, context))
+            () -> stepExecutionService.executeStep(stepWithContext)
         );
         assertEquals("Step execution failed", thrownException.getMessage());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));

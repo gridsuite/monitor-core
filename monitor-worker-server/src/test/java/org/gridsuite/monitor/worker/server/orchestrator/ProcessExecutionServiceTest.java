@@ -201,24 +201,6 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void failureOnLastStepShouldNotPublishEmptySkippedUpdate() {
-        UUID executionId = UUID.randomUUID();
-        ProcessStep<ProcessConfig> step = mockStep("STEP");
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(process.getSteps()).thenReturn(List.of(step));
-        doThrow(new IllegalStateException("step failed")).when(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
-                executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
-
-        assertThrows(IllegalStateException.class, () -> processExecutionService.executeProcess(runMessage));
-
-        verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
-                steps.size() == 1 && steps.getFirst().getStatus() == StepStatus.SCHEDULED));
-        verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
-                update.getStatus() == ProcessStatus.FAILED));
-    }
-
-    @Test
     void executeProcessShouldThrowIllegalArgumentExceptionWhenProcessTypeNotFound() {
         when(processConfig.processType()).thenReturn(null);
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);

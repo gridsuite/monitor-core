@@ -11,17 +11,22 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
+import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.Instant;
 import java.util.UUID;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,9 +50,6 @@ class StepExecutionServiceTest {
     @Mock
     private ProcessStepType processStepType;
 
-    @Mock
-    private ReportNode reportNode;
-
     private StepExecutionService stepExecutionService;
 
     @BeforeEach
@@ -60,12 +62,12 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         int stepOrder = 1;
         UUID processReportId = UUID.randomUUID();
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
-        when(context.getProcessStepType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         doNothing().when(processStep).execute(context);
 
-        stepExecutionService.executeStep(context, processStep);
+        assertThat(context.getStartedAt()).isNull();
+        stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         verify(processStep).execute(context);
         verify(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
@@ -89,21 +91,21 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         int stepOrder = 1;
         UUID processReportId = UUID.randomUUID();
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
-        when(context.getProcessStepType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         doNothing().when(processStep).execute(context);
         doThrow(new RuntimeException("Report server down")).when(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
 
-        stepExecutionService.executeStep(context, processStep);
+        stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         verify(processStep).execute(context);
-        verify(reportRestClient).sendReportChildren(processReportId, reportNode);
+        verify(reportRestClient).sendReportChildren(processReportId, context.getReportNode());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "TEST_STEP".equals(step.getStepType()) &&
+                        step.getStartedAt() != null &&
                         stepOrder == step.getStepOrder()
         ));
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
@@ -119,15 +121,15 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         UUID processReportId = UUID.randomUUID();
         int stepOrder = 2;
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
-        when(context.getProcessStepType()).thenReturn(processStepType);
         when(processStepType.getName()).thenReturn("FAILING_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, processReportId, stepOrder);
         RuntimeException stepException = new RuntimeException("Step execution failed");
         doThrow(stepException).when(processStep).execute(context);
+        StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
 
         RuntimeException thrownException = assertThrows(
             RuntimeException.class,
-            () -> stepExecutionService.executeStep(context, processStep)
+            () -> stepExecutionService.executeStep(stepWithContext)
         );
         assertEquals("Step execution failed", thrownException.getMessage());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
@@ -135,12 +137,16 @@ class StepExecutionServiceTest {
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "FAILING_STEP".equals(step.getStepType()) &&
+                        step.getStartedAt() != null &&
                         stepOrder == step.getStepOrder()
         ));
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
+        ArgumentCaptor<ProcessExecutionStep> updates = ArgumentCaptor.forClass(ProcessExecutionStep.class);
+        verify(notificationService, times(2)).updateStepStatus(eq(executionId), updates.capture());
+        assertThat(updates.getAllValues().get(1).getStartedAt()).isEqualTo(updates.getAllValues().get(0).getStartedAt());
 
         verifyNoMoreInteractions(notificationService);
 
@@ -148,15 +154,23 @@ class StepExecutionServiceTest {
         verify(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
     }
 
-    private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID processReportId, int stepOrder) {
-        ProcessStepExecutionContext<ProcessConfig> context = mock(ProcessStepExecutionContext.class);
-        when(context.getProcessExecutionId()).thenReturn(executionId);
-        when(context.getStepExecutionId()).thenReturn(UUID.randomUUID());
-        when(context.getStartedAt()).thenReturn(java.time.Instant.now());
-        when(context.getReportNode()).thenReturn(reportNode);
-        when(context.getStepOrder()).thenReturn(stepOrder);
-        when(context.getProcessReportId()).thenReturn(processReportId);
+    @Test
+    void executeStepShouldSetStartedAtWhenExecutionBegins() {
+        UUID executionId = UUID.randomUUID();
+        when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
 
-        return context;
+        assertThat(context.getStartedAt()).isNull();
+        Instant before = Instant.now();
+        stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
+
+        assertThat(context.getStartedAt()).isBetween(before, Instant.now());
+    }
+
+    private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID processReportId, int stepOrder) {
+        ProcessExecutionContext<ProcessConfig> processContext = mock(ProcessExecutionContext.class);
+        when(processContext.getExecutionId()).thenReturn(executionId);
+        when(processContext.getReportId()).thenReturn(processReportId);
+        return new ProcessStepExecutionContext<>(processContext, processStepType, stepOrder);
     }
 }

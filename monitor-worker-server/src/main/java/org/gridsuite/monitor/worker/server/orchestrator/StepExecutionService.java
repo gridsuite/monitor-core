@@ -12,9 +12,9 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -32,12 +32,13 @@ public class StepExecutionService implements StepExecutor {
     private final ReportRestClient reportRestClient;
 
     @Override
-    public <C extends ProcessConfig> void executeStep(ProcessStepExecutionContext<C> context, ProcessStep<C> step) {
-        updateStepStatus(context, StepStatus.RUNNING);
+    public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
+        ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
+        initializeStep(context);
         StepStatus status = StepStatus.COMPLETED;
 
         try {
-            step.execute(context);
+            stepWithContext.step().execute(context);
         } catch (Exception e) {
             status = StepStatus.FAILED;
             throw e;
@@ -45,6 +46,11 @@ public class StepExecutionService implements StepExecutor {
             sendReportSafely(context);
             updateStepStatus(context, status);
         }
+    }
+
+    private <C extends ProcessConfig> void initializeStep(ProcessStepExecutionContext<C> context) {
+        context.setStartedAt(Instant.now());
+        updateStepStatus(context, StepStatus.RUNNING);
     }
 
     private <C extends ProcessConfig> void updateStepStatus(ProcessStepExecutionContext<C> context, StepStatus status) {

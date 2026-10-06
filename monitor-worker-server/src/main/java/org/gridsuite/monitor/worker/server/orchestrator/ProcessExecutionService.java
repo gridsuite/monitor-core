@@ -13,7 +13,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
-import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -73,8 +74,8 @@ public class ProcessExecutionService implements ProcessExecutor {
 
         try {
             reportRestClient.sendReport(context.getReportId(), context.getReportNode());
-            initializeSteps(process, context);
-            executeSteps(process, context);
+            List<StepWithContext<T>> steps = initializeSteps(process, context);
+            executeSteps(context.getExecutionId(), steps);
             updateExecutionStatus(context, ProcessStatus.COMPLETED);
         } catch (Exception e) {
             updateExecutionStatus(context, ProcessStatus.FAILED);
@@ -82,28 +83,31 @@ public class ProcessExecutionService implements ProcessExecutor {
         }
     }
 
-    private <T extends ProcessConfig> void initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        updateExecutionStepsStatuses(context, process, StepStatus.SCHEDULED, 0);
+    private <T extends ProcessConfig> List<StepWithContext<T>> initializeSteps(Process<T> process, ProcessExecutionContext<T> context) {
+        List<ProcessStep<T>> processSteps = process.getSteps();
+        List<StepWithContext<T>> steps = IntStream.range(0, processSteps.size())
+                .mapToObj(i -> {
+                    ProcessStep<T> step = processSteps.get(i);
+                    return new StepWithContext<>(step, context.createStepContext(step.getType(), i));
+                })
+                .toList();
+        updateExecutionStepsStatuses(context.getExecutionId(), steps, StepStatus.SCHEDULED, 0);
+        return steps;
     }
 
-    private <T extends ProcessConfig> void executeSteps(Process<T> process, ProcessExecutionContext<T> context) {
-        List<ProcessStep<T>> steps = process.getSteps();
-
+    private <T extends ProcessConfig> void executeSteps(UUID executionId, List<StepWithContext<T>> steps) {
         for (int i = 0; i < steps.size(); i++) {
-            ProcessStep<T> step = steps.get(i);
-            ProcessStepExecutionContext<T> stepContext = context.createStepContext(step, i);
-
             try {
-                stepExecutor.executeStep(stepContext, step);
+                stepExecutor.executeStep(steps.get(i));
             } catch (Exception e) {
-                skipRemainingSteps(process, context, i + 1);
+                skipRemainingSteps(executionId, steps, i + 1);
                 throw e;
             }
         }
     }
 
-    private <T extends ProcessConfig> void skipRemainingSteps(Process<T> process, ProcessExecutionContext<T> context, int fromIndex) {
-        updateExecutionStepsStatuses(context, process, StepStatus.SKIPPED, fromIndex);
+    private <T extends ProcessConfig> void skipRemainingSteps(UUID executionId, List<StepWithContext<T>> steps, int fromIndex) {
+        updateExecutionStepsStatuses(executionId, steps, StepStatus.SKIPPED, fromIndex);
     }
 
     private <T extends ProcessConfig> void updateExecutionStatus(ProcessExecutionContext<T> context, ProcessStatus status) {
@@ -118,19 +122,21 @@ public class ProcessExecutionService implements ProcessExecutor {
         notificationService.updateExecutionStatus(context.getExecutionId(), processExecutionStatusUpdate);
     }
 
-    private <T extends ProcessConfig> void updateExecutionStepsStatuses(ProcessExecutionContext<T> context, Process<T> process, StepStatus status, int fromIndex) {
-        List<ProcessStep<T>> steps = process.getSteps();
+    private <T extends ProcessConfig> void updateExecutionStepsStatuses(UUID executionId, List<StepWithContext<T>> steps, StepStatus status, int fromIndex) {
         List<ProcessExecutionStep> updatedSteps = IntStream.range(fromIndex, steps.size())
-                .mapToObj(i -> ProcessExecutionStep.builder()
-                        .id(steps.get(i).getId())
-                        .stepType(steps.get(i).getType().getName())
-                        .stepOrder(i)
+                .mapToObj(i -> {
+                    var stepExecutionContext = steps.get(i).stepExecutionContext();
+                    return ProcessExecutionStep.builder()
+                        .id(stepExecutionContext.getStepExecutionId())
+                        .stepType(stepExecutionContext.getProcessStepType().getName())
+                        .stepOrder(stepExecutionContext.getStepOrder())
                         .status(status)
                         .startedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
                         .completedAt(status == StepStatus.SKIPPED ? Instant.now() : null)
-                        .build())
+                        .build();
+                })
                 .toList();
 
-        notificationService.updateStepsStatuses(context.getExecutionId(), updatedSteps);
+        notificationService.updateStepsStatuses(executionId, updatedSteps);
     }
 }

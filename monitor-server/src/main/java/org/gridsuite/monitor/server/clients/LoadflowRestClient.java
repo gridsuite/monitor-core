@@ -32,7 +32,7 @@ public class LoadflowRestClient {
 
     public String getResult(UUID resultUuid) {
         return restClient.get()
-            .uri("/results/{resultUuid}", resultUuid)
+            .uri("/results/{resultUuid}/current-limit-violations", resultUuid)
             .retrieve()
             .body(String.class);
     }

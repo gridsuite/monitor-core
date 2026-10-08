@@ -26,23 +26,22 @@ public class ProcessStepExecutionContext<C extends ProcessConfig> {
     private final ProcessExecutionContext<C> processContext;
 
     @Getter
-    private final UUID stepExecutionId;
+    private final UUID stepExecutionId = UUID.randomUUID();
     @Getter
     private final int stepOrder;
     @Getter
     private final ReportNode reportNode;
     @Getter
-    private final Instant startedAt = Instant.now();
+    @Setter
+    private Instant startedAt;
     @Getter
     private final ProcessStepType processStepType;
-
     @Getter
     @Setter
     private ResultInfos resultInfos;
 
-    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, UUID stepId, int stepOrder) {
+    public ProcessStepExecutionContext(ProcessExecutionContext<C> processContext, ProcessStepType processStepType, int stepOrder) {
         this.processContext = processContext;
-        this.stepExecutionId = stepId;
         this.processStepType = processStepType;
         this.reportNode = ReportNode.newRootReportNode()
                 .withAllResourceBundlesFromClasspath()

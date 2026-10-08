@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +44,6 @@ class ProcessStepExecutionContextTest {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
-        UUID stepExecutionId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
         when(processContext.getExecutionId()).thenReturn(executionId);
         when(processContext.getCaseUuid()).thenReturn(caseUuid);
@@ -55,15 +53,14 @@ class ProcessStepExecutionContextTest {
 
         when(processContext.getDebugFileLocation()).thenReturn("debug/file/location");
 
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepExecutionId, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepOrder);
 
-        assertThat(stepContext.getStepExecutionId()).isEqualTo(stepExecutionId);
+        assertThat(stepContext.getStepExecutionId()).isNotNull();
         assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);
         assertThat(stepContext.getNetwork()).isEqualTo(processContext.getNetwork());
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(processContext.getExecutionId());
         assertThat(stepContext.getConfig()).isEqualTo(config);
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
-        assertThat(stepContext.getStartedAt()).isBeforeOrEqualTo(Instant.now());
         assertThat(stepContext.getReportNode()).isNotNull();
         assertThat(stepContext.getReportNode().getMessageKey()).isEqualTo("monitor.worker.server.stepType");
         assertThat(stepContext.getReportNode().getChildren()).isEmpty();
@@ -77,9 +74,8 @@ class ProcessStepExecutionContextTest {
     @Test
     void stepExecutionContextShouldSetAndGetFromParentExecutionContext() {
         int stepOrder = 1;
-        UUID stepId = UUID.randomUUID();
         when(stepType.getName()).thenReturn("test-step");
-        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepId, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = new ProcessStepExecutionContext<>(processContext, stepType, stepOrder);
 
         Network newNetwork = mock(Network.class);
         stepContext.setNetwork(newNetwork);

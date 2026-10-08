@@ -56,19 +56,17 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
 
         try {
             ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
-            ShortCircuitParameters commonParameters = parametersInfos.getCommonParameters();
-            commonParameters.setWithFortescueResult(false);
-            commonParameters.setDetailedReport(false);
             // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
 
             String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
             Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
+            ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
 
             List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
 
             shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), reportNode);
 
-            ShortCircuitAnalysisResult result = ShortCircuitAnalysis.run(
+            ShortCircuitAnalysisResult result = ShortCircuitAnalysis.find(provider).run(
                 context.getNetwork(),
                 faults,
                 commonParameters,

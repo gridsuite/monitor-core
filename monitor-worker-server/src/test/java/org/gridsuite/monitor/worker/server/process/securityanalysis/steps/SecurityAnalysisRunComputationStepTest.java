@@ -14,6 +14,7 @@ import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisResult;
+import com.powsybl.security.SecurityAnalysisRunParameters;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -81,7 +83,7 @@ class SecurityAnalysisRunComputationStepTest {
     void executeRunSecurityAnalysis() {
         Network network = mock(Network.class);
         Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
-        SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency));
+        SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency), "OpenLoadFlow");
         when(stepContext.getNetwork()).thenReturn(network);
         when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
             .thenReturn(inputData);
@@ -90,10 +92,13 @@ class SecurityAnalysisRunComputationStepTest {
         SecurityAnalysisReport analysisReport = mock(SecurityAnalysisReport.class);
         when(analysisReport.getResult()).thenReturn(analysisResult);
         try (MockedStatic<SecurityAnalysis> securityAnalysis = mockStatic(SecurityAnalysis.class)) {
-            securityAnalysis.when(() -> SecurityAnalysis.run(any(), any(), any()))
-                .thenReturn(analysisReport);
+            SecurityAnalysis.Runner runner = mock(SecurityAnalysis.Runner.class);
+            securityAnalysis.when(() -> SecurityAnalysis.find("OpenLoadFlow")).thenReturn(runner);
+            when(runner.run(any(), any(), any(SecurityAnalysisRunParameters.class))).thenReturn(analysisReport);
 
             runComputationStep.execute(stepContext);
+
+            verify(runner).run(eq(network), eq(List.of(contingency)), any(SecurityAnalysisRunParameters.class));
         }
 
         String stepType = runComputationStep.getType().getName();

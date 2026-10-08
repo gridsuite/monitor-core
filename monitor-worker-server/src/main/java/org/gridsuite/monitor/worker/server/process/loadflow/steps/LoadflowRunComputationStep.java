@@ -18,7 +18,9 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
+import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.process.loadflow.LoadflowStepType;
+import org.gridsuite.monitor.worker.server.services.LoadFlowParametersService;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -44,11 +46,12 @@ public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConf
         ReportNode reportNode = context.getReportNode();
 
         try {
-            LoadFlowParameters loadflowParameters = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid()).getCommonParameters();
+            LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
+            LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
             LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
                 .setParameters(loadflowParameters)
                 .setReportNode(reportNode);
-            LoadFlowResult result = LoadFlow.run(context.getNetwork(), runParameters);
+            LoadFlowResult result = LoadFlow.find(parametersInfos.getProvider()).run(context.getNetwork(), runParameters);
 
             UUID resultUuid = loadflowRestClient.saveResult(result);
             ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);

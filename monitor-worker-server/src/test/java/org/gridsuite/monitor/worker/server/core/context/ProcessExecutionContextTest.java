@@ -8,7 +8,6 @@ package org.gridsuite.monitor.worker.server.core.context;
 
 import com.powsybl.iidm.network.Network;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,20 +62,20 @@ class ProcessExecutionContextTest {
     @Test
     void shouldCreateStepContext() {
         ProcessExecutionContext<ProcessConfig> processContext = new ProcessExecutionContext<>(UUID.randomUUID(), UUID.randomUUID(), config, UUID.randomUUID(), "test-env", null);
-        ProcessStep<ProcessConfig> step = mock(ProcessStep.class);
         ProcessStepType stepType = mock(ProcessStepType.class);
         when(stepType.getName()).thenReturn("test-step");
-        when(step.getType()).thenReturn(stepType);
         int stepOrder = 3;
 
-        ProcessStepExecutionContext<ProcessConfig> stepContext = processContext.createStepContext(step, stepOrder);
+        ProcessStepExecutionContext<ProcessConfig> stepContext = processContext.createStepContext(stepType, stepOrder);
 
         assertThat(stepContext).isNotNull();
+        assertThat(stepContext.getStepExecutionId()).isNotNull();
         assertThat(stepContext.getNetwork()).isEqualTo(processContext.getNetwork());
         assertThat(stepContext.getProcessExecutionId()).isEqualTo(processContext.getExecutionId());
         assertThat(stepContext.getProcessReportId()).isEqualTo(processContext.getReportId());
         assertThat(stepContext.getConfig()).isEqualTo(config);
         assertThat(stepContext.getProcessStepType()).isEqualTo(stepType);
         assertThat(stepContext.getStepOrder()).isEqualTo(stepOrder);
+        assertThat(stepContext.getStartedAt()).isNull();
     }
 }

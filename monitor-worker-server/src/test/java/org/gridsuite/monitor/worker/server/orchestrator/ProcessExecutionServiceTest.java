@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import com.powsybl.commons.report.ReportNode;
+import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
@@ -21,6 +22,7 @@ import org.gridsuite.monitor.worker.server.messaging.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
@@ -63,10 +66,9 @@ class ProcessExecutionServiceTest {
         processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, EXECUTION_ENV_NAME);
     }
 
-    private static ProcessStep<ProcessConfig> mockStep(UUID id, String typeName) {
+    private static ProcessStep<ProcessConfig> mockStep(String typeName) {
         ProcessStep<ProcessConfig> step = mock(ProcessStep.class);
         ProcessStepType type = mock(ProcessStepType.class);
-        when(step.getId()).thenReturn(id);
         when(step.getType()).thenReturn(type);
         when(type.getName()).thenReturn(typeName);
         return step;
@@ -77,23 +79,19 @@ class ProcessExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
-        UUID step1Id = UUID.randomUUID();
-        UUID step2Id = UUID.randomUUID();
-        UUID step3Id = UUID.randomUUID();
-        ProcessStep<ProcessConfig> step1 = mockStep(step1Id, "STEP_1");
-        ProcessStep<ProcessConfig> step2 = mockStep(step2Id, "STEP_2");
-        ProcessStep<ProcessConfig> step3 = mockStep(step3Id, "STEP_3");
+        ProcessStep<ProcessConfig> step1 = mockStep("STEP_1");
+        ProcessStep<ProcessConfig> step2 = mockStep("STEP_2");
+        ProcessStep<ProcessConfig> step3 = mockStep("STEP_3");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        doNothing().when(stepExecutor).executeStep(any(), any());
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         processExecutionService.executeProcess(runMessage);
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
-        verify(stepExecutor).executeStep(any(), eq(step1));
-        verify(stepExecutor).executeStep(any(), eq(step2));
-        verify(stepExecutor).executeStep(any(), eq(step3));
+        verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
+        verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
+        verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
 
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -104,15 +102,15 @@ class ProcessExecutionServiceTest {
         inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
                 steps.size() == 3 &&
                         steps.get(0).getStatus() == StepStatus.SCHEDULED &&
-                        steps.get(0).getId().equals(step1Id) &&
+                        steps.get(0).getId() != null &&
                         steps.get(0).getStepType().equals("STEP_1") &&
                         steps.get(0).getStepOrder() == 0 &&
                         steps.get(1).getStatus() == StepStatus.SCHEDULED &&
-                        steps.get(1).getId().equals(step2Id) &&
+                        steps.get(1).getId() != null &&
                         steps.get(1).getStepType().equals("STEP_2") &&
                         steps.get(1).getStepOrder() == 1 &&
                         steps.get(2).getStatus() == StepStatus.SCHEDULED &&
-                        steps.get(2).getId().equals(step3Id) &&
+                        steps.get(2).getId() != null &&
                         steps.get(2).getStepType().equals("STEP_3") &&
                         steps.get(2).getStepOrder() == 2
         ));
@@ -130,14 +128,11 @@ class ProcessExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
-        UUID step1Id = UUID.randomUUID();
-        UUID step2Id = UUID.randomUUID();
-        UUID step3Id = UUID.randomUUID();
-        ProcessStep<ProcessConfig> step1 = mockStep(step1Id, "STEP_1");
-        ProcessStep<ProcessConfig> step2 = mockStep(step2Id, "STEP_2");
-        ProcessStep<ProcessConfig> step3 = mockStep(step3Id, "STEP_3");
+        ProcessStep<ProcessConfig> step1 = mockStep("STEP_1");
+        ProcessStep<ProcessConfig> step2 = mockStep("STEP_2");
+        ProcessStep<ProcessConfig> step3 = mockStep("STEP_3");
         RuntimeException stepException = new RuntimeException("Step execution failed");
-        doThrow(stepException).when(stepExecutor).executeStep(any(), eq(step1));
+        doThrow(stepException).when(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
@@ -146,9 +141,9 @@ class ProcessExecutionServiceTest {
                 () -> processExecutionService.executeProcess(runMessage));
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
-        verify(stepExecutor).executeStep(any(), eq(step1));
-        verify(stepExecutor, never()).executeStep(any(), eq(step2));
-        verify(stepExecutor, never()).executeStep(any(), eq(step3));
+        verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
+        verify(stepExecutor, never()).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
+        verify(stepExecutor, never()).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
 
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
@@ -157,26 +152,21 @@ class ProcessExecutionServiceTest {
         inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
                 steps.size() == 3 &&
                         steps.get(0).getStatus() == StepStatus.SCHEDULED &&
-                        steps.get(0).getId().equals(step1Id) &&
                         steps.get(0).getStepType().equals("STEP_1") &&
                         steps.get(0).getStepOrder() == 0 &&
                         steps.get(1).getStatus() == StepStatus.SCHEDULED &&
-                        steps.get(1).getId().equals(step2Id) &&
                         steps.get(1).getStepType().equals("STEP_2") &&
                         steps.get(1).getStepOrder() == 1 &&
                         steps.get(2).getStatus() == StepStatus.SCHEDULED &&
-                        steps.get(2).getId().equals(step3Id) &&
                         steps.get(2).getStepType().equals("STEP_3") &&
                         steps.get(2).getStepOrder() == 2
         ));
         inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
                 steps.size() == 2 &&
                         steps.get(0).getStatus() == StepStatus.SKIPPED &&
-                        steps.get(0).getId().equals(step2Id) &&
                         steps.get(0).getStepType().equals("STEP_2") &&
                         steps.get(0).getStepOrder() == 1 &&
                         steps.get(1).getStatus() == StepStatus.SKIPPED &&
-                        steps.get(1).getId().equals(step3Id) &&
                         steps.get(1).getStepType().equals("STEP_3") &&
                         steps.get(1).getStepOrder() == 2
         ));
@@ -186,6 +176,28 @@ class ProcessExecutionServiceTest {
         ));
 
         verifyNoMoreInteractions(notificationService);
+    }
+
+    @Test
+    void repeatedRunsOnTheSameWorkerShouldHaveDifferentStepIds() {
+        UUID firstExecutionId = UUID.randomUUID();
+        UUID secondExecutionId = UUID.randomUUID();
+        ProcessStep<ProcessConfig> step = mockStep("STEP");
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getSteps()).thenReturn(List.of(step));
+
+        processExecutionService.executeProcess(new ProcessRunMessage<>(
+                firstExecutionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null));
+        processExecutionService.executeProcess(new ProcessRunMessage<>(
+                secondExecutionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null));
+
+        ArgumentCaptor<List<ProcessExecutionStep>> firstUpdates = ArgumentCaptor.captor();
+        ArgumentCaptor<List<ProcessExecutionStep>> secondUpdates = ArgumentCaptor.captor();
+        verify(notificationService).updateStepsStatuses(eq(firstExecutionId), firstUpdates.capture());
+        verify(notificationService).updateStepsStatuses(eq(secondExecutionId), secondUpdates.capture());
+        UUID firstStepId = firstUpdates.getValue().getFirst().getId();
+        UUID secondStepId = secondUpdates.getValue().getFirst().getId();
+        assertThat(firstStepId).isNotNull().isNotEqualTo(secondStepId);
     }
 
     @Test

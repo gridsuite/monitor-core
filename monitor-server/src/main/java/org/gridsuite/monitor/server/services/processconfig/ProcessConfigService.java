@@ -16,6 +16,7 @@ import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfig
 import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
+import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,15 +33,18 @@ import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.
 public class ProcessConfigService {
     private final ProcessConfigRepository processConfigRepository;
     private final Map<ProcessType, ProcessConfigHandler<?, ?>> processConfigHandlers;
+    private final ProcessConfigValidator processConfigValidator;
 
     public ProcessConfigService(ProcessConfigRepository processConfigRepository,
-                                List<ProcessConfigHandler<?, ?>> listHandlers) {
+                                List<ProcessConfigHandler<?, ?>> listHandlers,
+                                ProcessConfigValidator processConfigValidator) {
         this.processConfigRepository = processConfigRepository;
         this.processConfigHandlers = listHandlers.stream().collect(Collectors.toMap(
             ProcessConfigHandler::getProcessType, Function.identity(), (h1, h2) -> {
                 throw new IllegalStateException(String.format("Duplicate process config handlers for process type: %s", h1.getProcessType()));
             }
         ));
+        this.processConfigValidator = processConfigValidator;
     }
 
     @SuppressWarnings("unchecked")
@@ -54,6 +58,7 @@ public class ProcessConfigService {
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
+        processConfigValidator.validate(processConfig);
         AbstractProcessConfigEntity entity = getHandler(processConfig.processType()).toEntity(processConfig);
         return processConfigRepository.save(entity).getId();
     }
@@ -80,6 +85,7 @@ public class ProcessConfigService {
 
     @Transactional
     public Optional<UUID> updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
+        processConfigValidator.validate(processConfig);
         return processConfigRepository.findById(processConfigUuid)
             .map(entity -> {
                 if (entity.getProcessType() != processConfig.processType()) {

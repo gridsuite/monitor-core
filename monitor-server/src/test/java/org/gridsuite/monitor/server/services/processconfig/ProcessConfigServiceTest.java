@@ -18,6 +18,7 @@ import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfi
 import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
+import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,9 @@ class ProcessConfigServiceTest {
     @Mock
     private ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> handler;
 
+    @Mock
+    private ProcessConfigValidator processConfigValidator;
+
     private ProcessConfigService processConfigService;
 
     private static final ProcessType PROCESS_TYPE = ProcessType.SECURITY_ANALYSIS;
@@ -56,7 +60,8 @@ class ProcessConfigServiceTest {
 
         processConfigService = new ProcessConfigService(
             processConfigRepository,
-            List.of(handler)
+            List.of(handler),
+            processConfigValidator
         );
     }
 
@@ -74,6 +79,7 @@ class ProcessConfigServiceTest {
         UUID result = processConfigService.createProcessConfig(processConfig);
 
         assertThat(result).isEqualTo(expectedProcessConfigUuid);
+        verify(processConfigValidator).validate(processConfig);
         verify(handler).toEntity(processConfig);
         verify(processConfigRepository).save(processConfigEntity);
     }
@@ -161,6 +167,7 @@ class ProcessConfigServiceTest {
         assertThat(result)
             .isPresent()
             .contains(processConfigUuid);
+        verify(processConfigValidator).validate(processConfig);
         verify(processConfigRepository).findById(processConfigUuid);
         verify(handler).update(processConfig, processConfigEntity);
     }
@@ -174,6 +181,7 @@ class ProcessConfigServiceTest {
         Optional<UUID> result = processConfigService.updateProcessConfig(processConfigUuid, processConfig);
 
         assertThat(result).isEmpty();
+        verify(processConfigValidator).validate(processConfig);
         verify(processConfigRepository).findById(processConfigUuid);
         verify(handler, never()).update(processConfig, processConfigEntity);
     }
@@ -188,6 +196,7 @@ class ProcessConfigServiceTest {
 
         assertThatThrownBy(() -> processConfigService.updateProcessConfig(processConfigUuid, processConfig))
             .isInstanceOf(IllegalArgumentException.class);
+        verify(processConfigValidator).validate(processConfig);
         verify(processConfigRepository).findById(processConfigUuid);
         verify(handler, never()).update(processConfig, processConfigEntity);
     }

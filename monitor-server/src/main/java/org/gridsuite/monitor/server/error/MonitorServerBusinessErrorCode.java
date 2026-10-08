@@ -12,7 +12,8 @@ import com.powsybl.ws.commons.error.BusinessErrorCode;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 public enum MonitorServerBusinessErrorCode implements BusinessErrorCode {
-    DIFFERENT_PROCESS_CONFIG_TYPE("monitor.server.differentProcessConfigType");
+    DIFFERENT_PROCESS_CONFIG_TYPE("monitor.server.differentProcessConfigType"),
+    UNSUPPORTED_PROVIDER("monitor.server.unsupportedProvider");
 
     private final String code;
 

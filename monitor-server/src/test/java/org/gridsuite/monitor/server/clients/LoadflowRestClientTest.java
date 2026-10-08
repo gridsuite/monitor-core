@@ -73,7 +73,6 @@ class LoadflowRestClientTest {
             .isInstanceOf(RestClientException.class);
     }
 
-
     @Test
     void getParametersProvider() {
         String loadflowProvider = "OpenLoadFlow";

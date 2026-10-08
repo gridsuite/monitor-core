@@ -12,16 +12,19 @@ import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
 import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROVIDER;
 
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @Service
 public class ProcessConfigValidator {
-    private final Set<String> ALLOWED_PROVIDER = Set.of("OpenLoadFlow");
+    private static final Set<String> ALLOWED_PROVIDER = Set.of("OpenLoadFlow");
 
     private final LoadflowRestClient loadflowRestClient;
     private final SecurityAnalysisRestClient securityAnalysisRestClient;
@@ -50,16 +53,16 @@ public class ProcessConfigValidator {
     private void validate(SecurityAnalysisConfig securityAnalysisConfig) {
         String loadflowParametersProvider = loadflowRestClient.getParameterProvider(securityAnalysisConfig.loadflowParametersUuid());
         String saParametersProvider = securityAnalysisRestClient.getParameterProvider(securityAnalysisConfig.securityAnalysisParametersUuid());
-        if(!ALLOWED_PROVIDER.contains(loadflowParametersProvider) ||
+        if (!ALLOWED_PROVIDER.contains(loadflowParametersProvider) ||
             !ALLOWED_PROVIDER.contains(saParametersProvider)) {
-            throw new UnsupportedOperationException("The provider must be OLF");
+            throw new MonitorServerException(UNSUPPORTED_PROVIDER, "The provider must be OLF");
         }
     }
 
     private void validate(LoadFlowConfig loadFlowConfig) {
         String parametersProvider = loadflowRestClient.getParameterProvider(loadFlowConfig.loadflowParametersUuid());
-        if(!ALLOWED_PROVIDER.contains(parametersProvider)) {
-            throw new UnsupportedOperationException("The provider must be OLF");
+        if (!ALLOWED_PROVIDER.contains(parametersProvider)) {
+            throw new MonitorServerException(UNSUPPORTED_PROVIDER, "The provider must be OLF");
         }
     }
 }

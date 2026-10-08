@@ -11,6 +11,7 @@ import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
 import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROVIDER;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -65,8 +68,9 @@ class ProcessConfigValidatorTest {
 
         doReturn("OtherProvider").when(loadflowRestClient).getParameterProvider(loadflowParamUuid);
 
-        assertThrows(UnsupportedOperationException.class, () -> processConfigValidator.validate(loadFlowConfig));
+        MonitorServerException exception = assertThrows(MonitorServerException.class, () -> processConfigValidator.validate(loadFlowConfig));
 
+        assertThat(exception.getErrorCode()).isEqualTo(UNSUPPORTED_PROVIDER);
         verify(loadflowRestClient).getParameterProvider(loadflowParamUuid);
     }
 
@@ -94,8 +98,9 @@ class ProcessConfigValidatorTest {
         doReturn("OtherProvider").when(securityAnalysisRestClient).getParameterProvider(saParamUuid);
         doReturn("OpenLoadFlow").when(loadflowRestClient).getParameterProvider(loadflowParamUuid);
 
-        assertThrows(UnsupportedOperationException.class, () -> processConfigValidator.validate(saConfig));
+        MonitorServerException exception = assertThrows(MonitorServerException.class, () -> processConfigValidator.validate(saConfig));
 
+        assertThat(exception.getErrorCode()).isEqualTo(UNSUPPORTED_PROVIDER);
         verify(loadflowRestClient).getParameterProvider(loadflowParamUuid);
         verify(securityAnalysisRestClient).getParameterProvider(saParamUuid);
     }

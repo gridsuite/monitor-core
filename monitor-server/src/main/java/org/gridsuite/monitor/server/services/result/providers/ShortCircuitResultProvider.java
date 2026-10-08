@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.result.providers;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.server.services.result.ResultProvider;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -30,8 +31,13 @@ public class ShortCircuitResultProvider implements ResultProvider {
     }
 
     @Override
-    public String getResult(UUID resultId) {
-        return shortCircuitRestClient.getResult(resultId);
+    public String getResult(UUID resultId, ResultQueryParams queryParams) {
+        return queryParams == null ? shortCircuitRestClient.getResult(resultId) : shortCircuitRestClient.getResult(resultId, queryParams);
+    }
+
+    @Override
+    public byte[] exportResult(UUID resultId, ResultQueryParams queryParams, String csvTranslations) {
+        return shortCircuitRestClient.exportResult(resultId, queryParams, csvTranslations);
     }
 
     @Override

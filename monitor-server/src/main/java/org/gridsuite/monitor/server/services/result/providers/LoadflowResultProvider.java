@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.result.providers;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
 import org.gridsuite.monitor.server.services.result.ResultProvider;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -32,6 +33,11 @@ public class LoadflowResultProvider implements ResultProvider {
     @Override
     public String getResult(UUID resultId) {
         return loadflowRestClient.getResult(resultId);
+    }
+
+    @Override
+    public String getResult(UUID resultId, ResultQueryParams queryParams) {
+        return queryParams == null ? getResult(resultId) : loadflowRestClient.getResult(resultId, queryParams);
     }
 
     @Override

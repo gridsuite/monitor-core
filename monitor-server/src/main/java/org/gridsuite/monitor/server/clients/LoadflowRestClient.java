@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -35,6 +36,27 @@ public class LoadflowRestClient {
             .uri("/results/{resultUuid}", resultUuid)
             .retrieve()
             .body(String.class);
+    }
+
+    public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
+        return restClient.get()
+            .uri(uriBuilder -> {
+                uriBuilder.path("/results/{resultUuid}/current-limit-violations");
+                addQueryParams(uriBuilder, queryParams);
+                return uriBuilder.build(resultUuid);
+            })
+            .retrieve()
+            .body(String.class);
+    }
+
+    private void addQueryParams(org.springframework.web.util.UriBuilder uriBuilder, ResultQueryParams queryParams) {
+        if (queryParams == null) {
+            return;
+        }
+        queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
+        if (queryParams.filters() != null) {
+            uriBuilder.queryParam("filters", queryParams.filters());
+        }
     }
 
     public void deleteResult(UUID resultUuid) {

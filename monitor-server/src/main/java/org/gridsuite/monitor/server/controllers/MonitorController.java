@@ -12,12 +12,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.server.dto.processexecution.CsvExportRequest;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -107,9 +110,49 @@ public class MonitorController {
     @Operation(summary = "Get results for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
-    public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        Optional<List<String>> results = processExecutionService.getResults(executionId);
+    public ResponseEntity<List<String>> getExecutionResults(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
+            @RequestParam(required = false) String resultType,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort,
+            @RequestParam(required = false) String filters) {
+        Optional<List<String>> results;
+        if (resultType == null && page == null && size == null && sort == null && filters == null) {
+            results = processExecutionService.getResults(executionId);
+        } else {
+            ResultQueryParams queryParams = new ResultQueryParams(resultType, page, size, sort, filters);
+            results = processExecutionService.getResults(executionId, queryParams);
+        }
         return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping(value = "/executions/{executionId}/results/csv",
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(summary = "Export execution results as CSV")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "CSV export",
+            content = @io.swagger.v3.oas.annotations.media.Content(
+                mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "binary"))),
+        @ApiResponse(responseCode = "204", description = "No result found")})
+    public ResponseEntity<byte[]> exportExecutionResultsCsv(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
+            @RequestParam String resultType,
+            @RequestParam(required = false) List<String> sort,
+            @RequestParam(required = false) String filters,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                required = true,
+                content = @io.swagger.v3.oas.annotations.media.Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(type = "object")
+                )
+            ) @RequestBody CsvExportRequest csvTranslations) {
+        ResultQueryParams queryParams = new ResultQueryParams(resultType, null, null, sort, filters);
+        return processExecutionService.exportResults(executionId, queryParams, new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(csvTranslations).toString())
+            .map(bytes -> ResponseEntity.ok().body(bytes))
+            .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     }
 
     @GetMapping("/executions")

@@ -20,6 +20,7 @@ import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.springframework.stereotype.Service;
 
@@ -118,10 +119,22 @@ public class ProcessExecutionService {
     }
 
     public Optional<List<String>> getResults(UUID executionId) {
+        return getResults(executionId, null);
+    }
+
+    public Optional<List<String>> getResults(UUID executionId, ResultQueryParams queryParams) {
         Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
         return resultInfos.map(results -> results.stream()
-            .map(resultService::getResult)
+            .map(resultInfo -> queryParams == null
+                ? resultService.getResult(resultInfo)
+                : resultService.getResult(resultInfo, queryParams))
             .toList());
+    }
+
+    public Optional<byte[]> exportResults(UUID executionId, ResultQueryParams queryParams, String csvTranslations) {
+        Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
+        return resultInfos.filter(results -> !results.isEmpty())
+            .map(results -> resultService.exportResult(results.get(0), queryParams, csvTranslations));
     }
 
     public Optional<byte[]> getDebugInfos(UUID executionId) {

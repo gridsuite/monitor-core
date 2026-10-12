@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -117,13 +118,8 @@ public class MonitorController {
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) List<String> sort,
             @RequestParam(required = false) String filters) {
-        Optional<List<String>> results;
-        if (resultType == null && page == null && size == null && sort == null && filters == null) {
-            results = processExecutionService.getResults(executionId);
-        } else {
-            ResultQueryParams queryParams = new ResultQueryParams(resultType, page, size, sort, filters);
-            results = processExecutionService.getResults(executionId, queryParams);
-        }
+        ResultQueryParams queryParams = new ResultQueryParams(resultType, page, size, sort, filters);
+        Optional<List<String>> results = processExecutionService.getResults(executionId, queryParams);
         return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -150,7 +146,7 @@ public class MonitorController {
                 )
             ) @RequestBody CsvExportRequest csvTranslations) {
         ResultQueryParams queryParams = new ResultQueryParams(resultType, null, null, sort, filters);
-        return processExecutionService.exportResults(executionId, queryParams, new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(csvTranslations).toString())
+        return processExecutionService.exportResults(executionId, queryParams, new ObjectMapper().valueToTree(csvTranslations).toString())
             .map(bytes -> ResponseEntity.ok().body(bytes))
             .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     }

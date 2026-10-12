@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.services.result.providers;
 
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -34,12 +35,13 @@ class LoadflowResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(loadflowRestClient.getResult(id)).thenReturn(expected);
+        ResultQueryParams queryParams = new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null);
+        when(loadflowRestClient.getResult(id, queryParams)).thenReturn(expected);
 
-        String result = provider.getResult(id);
+        String result = provider.getResult(id, queryParams);
 
         assertThat(result).isEqualTo(expected);
-        verify(loadflowRestClient).getResult(id);
+        verify(loadflowRestClient).getResult(id, queryParams);
         verifyNoMoreInteractions(loadflowRestClient);
     }
 

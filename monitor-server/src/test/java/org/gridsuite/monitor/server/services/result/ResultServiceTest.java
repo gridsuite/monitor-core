@@ -37,15 +37,16 @@ class ResultServiceTest {
     void getResultShouldReturnResultFromCorrectProvider() {
         UUID resultId = UUID.randomUUID();
         String expectedResult = "{\"result\": \"security analysis data\"}";
-        when(resultProvider.getResult(resultId)).thenReturn(expectedResult);
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", null, null, List.of(), null);
+        when(resultProvider.getResult(resultId, queryParams)).thenReturn(expectedResult);
         when(resultProvider.getType()).thenReturn(ResultType.SECURITY_ANALYSIS);
         resultService = new ResultService(List.of(resultProvider));
         ResultInfos resultInfos = new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS);
 
-        String result = resultService.getResult(resultInfos);
+        String result = resultService.getResult(resultInfos, queryParams);
 
         assertThat(result).isEqualTo(expectedResult);
-        verify(resultProvider).getResult(resultId);
+        verify(resultProvider).getResult(resultId, queryParams);
     }
 
     @Test
@@ -55,7 +56,7 @@ class ResultServiceTest {
 
         ResultService emptyService = new ResultService(List.of());
 
-        assertThatThrownBy(() -> emptyService.getResult(resultInfos))
+        assertThatThrownBy(() -> emptyService.getResult(resultInfos, new ResultQueryParams("NMK_CONTINGENCIES", null, null, List.of(), null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
     }

@@ -6,9 +6,10 @@
  */
 package org.gridsuite.monitor.server.clients;
 
-import org.gridsuite.monitor.commons.types.result.SecurityAnalysisResultType;
 import org.gridsuite.monitor.server.services.result.ResultQueryParams;
+import org.gridsuite.monitor.server.types.SecurityAnalysisResultType;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -32,16 +33,8 @@ public class SecurityAnalysisRestClient {
             .build();
     }
 
-    public String getResult(UUID resultUuid) {
-        return restClient.get()
-            .uri("/results/{resultUuid}/nmk-contingencies-result", resultUuid)
-            .retrieve()
-            .body(String.class);
-    }
-
     public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
-        SecurityAnalysisResultType resultType = queryParams == null
-            ? SecurityAnalysisResultType.NMK_CONTINGENCIES : queryParams.securityAnalysisResultType();
+        SecurityAnalysisResultType resultType = queryParams.securityAnalysisResultType();
         String path = switch (resultType) {
             case NMK_LIMIT_VIOLATIONS -> "/results/{resultUuid}/nmk-constraints-result/paged";
             case NMK_CUT_OFF_POWER -> "/results/{resultUuid}/nmk-cut-off-power-result/paged";
@@ -50,17 +43,15 @@ public class SecurityAnalysisRestClient {
         return restClient.get()
             .uri(uriBuilder -> {
                 uriBuilder.path(path);
-                if (queryParams != null && queryParams.page() != null) {
+                if (queryParams.page() != null) {
                     uriBuilder.queryParam("page", queryParams.page());
                 }
-                if (queryParams != null && queryParams.size() != null) {
+                if (queryParams.size() != null) {
                     uriBuilder.queryParam("size", queryParams.size());
                 }
-                if (queryParams != null) {
-                    queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
-                    if (queryParams.filters() != null) {
-                        uriBuilder.queryParam("filters", queryParams.filters());
-                    }
+                queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
+                if (queryParams.filters() != null) {
+                    uriBuilder.queryParam("filters", queryParams.filters());
                 }
                 return uriBuilder.build(resultUuid);
             })
@@ -83,6 +74,7 @@ public class SecurityAnalysisRestClient {
                 }
                 return uriBuilder.build(resultUuid);
             })
+            .contentType(MediaType.APPLICATION_JSON)
             .body(csvTranslations)
             .retrieve()
             .body(byte[].class);

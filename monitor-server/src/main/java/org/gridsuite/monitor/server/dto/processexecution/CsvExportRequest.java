@@ -10,6 +10,9 @@ package org.gridsuite.monitor.server.dto.processexecution;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
+ */
 public record CsvExportRequest(
     List<String> headers,
     Map<String, String> enumValueTranslations,

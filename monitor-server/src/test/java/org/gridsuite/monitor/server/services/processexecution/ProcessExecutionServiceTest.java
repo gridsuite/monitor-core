@@ -28,6 +28,7 @@ import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -245,18 +246,19 @@ class ProcessExecutionServiceTest {
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
         List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS));
-        when(resultService.getResult(resultInfos.get(0)))
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", 0, 25, List.of(), null);
+        when(resultService.getResult(resultInfos.get(0), queryParams))
             .thenReturn(result1);
-        when(resultService.getResult(resultInfos.get(1)))
+        when(resultService.getResult(resultInfos.get(1), queryParams))
             .thenReturn(result2);
         when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
 
-        Optional<List<String>> results = processExecutionService.getResults(executionId);
+        Optional<List<String>> results = processExecutionService.getResults(executionId, queryParams);
 
         assertThat(results).isPresent();
         assertThat(results.get()).hasSize(2).containsExactly(result1, result2);
         verify(processExecutionTxService).getResultInfos(executionId);
-        verify(resultService, times(2)).getResult(any(ResultInfos.class));
+        verify(resultService, times(2)).getResult(any(ResultInfos.class), eq(queryParams));
     }
 
     @Test

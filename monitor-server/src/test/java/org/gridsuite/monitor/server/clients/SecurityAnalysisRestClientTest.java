@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,14 +50,14 @@ class SecurityAnalysisRestClientTest {
     void getResult() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result"
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(
                 RESULT_BODY,
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = securityAnalysisRestClient.getResult(RESULT_UUID);
+        String result = securityAnalysisRestClient.getResult(RESULT_UUID, new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -65,11 +66,11 @@ class SecurityAnalysisRestClientTest {
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result"
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged"
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID))
+        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID, new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null)))
             .isInstanceOf(RestClientException.class);
     }
 

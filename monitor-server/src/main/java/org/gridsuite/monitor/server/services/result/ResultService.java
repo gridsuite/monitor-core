@@ -39,14 +39,8 @@ public class ResultService {
         return provider;
     }
 
-    public String getResult(ResultInfos resultInfos) {
-        return getResult(resultInfos, null);
-    }
-
     public String getResult(ResultInfos resultInfos, ResultQueryParams queryParams) {
-        return queryParams == null
-            ? getProvider(resultInfos.resultType()).getResult(resultInfos.resultUUID())
-            : getProvider(resultInfos.resultType()).getResult(resultInfos.resultUUID(), queryParams);
+        return getProvider(resultInfos.resultType()).getResult(resultInfos.resultUUID(), queryParams);
     }
 
     public byte[] exportResult(ResultInfos resultInfos, ResultQueryParams queryParams, String csvTranslations) {

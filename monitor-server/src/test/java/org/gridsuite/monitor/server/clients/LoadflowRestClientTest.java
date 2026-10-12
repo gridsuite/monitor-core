@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +56,7 @@ class LoadflowRestClientTest {
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = loadflowRestClient.getResult(RESULT_UUID);
+        String result = loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -68,7 +69,7 @@ class LoadflowRestClientTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID))
+        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null)))
             .isInstanceOf(RestClientException.class);
     }
 

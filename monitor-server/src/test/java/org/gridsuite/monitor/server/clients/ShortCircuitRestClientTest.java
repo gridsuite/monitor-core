@@ -49,10 +49,10 @@ class ShortCircuitRestClientTest {
     @Test
     void getResultSuccess() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.TEXT_PLAIN));
 
-        String result = shortCircuitRestClient.getResult(RESULT_UUID);
+        String result = shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -75,10 +75,10 @@ class ShortCircuitRestClientTest {
     @Test
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID))
+        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null)))
             .isInstanceOf(RestClientException.class);
     }
 

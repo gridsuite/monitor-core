@@ -16,15 +16,9 @@ import java.util.UUID;
 public interface ResultProvider {
     ResultType getType();
 
-    default String getResult(UUID resultId) {
-        return getResult(resultId, null);
-    }
-
     String getResult(UUID resultId, ResultQueryParams queryParams);
 
-    default byte[] exportResult(UUID resultId, ResultQueryParams queryParams, String csvTranslations) {
-        throw new UnsupportedOperationException("CSV export is not supported for " + getType());
-    }
+    byte[] exportResult(UUID resultId, ResultQueryParams queryParams, String csvTranslations);
 
     void deleteResult(UUID resultId);
 }

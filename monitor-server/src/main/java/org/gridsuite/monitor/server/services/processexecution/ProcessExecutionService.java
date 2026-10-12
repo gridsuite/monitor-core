@@ -118,16 +118,10 @@ public class ProcessExecutionService {
                 .map(reportRestClient::getReportSeverities);
     }
 
-    public Optional<List<String>> getResults(UUID executionId) {
-        return getResults(executionId, null);
-    }
-
     public Optional<List<String>> getResults(UUID executionId, ResultQueryParams queryParams) {
         Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
         return resultInfos.map(results -> results.stream()
-            .map(resultInfo -> queryParams == null
-                ? resultService.getResult(resultInfo)
-                : resultService.getResult(resultInfo, queryParams))
+            .map(resultInfo -> resultService.getResult(resultInfo, queryParams))
             .toList());
     }
 

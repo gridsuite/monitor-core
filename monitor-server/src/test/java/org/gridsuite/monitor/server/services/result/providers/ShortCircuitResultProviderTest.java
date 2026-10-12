@@ -34,13 +34,13 @@ class ShortCircuitResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(shortCircuitRestClient.getResult(id)).thenReturn(expected);
-        when(shortCircuitRestClient.getResult(id, null)).thenReturn(expected);
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", null, null, java.util.List.of(), null);
+        when(shortCircuitRestClient.getResult(id, queryParams)).thenReturn(expected);
 
-        String result = provider.getResult(id);
+        String result = provider.getResult(id, queryParams);
 
         assertThat(result).isEqualTo(expected);
-        verify(shortCircuitRestClient).getResult(id);
+        verify(shortCircuitRestClient).getResult(id, queryParams);
         verifyNoMoreInteractions(shortCircuitRestClient);
     }
 

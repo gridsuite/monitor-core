@@ -30,13 +30,8 @@ public class SecurityAnalysisResultProvider implements ResultProvider {
     }
 
     @Override
-    public String getResult(UUID resultId) {
-        return securityAnalysisRestClient.getResult(resultId);
-    }
-
-    @Override
     public String getResult(UUID resultId, ResultQueryParams queryParams) {
-        return queryParams == null ? getResult(resultId) : securityAnalysisRestClient.getResult(resultId, queryParams);
+        return securityAnalysisRestClient.getResult(resultId, queryParams);
     }
 
     @Override

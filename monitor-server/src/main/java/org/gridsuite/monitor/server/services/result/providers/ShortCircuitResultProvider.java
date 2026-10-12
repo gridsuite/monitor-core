@@ -32,7 +32,7 @@ public class ShortCircuitResultProvider implements ResultProvider {
 
     @Override
     public String getResult(UUID resultId, ResultQueryParams queryParams) {
-        return queryParams == null ? shortCircuitRestClient.getResult(resultId) : shortCircuitRestClient.getResult(resultId, queryParams);
+        return shortCircuitRestClient.getResult(resultId, queryParams);
     }
 
     @Override

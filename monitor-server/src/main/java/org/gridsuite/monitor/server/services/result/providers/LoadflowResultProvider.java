@@ -31,13 +31,13 @@ public class LoadflowResultProvider implements ResultProvider {
     }
 
     @Override
-    public String getResult(UUID resultId) {
-        return loadflowRestClient.getResult(resultId);
+    public String getResult(UUID resultId, ResultQueryParams queryParams) {
+        return loadflowRestClient.getResult(resultId, queryParams);
     }
 
     @Override
-    public String getResult(UUID resultId, ResultQueryParams queryParams) {
-        return queryParams == null ? getResult(resultId) : loadflowRestClient.getResult(resultId, queryParams);
+    public byte[] exportResult(UUID resultId, ResultQueryParams queryParams, String csvTranslations) {
+        throw new UnsupportedOperationException("CSV export is not supported for " + getType());
     }
 
     @Override

@@ -41,22 +41,15 @@ public class LoadflowRestClient {
     public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
         return restClient.get()
             .uri(uriBuilder -> {
-                uriBuilder.path("/results/{resultUuid}/current-limit-violations");
-                addQueryParams(uriBuilder, queryParams);
+                uriBuilder.path("/results/{resultUuid}");
+                if (queryParams.filters() != null) {
+                    uriBuilder.queryParam("filters", queryParams.filters());
+                }
+                queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
                 return uriBuilder.build(resultUuid);
             })
             .retrieve()
             .body(String.class);
-    }
-
-    private void addQueryParams(org.springframework.web.util.UriBuilder uriBuilder, ResultQueryParams queryParams) {
-        if (queryParams == null) {
-            return;
-        }
-        queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
-        if (queryParams.filters() != null) {
-            uriBuilder.queryParam("filters", queryParams.filters());
-        }
     }
 
     public void deleteResult(UUID resultUuid) {

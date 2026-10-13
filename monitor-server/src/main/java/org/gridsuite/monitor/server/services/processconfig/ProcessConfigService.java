@@ -17,6 +17,7 @@ import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
 import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidator;
+import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidatorBis;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,118 +32,46 @@ import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.
  */
 @Service
 public class ProcessConfigService {
-    private final ProcessConfigRepository processConfigRepository;
-    private final Map<ProcessType, ProcessConfigHandler<?, ?>> processConfigHandlers;
-    private final ProcessConfigValidator processConfigValidator;
+    private final ProcessConfigValidationService processConfigValidationService;
+    private final ProcessConfigTxService processConfigTxService;
 
-    public ProcessConfigService(ProcessConfigRepository processConfigRepository,
-                                List<ProcessConfigHandler<?, ?>> listHandlers,
-                                ProcessConfigValidator processConfigValidator) {
-        this.processConfigRepository = processConfigRepository;
-        this.processConfigHandlers = listHandlers.stream().collect(Collectors.toMap(
-            ProcessConfigHandler::getProcessType, Function.identity(), (h1, h2) -> {
-                throw new IllegalStateException(String.format("Duplicate process config handlers for process type: %s", h1.getProcessType()));
-            }
-        ));
-        this.processConfigValidator = processConfigValidator;
+    public ProcessConfigService(ProcessConfigValidationService processConfigValidationService, ProcessConfigTxService processConfigTxService) {
+        this.processConfigValidationService = processConfigValidationService;
+
+        this.processConfigTxService = processConfigTxService;
     }
 
-    @SuppressWarnings("unchecked")
-    private <C extends ProcessConfig, E extends AbstractProcessConfigEntity> ProcessConfigHandler<C, E> getHandler(ProcessType processType) {
-        ProcessConfigHandler<?, ?> handler = processConfigHandlers.get(processType);
-        if (handler == null) {
-            throw new IllegalArgumentException("Unsupported process config type: " + processType);
-        }
-        return (ProcessConfigHandler<C, E>) handler;
-    }
-
-    @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
-        processConfigValidator.validate(processConfig);
-        AbstractProcessConfigEntity entity = getHandler(processConfig.processType()).toEntity(processConfig);
-        return processConfigRepository.save(entity).getId();
+        processConfigValidationService.validate(processConfig);
+        return processConfigTxService.createProcessConfig(processConfig);
     }
 
-    @Transactional(readOnly = true)
     public Optional<PersistedProcessConfig> getProcessConfig(UUID processConfigUuid) {
-        return processConfigRepository.findById(processConfigUuid)
-            .map(this::toPersistedProcessConfig);
+        return processConfigTxService.getProcessConfig(processConfigUuid);
     }
 
-    @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return getHandler(processType).findAll().stream()
-            .map(this::toPersistedProcessConfig)
-            .toList();
+        return processConfigTxService.getProcessConfigs(processType);
     }
 
-    @Transactional(readOnly = true)
     public List<MetadataInfos> getProcessConfigsMetadata(List<UUID> processConfigUuids) {
-        return processConfigRepository.findAllById(processConfigUuids).stream()
-            .map(entity -> new MetadataInfos(entity.getId(), entity.getProcessType()))
-            .toList();
+        return processConfigTxService.getProcessConfigsMetadata(processConfigUuids);
     }
 
-    @Transactional
     public Optional<UUID> updateProcessConfig(UUID processConfigUuid, ProcessConfig processConfig) {
-        processConfigValidator.validate(processConfig);
-        return processConfigRepository.findById(processConfigUuid)
-            .map(entity -> {
-                if (entity.getProcessType() != processConfig.processType()) {
-                    throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
-                }
-                getHandler(processConfig.processType()).update(processConfig, entity);
-                return processConfigUuid;
-            });
+        processConfigValidationService.validate(processConfig);
+        return processConfigTxService.updateProcessConfig(processConfigUuid, processConfig);
     }
 
-    @Transactional
     public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
-        return processConfigRepository.findById(sourceProcessConfigUuid)
-            .map(sourceEntity -> {
-                AbstractProcessConfigEntity entity = getHandler(sourceEntity.getProcessType()).copyEntity(sourceEntity);
-                return processConfigRepository.save(entity).getId();
-            });
+        return processConfigTxService.duplicateProcessConfig(sourceProcessConfigUuid);
     }
 
-    @Transactional
     public Optional<UUID> deleteProcessConfig(UUID processConfigUuid) {
-        if (processConfigRepository.existsById(processConfigUuid)) {
-            processConfigRepository.deleteById(processConfigUuid);
-            return Optional.of(processConfigUuid);
-        } else {
-            return Optional.empty();
-        }
+        return processConfigTxService.deleteProcessConfig(processConfigUuid);
     }
 
-    private PersistedProcessConfig toPersistedProcessConfig(AbstractProcessConfigEntity entity) {
-        return new PersistedProcessConfig(entity.getId(), toProcessConfig(entity));
-    }
-
-    private ProcessConfig toProcessConfig(AbstractProcessConfigEntity entity) {
-        return getHandler(entity.getProcessType()).toDto(entity);
-    }
-
-    @Transactional(readOnly = true)
     public Optional<ProcessConfigComparison> compareProcessConfigs(UUID uuid1, UUID uuid2) {
-        Optional<AbstractProcessConfigEntity> processConfigEntity1 = processConfigRepository.findById(uuid1);
-        Optional<AbstractProcessConfigEntity> processConfigEntity2 = processConfigRepository.findById(uuid2);
-
-        if (processConfigEntity1.isEmpty() || processConfigEntity2.isEmpty()) {
-            return Optional.empty();
-        }
-
-        if (processConfigEntity1.get().getProcessType() != processConfigEntity2.get().getProcessType()) {
-            throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Cannot compare different process config types",
-                Map.of("processConfigEntity1Type", processConfigEntity1.get().getProcessType(), "processConfigEntity2Type", processConfigEntity2.get().getProcessType()));
-        }
-
-        ProcessConfig processConfig1 = toProcessConfig(processConfigEntity1.get());
-        ProcessConfig processConfig2 = toProcessConfig(processConfigEntity2.get());
-
-        List<ProcessConfigFieldComparison> differences = processConfig1.compareWith(processConfig2);
-        boolean identical = differences.stream().allMatch(ProcessConfigFieldComparison::identical);
-
-        return Optional.of(new ProcessConfigComparison(uuid1, uuid2, identical, differences));
+        return processConfigTxService.compareProcessConfigs(uuid1, uuid2);
     }
 }

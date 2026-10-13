@@ -18,7 +18,6 @@ import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfi
 import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
-import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidatorBis;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,9 +41,6 @@ class ProcessConfigServiceTxTest {
 
     @Mock
     private ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> handler;
-
-    @Mock
-    private ProcessConfigValidatorBis processConfigValidatorBis;
 
     private ProcessConfigTxService processConfigTxService;
 

@@ -10,7 +10,7 @@ import java.util.Set;
 
 import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROVIDER;
 
-public class SecurityAnalysisConfigValidator extends AbstractProcessConfigValidator<SecurityAnalysisConfig> {
+public class SecurityAnalysisConfigValidator implements ProcessConfigValidator<SecurityAnalysisConfig> {
     private static final Set<String> ALLOWED_PROVIDER = Set.of("OpenLoadFlow");
 
     private final LoadflowRestClient loadflowRestClient;

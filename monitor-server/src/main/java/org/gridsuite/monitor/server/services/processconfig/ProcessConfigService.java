@@ -7,25 +7,13 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
-import org.gridsuite.monitor.server.error.MonitorServerException;
-import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
-import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
-import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidator;
-import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidatorBis;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>

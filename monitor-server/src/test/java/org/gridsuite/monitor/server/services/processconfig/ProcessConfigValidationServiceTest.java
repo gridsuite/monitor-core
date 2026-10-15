@@ -51,8 +51,9 @@ class ProcessConfigValidationServiceTest {
     void duplicateValidators() {
         when(validator.getProcessType()).thenReturn(ProcessType.LOADFLOW);
         when(otherValidator.getProcessType()).thenReturn(ProcessType.LOADFLOW);
+        List<ProcessConfigValidator<?>> sameProcessTypeValidators = List.of(validator, otherValidator);
 
-        assertThatThrownBy(() -> new ProcessConfigValidationService(List.of(validator, otherValidator)))
+        assertThatThrownBy(() -> new ProcessConfigValidationService(sameProcessTypeValidators))
             .isInstanceOf(IllegalStateException.class)
             .hasMessage("Duplicate process config validators for process type: LOADFLOW");
     }

@@ -49,7 +49,7 @@ public class ProcessConfigController {
         this.processConfigService = processConfigService;
     }
 
-    @PostMapping(value = "")
+    @PostMapping(value = "", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Create process config")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was created")})

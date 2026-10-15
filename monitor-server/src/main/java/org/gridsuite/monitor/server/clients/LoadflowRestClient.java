@@ -37,6 +37,13 @@ public class LoadflowRestClient {
             .body(String.class);
     }
 
+    public String getParameterProvider(UUID parameterUuid) {
+        return restClient.get()
+            .uri("/parameters/{parametersUuid}/provider", parameterUuid)
+            .retrieve()
+            .body(String.class);
+    }
+
     public void deleteResult(UUID resultUuid) {
         restClient.delete()
             .uri(uriBuilder -> uriBuilder

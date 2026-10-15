@@ -4,14 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services.processconfig;
+package org.gridsuite.monitor.server.services.processconfig.handlers;
 
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.ShortCircuitConfigEntity;
 import org.gridsuite.monitor.server.mappers.processconfig.ShortCircuitConfigMapper;
 import org.gridsuite.monitor.server.repositories.processconfig.ShortCircuitConfigRepository;
-import org.gridsuite.monitor.server.services.processconfig.handlers.ShortCircuitConfigHandler;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 

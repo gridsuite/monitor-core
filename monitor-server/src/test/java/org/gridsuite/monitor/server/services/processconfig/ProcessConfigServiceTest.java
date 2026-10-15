@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,359 +7,170 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
-import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
-import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
-import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
-import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
-import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.DIFFERENT_PROCESS_CONFIG_TYPE;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROVIDER;
 import static org.mockito.Mockito.*;
 
-/**
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
- */
 @ExtendWith(MockitoExtension.class)
 class ProcessConfigServiceTest {
     @Mock
-    private ProcessConfigRepository processConfigRepository;
-
+    private ProcessConfigValidationService processConfigValidationService;
     @Mock
-    private ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> handler;
+    private ProcessConfigTxService processConfigTxService;
+    @Mock
+    private ProcessConfig processConfig;
 
     private ProcessConfigService processConfigService;
 
-    private static final ProcessType PROCESS_TYPE = ProcessType.SECURITY_ANALYSIS;
-    @Mock
-    private ProcessConfig processConfig;
-    @Mock
-    private AbstractProcessConfigEntity processConfigEntity;
-
     @BeforeEach
     void setUp() {
-        when(handler.getProcessType()).thenReturn(PROCESS_TYPE);
-
-        processConfigService = new ProcessConfigService(
-            processConfigRepository,
-            List.of(handler)
-        );
+        processConfigService = new ProcessConfigService(processConfigValidationService, processConfigTxService);
     }
 
     @Test
     void createProcessConfig() {
-        UUID expectedProcessConfigUuid = UUID.randomUUID();
+        UUID uuid = UUID.randomUUID();
+        when(processConfigTxService.createProcessConfig(processConfig)).thenReturn(uuid);
 
-        AbstractProcessConfigEntity savedEntity = mock(AbstractProcessConfigEntity.class);
+        assertThat(processConfigService.createProcessConfig(processConfig)).isEqualTo(uuid);
 
-        when(processConfig.processType()).thenReturn(PROCESS_TYPE);
-        when(handler.toEntity(processConfig)).thenReturn(processConfigEntity);
-        when(processConfigRepository.save(processConfigEntity)).thenReturn(savedEntity);
-        when(savedEntity.getId()).thenReturn(expectedProcessConfigUuid);
-
-        UUID result = processConfigService.createProcessConfig(processConfig);
-
-        assertThat(result).isEqualTo(expectedProcessConfigUuid);
-        verify(handler).toEntity(processConfig);
-        verify(processConfigRepository).save(processConfigEntity);
+        InOrder inOrder = inOrder(processConfigValidationService, processConfigTxService);
+        inOrder.verify(processConfigValidationService).validate(processConfig);
+        inOrder.verify(processConfigTxService).createProcessConfig(processConfig);
     }
 
     @Test
-    void getProcessConfig() {
-        UUID processConfigUuid = UUID.randomUUID();
+    void createProcessConfigWithInvalidConfig() {
+        MonitorServerException exception = new MonitorServerException(UNSUPPORTED_PROVIDER, "Invalid provider");
+        doThrow(exception).when(processConfigValidationService).validate(processConfig);
 
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
-        when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
-        when(processConfigEntity.getId()).thenReturn(processConfigUuid);
+        assertThatThrownBy(() -> processConfigService.createProcessConfig(processConfig)).isSameAs(exception);
 
-        Optional<PersistedProcessConfig> result = processConfigService.getProcessConfig(processConfigUuid);
-
-        assertThat(result).isPresent();
-        assertThat(result.get().processConfig()).isEqualTo(processConfig);
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).toDto(processConfigEntity);
-    }
-
-    @Test
-    void getProcessConfigNotFound() {
-        UUID processConfigUuid = UUID.randomUUID();
-
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.empty());
-
-        Optional<PersistedProcessConfig> result = processConfigService.getProcessConfig(processConfigUuid);
-
-        assertThat(result).isEmpty();
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).toDto(any());
-    }
-
-    @Test
-    void getProcessConfigs() {
-        UUID processConfigUuid = UUID.randomUUID();
-
-        when(handler.findAll()).thenReturn(List.of(processConfigEntity));
-        when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
-        when(processConfigEntity.getId()).thenReturn(processConfigUuid);
-
-        List<PersistedProcessConfig> result = processConfigService.getProcessConfigs(PROCESS_TYPE);
-
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().processConfig()).isEqualTo(processConfig);
-        verify(handler).findAll();
-        verify(handler).toDto(processConfigEntity);
-    }
-
-    @Test
-    void getProcessConfigsMetadata() {
-        UUID saUuid = UUID.randomUUID();
-        UUID lfUuid = UUID.randomUUID();
-        List<UUID> processConfigUuids = List.of(saUuid, lfUuid);
-
-        SecurityAnalysisConfigEntity saEntity = new SecurityAnalysisConfigEntity();
-        saEntity.setId(saUuid);
-        LoadFlowConfigEntity lfEntity = new LoadFlowConfigEntity();
-        lfEntity.setId(lfUuid);
-
-        when(processConfigRepository.findAllById(processConfigUuids)).thenReturn(List.of(saEntity, lfEntity));
-
-        List<MetadataInfos> result = processConfigService.getProcessConfigsMetadata(processConfigUuids);
-
-        assertThat(result).isEqualTo(List.of(
-            new MetadataInfos(saUuid, ProcessType.SECURITY_ANALYSIS),
-            new MetadataInfos(lfUuid, ProcessType.LOADFLOW)
-        ));
-        verify(processConfigRepository).findAllById(processConfigUuids);
+        verifyNoInteractions(processConfigTxService);
     }
 
     @Test
     void updateProcessConfig() {
-        UUID processConfigUuid = UUID.randomUUID();
+        UUID uuid = UUID.randomUUID();
+        when(processConfigTxService.updateProcessConfig(uuid, processConfig)).thenReturn(Optional.of(uuid));
 
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
-        when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(processConfig.processType()).thenReturn(PROCESS_TYPE);
-        doNothing().when(handler).update(processConfig, processConfigEntity);
+        assertThat(processConfigService.updateProcessConfig(uuid, processConfig)).contains(uuid);
 
-        Optional<UUID> result = processConfigService.updateProcessConfig(processConfigUuid, processConfig);
+        InOrder inOrder = inOrder(processConfigValidationService, processConfigTxService);
+        inOrder.verify(processConfigValidationService).validate(processConfig);
+        inOrder.verify(processConfigTxService).updateProcessConfig(uuid, processConfig);
+    }
 
-        assertThat(result)
-            .isPresent()
-            .contains(processConfigUuid);
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).update(processConfig, processConfigEntity);
+    @Test
+    void updateProcessConfigWithInvalidConfig() {
+        UUID uuid = UUID.randomUUID();
+        MonitorServerException exception = new MonitorServerException(UNSUPPORTED_PROVIDER, "Invalid provider");
+        doThrow(exception).when(processConfigValidationService).validate(processConfig);
+
+        assertThatThrownBy(() -> processConfigService.updateProcessConfig(uuid, processConfig)).isSameAs(exception);
+
+        verifyNoInteractions(processConfigTxService);
     }
 
     @Test
     void updateProcessConfigNotFound() {
-        UUID processConfigUuid = UUID.randomUUID();
+        UUID uuid = UUID.randomUUID();
+        when(processConfigTxService.updateProcessConfig(uuid, processConfig)).thenReturn(Optional.empty());
 
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.empty());
+        assertThat(processConfigService.updateProcessConfig(uuid, processConfig)).isEmpty();
 
-        Optional<UUID> result = processConfigService.updateProcessConfig(processConfigUuid, processConfig);
-
-        assertThat(result).isEmpty();
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).update(processConfig, processConfigEntity);
+        verify(processConfigValidationService).validate(processConfig);
+        verify(processConfigTxService).updateProcessConfig(uuid, processConfig);
     }
 
     @Test
-    void updateProcessConfigWithProcessTypeMismatch() {
-        UUID processConfigUuid = UUID.randomUUID();
+    void getProcessConfig() {
+        UUID uuid = UUID.randomUUID();
+        Optional<PersistedProcessConfig> expected = Optional.of(new PersistedProcessConfig(uuid, processConfig));
+        when(processConfigTxService.getProcessConfig(uuid)).thenReturn(expected);
 
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
-        when(processConfigEntity.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(processConfig.processType()).thenReturn(ProcessType.LOADFLOW);
+        assertThat(processConfigService.getProcessConfig(uuid)).isEqualTo(expected);
 
-        assertThatThrownBy(() -> processConfigService.updateProcessConfig(processConfigUuid, processConfig))
-            .isInstanceOf(IllegalArgumentException.class);
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).update(processConfig, processConfigEntity);
+        verify(processConfigTxService).getProcessConfig(uuid);
+        verifyNoInteractions(processConfigValidationService);
     }
 
     @Test
-    void duplicateSecurityAnalysisConfig() {
-        UUID processConfigUuid = UUID.randomUUID();
-        UUID copiedProcessConfigUuid = UUID.randomUUID();
-        AbstractProcessConfigEntity copiedProcessConfigEntity = mock(AbstractProcessConfigEntity.class);
+    void getProcessConfigs() {
+        UUID uuid = UUID.randomUUID();
+        List<PersistedProcessConfig> expected = List.of(new PersistedProcessConfig(uuid, processConfig));
+        when(processConfigTxService.getProcessConfigs(ProcessType.LOADFLOW)).thenReturn(expected);
 
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
-        when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.copyEntity(processConfigEntity)).thenReturn(copiedProcessConfigEntity);
-        when(processConfigRepository.save(copiedProcessConfigEntity)).thenReturn(copiedProcessConfigEntity);
-        when(copiedProcessConfigEntity.getId()).thenReturn(copiedProcessConfigUuid);
+        assertThat(processConfigService.getProcessConfigs(ProcessType.LOADFLOW)).isEqualTo(expected);
 
-        Optional<UUID> result = processConfigService.duplicateProcessConfig(processConfigUuid);
-
-        assertThat(result)
-            .isPresent()
-            .contains(copiedProcessConfigUuid);
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).copyEntity(processConfigEntity);
-        verify(processConfigRepository).save(copiedProcessConfigEntity);
+        verify(processConfigTxService).getProcessConfigs(ProcessType.LOADFLOW);
+        verifyNoInteractions(processConfigValidationService);
     }
 
     @Test
-    void duplicateProcessConfigNotFound() {
-        UUID processConfigUuid = UUID.randomUUID();
+    void getProcessConfigsMetadata() {
+        UUID uuid = UUID.randomUUID();
+        List<UUID> uuids = List.of(uuid);
+        List<MetadataInfos> expected = List.of(new MetadataInfos(uuid, ProcessType.LOADFLOW));
+        when(processConfigTxService.getProcessConfigsMetadata(uuids)).thenReturn(expected);
 
-        when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.empty());
+        assertThat(processConfigService.getProcessConfigsMetadata(uuids)).isEqualTo(expected);
 
-        Optional<UUID> result = processConfigService.duplicateProcessConfig(processConfigUuid);
+        verify(processConfigTxService).getProcessConfigsMetadata(uuids);
+        verifyNoInteractions(processConfigValidationService);
+    }
 
-        assertThat(result).isEmpty();
-        verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).copyEntity(any());
+    @Test
+    void duplicateProcessConfig() {
+        UUID uuid = UUID.randomUUID();
+        Optional<UUID> expected = Optional.of(UUID.randomUUID());
+        when(processConfigTxService.duplicateProcessConfig(uuid)).thenReturn(expected);
+
+        assertThat(processConfigService.duplicateProcessConfig(uuid)).isEqualTo(expected);
+
+        verify(processConfigTxService).duplicateProcessConfig(uuid);
+        verifyNoInteractions(processConfigValidationService);
     }
 
     @Test
     void deleteProcessConfig() {
-        UUID processConfigUuid = UUID.randomUUID();
-        when(processConfigRepository.existsById(processConfigUuid)).thenReturn(Boolean.TRUE);
-        doNothing().when(processConfigRepository).deleteById(processConfigUuid);
+        UUID uuid = UUID.randomUUID();
+        Optional<UUID> expected = Optional.of(uuid);
+        when(processConfigTxService.deleteProcessConfig(uuid)).thenReturn(expected);
 
-        Optional<UUID> result = processConfigService.deleteProcessConfig(processConfigUuid);
+        assertThat(processConfigService.deleteProcessConfig(uuid)).isEqualTo(expected);
 
-        assertThat(result).contains(processConfigUuid);
-        verify(processConfigRepository).existsById(processConfigUuid);
-        verify(processConfigRepository).deleteById(processConfigUuid);
+        verify(processConfigTxService).deleteProcessConfig(uuid);
+        verifyNoInteractions(processConfigValidationService);
     }
 
     @Test
-    void deleteProcessConfigNotFound() {
-        UUID processConfigUuid = UUID.randomUUID();
+    void compareProcessConfigs() {
+        UUID uuid = UUID.randomUUID();
+        UUID otherUuid = UUID.randomUUID();
+        Optional<ProcessConfigComparison> expected = Optional.of(new ProcessConfigComparison(uuid, otherUuid, true, List.of()));
+        when(processConfigTxService.compareProcessConfigs(uuid, otherUuid)).thenReturn(expected);
 
-        when(processConfigRepository.existsById(processConfigUuid)).thenReturn(Boolean.FALSE);
+        assertThat(processConfigService.compareProcessConfigs(uuid, otherUuid)).isEqualTo(expected);
 
-        Optional<UUID> result = processConfigService.deleteProcessConfig(processConfigUuid);
-
-        assertThat(result).isEmpty();
-        verify(processConfigRepository).existsById(processConfigUuid);
-        verify(processConfigRepository, never()).deleteById(any());
-    }
-
-    @Test
-    void compareProcessConfigsWithEqualProcessConfigs() {
-        UUID processConfigUuid1 = UUID.randomUUID();
-        UUID processConfigUuid2 = UUID.randomUUID();
-        ProcessConfigFieldComparison fieldComparison = new ProcessConfigFieldComparison("field", true, "value1", "value2");
-
-        when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity));
-        when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity));
-        when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
-        when(processConfig.compareWith(processConfig)).thenReturn(List.of(fieldComparison));
-
-        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
-
-        assertThat(result)
-            .isPresent()
-            .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, true, List.of(fieldComparison)));
-        verify(processConfigRepository).findById(processConfigUuid1);
-        verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, times(2)).toDto(processConfigEntity);
-        verify(processConfig).compareWith(processConfig);
-    }
-
-    @Test
-    void compareProcessConfigsWithDifferentProcessConfigs() {
-        UUID processConfigUuid1 = UUID.randomUUID();
-        UUID processConfigUuid2 = UUID.randomUUID();
-        AbstractProcessConfigEntity processConfigEntity1 = mock(AbstractProcessConfigEntity.class);
-        AbstractProcessConfigEntity processConfigEntity2 = mock(AbstractProcessConfigEntity.class);
-        ProcessConfig processConfig1 = mock(ProcessConfig.class);
-        ProcessConfig processConfig2 = mock(ProcessConfig.class);
-        ProcessConfigFieldComparison fieldComparison = new ProcessConfigFieldComparison("field", false, "value1", "value2");
-
-        when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
-        when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
-        when(processConfigEntity1.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(processConfigEntity2.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity1)).thenReturn(processConfig1);
-        when(handler.toDto(processConfigEntity2)).thenReturn(processConfig2);
-        when(processConfig1.compareWith(processConfig2)).thenReturn(List.of(fieldComparison));
-
-        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
-
-        assertThat(result)
-            .isPresent()
-            .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, false, List.of(fieldComparison)));
-        verify(processConfigRepository).findById(processConfigUuid1);
-        verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).toDto(processConfigEntity1);
-        verify(handler).toDto(processConfigEntity2);
-        verify(processConfig1).compareWith(processConfig2);
-    }
-
-    @Test
-    void compareProcessConfigWithFirstProcessConfigNotFound() {
-        UUID processConfigUuid1 = UUID.randomUUID();
-        UUID processConfigUuid2 = UUID.randomUUID();
-
-        // test when the first process config is not found
-        when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.empty());
-
-        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
-
-        assertThat(result).isEmpty();
-        verify(processConfigRepository).findById(processConfigUuid1);
-        verify(handler, never()).toDto(any());
-    }
-
-    @Test
-    void compareProcessConfigWithSecondProcessConfigNotFound() {
-        UUID processConfigUuid1 = UUID.randomUUID();
-        UUID processConfigUuid2 = UUID.randomUUID();
-
-        // test when the second process config is not found
-        AbstractProcessConfigEntity processConfigEntity1 = mock(AbstractProcessConfigEntity.class);
-
-        when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
-        when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.empty());
-
-        Optional<ProcessConfigComparison> result = processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
-
-        assertThat(result).isEmpty();
-        verify(processConfigRepository).findById(processConfigUuid1);
-        verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).toDto(any());
-    }
-
-    @Test
-    void compareProcessConfigsShouldThrowWhenProcessTypesAreDifferent() {
-        UUID processConfigUuid1 = UUID.randomUUID();
-        UUID processConfigUuid2 = UUID.randomUUID();
-        AbstractProcessConfigEntity processConfigEntity1 = mock(SecurityAnalysisConfigEntity.class);
-        AbstractProcessConfigEntity processConfigEntity2 = mock(LoadFlowConfigEntity.class);
-
-        when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity1));
-        when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
-        when(processConfigEntity1.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(processConfigEntity2.getProcessType()).thenReturn(ProcessType.LOADFLOW);
-
-        assertThatThrownBy(() -> processConfigService.compareProcessConfigs(processConfigUuid1, processConfigUuid2))
-            .isInstanceOf(MonitorServerException.class)
-            .satisfies(ex -> {
-                MonitorServerException e = (MonitorServerException) ex;
-                assertThat(e.getErrorCode()).isEqualTo(DIFFERENT_PROCESS_CONFIG_TYPE);
-            });
-        verify(processConfigRepository).findById(processConfigUuid1);
-        verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).toDto(any());
+        verify(processConfigTxService).compareProcessConfigs(uuid, otherUuid);
+        verifyNoInteractions(processConfigValidationService);
     }
 }

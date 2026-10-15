@@ -1,38 +1,45 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.services.processconfig.validators.ProcessConfigValidator;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
+import org.gridsuite.monitor.server.clients.LoadflowRestClient;
+import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.UNSUPPORTED_PROVIDER;
 
 @Service
 public class ProcessConfigValidationService {
-    private final Map<ProcessType, ProcessConfigValidator<?>> processConfigValidators;
+    private final LoadflowRestClient loadflowRestClient;
+    private final SecurityAnalysisRestClient securityAnalysisRestClient;
 
-    public ProcessConfigValidationService(List<ProcessConfigValidator<?>> listValidators) {
-        this.processConfigValidators = listValidators.stream().collect(Collectors.toMap(ProcessConfigValidator::getProcessType, Function.identity(), (h1, h2) -> {
-            throw new IllegalStateException(String.format("Duplicate process config validators for process type: %s", h1.getProcessType()));
-        }));
+    public ProcessConfigValidationService(LoadflowRestClient loadflowRestClient, SecurityAnalysisRestClient securityAnalysisRestClient) {
+        this.loadflowRestClient = loadflowRestClient;
+        this.securityAnalysisRestClient = securityAnalysisRestClient;
     }
 
     // Validation currently performs REST calls and must therefore be executed outside of transactions
     public void validate(ProcessConfig processConfig) {
-        getValidator(processConfig.processType()).validate(processConfig);
+        switch (processConfig) {
+            case LoadFlowConfig config ->
+                validateProvider(loadflowRestClient.getParameterProvider(config.loadflowParametersUuid()));
+            case SecurityAnalysisConfig config -> {
+                validateProvider(loadflowRestClient.getParameterProvider(config.loadflowParametersUuid()));
+                validateProvider(securityAnalysisRestClient.getParameterProvider(config.securityAnalysisParametersUuid()));
+            }
+            case ShortCircuitConfig _ -> {
+                // No specific validation required
+            }
+            default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    private <C extends ProcessConfig> ProcessConfigValidator<C> getValidator(ProcessType processType) {
-        ProcessConfigValidator<?> validator = processConfigValidators.get(processType);
-
-        if (validator == null) {
-            throw new IllegalArgumentException("Unsupported process config type: " + processType);
+    private static void validateProvider(String provider) {
+        if (!"OpenLoadFlow".equals(provider)) {
+            throw new MonitorServerException(UNSUPPORTED_PROVIDER, "The provider must be Open Load Flow");
         }
-
-        return (ProcessConfigValidator<C>) validator;
     }
 }

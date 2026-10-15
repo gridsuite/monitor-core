@@ -11,6 +11,7 @@ import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.mappers.processconfig.ProcessConfigMapper;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.gridsuite.monitor.server.services.processconfig.providers.ProcessConfigProvider;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +40,7 @@ public class ProcessConfigTxService {
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
-        AbstractProcessConfigEntity entity = getProvider(processConfig.processType()).getMapper().toEntity(processConfig);
+        AbstractProcessConfigEntity entity = mapperFor(processConfig.processType()).toEntity(processConfig);
         return processConfigRepository.save(entity).getId();
     }
 
@@ -51,7 +52,7 @@ public class ProcessConfigTxService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return getProvider(processType).getRepository().findAll().stream()
+        return repositoryFor(processType).findAll().stream()
             .map(this::toPersistedProcessConfig)
             .toList();
     }
@@ -70,7 +71,7 @@ public class ProcessConfigTxService {
                 if (entity.getProcessType() != processConfig.processType()) {
                     throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
-                getProvider(processConfig.processType()).getMapper().updateEntityFromDto(processConfig, entity);
+                mapperFor(processConfig.processType()).updateEntityFromDto(processConfig, entity);
                 return processConfigUuid;
             });
     }
@@ -79,7 +80,7 @@ public class ProcessConfigTxService {
     public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
         return processConfigRepository.findById(sourceProcessConfigUuid)
             .map(sourceEntity -> {
-                ProcessConfigMapper<ProcessConfig, AbstractProcessConfigEntity> mapper = getProvider(sourceEntity.getProcessType()).getMapper();
+                ProcessConfigMapper<ProcessConfig, AbstractProcessConfigEntity> mapper = mapperFor(sourceEntity.getProcessType());
                 AbstractProcessConfigEntity entity = mapper.toEntity(mapper.toDto(sourceEntity));
                 return processConfigRepository.save(entity).getId();
             });
@@ -123,7 +124,15 @@ public class ProcessConfigTxService {
     }
 
     private ProcessConfig toProcessConfig(AbstractProcessConfigEntity entity) {
-        return getProvider(entity.getProcessType()).getMapper().toDto(entity);
+        return mapperFor(entity.getProcessType()).toDto(entity);
+    }
+
+    private ProcessConfigMapper<ProcessConfig, AbstractProcessConfigEntity> mapperFor(ProcessType processType) {
+        return getProvider(processType).getMapper();
+    }
+
+    private JpaRepository<AbstractProcessConfigEntity, UUID> repositoryFor(ProcessType processType) {
+        return getProvider(processType).getRepository();
     }
 
     @SuppressWarnings("unchecked")

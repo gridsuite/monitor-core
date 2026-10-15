@@ -4,28 +4,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.gridsuite.monitor.server.services.processconfig.handlers;
+package org.gridsuite.monitor.server.services.processconfig.providers;
 
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
+import org.gridsuite.monitor.server.mappers.processconfig.ProcessConfigMapper;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
  */
-public interface ProcessConfigHandler<C extends ProcessConfig, E extends AbstractProcessConfigEntity> {
+public interface ProcessConfigProvider<C extends ProcessConfig, E extends AbstractProcessConfigEntity> {
 
     ProcessType getProcessType();
 
-    void update(C processConfig, E entity);
+    ProcessConfigMapper<C, E> getMapper();
 
-    E copyEntity(E sourceEntity);
-
-    E toEntity(C processConfig);
-
-    C toDto(E entity);
-
-    List<E> findAll();
+    JpaRepository<E, UUID> getRepository();
 }

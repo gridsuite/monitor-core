@@ -15,7 +15,7 @@ import com.powsybl.loadflow.json.LoadFlowParametersJsonModule;
 import com.powsybl.loadflow.json.LoadFlowResultJsonModule;
 import com.powsybl.security.json.SecurityAnalysisJsonModule;
 import com.powsybl.shortcircuit.json.ShortCircuitAnalysisJsonModule;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

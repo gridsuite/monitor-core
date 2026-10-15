@@ -14,7 +14,7 @@
 
     <properties>
         <liquibase-hibernate-package>org.gridsuite.monitor.server</liquibase-hibernate-package>
-        <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
+        <spring-cloud-aws-starter-s3>4.0.0</spring-cloud-aws-starter-s3>
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok-mapstruct-bindings.version>0.2.0</lombok-mapstruct-bindings.version>
         <aws-sdk.version>2.29.52</aws-sdk.version>
@@ -121,6 +121,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-jackson2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
@@ -188,6 +192,21 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -41,7 +41,7 @@ public class LoadflowRestClient {
     public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
         return restClient.get()
             .uri(uriBuilder -> {
-                uriBuilder.path("/results/{resultUuid}");
+                uriBuilder.path("/results/{resultUuid}/limit-violations");
                 if (queryParams.filters() != null) {
                     uriBuilder.queryParam("filters", queryParams.filters());
                 }

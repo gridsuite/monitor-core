@@ -35,37 +35,34 @@ public class ShortCircuitRestClient {
     }
 
     public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
-        StringBuilder uri = new StringBuilder("/" + SC_API_VERSION + "/results/").append(resultUuid)
-            .append("?type=").append(queryParams.shortCircuitResultType())
-            .append("&paged=true");
-        if (queryParams.page() != null) {
-            uri.append("&page=").append(queryParams.page());
-        }
-        if (queryParams.size() != null) {
-            uri.append("&size=").append(queryParams.size());
-        }
-        queryParams.sort().forEach(sort -> uri.append("&sort=").append(sort));
-        if (queryParams.filters() != null) {
-            uri.append("&filters=").append(URLEncoder.encode(queryParams.filters(), StandardCharsets.UTF_8).replace("+", "%20"));
-        }
         return restClient.get()
-            .uri(URI.create(uri.toString()))
-            .retrieve()
-            .body(String.class);
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        "/results/{resultUuid}",
+                        resultUuid,
+                        queryParams.shortCircuitResultType().name(),
+                        queryParams,
+                        true,
+                        true
+                ))
+                .retrieve()
+                .body(String.class);
     }
 
     public byte[] exportResult(UUID resultUuid, ResultQueryParams queryParams, String csvTranslations) {
-        StringBuilder uri = new StringBuilder("/" + SC_API_VERSION + "/results/").append(resultUuid)
-            .append("/csv?type=").append(queryParams.shortCircuitResultType());
-        queryParams.sort().forEach(sort -> uri.append("&sort=").append(sort));
-        if (queryParams.filters() != null) {
-            uri.append("&filters=").append(URLEncoder.encode(queryParams.filters(), StandardCharsets.UTF_8).replace("+", "%20"));
-        }
         return restClient.post()
-            .uri(URI.create(uri.toString()))
-            .body(csvTranslations)
-            .retrieve()
-            .body(byte[].class);
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        "/results/{resultUuid}/csv",
+                        resultUuid,
+                        queryParams.shortCircuitResultType().name(),
+                        queryParams,
+                        false,
+                        false
+                ))
+                .body(csvTranslations)
+                .retrieve()
+                .body(byte[].class);
     }
 
     public void deleteResult(UUID resultUuid) {

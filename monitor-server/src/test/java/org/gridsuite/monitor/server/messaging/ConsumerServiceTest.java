@@ -36,7 +36,6 @@ import java.util.function.Consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -145,7 +144,7 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(processExecutionService).updateStepStatus(eq(executionId), eq(ProcessType.LOADFLOW), eq(stepUpdate));
+        verify(processExecutionService).updateStepStatus(executionId, ProcessType.LOADFLOW, stepUpdate);
         verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any());
     }
 
@@ -176,7 +175,7 @@ class ConsumerServiceTest {
 
         consumer.accept(message);
 
-        verify(processExecutionService).updateStepsStatuses(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), eq(List.of(stepUpdate1, stepUpdate2)));
+        verify(processExecutionService).updateStepsStatuses(executionId, ProcessType.SECURITY_ANALYSIS, List.of(stepUpdate1, stepUpdate2));
         verify(processExecutionService, never()).updateStepStatus(any(), any(), any());
         verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any());
     }

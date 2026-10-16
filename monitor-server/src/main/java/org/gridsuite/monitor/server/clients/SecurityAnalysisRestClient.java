@@ -61,18 +61,19 @@ public class SecurityAnalysisRestClient {
             case NMK_CUT_OFF_POWER -> "/results/{resultUuid}/nmk-cut-off-power-result/csv";
         };
         return restClient.post()
-            .uri(uriBuilder -> {
-                uriBuilder.path(path);
-                queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
-                if (queryParams.filters() != null) {
-                    uriBuilder.queryParam("filters", queryParams.filters());
-                }
-                return uriBuilder.build(resultUuid);
-            })
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(csvTranslations)
-            .retrieve()
-            .body(byte[].class);
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        path,
+                        resultUuid,
+                        null,
+                        queryParams,
+                        false,
+                        false
+                ))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(csvTranslations)
+                .retrieve()
+                .body(byte[].class);
     }
 
     public String getParameterProvider(UUID parameterUuid) {

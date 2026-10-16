@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.orchestrator;
 import com.powsybl.commons.report.ReportNode;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
@@ -71,14 +72,14 @@ class StepExecutionServiceTest {
 
         verify(processStep).execute(context);
         verify(reportRestClient).sendReportChildren(any(UUID.class), any(ReportNode.class));
-        verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "TEST_STEP".equals(step.getStepType()) &&
                         stepOrder == step.getStepOrder()
         ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
                 step.getStatus() == StepStatus.COMPLETED &&
                         step.getCompletedAt() != null
         ));
@@ -100,15 +101,15 @@ class StepExecutionServiceTest {
 
         verify(processStep).execute(context);
         verify(reportRestClient).sendReportChildren(processReportId, context.getReportNode());
-        verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "TEST_STEP".equals(step.getStepType()) &&
                         step.getStartedAt() != null &&
                         stepOrder == step.getStepOrder()
         ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
                 step.getStatus() == StepStatus.COMPLETED &&
                         step.getCompletedAt() != null
         ));
@@ -132,20 +133,20 @@ class StepExecutionServiceTest {
             () -> stepExecutionService.executeStep(stepWithContext)
         );
         assertEquals("Step execution failed", thrownException.getMessage());
-        verify(notificationService, times(2)).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
+        verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
                 step.getStatus() == StepStatus.RUNNING &&
                         "FAILING_STEP".equals(step.getStepType()) &&
                         step.getStartedAt() != null &&
                         stepOrder == step.getStepOrder()
         ));
-        inOrder.verify(notificationService).updateStepStatus(eq(executionId), argThat(step ->
+        inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
                 step.getStatus() == StepStatus.FAILED &&
                         step.getCompletedAt() != null
         ));
         ArgumentCaptor<ProcessExecutionStep> updates = ArgumentCaptor.forClass(ProcessExecutionStep.class);
-        verify(notificationService, times(2)).updateStepStatus(eq(executionId), updates.capture());
+        verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), updates.capture());
         assertThat(updates.getAllValues().get(1).getStartedAt()).isEqualTo(updates.getAllValues().get(0).getStartedAt());
 
         verifyNoMoreInteractions(notificationService);
@@ -171,6 +172,9 @@ class StepExecutionServiceTest {
         ProcessExecutionContext<ProcessConfig> processContext = mock(ProcessExecutionContext.class);
         when(processContext.getExecutionId()).thenReturn(executionId);
         when(processContext.getReportId()).thenReturn(processReportId);
+        ProcessConfig config = mock(ProcessConfig.class);
+        when(config.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(processContext.getConfig()).thenReturn(config);
         return new ProcessStepExecutionContext<>(processContext, processStepType, stepOrder);
     }
 }

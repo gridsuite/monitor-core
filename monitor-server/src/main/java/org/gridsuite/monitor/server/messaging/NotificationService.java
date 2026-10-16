@@ -25,6 +25,7 @@ import java.util.UUID;
 public class NotificationService {
 
     public static final String PROCESS_EXECUTION_ID = "processExecutionId";
+    public static final String PROCESS_TYPE = "processType";
     public static final String PUBLISH_MONITOR_UPDATE_OUT_0 = "publishMonitorUpdate-out-0";
     public static final String UPDATE_TYPE = "updateType";
     private final StreamBridge publisher;
@@ -43,7 +44,7 @@ public class NotificationService {
         Message<?> message = MessageBuilder.withPayload("")
             .setHeader(UPDATE_TYPE, "PROCESS_EXECUTION_UPDATED")
             .setHeader(PROCESS_EXECUTION_ID, executionId)
-            .setHeader("processType", processType == null ? null : processType.name())
+            .setHeader(PROCESS_TYPE, processType.name())
             .build();
 
         publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);

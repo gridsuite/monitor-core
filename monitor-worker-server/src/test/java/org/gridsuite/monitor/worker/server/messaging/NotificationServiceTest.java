@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.messaging;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +48,7 @@ class NotificationServiceTest {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStatusUpdate payload = new ProcessExecutionStatusUpdate();
 
-        notificationService.updateExecutionStatus(executionId, payload);
+        notificationService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, payload);
 
         verify(streamBridge).send(
                 eq("publishMonitorWorkerUpdate-out-0"),
@@ -55,6 +56,7 @@ class NotificationServiceTest {
                     assertThat(message.getPayload()).isSameAs(payload);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
+                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_PROCESS_TYPE, ProcessType.SECURITY_ANALYSIS.name());
                     return true;
                 })
         );
@@ -65,7 +67,7 @@ class NotificationServiceTest {
         UUID executionId = UUID.randomUUID();
         ProcessExecutionStep payload = new ProcessExecutionStep();
 
-        notificationService.updateStepStatus(executionId, payload);
+        notificationService.updateStepStatus(executionId, ProcessType.LOADFLOW, payload);
 
         verify(streamBridge).send(
                 eq("publishMonitorWorkerUpdate-out-0"),
@@ -73,6 +75,7 @@ class NotificationServiceTest {
                     assertThat(message.getPayload()).isSameAs(payload);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE);
                     assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
+                    assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_PROCESS_TYPE, ProcessType.LOADFLOW.name());
                     return true;
                 })
         );
@@ -80,7 +83,7 @@ class NotificationServiceTest {
 
     @Test
     void updateStepsStatusesShouldNotSendMessageWhenStepsAreEmpty() {
-        notificationService.updateStepsStatuses(UUID.randomUUID(), List.of());
+        notificationService.updateStepsStatuses(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS, List.of());
 
         verifyNoInteractions(streamBridge);
     }
@@ -90,7 +93,7 @@ class NotificationServiceTest {
         UUID executionId = UUID.randomUUID();
         List<ProcessExecutionStep> payload = List.of(new ProcessExecutionStep(), new ProcessExecutionStep());
 
-        notificationService.updateStepsStatuses(executionId, payload);
+        notificationService.updateStepsStatuses(executionId, ProcessType.SHORT_CIRCUIT, payload);
 
         verify(streamBridge).send(
             eq("publishMonitorWorkerUpdate-out-0"),
@@ -98,6 +101,7 @@ class NotificationServiceTest {
                 assertThat(message.getPayload()).isSameAs(payload);
                 assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE);
                 assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_EXECUTION_ID, executionId.toString());
+                assertThat(message.getHeaders()).containsEntry(NotificationService.HEADER_PROCESS_TYPE, ProcessType.SHORT_CIRCUIT.name());
                 return true;
             })
         );

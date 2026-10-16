@@ -94,12 +94,12 @@ class ProcessExecutionServiceTest {
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
 
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
             update.getStatus() == ProcessStatus.RUNNING &&
             update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
             update.getCompletedAt() == null
         ));
-        inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
+        inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(steps ->
                 steps.size() == 3 &&
                         steps.get(0).getStatus() == StepStatus.SCHEDULED &&
                         steps.get(0).getId() != null &&
@@ -114,7 +114,7 @@ class ProcessExecutionServiceTest {
                         steps.get(2).getStepType().equals("STEP_3") &&
                         steps.get(2).getStepOrder() == 2
         ));
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
             update.getStatus() == ProcessStatus.COMPLETED &&
             update.getExecutionEnvName().equals(EXECUTION_ENV_NAME) &&
             update.getCompletedAt() != null
@@ -146,10 +146,10 @@ class ProcessExecutionServiceTest {
         verify(stepExecutor, never()).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
 
         InOrder inOrder = inOrder(notificationService);
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
             update.getStatus() == ProcessStatus.RUNNING
         ));
-        inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
+        inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(steps ->
                 steps.size() == 3 &&
                         steps.get(0).getStatus() == StepStatus.SCHEDULED &&
                         steps.get(0).getStepType().equals("STEP_1") &&
@@ -161,7 +161,7 @@ class ProcessExecutionServiceTest {
                         steps.get(2).getStepType().equals("STEP_3") &&
                         steps.get(2).getStepOrder() == 2
         ));
-        inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), argThat(steps ->
+        inOrder.verify(notificationService).updateStepsStatuses(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(steps ->
                 steps.size() == 2 &&
                         steps.get(0).getStatus() == StepStatus.SKIPPED &&
                         steps.get(0).getStepType().equals("STEP_2") &&
@@ -170,7 +170,7 @@ class ProcessExecutionServiceTest {
                         steps.get(1).getStepType().equals("STEP_3") &&
                         steps.get(1).getStepOrder() == 2
         ));
-        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), argThat(update ->
+        inOrder.verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
             update.getStatus() == ProcessStatus.FAILED &&
             update.getCompletedAt() != null
         ));
@@ -193,8 +193,8 @@ class ProcessExecutionServiceTest {
 
         ArgumentCaptor<List<ProcessExecutionStep>> firstUpdates = ArgumentCaptor.captor();
         ArgumentCaptor<List<ProcessExecutionStep>> secondUpdates = ArgumentCaptor.captor();
-        verify(notificationService).updateStepsStatuses(eq(firstExecutionId), firstUpdates.capture());
-        verify(notificationService).updateStepsStatuses(eq(secondExecutionId), secondUpdates.capture());
+        verify(notificationService).updateStepsStatuses(eq(firstExecutionId), eq(ProcessType.SECURITY_ANALYSIS), firstUpdates.capture());
+        verify(notificationService).updateStepsStatuses(eq(secondExecutionId), eq(ProcessType.SECURITY_ANALYSIS), secondUpdates.capture());
         UUID firstStepId = firstUpdates.getValue().getFirst().getId();
         UUID secondStepId = secondUpdates.getValue().getFirst().getId();
         assertThat(firstStepId).isNotNull().isNotEqualTo(secondStepId);

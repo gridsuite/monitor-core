@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public class ConsumerService {
 
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";
+    public static final String HEADER_PROCESS_TYPE = "processType";
 
     private final ProcessExecutionService processExecutionService;
     private final ObjectMapper objectMapper;
@@ -52,29 +54,31 @@ public class ConsumerService {
             MessageType messageType = MessageType.valueOf(messageTypeStr);
             String executionIdStr = message.getHeaders().get(HEADER_EXECUTION_ID, String.class);
             UUID executionId = UUID.fromString(executionIdStr);
+            String processTypeStr = message.getHeaders().get(HEADER_PROCESS_TYPE, String.class);
+            ProcessType processType = ProcessType.valueOf(processTypeStr);
 
             switch (messageType) {
-                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message);
-                case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, message);
-                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, message);
+                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, processType, message);
+                case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, processType, message);
+                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, processType, message);
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
             }
         };
     }
 
-    private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
+    private void handleExecutionStatusUpdate(UUID executionId, ProcessType processType, Message<String> message) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
-        processExecutionService.updateExecutionStatus(executionId, payload);
+        processExecutionService.updateExecutionStatus(executionId, processType, payload);
     }
 
-    private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
+    private void handleStepStatusUpdate(UUID executionId, ProcessType processType, Message<String> message) {
         ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        processExecutionService.updateStepStatus(executionId, processExecutionStep);
+        processExecutionService.updateStepStatus(executionId, processType, processExecutionStep);
     }
 
-    private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
+    private void handleStepsStatusesUpdate(UUID executionId, ProcessType processType, Message<String> message) {
         List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
-        processExecutionService.updateStepsStatuses(executionId, processExecutionSteps);
+        processExecutionService.updateStepsStatuses(executionId, processType, processExecutionSteps);
     }
 
     private <T> T parsePayload(String payload, Class<T> clazz) {

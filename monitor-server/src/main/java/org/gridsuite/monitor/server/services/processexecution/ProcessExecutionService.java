@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.processexecution;
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
@@ -84,19 +85,19 @@ public class ProcessExecutionService {
         return Optional.of(executionId);
     }
 
-    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
+    public void updateExecutionStatus(UUID executionId, ProcessType processType, ProcessExecutionStatusUpdate payload) {
         processExecutionTxService.updateExecutionStatus(executionId, payload);
-        notificationService.sendProcessUpdatedMessage(executionId, payload.getProcessType());
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
-    public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
+    public void updateStepStatus(UUID executionId, ProcessType processType, ProcessExecutionStep processExecutionStep) {
         processExecutionTxService.updateStepStatus(executionId, processExecutionStep);
-        notificationService.sendProcessUpdatedMessage(executionId, null);
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
-    public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+    public void updateStepsStatuses(UUID executionId, ProcessType processType, List<ProcessExecutionStep> processExecutionSteps) {
         processExecutionTxService.updateStepsStatuses(executionId, processExecutionSteps);
-        notificationService.sendProcessUpdatedMessage(executionId, null);
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
     public ReportPage getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {

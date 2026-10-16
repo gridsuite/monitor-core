@@ -122,8 +122,8 @@ class ProcessExecutionServiceTest {
         Instant completedAt = Instant.now();
         String executionEnvName = "test-env";
 
-        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
-        processExecutionService.updateExecutionStatus(executionId, update);
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecutionStatus(executionId, update);
         verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
@@ -141,10 +141,10 @@ class ProcessExecutionServiceTest {
             .startedAt(Instant.now())
             .build();
 
-        processExecutionService.updateStepStatus(executionId, step);
+        processExecutionService.updateStepStatus(executionId, ProcessType.SECURITY_ANALYSIS, step);
 
         verify(processExecutionTxService).updateStepStatus(executionId, step);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, null);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -164,10 +164,10 @@ class ProcessExecutionServiceTest {
                 .build()
         );
 
-        processExecutionService.updateStepsStatuses(executionId, steps);
+        processExecutionService.updateStepsStatuses(executionId, ProcessType.SECURITY_ANALYSIS, steps);
 
         verify(processExecutionTxService).updateStepsStatuses(executionId, steps);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, null);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test

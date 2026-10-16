@@ -88,7 +88,7 @@ class NotificationServiceTest {
                         message.getPayload().equals("") &&
                             "PROCESS_EXECUTION_UPDATED".equals(message.getHeaders().get(UPDATE_TYPE)) &&
                             executionId.equals(message.getHeaders().get(PROCESS_EXECUTION_ID)) &&
-                            ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get("processType")))
+                            ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get(PROCESS_TYPE)))
         );
     }
 }

@@ -118,7 +118,7 @@ class ProcessExecutionTxServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.RUNNING, null, null, null));
+        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.RUNNING, null, null, null));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
@@ -145,7 +145,7 @@ class ProcessExecutionTxServiceTest {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, envName, startedAt, completedAt));
+        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, envName, startedAt, completedAt));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
@@ -160,7 +160,7 @@ class ProcessExecutionTxServiceTest {
     void updateExecutionStatusShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
+        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());

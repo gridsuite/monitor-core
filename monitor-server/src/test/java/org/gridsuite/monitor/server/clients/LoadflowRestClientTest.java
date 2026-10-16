@@ -50,7 +50,7 @@ class LoadflowRestClientTest {
     void getResult() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://loadflow-server/v1/results/" + RESULT_UUID
+                "http://loadflow-server/v1/results/" + RESULT_UUID + "/limit-violations"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(
                 RESULT_BODY,
@@ -66,7 +66,7 @@ class LoadflowRestClientTest {
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://loadflow-server/v1/results/" + RESULT_UUID
+                "http://loadflow-server/v1/results/" + RESULT_UUID + "/limit-violations"
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 

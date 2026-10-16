@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.services.processconfig;
 
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
@@ -16,13 +17,18 @@ import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfig
 import org.gridsuite.monitor.server.entities.processconfig.LoadFlowConfigEntity;
 import org.gridsuite.monitor.server.entities.processconfig.SecurityAnalysisConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
+import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
+import org.gridsuite.monitor.server.mappers.processconfig.ProcessConfigMapper;
+import org.gridsuite.monitor.server.repositories.processconfig.LoadFlowConfigRepository;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
-import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
+import org.gridsuite.monitor.server.services.processconfig.providers.LoadFlowConfigProvider;
+import org.gridsuite.monitor.server.services.processconfig.providers.ProcessConfigProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.*;
 
@@ -40,7 +46,13 @@ class ProcessConfigServiceTxTest {
     private ProcessConfigRepository processConfigRepository;
 
     @Mock
-    private ProcessConfigHandler<ProcessConfig, AbstractProcessConfigEntity> handler;
+    private ProcessConfigProvider<ProcessConfig, AbstractProcessConfigEntity> provider;
+
+    @Mock
+    private ProcessConfigMapper<ProcessConfig, AbstractProcessConfigEntity> mapper;
+
+    @Mock
+    private JpaRepository<AbstractProcessConfigEntity, UUID> subtypeRepository;
 
     private ProcessConfigTxService processConfigTxService;
 
@@ -52,11 +64,11 @@ class ProcessConfigServiceTxTest {
 
     @BeforeEach
     void setUp() {
-        when(handler.getProcessType()).thenReturn(PROCESS_TYPE);
+        when(provider.getProcessType()).thenReturn(PROCESS_TYPE);
 
         processConfigTxService = new ProcessConfigTxService(
             processConfigRepository,
-            List.of(handler)
+            List.of(provider)
         );
     }
 
@@ -67,14 +79,15 @@ class ProcessConfigServiceTxTest {
         AbstractProcessConfigEntity savedEntity = mock(AbstractProcessConfigEntity.class);
 
         when(processConfig.processType()).thenReturn(PROCESS_TYPE);
-        when(handler.toEntity(processConfig)).thenReturn(processConfigEntity);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toEntity(processConfig)).thenReturn(processConfigEntity);
         when(processConfigRepository.save(processConfigEntity)).thenReturn(savedEntity);
         when(savedEntity.getId()).thenReturn(expectedProcessConfigUuid);
 
         UUID result = processConfigTxService.createProcessConfig(processConfig);
 
         assertThat(result).isEqualTo(expectedProcessConfigUuid);
-        verify(handler).toEntity(processConfig);
+        verify(mapper).toEntity(processConfig);
         verify(processConfigRepository).save(processConfigEntity);
     }
 
@@ -84,7 +97,8 @@ class ProcessConfigServiceTxTest {
 
         when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfigEntity.getId()).thenReturn(processConfigUuid);
 
         Optional<PersistedProcessConfig> result = processConfigTxService.getProcessConfig(processConfigUuid);
@@ -92,7 +106,7 @@ class ProcessConfigServiceTxTest {
         assertThat(result).isPresent();
         assertThat(result.get().processConfig()).isEqualTo(processConfig);
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).toDto(processConfigEntity);
+        verify(mapper).toDto(processConfigEntity);
     }
 
     @Test
@@ -105,24 +119,27 @@ class ProcessConfigServiceTxTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).toDto(any());
+        verifyNoInteractions(mapper);
     }
 
     @Test
     void getProcessConfigs() {
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(handler.findAll()).thenReturn(List.of(processConfigEntity));
+        when(provider.getRepository()).thenReturn(subtypeRepository);
+        when(subtypeRepository.findAll()).thenReturn(List.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfigEntity.getId()).thenReturn(processConfigUuid);
 
         List<PersistedProcessConfig> result = processConfigTxService.getProcessConfigs(PROCESS_TYPE);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().processConfig()).isEqualTo(processConfig);
-        verify(handler).findAll();
-        verify(handler).toDto(processConfigEntity);
+        verify(subtypeRepository).findAll();
+        verify(mapper).toDto(processConfigEntity);
+        verifyNoInteractions(processConfigRepository);
     }
 
     @Test
@@ -154,7 +171,7 @@ class ProcessConfigServiceTxTest {
         when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
         when(processConfig.processType()).thenReturn(PROCESS_TYPE);
-        doNothing().when(handler).update(processConfig, processConfigEntity);
+        when(provider.getMapper()).thenReturn(mapper);
 
         Optional<UUID> result = processConfigTxService.updateProcessConfig(processConfigUuid, processConfig);
 
@@ -162,7 +179,8 @@ class ProcessConfigServiceTxTest {
             .isPresent()
             .contains(processConfigUuid);
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).update(processConfig, processConfigEntity);
+        verify(mapper).updateEntityFromDto(processConfig, processConfigEntity);
+        verify(processConfigRepository, never()).save(any());
     }
 
     @Test
@@ -175,7 +193,7 @@ class ProcessConfigServiceTxTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).update(processConfig, processConfigEntity);
+        verifyNoInteractions(mapper);
     }
 
     @Test
@@ -189,7 +207,7 @@ class ProcessConfigServiceTxTest {
         assertThatThrownBy(() -> processConfigTxService.updateProcessConfig(processConfigUuid, processConfig))
             .isInstanceOf(IllegalArgumentException.class);
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).update(processConfig, processConfigEntity);
+        verifyNoInteractions(mapper);
     }
 
     @Test
@@ -200,7 +218,9 @@ class ProcessConfigServiceTxTest {
 
         when(processConfigRepository.findById(processConfigUuid)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.copyEntity(processConfigEntity)).thenReturn(copiedProcessConfigEntity);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toDto(processConfigEntity)).thenReturn(processConfig);
+        when(mapper.toEntity(processConfig)).thenReturn(copiedProcessConfigEntity);
         when(processConfigRepository.save(copiedProcessConfigEntity)).thenReturn(copiedProcessConfigEntity);
         when(copiedProcessConfigEntity.getId()).thenReturn(copiedProcessConfigUuid);
 
@@ -210,7 +230,8 @@ class ProcessConfigServiceTxTest {
             .isPresent()
             .contains(copiedProcessConfigUuid);
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler).copyEntity(processConfigEntity);
+        verify(mapper).toDto(processConfigEntity);
+        verify(mapper).toEntity(processConfig);
         verify(processConfigRepository).save(copiedProcessConfigEntity);
     }
 
@@ -224,7 +245,7 @@ class ProcessConfigServiceTxTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid);
-        verify(handler, never()).copyEntity(any());
+        verifyNoInteractions(mapper);
     }
 
     @Test
@@ -262,7 +283,8 @@ class ProcessConfigServiceTxTest {
         when(processConfigRepository.findById(processConfigUuid1)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity));
         when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity)).thenReturn(processConfig);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toDto(processConfigEntity)).thenReturn(processConfig);
         when(processConfig.compareWith(processConfig)).thenReturn(List.of(fieldComparison));
 
         Optional<ProcessConfigComparison> result = processConfigTxService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
@@ -272,7 +294,7 @@ class ProcessConfigServiceTxTest {
             .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, true, List.of(fieldComparison)));
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, times(2)).toDto(processConfigEntity);
+        verify(mapper, times(2)).toDto(processConfigEntity);
         verify(processConfig).compareWith(processConfig);
     }
 
@@ -290,8 +312,9 @@ class ProcessConfigServiceTxTest {
         when(processConfigRepository.findById(processConfigUuid2)).thenReturn(Optional.of(processConfigEntity2));
         when(processConfigEntity1.getProcessType()).thenReturn(PROCESS_TYPE);
         when(processConfigEntity2.getProcessType()).thenReturn(PROCESS_TYPE);
-        when(handler.toDto(processConfigEntity1)).thenReturn(processConfig1);
-        when(handler.toDto(processConfigEntity2)).thenReturn(processConfig2);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toDto(processConfigEntity1)).thenReturn(processConfig1);
+        when(mapper.toDto(processConfigEntity2)).thenReturn(processConfig2);
         when(processConfig1.compareWith(processConfig2)).thenReturn(List.of(fieldComparison));
 
         Optional<ProcessConfigComparison> result = processConfigTxService.compareProcessConfigs(processConfigUuid1, processConfigUuid2);
@@ -301,8 +324,8 @@ class ProcessConfigServiceTxTest {
             .contains(new ProcessConfigComparison(processConfigUuid1, processConfigUuid2, false, List.of(fieldComparison)));
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler).toDto(processConfigEntity1);
-        verify(handler).toDto(processConfigEntity2);
+        verify(mapper).toDto(processConfigEntity1);
+        verify(mapper).toDto(processConfigEntity2);
         verify(processConfig1).compareWith(processConfig2);
     }
 
@@ -318,7 +341,7 @@ class ProcessConfigServiceTxTest {
 
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid1);
-        verify(handler, never()).toDto(any());
+        verifyNoInteractions(mapper);
     }
 
     @Test
@@ -337,7 +360,7 @@ class ProcessConfigServiceTxTest {
         assertThat(result).isEmpty();
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).toDto(any());
+        verifyNoInteractions(mapper);
     }
 
     @Test
@@ -360,6 +383,64 @@ class ProcessConfigServiceTxTest {
             });
         verify(processConfigRepository).findById(processConfigUuid1);
         verify(processConfigRepository).findById(processConfigUuid2);
-        verify(handler, never()).toDto(any());
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void duplicateProviderRegistration() {
+        List<ProcessConfigProvider<?, ?>> providers = List.of(provider, provider);
+
+        assertThatThrownBy(() -> new ProcessConfigTxService(processConfigRepository, providers))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Duplicate process config providers")
+            .hasMessageContaining(PROCESS_TYPE.name());
+    }
+
+    @Test
+    void unsupportedProcessType() {
+        assertThatThrownBy(() -> processConfigTxService.getProcessConfigs(ProcessType.LOADFLOW))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Unsupported process config type: " + ProcessType.LOADFLOW);
+        verifyNoInteractions(processConfigRepository, subtypeRepository, mapper);
+    }
+
+    @Test
+    void emptyProcessConfigs() {
+        when(provider.getRepository()).thenReturn(subtypeRepository);
+        when(subtypeRepository.findAll()).thenReturn(List.of());
+
+        assertThat(processConfigTxService.getProcessConfigs(PROCESS_TYPE)).isEmpty();
+
+        verify(subtypeRepository).findAll();
+        verifyNoInteractions(processConfigRepository, mapper);
+    }
+
+    @Test
+    void dispatchToMultipleProviders() {
+        LoadFlowConfigMapper loadFlowMapper = mock(LoadFlowConfigMapper.class);
+        LoadFlowConfigRepository loadFlowRepository = mock(LoadFlowConfigRepository.class);
+        LoadFlowConfigProvider loadFlowProvider = new LoadFlowConfigProvider(loadFlowMapper, loadFlowRepository);
+        LoadFlowConfigEntity loadFlowEntity = new LoadFlowConfigEntity();
+        loadFlowEntity.setId(UUID.randomUUID());
+        LoadFlowConfig loadFlowConfig = new LoadFlowConfig(UUID.randomUUID(), List.of());
+        when(loadFlowRepository.findAll()).thenReturn(List.of(loadFlowEntity));
+        when(loadFlowMapper.toDto(loadFlowEntity)).thenReturn(loadFlowConfig);
+        when(provider.getRepository()).thenReturn(subtypeRepository);
+        when(subtypeRepository.findAll()).thenReturn(List.of(processConfigEntity));
+        when(processConfigEntity.getProcessType()).thenReturn(PROCESS_TYPE);
+        when(provider.getMapper()).thenReturn(mapper);
+        when(mapper.toDto(processConfigEntity)).thenReturn(processConfig);
+        ProcessConfigTxService service = new ProcessConfigTxService(processConfigRepository, List.of(provider, loadFlowProvider));
+
+        assertThat(service.getProcessConfigs(ProcessType.LOADFLOW))
+            .containsExactly(new PersistedProcessConfig(loadFlowEntity.getId(), loadFlowConfig));
+        assertThat(service.getProcessConfigs(PROCESS_TYPE))
+            .extracting(PersistedProcessConfig::processConfig).containsExactly(processConfig);
+
+        verify(loadFlowRepository).findAll();
+        verify(loadFlowMapper).toDto(loadFlowEntity);
+        verify(subtypeRepository).findAll();
+        verify(mapper).toDto(processConfigEntity);
+        verifyNoInteractions(processConfigRepository);
     }
 }

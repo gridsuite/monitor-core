@@ -8,8 +8,10 @@ import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
+import org.gridsuite.monitor.server.mappers.processconfig.ProcessConfigMapper;
 import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
-import org.gridsuite.monitor.server.services.processconfig.handlers.ProcessConfigHandler;
+import org.gridsuite.monitor.server.services.processconfig.providers.ProcessConfigProvider;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,20 +27,20 @@ import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.
 @Service
 public class ProcessConfigTxService {
     private final ProcessConfigRepository processConfigRepository;
-    private final Map<ProcessType, ProcessConfigHandler<?, ?>> processConfigHandlers;
+    private final Map<ProcessType, ProcessConfigProvider<?, ?>> processConfigProviders;
 
-    public ProcessConfigTxService(ProcessConfigRepository processConfigRepository, List<ProcessConfigHandler<?, ?>> listHandlers) {
+    public ProcessConfigTxService(ProcessConfigRepository processConfigRepository, List<ProcessConfigProvider<?, ?>> listProviders) {
         this.processConfigRepository = processConfigRepository;
-        this.processConfigHandlers = listHandlers.stream().collect(Collectors.toMap(
-            ProcessConfigHandler::getProcessType, Function.identity(), (h1, h2) -> {
-                throw new IllegalStateException(String.format("Duplicate process config handlers for process type: %s", h1.getProcessType()));
+        this.processConfigProviders = listProviders.stream().collect(Collectors.toMap(
+            ProcessConfigProvider::getProcessType, Function.identity(), (p1, p2) -> {
+                throw new IllegalStateException(String.format("Duplicate process config providers for process type: %s", p1.getProcessType()));
             }
         ));
     }
 
     @Transactional
     public UUID createProcessConfig(ProcessConfig processConfig) {
-        AbstractProcessConfigEntity entity = getHandler(processConfig.processType()).toEntity(processConfig);
+        AbstractProcessConfigEntity entity = mapperFor(processConfig.processType()).toEntity(processConfig);
         return processConfigRepository.save(entity).getId();
     }
 
@@ -50,7 +52,7 @@ public class ProcessConfigTxService {
 
     @Transactional(readOnly = true)
     public List<PersistedProcessConfig> getProcessConfigs(ProcessType processType) {
-        return getHandler(processType).findAll().stream()
+        return repositoryFor(processType).findAll().stream()
             .map(this::toPersistedProcessConfig)
             .toList();
     }
@@ -69,7 +71,7 @@ public class ProcessConfigTxService {
                 if (entity.getProcessType() != processConfig.processType()) {
                     throw new IllegalArgumentException("Process config type mismatch : " + entity.getProcessType());
                 }
-                getHandler(processConfig.processType()).update(processConfig, entity);
+                mapperFor(processConfig.processType()).updateEntityFromDto(processConfig, entity);
                 return processConfigUuid;
             });
     }
@@ -78,7 +80,8 @@ public class ProcessConfigTxService {
     public Optional<UUID> duplicateProcessConfig(UUID sourceProcessConfigUuid) {
         return processConfigRepository.findById(sourceProcessConfigUuid)
             .map(sourceEntity -> {
-                AbstractProcessConfigEntity entity = getHandler(sourceEntity.getProcessType()).copyEntity(sourceEntity);
+                ProcessConfigMapper<ProcessConfig, AbstractProcessConfigEntity> mapper = mapperFor(sourceEntity.getProcessType());
+                AbstractProcessConfigEntity entity = mapper.toEntity(mapper.toDto(sourceEntity));
                 return processConfigRepository.save(entity).getId();
             });
     }
@@ -121,15 +124,23 @@ public class ProcessConfigTxService {
     }
 
     private ProcessConfig toProcessConfig(AbstractProcessConfigEntity entity) {
-        return getHandler(entity.getProcessType()).toDto(entity);
+        return mapperFor(entity.getProcessType()).toDto(entity);
+    }
+
+    private ProcessConfigMapper<ProcessConfig, AbstractProcessConfigEntity> mapperFor(ProcessType processType) {
+        return getProvider(processType).getMapper();
+    }
+
+    private JpaRepository<AbstractProcessConfigEntity, UUID> repositoryFor(ProcessType processType) {
+        return getProvider(processType).getRepository();
     }
 
     @SuppressWarnings("unchecked")
-    private <C extends ProcessConfig, E extends AbstractProcessConfigEntity> ProcessConfigHandler<C, E> getHandler(ProcessType processType) {
-        ProcessConfigHandler<?, ?> handler = processConfigHandlers.get(processType);
-        if (handler == null) {
+    private <C extends ProcessConfig, E extends AbstractProcessConfigEntity> ProcessConfigProvider<C, E> getProvider(ProcessType processType) {
+        ProcessConfigProvider<?, ?> provider = processConfigProviders.get(processType);
+        if (provider == null) {
             throw new IllegalArgumentException("Unsupported process config type: " + processType);
         }
-        return (ProcessConfigHandler<C, E>) handler;
+        return (ProcessConfigProvider<C, E>) provider;
     }
 }

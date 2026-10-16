@@ -41,20 +41,15 @@ public class SecurityAnalysisRestClient {
             case NMK_CONTINGENCIES -> "/results/{resultUuid}/nmk-contingencies-result/paged";
         };
         return restClient.get()
-            .uri(uriBuilder -> {
-                uriBuilder.path(path);
-                if (queryParams.page() != null) {
-                    uriBuilder.queryParam("page", queryParams.page());
-                }
-                if (queryParams.size() != null) {
-                    uriBuilder.queryParam("size", queryParams.size());
-                }
-                queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
-                if (queryParams.filters() != null) {
-                    uriBuilder.queryParam("filters", queryParams.filters());
-                }
-                return uriBuilder.build(resultUuid);
-            })
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        path,
+                        resultUuid,
+                        null,
+                        queryParams,
+                        false,
+                        true
+                ))
             .retrieve()
             .body(String.class);
     }

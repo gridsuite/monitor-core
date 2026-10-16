@@ -42,11 +42,16 @@ public class LoadflowRestClient {
         return restClient.get()
             .uri(uriBuilder -> {
                 uriBuilder.path("/results/{resultUuid}/limit-violations");
-                if (queryParams.filters() != null) {
-                    uriBuilder.queryParam("filters", queryParams.filters());
-                }
                 queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
-                return uriBuilder.build(resultUuid);
+
+                if (queryParams.filters() == null) {
+                    return uriBuilder.build(resultUuid);
+                }
+                uriBuilder.queryParam("filters", "{filters}");
+                return uriBuilder.build(java.util.Map.of(
+                        "resultUuid", resultUuid,
+                        "filters", queryParams.filters()
+                ));
             })
             .retrieve()
             .body(String.class);

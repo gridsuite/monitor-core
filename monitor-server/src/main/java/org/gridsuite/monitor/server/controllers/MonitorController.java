@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -116,9 +117,9 @@ public class MonitorController {
             @RequestParam(required = false) String resultType,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) List<String> sort,
+            @RequestParam MultiValueMap<String, String> requestParams,
             @RequestParam(required = false) String filters) {
-        ResultQueryParams queryParams = new ResultQueryParams(resultType, page, size, sort, filters);
+        ResultQueryParams queryParams = new ResultQueryParams(resultType, page, size, requestParams.get("sort"), filters);
         Optional<List<String>> results = processExecutionService.getResults(executionId, queryParams);
         return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -136,7 +137,7 @@ public class MonitorController {
     public ResponseEntity<byte[]> exportExecutionResultsCsv(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @RequestParam String resultType,
-            @RequestParam(required = false) List<String> sort,
+            @RequestParam MultiValueMap<String, String> requestParams,
             @RequestParam(required = false) String filters,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                 required = true,
@@ -145,7 +146,7 @@ public class MonitorController {
                     schema = @io.swagger.v3.oas.annotations.media.Schema(type = "object")
                 )
             ) @RequestBody CsvExportRequest csvTranslations) {
-        ResultQueryParams queryParams = new ResultQueryParams(resultType, null, null, sort, filters);
+        ResultQueryParams queryParams = new ResultQueryParams(resultType, null, null, requestParams.get("sort"), filters);
         return processExecutionService.exportResults(executionId, queryParams, new ObjectMapper().valueToTree(csvTranslations).toString())
             .map(bytes -> ResponseEntity.ok().body(bytes))
             .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());

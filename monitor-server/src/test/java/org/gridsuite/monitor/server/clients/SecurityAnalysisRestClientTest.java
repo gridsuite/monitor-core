@@ -64,6 +64,20 @@ class SecurityAnalysisRestClientTest {
     }
 
     @Test
+    void getResultPreservesPagedQueryParameters() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged?page=0&size=25&sort=contingencyId%2CASC&filters=%5B%5D"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
+
+        String result = securityAnalysisRestClient.getResult(RESULT_UUID,
+            new ResultQueryParams("NMK_CONTINGENCIES", 0, 25, java.util.List.of("contingencyId,ASC"), "[]"));
+
+        assertThat(result).isEqualTo(RESULT_BODY);
+    }
+
+    @Test
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(

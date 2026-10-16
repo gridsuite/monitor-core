@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClientException;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,10 +49,25 @@ class ShortCircuitRestClientTest {
     @Test
     void getResultSuccess() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.TEXT_PLAIN));
 
-        String result = shortCircuitRestClient.getResult(RESULT_UUID);
+        String result = shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null));
+
+        assertThat(result).isEqualTo(RESULT_BODY);
+    }
+
+    @Test
+    void getPagedAllBusesResultSuccess() {
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", 1, 25, List.of("faultId,ASC"), "[{\"field\":\"status\"}]");
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://shortcircuit-server/v1/results/" + RESULT_UUID
+                    + "?type=ALL_BUSES&paged=true&page=1&size=25&sort=faultId,ASC&filters=%5B%7B%22field%22%3A%22status%22%7D%5D"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
+
+        String result = shortCircuitRestClient.getResult(RESULT_UUID, queryParams);
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -58,10 +75,10 @@ class ShortCircuitRestClientTest {
     @Test
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID))
+        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null)))
             .isInstanceOf(RestClientException.class);
     }
 

@@ -213,7 +213,7 @@ class MonitorControllerTest {
         UUID executionId = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
-        when(processExecutionService.getResults(executionId))
+        when(processExecutionService.getResults(eq(executionId), any()))
                 .thenReturn(Optional.of(List.of(result1, result2)));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
@@ -223,19 +223,19 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$[0]").value(result1))
                 .andExpect(jsonPath("$[1]").value(result2));
 
-        verify(processExecutionService).getResults(executionId);
+        verify(processExecutionService).getResults(eq(executionId), any());
     }
 
     @Test
     void getExecutionResultsReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.getResults(executionId))
+        when(processExecutionService.getResults(eq(executionId), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).getResults(executionId);
+        verify(processExecutionService).getResults(eq(executionId), any());
     }
 
     @Test

@@ -6,9 +6,13 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
+import org.gridsuite.monitor.server.types.SecurityAnalysisResultType;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
 import java.util.UUID;
 
 /**
@@ -29,11 +33,47 @@ public class SecurityAnalysisRestClient {
             .build();
     }
 
-    public String getResult(UUID resultUuid) {
+    public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
+        SecurityAnalysisResultType resultType = queryParams.securityAnalysisResultType();
+        String path = switch (resultType) {
+            case NMK_LIMIT_VIOLATIONS -> "/results/{resultUuid}/nmk-constraints-result/paged";
+            case NMK_CUT_OFF_POWER -> "/results/{resultUuid}/nmk-cut-off-power-result/paged";
+            case NMK_CONTINGENCIES -> "/results/{resultUuid}/nmk-contingencies-result/paged";
+        };
         return restClient.get()
-            .uri("/results/{resultUuid}/nmk-contingencies-result", resultUuid)
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        path,
+                        resultUuid,
+                        null,
+                        queryParams,
+                        false,
+                        true
+                ))
             .retrieve()
             .body(String.class);
+    }
+
+    public byte[] exportResult(UUID resultUuid, ResultQueryParams queryParams, String csvTranslations) {
+        String path = switch (queryParams.securityAnalysisResultType()) {
+            case NMK_CONTINGENCIES -> "/results/{resultUuid}/nmk-contingencies-result/csv";
+            case NMK_LIMIT_VIOLATIONS -> "/results/{resultUuid}/nmk-constraints-result/csv";
+            case NMK_CUT_OFF_POWER -> "/results/{resultUuid}/nmk-cut-off-power-result/csv";
+        };
+        return restClient.post()
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        path,
+                        resultUuid,
+                        null,
+                        queryParams,
+                        false,
+                        false
+                ))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(csvTranslations)
+                .retrieve()
+                .body(byte[].class);
     }
 
     public String getParameterProvider(UUID parameterUuid) {

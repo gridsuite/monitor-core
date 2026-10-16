@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.result.providers;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.server.services.result.ResultProvider;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.stereotype.Service;
 import java.util.UUID;
 
@@ -29,8 +30,13 @@ public class SecurityAnalysisResultProvider implements ResultProvider {
     }
 
     @Override
-    public String getResult(UUID resultId) {
-        return securityAnalysisRestClient.getResult(resultId);
+    public String getResult(UUID resultId, ResultQueryParams queryParams) {
+        return securityAnalysisRestClient.getResult(resultId, queryParams);
+    }
+
+    @Override
+    public byte[] exportResult(UUID resultId, ResultQueryParams queryParams, String csvTranslations) {
+        return securityAnalysisRestClient.exportResult(resultId, queryParams, csvTranslations);
     }
 
     @Override

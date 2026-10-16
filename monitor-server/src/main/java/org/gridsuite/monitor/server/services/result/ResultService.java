@@ -39,8 +39,12 @@ public class ResultService {
         return provider;
     }
 
-    public String getResult(ResultInfos resultInfos) {
-        return getProvider(resultInfos.resultType()).getResult(resultInfos.resultUUID());
+    public String getResult(ResultInfos resultInfos, ResultQueryParams queryParams) {
+        return getProvider(resultInfos.resultType()).getResult(resultInfos.resultUUID(), queryParams);
+    }
+
+    public byte[] exportResult(ResultInfos resultInfos, ResultQueryParams queryParams, String csvTranslations) {
+        return getProvider(resultInfos.resultType()).exportResult(resultInfos.resultUUID(), queryParams, csvTranslations);
     }
 
     public void deleteResult(ResultInfos resultInfos) {

@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.services.result.providers;
 
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.SecurityAnalysisRestClient;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -36,12 +37,13 @@ class SecurityAnalysisResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(securityAnalysisRestClient.getResult(id)).thenReturn(expected);
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null);
+        when(securityAnalysisRestClient.getResult(id, queryParams)).thenReturn(expected);
 
-        String result = provider.getResult(id);
+        String result = provider.getResult(id, queryParams);
 
         assertThat(result).isEqualTo(expected);
-        verify(securityAnalysisRestClient).getResult(id);
+        verify(securityAnalysisRestClient).getResult(id, queryParams);
         verifyNoMoreInteractions(securityAnalysisRestClient);
     }
 

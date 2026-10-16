@@ -65,7 +65,7 @@ public class StepExecutionService implements StepExecutor {
                 .completedAt(status == StepStatus.COMPLETED || status == StepStatus.FAILED ? Instant.now() : null)
                 .build();
 
-        notificationService.updateStepStatus(context.getProcessExecutionId(), updatedStep);
+        notificationService.updateStepStatus(context.getProcessExecutionId(), context.getConfig().processType(), updatedStep);
     }
 
     private <C extends ProcessConfig> void sendReportSafely(ProcessStepExecutionContext<C> context) {

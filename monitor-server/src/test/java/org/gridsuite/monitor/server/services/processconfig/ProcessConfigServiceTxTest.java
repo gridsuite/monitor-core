@@ -388,7 +388,9 @@ class ProcessConfigServiceTxTest {
 
     @Test
     void duplicateProviderRegistration() {
-        assertThatThrownBy(() -> new ProcessConfigTxService(processConfigRepository, List.of(provider, provider)))
+        List<ProcessConfigProvider<?, ?>> providers = List.of(provider, provider);
+
+        assertThatThrownBy(() -> new ProcessConfigTxService(processConfigRepository, providers))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Duplicate process config providers")
             .hasMessageContaining(PROCESS_TYPE.name());

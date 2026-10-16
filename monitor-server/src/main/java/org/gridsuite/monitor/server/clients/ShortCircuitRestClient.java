@@ -35,7 +35,7 @@ public class ShortCircuitRestClient {
         return restClient.get()
                 .uri(uriBuilder -> ResultUriBuilder.build(
                         uriBuilder,
-                        "/results/{resultUuid}",
+                        "/results/{resultUuid}/fault_results/paged",
                         resultUuid,
                         queryParams.shortCircuitResultType().name(),
                         queryParams,

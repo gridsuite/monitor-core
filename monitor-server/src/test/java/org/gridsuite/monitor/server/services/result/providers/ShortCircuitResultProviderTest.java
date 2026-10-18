@@ -67,4 +67,16 @@ class ShortCircuitResultProviderTest {
         verify(shortCircuitRestClient).deleteResult(id);
         verifyNoMoreInteractions(shortCircuitRestClient);
     }
+
+    @Test
+    void exportResultShouldDelegateQueryToShortCircuitService() {
+        UUID id = UUID.randomUUID();
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", 0, 25, java.util.List.of(), null);
+        when(shortCircuitRestClient.exportResult(id, queryParams, "")).thenReturn("result".getBytes());
+
+        assertThat(provider.exportResult(id, queryParams, "")).isEqualTo("result".getBytes());
+
+        verify(shortCircuitRestClient).exportResult(id, queryParams, "");
+        verifyNoMoreInteractions(shortCircuitRestClient);
+    }
 }

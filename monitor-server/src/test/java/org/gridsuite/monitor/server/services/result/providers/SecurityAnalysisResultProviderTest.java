@@ -58,4 +58,19 @@ class SecurityAnalysisResultProviderTest {
         verify(securityAnalysisRestClient).deleteResult(id);
         verifyNoMoreInteractions(securityAnalysisRestClient);
     }
+
+    @Test
+    void exportResultShouldDelegateToSecurityAnalysisService() {
+        UUID id = UUID.randomUUID();
+        String expected = "result";
+
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null);
+        when(securityAnalysisRestClient.exportResult(id, queryParams, "")).thenReturn(expected.getBytes());
+
+        byte[] result = provider.exportResult(id, queryParams, "");
+
+        assertThat(result).isEqualTo(expected.getBytes());
+        verify(securityAnalysisRestClient).exportResult(id, queryParams, "");
+        verifyNoMoreInteractions(securityAnalysisRestClient);
+    }
 }

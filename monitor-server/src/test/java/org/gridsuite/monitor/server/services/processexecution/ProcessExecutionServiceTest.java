@@ -262,6 +262,23 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void exportResultsShouldReturnResults() {
+        UUID resultId = UUID.randomUUID();
+        byte[] exportResult = "result".getBytes();
+        List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS));
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", 0, 25, List.of(), null);
+        when(resultService.exportResult(resultInfos.getFirst(), queryParams, ""))
+                .thenReturn(exportResult);
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
+
+        Optional<byte[]> results = processExecutionService.exportResults(executionId, queryParams, "");
+
+        assertThat(results).isPresent();
+        assertThat(results.get()).contains(exportResult);
+        verify(processExecutionTxService).getResultInfos(executionId);
+    }
+
+    @Test
     void deleteExecutionShouldDeleteResultsAndReports() {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();

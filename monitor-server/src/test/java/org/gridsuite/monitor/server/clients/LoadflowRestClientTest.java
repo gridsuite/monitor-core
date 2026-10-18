@@ -70,7 +70,8 @@ class LoadflowRestClientTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null)))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null);
+        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }
 

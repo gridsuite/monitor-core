@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,21 @@ class ShortCircuitRestClientTest {
         ResultQueryParams resultQueryParams = new ResultQueryParams("ALL_BUSES", null, null, List.of(), null);
         assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void exportResult() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+                .andExpect(MockRestRequestMatchers.requestTo(
+                        "http://shortcircuit-server/v1/results/" + RESULT_UUID + "/csv?type=ALL_BUSES"
+                ))
+                .andRespond(MockRestResponseCreators.withSuccess(
+                        RESULT_BODY.getBytes(),
+                        MediaType.APPLICATION_OCTET_STREAM
+                ));
+        byte[] result = shortCircuitRestClient.exportResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null), "");
+
+        AssertionsForClassTypes.assertThat(result).isEqualTo(RESULT_BODY.getBytes());
     }
 
     @Test

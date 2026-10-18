@@ -55,8 +55,8 @@ class ResultServiceTest {
         ResultInfos resultInfos = new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS);
 
         ResultService emptyService = new ResultService(List.of());
-
-        assertThatThrownBy(() -> emptyService.getResult(resultInfos, new ResultQueryParams("NMK_CONTINGENCIES", null, null, List.of(), null)))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("NMK_CONTINGENCIES", null, null, List.of(), null);
+        assertThatThrownBy(() -> emptyService.getResult(resultInfos, resultQueryParams))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
     }

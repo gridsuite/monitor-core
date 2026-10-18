@@ -49,7 +49,7 @@ class ShortCircuitRestClientTest {
     @Test
     void getResultSuccess() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "?type=ALL_BUSES&paged=true"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "/fault_results/paged?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.TEXT_PLAIN));
 
         String result = shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null));
@@ -63,7 +63,7 @@ class ShortCircuitRestClientTest {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
                 "http://shortcircuit-server/v1/results/" + RESULT_UUID
-                    + "?type=ALL_BUSES&paged=true&page=1&size=25&sort=faultId,ASC&filters=%5B%7B%22field%22%3A%22status%22%7D%5D"
+                    + "/fault_results/paged?type=ALL_BUSES&paged=true&page=1&size=25&sort=faultId,ASC&filters=%5B%7B%22field%22%3A%22status%22%7D%5D"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
 
@@ -75,10 +75,11 @@ class ShortCircuitRestClientTest {
     @Test
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "?type=ALL_BUSES&paged=true"))
+            .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "/fault_results/paged?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null)))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("ALL_BUSES", null, null, List.of(), null);
+        assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }
 

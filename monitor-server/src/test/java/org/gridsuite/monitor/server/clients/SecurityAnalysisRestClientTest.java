@@ -67,7 +67,7 @@ class SecurityAnalysisRestClientTest {
     void getResultPreservesPagedQueryParameters() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged?page=0&size=25&sort=contingencyId%2CASC&filters=%5B%5D"
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged?page=0&size=25&sort=contingencyId,ASC&filters=%5B%5D"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
 
@@ -85,7 +85,8 @@ class SecurityAnalysisRestClientTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID, new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null)))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null);
+        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }
 

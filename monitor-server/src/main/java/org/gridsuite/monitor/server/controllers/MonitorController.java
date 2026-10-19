@@ -110,17 +110,17 @@ public class MonitorController {
         return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/executions/{executionId}/results")
+    @GetMapping(value = "/executions/{executionId}/results", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get results for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
-    public ResponseEntity<List<String>> getExecutionResults(
+    public ResponseEntity<String> getExecutionResults(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @RequestParam(required = false) String resultType,
             @Parameter(description = "Pagination parameters") Pageable pageable,
             @RequestParam(required = false) String filters) {
         ResultQueryParams queryParams = new ResultQueryParams(resultType, pageable, filters);
-        Optional<List<String>> results = processExecutionService.getResults(executionId, queryParams);
+        Optional<String> results = processExecutionService.getResults(executionId, queryParams);
         return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 

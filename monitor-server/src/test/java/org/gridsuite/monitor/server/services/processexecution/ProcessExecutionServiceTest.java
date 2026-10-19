@@ -242,25 +242,31 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void getResultsShouldReturnResults() {
+    void getResultsShouldReturnOnlyFirstResult() {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
-        String result2 = "{\"result\": \"data2\"}";
         List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS));
         ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
         when(resultService.getResult(resultInfos.get(0), queryParams))
             .thenReturn(result1);
-        when(resultService.getResult(resultInfos.get(1), queryParams))
-            .thenReturn(result2);
         when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
 
-        Optional<List<String>> results = processExecutionService.getResults(executionId, queryParams);
+        Optional<String> results = processExecutionService.getResults(executionId, queryParams);
 
-        assertThat(results).isPresent();
-        assertThat(results.get()).hasSize(2).containsExactly(result1, result2);
+        assertThat(results).contains(result1);
         verify(processExecutionTxService).getResultInfos(executionId);
-        verify(resultService, times(2)).getResult(any(ResultInfos.class), eq(queryParams));
+        verify(resultService).getResult(resultInfos.getFirst(), queryParams);
+        verifyNoMoreInteractions(resultService);
+    }
+
+    @Test
+    void getResultsShouldReturnEmptyWhenExecutionHasNoResults() {
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(List.of()));
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25), null);
+
+        assertThat(processExecutionService.getResults(executionId, queryParams)).isEmpty();
+        verifyNoInteractions(resultService);
     }
 
     @Test

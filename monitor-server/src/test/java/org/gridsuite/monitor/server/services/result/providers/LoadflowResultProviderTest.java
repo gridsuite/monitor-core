@@ -10,6 +10,7 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
 import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -35,7 +36,7 @@ class LoadflowResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        ResultQueryParams queryParams = new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null);
+        ResultQueryParams queryParams = new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null);
         when(loadflowRestClient.getResult(id, queryParams)).thenReturn(expected);
 
         String result = provider.getResult(id, queryParams);

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -57,7 +58,7 @@ class LoadflowRestClientTest {
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null));
+        String result = loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -70,7 +71,7 @@ class LoadflowRestClientTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        ResultQueryParams resultQueryParams = new ResultQueryParams("LOADFLOW", null, null, java.util.List.of(), null);
+        ResultQueryParams resultQueryParams = new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null);
         assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }

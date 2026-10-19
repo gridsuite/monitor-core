@@ -8,23 +8,16 @@ package org.gridsuite.monitor.server.services.result;
 
 import org.gridsuite.monitor.server.types.SecurityAnalysisResultType;
 import org.gridsuite.monitor.server.types.ShortCircuitResultType;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 /**
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
 public record ResultQueryParams(
     String resultType,
-    Integer page,
-    Integer size,
-    List<String> sort,
+    Pageable pageable,
     String filters
 ) {
-    public ResultQueryParams {
-        sort = sort == null ? List.of() : List.copyOf(sort);
-    }
-
     public SecurityAnalysisResultType securityAnalysisResultType() {
         return SecurityAnalysisResultType.valueOf(resultType);
     }

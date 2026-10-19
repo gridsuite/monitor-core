@@ -38,16 +38,19 @@ public final class ResultUriBuilder {
         if (includePaged) {
             uriBuilder.queryParam("paged", true);
         }
-        if (includePageAndSize) {
-            if (queryParams.page() != null) {
-                uriBuilder.queryParam("page", queryParams.page());
-            }
-            if (queryParams.size() != null) {
-                uriBuilder.queryParam("size", queryParams.size());
-            }
+        if (includePageAndSize && queryParams.pageable() != null && queryParams.pageable().isPaged()) {
+            uriBuilder.queryParam("page", queryParams.pageable().getPageNumber());
+            uriBuilder.queryParam("size", queryParams.pageable().getPageSize());
         }
 
-        queryParams.sort().forEach(sort -> uriBuilder.queryParam("sort", sort));
+        if (queryParams.pageable() != null) {
+            String[] sortParams = queryParams.pageable().getSort().stream()
+                    .map(order -> order.getProperty() + "," + order.getDirection().name().toLowerCase())
+                    .toArray(String[]::new);
+            if (sortParams.length > 0) {
+                uriBuilder.queryParam("sort", (Object) sortParams);
+            }
+        }
 
         Map<String, Object> uriVariables = new HashMap<>();
         uriVariables.put("resultUuid", resultUuid);

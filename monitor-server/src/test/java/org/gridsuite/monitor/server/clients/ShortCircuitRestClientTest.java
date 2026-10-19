@@ -12,6 +12,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -20,7 +23,6 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClientException;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,18 +55,18 @@ class ShortCircuitRestClientTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "/fault_results/paged?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.TEXT_PLAIN));
 
-        String result = shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null));
+        String result = shortCircuitRestClient.getResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", Pageable.unpaged(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
 
     @Test
     void getPagedAllBusesResultSuccess() {
-        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", 1, 25, List.of("faultId,ASC"), "[{\"field\":\"status\"}]");
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", PageRequest.of(1, 25, Sort.by(Sort.Direction.ASC, "faultId")), "[{\"field\":\"status\"}]");
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
                 "http://shortcircuit-server/v1/results/" + RESULT_UUID
-                    + "/fault_results/paged?type=ALL_BUSES&paged=true&page=1&size=25&sort=faultId,ASC&filters=%5B%7B%22field%22%3A%22status%22%7D%5D"
+                    + "/fault_results/paged?type=ALL_BUSES&paged=true&page=1&size=25&sort=faultId,asc&filters=%5B%7B%22field%22%3A%22status%22%7D%5D"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
 
@@ -79,7 +81,7 @@ class ShortCircuitRestClientTest {
             .andExpect(MockRestRequestMatchers.requestTo("http://shortcircuit-server/v1/results/" + RESULT_UUID + "/fault_results/paged?type=ALL_BUSES&paged=true"))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        ResultQueryParams resultQueryParams = new ResultQueryParams("ALL_BUSES", null, null, List.of(), null);
+        ResultQueryParams resultQueryParams = new ResultQueryParams("ALL_BUSES", Pageable.unpaged(), null);
         assertThatThrownBy(() -> shortCircuitRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }
@@ -94,7 +96,7 @@ class ShortCircuitRestClientTest {
                         RESULT_BODY.getBytes(),
                         MediaType.APPLICATION_OCTET_STREAM
                 ));
-        byte[] result = shortCircuitRestClient.exportResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", null, null, List.of(), null), "");
+        byte[] result = shortCircuitRestClient.exportResult(RESULT_UUID, new ResultQueryParams("ALL_BUSES", Pageable.unpaged(), null), "");
 
         AssertionsForClassTypes.assertThat(result).isEqualTo(RESULT_BODY.getBytes());
     }

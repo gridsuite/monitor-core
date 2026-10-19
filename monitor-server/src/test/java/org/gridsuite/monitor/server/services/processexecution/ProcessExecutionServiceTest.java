@@ -36,6 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -246,7 +248,7 @@ class ProcessExecutionServiceTest {
         String result1 = "{\"result\": \"data1\"}";
         String result2 = "{\"result\": \"data2\"}";
         List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS));
-        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", 0, 25, List.of(), null);
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
         when(resultService.getResult(resultInfos.get(0), queryParams))
             .thenReturn(result1);
         when(resultService.getResult(resultInfos.get(1), queryParams))
@@ -266,7 +268,7 @@ class ProcessExecutionServiceTest {
         UUID resultId = UUID.randomUUID();
         byte[] exportResult = "result".getBytes();
         List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS));
-        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", 0, 25, List.of(), null);
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
         when(resultService.exportResult(resultInfos.getFirst(), queryParams, ""))
                 .thenReturn(exportResult);
         when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));

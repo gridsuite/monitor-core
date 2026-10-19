@@ -14,6 +14,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -22,7 +25,6 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClientException;
 
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -63,7 +65,7 @@ class SecurityAnalysisRestClientTest {
                 RESULT_BODY,
                 MediaType.APPLICATION_JSON
             ));
-        String result = securityAnalysisRestClient.getResult(RESULT_UUID, new ResultQueryParams(resultType, null, null, java.util.List.of(), null));
+        String result = securityAnalysisRestClient.getResult(RESULT_UUID, new ResultQueryParams(resultType, Pageable.unpaged(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -80,7 +82,7 @@ class SecurityAnalysisRestClientTest {
                         RESULT_BODY.getBytes(),
                         MediaType.APPLICATION_OCTET_STREAM
                 ));
-        byte[] result = securityAnalysisRestClient.exportResult(RESULT_UUID, new ResultQueryParams(resultType, null, null, List.of(), null), "");
+        byte[] result = securityAnalysisRestClient.exportResult(RESULT_UUID, new ResultQueryParams(resultType, Pageable.unpaged(), null), "");
 
         assertThat(result).isEqualTo(RESULT_BODY.getBytes());
     }
@@ -98,12 +100,12 @@ class SecurityAnalysisRestClientTest {
     void getResultPreservesPagedQueryParameters() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged?page=0&size=25&sort=contingencyId,ASC&filters=%5B%5D"
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged?page=0&size=25&sort=contingencyId,asc&filters=%5B%5D"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
 
         String result = securityAnalysisRestClient.getResult(RESULT_UUID,
-            new ResultQueryParams("NMK_CONTINGENCIES", 0, 25, java.util.List.of("contingencyId,ASC"), "[]"));
+            new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.by(Sort.Direction.ASC, "contingencyId")), "[]"));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -116,7 +118,7 @@ class SecurityAnalysisRestClientTest {
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        ResultQueryParams resultQueryParams = new ResultQueryParams("NMK_CONTINGENCIES", null, null, java.util.List.of(), null);
+        ResultQueryParams resultQueryParams = new ResultQueryParams("NMK_CONTINGENCIES", Pageable.unpaged(), null);
         assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }

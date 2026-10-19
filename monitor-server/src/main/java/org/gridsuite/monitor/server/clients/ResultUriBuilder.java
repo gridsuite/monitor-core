@@ -44,12 +44,9 @@ public final class ResultUriBuilder {
         }
 
         if (queryParams.pageable() != null) {
-            String[] sortParams = queryParams.pageable().getSort().stream()
+            queryParams.pageable().getSort().stream()
                     .map(order -> order.getProperty() + "," + order.getDirection().name().toLowerCase())
-                    .toArray(String[]::new);
-            if (sortParams.length > 0) {
-                uriBuilder.queryParam("sort", (Object) sortParams);
-            }
+                    .forEach(sort -> uriBuilder.queryParam("sort", sort));
         }
 
         Map<String, Object> uriVariables = new HashMap<>();

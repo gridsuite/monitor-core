@@ -119,11 +119,11 @@ public class ProcessExecutionService {
                 .map(reportRestClient::getReportSeverities);
     }
 
-    public Optional<List<String>> getResults(UUID executionId, ResultQueryParams queryParams) {
+    public Optional<String> getResults(UUID executionId, ResultQueryParams queryParams) {
         Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
-        return resultInfos.map(results -> results.stream()
-            .map(resultInfo -> resultService.getResult(resultInfo, queryParams))
-            .toList());
+        // Return only the first result until multi-result support is implemented
+        return resultInfos.filter(results -> !results.isEmpty())
+            .map(results -> resultService.getResult(results.getFirst(), queryParams));
     }
 
     public Optional<byte[]> exportResults(UUID executionId, ResultQueryParams queryParams, String csvTranslations) {

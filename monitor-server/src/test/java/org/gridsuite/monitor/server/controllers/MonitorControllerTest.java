@@ -209,19 +209,16 @@ class MonitorControllerTest {
     }
 
     @Test
-    void getExecutionResultsShouldReturnListOfResults() throws Exception {
+    void getExecutionResultsShouldReturnRawJson() throws Exception {
+        String payload = "{\"result\":\"data\"}";
         UUID executionId = UUID.randomUUID();
-        String result1 = "{\"result\": \"data1\"}";
-        String result2 = "{\"result\": \"data2\"}";
         when(processExecutionService.getResults(eq(executionId), any()))
-                .thenReturn(Optional.of(List.of(result1, result2)));
+                .thenReturn(Optional.of(payload));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0]").value(result1))
-                .andExpect(jsonPath("$[1]").value(result2));
+                .andExpect(content().string(payload));
 
         verify(processExecutionService).getResults(eq(executionId), any());
     }

@@ -13,12 +13,15 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.util.UUID;
+import java.util.concurrent.CancellationException;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -31,17 +34,27 @@ public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 
+    private final TaskManager taskManager;
+
     @Override
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
-        initializeStep(context);
+        UUID processExecutionId = context.getProcessExecutionId();
         StepStatus status = StepStatus.COMPLETED;
 
         try {
+            taskManager.checkCancellation(processExecutionId);
+            initializeStep(context);
             stepWithContext.step().execute(context);
+        } catch (CancellationException e) {
+            status = StepStatus.CANCELED;
+            throw new ProcessCancelledException("Execution canceled", e);
+        } catch (ProcessCancelledException e) {
+            status = StepStatus.CANCELED;
+            throw e;
         } catch (Exception e) {
             status = StepStatus.FAILED;
-            throw e;
+            throw new RuntimeException(e);
         } finally {
             sendReportSafely(context);
             updateStepStatus(context, status);
@@ -62,7 +75,7 @@ public class StepExecutionService implements StepExecutor {
                 .resultId(context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null)
                 .resultType(context.getResultInfos() != null ? context.getResultInfos().resultType() : null)
                 .startedAt(context.getStartedAt())
-                .completedAt(status == StepStatus.COMPLETED || status == StepStatus.FAILED ? Instant.now() : null)
+                .completedAt(status == StepStatus.COMPLETED || status == StepStatus.FAILED || status == StepStatus.CANCELED ? Instant.now() : null)
                 .build();
 
         notificationService.updateStepStatus(context.getProcessExecutionId(), context.getConfig().processType(), updatedStep);

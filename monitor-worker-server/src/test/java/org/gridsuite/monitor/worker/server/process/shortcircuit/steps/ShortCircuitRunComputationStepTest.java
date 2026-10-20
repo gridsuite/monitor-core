@@ -18,6 +18,7 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
 import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
@@ -39,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,12 +75,17 @@ class ShortCircuitRunComputationStepTest {
     private FileService fileService;
 
     private ShortCircuitRunComputationStep runComputationStep;
+    private UUID executionId;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, "ShortCircuit-provider");
+        TaskManager taskManager = new TaskManager();
+        executionId = UUID.randomUUID();
+        taskManager.registerExecution(executionId);
+        runComputationStep = new ShortCircuitRunComputationStep(
+                shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, taskManager, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
@@ -111,6 +118,7 @@ class ShortCircuitRunComputationStepTest {
     }
 
     private void testExecute(boolean debug, String failingStage) {
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         Network network = EurostagTutorialExample1Factory.create();
         ShortCircuitParameters commonParameters = new ShortCircuitParameters();
         ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
@@ -153,9 +161,9 @@ class ShortCircuitRunComputationStepTest {
             ShortCircuitAnalysis.Runner runner = mock(ShortCircuitAnalysis.Runner.class);
             shortCircuitAnalysis.when(() -> ShortCircuitAnalysis.find("ShortCircuit-provider")).thenReturn(runner);
             if ("computation".equals(failingStage)) {
-                when(runner.run(eq(network), any(), any(), any(), any(), any())).thenThrow(new RuntimeException("Computation failed"));
+                when(runner.runAsync(eq(network), any(), any(), any(), any(), any())).thenThrow(new RuntimeException("Computation failed"));
             } else {
-                when(runner.run(eq(network), any(), any(), any(), any(), any())).thenReturn(analysisResult);
+                when(runner.runAsync(eq(network), any(), any(), any(), any(), any())).thenReturn(CompletableFuture.completedFuture(analysisResult));
             }
 
             if (failingStage == null) {
@@ -164,7 +172,7 @@ class ShortCircuitRunComputationStepTest {
                 assertThrows(RuntimeException.class, () -> runComputationStep.execute(stepContext));
             }
 
-            verify(runner).run(eq(network), any(), same(commonParameters), any(), any(), any());
+            verify(runner).runAsync(eq(network), any(), same(commonParameters), any(), any(), any());
             if (debug) {
                 Path tempDebugDir = Path.of(commonParameters.getDebugDir());
                 assertFalse(Files.exists(tempDebugDir));

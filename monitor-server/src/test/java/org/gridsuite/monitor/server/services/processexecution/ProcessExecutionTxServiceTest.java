@@ -10,13 +10,13 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdat
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
@@ -68,6 +68,7 @@ class ProcessExecutionTxServiceTest {
     private UUID caseUuid;
     private UUID executionId;
     private UUID reportId;
+    private String debugFileLocation;
     private String userId;
 
     @BeforeEach
@@ -75,6 +76,7 @@ class ProcessExecutionTxServiceTest {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         reportId = UUID.randomUUID();
+        debugFileLocation = "debug/file/location";
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
@@ -85,7 +87,6 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void executeProcessCreateExecution() {
-        String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
@@ -118,7 +119,7 @@ class ProcessExecutionTxServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.RUNNING, null, null, null));
+        processExecutionTxService.updateExecution(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.RUNNING, null, null, null));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
@@ -145,7 +146,7 @@ class ProcessExecutionTxServiceTest {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, envName, startedAt, completedAt));
+        processExecutionTxService.updateExecution(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, envName, startedAt, completedAt));
 
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
@@ -160,10 +161,25 @@ class ProcessExecutionTxServiceTest {
     void updateExecutionStatusShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
+        processExecutionTxService.updateExecution(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateExecutionStatusShouldUpdateStatus() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.SCHEDULED)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELING);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.CANCELING);
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
     }
 
     @Test
@@ -576,6 +592,7 @@ class ProcessExecutionTxServiceTest {
             .id(executionId)
             .reportId(reportId)
             .steps(List.of(step0, step1))
+            .debugFileLocation(debugFileLocation)
             .build();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
@@ -583,7 +600,7 @@ class ProcessExecutionTxServiceTest {
 
         Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.deleteExecution(executionId);
         assertThat(processDeletionInfos.get()).usingRecursiveComparison()
-            .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))));
+            .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)), debugFileLocation));
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).delete(execution);
@@ -602,7 +619,6 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void getExistingDebugInfo() {
-        String debugFileLocation = "debug/file/location";
         ProcessExecutionEntity execution = new ProcessExecutionEntity();
         execution.setDebugFileLocation(debugFileLocation);
 
@@ -638,5 +654,44 @@ class ProcessExecutionTxServiceTest {
         assertThat(result).isEmpty();
 
         verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void getProcessDeletionInfos() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.getProcessDeletionInfos(executionId);
+        assertThat(processDeletionInfos).isPresent();
+        verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void clearResourceReferences() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .reportId(reportId)
+            .debugFileLocation(debugFileLocation)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.clearResourceReferences(executionId);
+
+        assertThat(execution.getReportId()).isNull();
+        assertThat(execution.getDebugFileLocation()).isNull();
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void deleteExecutionSteps() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.deleteExecutionSteps(executionId);
+
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
     }
 }

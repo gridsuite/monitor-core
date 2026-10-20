@@ -15,6 +15,7 @@ import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
@@ -27,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,6 +48,9 @@ class StepExecutionServiceTest {
     private ReportRestClient reportRestClient;
 
     @Mock
+    private TaskManager taskManager;
+
+    @Mock
     private ProcessStep<ProcessConfig> processStep;
 
     @Mock
@@ -55,7 +60,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService(notificationService, reportRestClient);
+        stepExecutionService = new StepExecutionService(notificationService, reportRestClient, taskManager);
     }
 
     @Test
@@ -132,7 +137,7 @@ class StepExecutionServiceTest {
             RuntimeException.class,
             () -> stepExecutionService.executeStep(stepWithContext)
         );
-        assertEquals("Step execution failed", thrownException.getMessage());
+        assertEquals("Step execution failed", thrownException.getCause().getMessage());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
@@ -166,6 +171,54 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         assertThat(context.getStartedAt()).isBetween(before, Instant.now());
+    }
+
+    @Test
+    void executeStepShouldCancelWhenAlreadyCanceledInTaskManager() {
+        UUID executionId = UUID.randomUUID();
+        when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
+        doThrow(new ProcessCancelledException("Execution canceled")).when(taskManager).checkCancellation(executionId);
+
+        StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
+        ProcessCancelledException exception = assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));
+        assertEquals("Execution canceled", exception.getMessage());
+
+        verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
+                step.getStatus() == StepStatus.CANCELED
+        ));
+        verify(processStep, never()).execute(any());
+    }
+
+    @Test
+    void executeStepShouldCancelWhenInterruptedDuringAsyncExecution() {
+        UUID executionId = UUID.randomUUID();
+        when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
+        doThrow(new ProcessCancelledException("Execution interrupted", new InterruptedException("Interrupted")))
+            .when(processStep).execute(context);
+
+        StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
+        assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));
+
+        verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
+                step.getStatus() == StepStatus.CANCELED
+        ));
+    }
+
+    @Test
+    void executeStepShouldCancelWhenCancelledDuringAsyncExecution() {
+        UUID executionId = UUID.randomUUID();
+        when(processStepType.getName()).thenReturn("TEST_STEP");
+        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
+        doThrow(new CancellationException("Cancelled")).when(processStep).execute(context);
+
+        StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
+        assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));
+
+        verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
+                step.getStatus() == StepStatus.CANCELED
+        ));
     }
 
     private ProcessStepExecutionContext<ProcessConfig> createStepExecutionContext(UUID executionId, UUID processReportId, int stepOrder) {

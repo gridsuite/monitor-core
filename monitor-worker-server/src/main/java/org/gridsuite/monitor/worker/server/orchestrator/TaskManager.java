@@ -21,7 +21,7 @@ public class TaskManager {
     private final ConcurrentMap<UUID, Future<?>> tasks = new ConcurrentHashMap<>();
     private final Set<UUID> canceledExecutions = ConcurrentHashMap.newKeySet();
 
-    Future<?> submit(UUID id, Runnable work) {
+    Future<Void> submit(UUID id, Runnable work) {
         FutureTask<Void> future = new FutureTask<>(() -> {
             work.run();
             return null;

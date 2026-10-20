@@ -15,6 +15,7 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.MonitorRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
@@ -227,5 +228,28 @@ class ProcessExecutionServiceTest {
         verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
         verifyNoInteractions(reportRestClient);
         verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void executeProcessShouldSendCancelledStatusWhenProcessCancelledExceptionThrown() {
+        UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
+        ProcessStep<ProcessConfig> step1 = mockStep("STEP_1");
+
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getSteps()).thenReturn(List.of(step1));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
+
+        doThrow(new ProcessCancelledException("Execution canceled"))
+                .when(stepExecutor).executeStep(any());
+
+        assertThrows(ProcessCancelledException.class,
+                () -> processExecutionService.executeProcess(runMessage));
+
+        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
+                update.getStatus() == ProcessStatus.CANCELLED &&
+                        update.getCompletedAt() != null
+        ));
     }
 }

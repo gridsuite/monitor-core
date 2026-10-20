@@ -15,6 +15,7 @@ import org.gridsuite.monitor.worker.server.clients.MonitorRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -84,6 +85,9 @@ public class ProcessExecutionService implements ProcessExecutor {
             List<StepWithContext<T>> steps = initializeSteps(process, context);
             executeSteps(context, steps);
             updateExecutionStatus(context, ProcessStatus.COMPLETED);
+        } catch (ProcessCancelledException e) {
+            updateExecutionStatus(context, ProcessStatus.CANCELLED);
+            throw e;
         } catch (Exception e) {
             updateExecutionStatus(context, ProcessStatus.FAILED);
             throw e;

@@ -38,6 +38,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -98,8 +100,6 @@ class ProcessExecutionServiceTest {
 
     @Test
     void executeProcessCreateExecutionAndSendNotifications() {
-        String debugFileLocation = "debug/file/location";
-
         doReturn(Optional.of(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig)))
             .when(processExecutionTxService).createExecution(eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean());
 
@@ -316,7 +316,6 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getExistingDebugInfo() throws Exception {
-        String debugFileLocation = "debug/file/location";
         byte[] expectedBytes = "zip-content".getBytes();
 
         when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.of(debugFileLocation));
@@ -461,5 +460,98 @@ class ProcessExecutionServiceTest {
         assertThat(result).isEmpty();
 
         verifyNoInteractions(s3RestClient);
+    }
+
+    // --- cancelProcess tests ---
+
+    private ProcessExecution buildExecution(ProcessStatus status) {
+        return ProcessExecution.builder()
+                .id(executionId)
+                .type(ProcessType.SECURITY_ANALYSIS.name())
+                .caseUuid(caseUuid)
+                .processConfigId(UUID.randomUUID())
+                .status(status)
+                .executionEnvName("test-env")
+                .userId(userId)
+                .build();
+    }
+
+    @Test
+    void cancelProcessShouldReturn404WhenExecutionNotFound() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.empty());
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        verifyNoInteractions(notificationService);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+    }
+
+    @Test
+    void cancelProcessShouldCancelImmediatelyWhenScheduled() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.SCHEDULED)));
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.CANCELLED);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService, never()).sendProcessCancelMessage(any());
+    }
+
+    @Test
+    void cancelProcessShouldSendCancelMessageWhenRunning() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.RUNNING)));
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.CANCELLING);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessCancelMessage(executionId);
+    }
+
+    @Test
+    void cancelProcessShouldReturn204WhenAlreadyCancelled() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELLED)));
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void cancelProcessShouldReturn204WhenAlreadyCancelling() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELLING)));
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void cancelProcessShouldReturn409WhenCompleted() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.COMPLETED)));
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void cancelProcessShouldReturn409WhenFailed() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.FAILED)));
+
+        ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verifyNoInteractions(notificationService);
     }
 }

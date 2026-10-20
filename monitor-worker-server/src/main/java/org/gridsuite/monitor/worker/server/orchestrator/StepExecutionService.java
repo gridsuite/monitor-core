@@ -13,6 +13,7 @@ import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 
 /**
@@ -39,18 +41,17 @@ public class StepExecutionService implements StepExecutor {
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
         UUID processExecutionId = context.getProcessExecutionId();
-
-        if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
-            sendReportSafely(context);
-            updateStepStatus(context, StepStatus.CANCELED);
-            throw new RuntimeException("Execution canceled");
-        }
-        initializeStep(context);
         StepStatus status = StepStatus.COMPLETED;
 
         try {
+            if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
+                status = StepStatus.CANCELED;
+                throw new ProcessCancelledException("Execution canceled");
+            }
+            initializeStep(context);
+
             if (stepWithContext.step().isAsync()) {
-                Future<?> future = taskManager.submit(
+                Future<Void> future = taskManager.submit(
                         processExecutionId,
                         () -> stepWithContext.step().execute(context)
                 );
@@ -62,10 +63,15 @@ public class StepExecutionService implements StepExecutor {
             } else {
                 stepWithContext.step().execute(context);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (InterruptedException | CancellationException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             status = StepStatus.CANCELED;
-            throw new RuntimeException("Execution interrupted", e);
+            throw new ProcessCancelledException("Execution canceled", e);
+        } catch (ProcessCancelledException e) {
+            // Already handled status = StepStatus.CANCELED
+            throw e;
         } catch (Exception e) {
             status = StepStatus.FAILED;
             throw new RuntimeException(e);

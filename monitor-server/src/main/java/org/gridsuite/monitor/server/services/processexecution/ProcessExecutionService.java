@@ -209,12 +209,12 @@ public class ProcessExecutionService {
         return switch (execution.status()) {
             case SCHEDULED -> {
                 processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELLED);
-                notificationService.sendProcessUpdatedMessage(executionId, null);
+                notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
                 yield ResponseEntity.ok().build();
             }
             case RUNNING -> {
                 processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELLING);
-                notificationService.sendProcessUpdatedMessage(executionId, null);
+                notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
                 notificationService.sendProcessCancelMessage(executionId);
                 yield ResponseEntity.ok().build();
             }

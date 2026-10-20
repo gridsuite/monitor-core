@@ -6,23 +6,33 @@
  */
 package org.gridsuite.monitor.worker.server.process.shortcircuit.steps;
 
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.commons.report.TypedValue;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.shortcircuit.*;
+import com.powsybl.ws.commons.ZipUtils;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
+import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
+import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,21 +45,26 @@ import java.util.UUID;
 public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCircuitConfig> {
     private final ShortCircuitParametersService shortCircuitParametersService;
     private final ShortCircuitRestClient shortCircuitRestClient;
+    private final S3Service s3Service;
     @Getter
     private final String defaultProvider;
 
+    private static final String DEBUG_FILENAME_PREFIX = "debug";
+
     public ShortCircuitRunComputationStep(
         ShortCircuitParametersService shortCircuitParametersService,
-        ShortCircuitRestClient shortCircuitRestClient,
+        ShortCircuitRestClient shortCircuitRestClient, S3Service s3Service,
         @Value("${shortcircuit-analysis.default-provider}") String defaultProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
+        this.s3Service = s3Service;
         this.defaultProvider = defaultProvider;
     }
 
     @Override
     public void execute(ProcessStepExecutionContext<ShortCircuitConfig> context) {
+        Path debugDir = null;
         Objects.requireNonNull(context.getNetwork());
 
         ReportNode reportNode = context.getReportNode();
@@ -61,6 +76,10 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
             String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
             Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
             ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
+            if (context.getDebugFileLocation() != null) {
+                debugDir = createDebugDir(context.getProcessStepType());
+                commonParameters.setDebugDir(debugDir.toString());
+            }
 
             List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
 
@@ -77,6 +96,9 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
             shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
             context.setResultInfos(resultInfos);
+            if (context.getDebugFileLocation() != null && debugDir != null) {
+                saveDebugFiles(context, debugDir); //TODO: ugly way to handle debugDir
+            }
         } catch (Exception e) {
             reportNode.newReportNode()
                 .withMessageTemplate("monitor.worker.server.shortcircuit.step.error")
@@ -84,6 +106,39 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
                 .withSeverity(TypedValue.ERROR_SEVERITY)
                 .add();
             throw e;
+        }
+    }
+
+    private Path createDebugDir(ProcessStepType processStepType) {
+        Path localDir = LocalComputationManager.getDefault().getLocalDir();
+        try {
+            String debugDirPrefix = buildComputationDirPrefix(processStepType) + "debug_";
+            return Files.createTempDirectory(localDir, debugDirPrefix);
+        } catch (IOException e) {
+            throw new UncheckedIOException(String.format("Error occurred while creating a debug directory inside the local directory %s",
+                localDir.toAbsolutePath()), e);
+        }
+    }
+
+    protected String buildComputationDirPrefix(ProcessStepType processStepType) {
+        return processStepType.getName().replaceAll("\\s+", "_").toLowerCase() + "_";
+    }
+
+    protected void saveDebugFiles(ProcessStepExecutionContext<ShortCircuitConfig> context, Path debugDir) {
+        Path parentDir = debugDir.getParent();
+        Path debugFilePath = parentDir.resolve(debugDir.getFileName().toString());
+        String fileName = debugFilePath.getFileName().toString();
+
+        try {
+            s3Service.compressAndUploadToS3(debugFilePath,
+                S3PathResolver.getProcessStepDebugFilePath(
+                context.getDebugFileLocation(),
+                ProcessType.SHORT_CIRCUIT.name(),
+                context.getStepOrder(),
+                String.join("", DEBUG_FILENAME_PREFIX, ".gz")),
+                fileName);
+        } catch (IOException e) {
+            throw new PowsyblException("An error occurred while saving debug file: " + e.getCause(), e);
         }
     }
 }

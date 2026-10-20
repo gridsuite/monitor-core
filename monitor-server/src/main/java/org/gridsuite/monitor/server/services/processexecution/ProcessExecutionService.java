@@ -124,8 +124,8 @@ public class ProcessExecutionService {
             .map(resultService::getResult)
             .toList());
     }
-
     public Optional<byte[]> getDebugInfos(UUID executionId) {
+
         return processExecutionTxService.getDebugFileLocation(executionId)
             .filter(Objects::nonNull)
             .map(debugFileLocation -> {

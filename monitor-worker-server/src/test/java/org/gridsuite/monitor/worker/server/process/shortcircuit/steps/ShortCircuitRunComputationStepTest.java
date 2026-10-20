@@ -18,6 +18,7 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
+import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,13 +56,16 @@ class ShortCircuitRunComputationStepTest {
     @Mock
     private ShortCircuitConfig config;
 
+    @Mock
+    private S3Service s3Service;
+
     private ShortCircuitRunComputationStep runComputationStep;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, "ShortCircuit-provider");
+        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, s3Service, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);

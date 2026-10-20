@@ -22,6 +22,7 @@ import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.gridsuite.monitor.server.services.result.ResultQueryParams;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -117,7 +118,7 @@ public class MonitorController {
     public ResponseEntity<String> getExecutionResults(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @RequestParam(required = false) String resultType,
-            @Parameter(description = "Pagination parameters") Pageable pageable,
+            @ParameterObject Pageable pageable,
             @RequestParam(required = false) String filters) {
         ResultQueryParams queryParams = new ResultQueryParams(resultType, pageable, filters);
         Optional<String> results = processExecutionService.getResults(executionId, queryParams);
@@ -132,20 +133,14 @@ public class MonitorController {
         @ApiResponse(responseCode = "200", description = "CSV export",
             content = @Content(
                 mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
-                schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "binary"))),
+                schema = @Schema(type = "string", format = "binary"))),
         @ApiResponse(responseCode = "204", description = "No result found")})
     public ResponseEntity<byte[]> exportExecutionResultsCsv(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @RequestParam String resultType,
-            @Parameter(description = "Pagination parameters") Pageable pageable,
+            @ParameterObject Pageable pageable,
             @RequestParam(required = false) String filters,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                required = true,
-                content = @Content(
-                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(type = "object")
-                )
-            ) @RequestBody CsvExportRequest csvTranslations) {
+            @RequestBody CsvExportRequest csvTranslations) {
         ResultQueryParams queryParams = new ResultQueryParams(resultType, pageable, filters);
         return processExecutionService.exportResults(executionId, queryParams, new ObjectMapper().valueToTree(csvTranslations).toString())
             .map(bytes -> ResponseEntity.ok().body(bytes))

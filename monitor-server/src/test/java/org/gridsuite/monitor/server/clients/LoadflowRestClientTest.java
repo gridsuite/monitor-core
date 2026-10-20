@@ -6,10 +6,12 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -49,14 +51,14 @@ class LoadflowRestClientTest {
     void getResult() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://loadflow-server/v1/results/" + RESULT_UUID
+                "http://loadflow-server/v1/results/" + RESULT_UUID + "/limit-violations"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(
                 RESULT_BODY,
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = loadflowRestClient.getResult(RESULT_UUID);
+        String result = loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -65,11 +67,12 @@ class LoadflowRestClientTest {
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://loadflow-server/v1/results/" + RESULT_UUID
+                "http://loadflow-server/v1/results/" + RESULT_UUID + "/limit-violations"
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null);
+        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
     }
 

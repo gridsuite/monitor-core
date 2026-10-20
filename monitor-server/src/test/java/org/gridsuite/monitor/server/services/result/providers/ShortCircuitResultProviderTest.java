@@ -8,7 +8,11 @@ package org.gridsuite.monitor.server.services.result.providers;
 
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ShortCircuitRestClient;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.UUID;
 
@@ -33,12 +37,25 @@ class ShortCircuitResultProviderTest {
         UUID id = UUID.randomUUID();
         String expected = "result";
 
-        when(shortCircuitRestClient.getResult(id)).thenReturn(expected);
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", Pageable.unpaged(), null);
+        when(shortCircuitRestClient.getResult(id, queryParams)).thenReturn(expected);
 
-        String result = provider.getResult(id);
+        String result = provider.getResult(id, queryParams);
 
         assertThat(result).isEqualTo(expected);
-        verify(shortCircuitRestClient).getResult(id);
+        verify(shortCircuitRestClient).getResult(id, queryParams);
+        verifyNoMoreInteractions(shortCircuitRestClient);
+    }
+
+    @Test
+    void getPagedResultShouldDelegateQueryToShortCircuitService() {
+        UUID id = UUID.randomUUID();
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", PageRequest.of(0, 25, Sort.unsorted()), null);
+        when(shortCircuitRestClient.getResult(id, queryParams)).thenReturn("paged-result");
+
+        assertThat(provider.getResult(id, queryParams)).isEqualTo("paged-result");
+
+        verify(shortCircuitRestClient).getResult(id, queryParams);
         verifyNoMoreInteractions(shortCircuitRestClient);
     }
 
@@ -51,6 +68,18 @@ class ShortCircuitResultProviderTest {
         provider.deleteResult(id);
 
         verify(shortCircuitRestClient).deleteResult(id);
+        verifyNoMoreInteractions(shortCircuitRestClient);
+    }
+
+    @Test
+    void exportResultShouldDelegateQueryToShortCircuitService() {
+        UUID id = UUID.randomUUID();
+        ResultQueryParams queryParams = new ResultQueryParams("ALL_BUSES", PageRequest.of(0, 25, Sort.unsorted()), null);
+        when(shortCircuitRestClient.exportResult(id, queryParams, "")).thenReturn("result".getBytes());
+
+        assertThat(provider.exportResult(id, queryParams, "")).isEqualTo("result".getBytes());
+
+        verify(shortCircuitRestClient).exportResult(id, queryParams, "");
         verifyNoMoreInteractions(shortCircuitRestClient);
     }
 }

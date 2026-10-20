@@ -28,6 +28,7 @@ import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -239,24 +242,48 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void getResultsShouldReturnResults() {
+    void getResultsShouldReturnOnlyFirstResult() {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
-        String result2 = "{\"result\": \"data2\"}";
         List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS));
-        when(resultService.getResult(resultInfos.get(0)))
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
+        when(resultService.getResult(resultInfos.get(0), queryParams))
             .thenReturn(result1);
-        when(resultService.getResult(resultInfos.get(1)))
-            .thenReturn(result2);
         when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
 
-        Optional<List<String>> results = processExecutionService.getResults(executionId);
+        Optional<String> results = processExecutionService.getResults(executionId, queryParams);
+
+        assertThat(results).contains(result1);
+        verify(processExecutionTxService).getResultInfos(executionId);
+        verify(resultService).getResult(resultInfos.getFirst(), queryParams);
+        verifyNoMoreInteractions(resultService);
+    }
+
+    @Test
+    void getResultsShouldReturnEmptyWhenExecutionHasNoResults() {
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(List.of()));
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25), null);
+
+        assertThat(processExecutionService.getResults(executionId, queryParams)).isEmpty();
+        verifyNoInteractions(resultService);
+    }
+
+    @Test
+    void exportResultsShouldReturnResults() {
+        UUID resultId = UUID.randomUUID();
+        byte[] exportResult = "result".getBytes();
+        List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS));
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
+        when(resultService.exportResult(resultInfos.getFirst(), queryParams, ""))
+                .thenReturn(exportResult);
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
+
+        Optional<byte[]> results = processExecutionService.exportResults(executionId, queryParams, "");
 
         assertThat(results).isPresent();
-        assertThat(results.get()).hasSize(2).containsExactly(result1, result2);
+        assertThat(results.get()).contains(exportResult);
         verify(processExecutionTxService).getResultInfos(executionId);
-        verify(resultService, times(2)).getResult(any(ResultInfos.class));
     }
 
     @Test

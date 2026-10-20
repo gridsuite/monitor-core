@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -30,16 +31,24 @@ public class LoadflowRestClient {
             .build();
     }
 
-    public String getResult(UUID resultUuid) {
+    public String getParameterProvider(UUID parameterUuid) {
         return restClient.get()
-            .uri("/results/{resultUuid}", resultUuid)
+            .uri("/parameters/{parametersUuid}/provider", parameterUuid)
             .retrieve()
             .body(String.class);
     }
 
-    public String getParameterProvider(UUID parameterUuid) {
+    public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
         return restClient.get()
-            .uri("/parameters/{parametersUuid}/provider", parameterUuid)
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        "/results/{resultUuid}/limit-violations",
+                        resultUuid,
+                        null,
+                        queryParams,
+                        false,
+                        false
+                ))
             .retrieve()
             .body(String.class);
     }

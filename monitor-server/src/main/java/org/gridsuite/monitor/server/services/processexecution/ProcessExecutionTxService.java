@@ -185,7 +185,6 @@ public class ProcessExecutionTxService {
         Optional<ProcessExecutionEntity> opt =
             processExecutionRepository.findById(executionId);
         return opt.map(ProcessDeletionInfos::fromProcessExecutionEntity);
-
     }
 
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {

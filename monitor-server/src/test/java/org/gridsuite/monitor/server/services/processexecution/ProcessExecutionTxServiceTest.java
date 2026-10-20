@@ -640,4 +640,27 @@ class ProcessExecutionTxServiceTest {
 
         verify(executionRepository).findById(executionId);
     }
+
+    @Test
+    void getProcessDeletionInfos() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.getProcessDeletionInfos(executionId);
+        assertThat(processDeletionInfos).isPresent();
+        verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void deleteExecutionSteps() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.deleteExecutionSteps(executionId);
+
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
+    }
 }

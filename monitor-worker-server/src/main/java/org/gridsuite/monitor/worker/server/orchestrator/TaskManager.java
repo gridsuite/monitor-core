@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -52,5 +53,10 @@ public class TaskManager {
 
     public boolean checkIfCanceledAndRemove(UUID id) {
         return canceledExecutions.remove(id);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        executor.shutdownNow();
     }
 }

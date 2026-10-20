@@ -130,6 +130,20 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void updateExecutionStatusOfCanceled() {
+        Instant startedAt = Instant.now().minusSeconds(60);
+        Instant completedAt = Instant.now();
+        String executionEnvName = "test-env";
+
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELLED, executionEnvName, startedAt, completedAt);
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
+
+        verify(processExecutionTxService).updateExecutionStatus(executionId, update);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(processExecutionTxService).deleteExecutionSteps(executionId);
+    }
+
+    @Test
     void updateStepStatusShouldDelegateToTxService() {
         ProcessExecutionStep step = ProcessExecutionStep.builder()
             .id(UUID.randomUUID())

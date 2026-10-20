@@ -102,6 +102,14 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            execution.setStatus(status);
+            processExecutionRepository.save(execution);
+        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+    }
+
+    @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);
@@ -173,6 +181,13 @@ public class ProcessExecutionTxService {
         return Optional.of(infos);
     }
 
+    public Optional<ProcessDeletionInfos> getProcessDeletionInfos(UUID executionId) {
+        Optional<ProcessExecutionEntity> opt =
+            processExecutionRepository.findById(executionId);
+        return opt.map(ProcessDeletionInfos::fromProcessExecutionEntity);
+
+    }
+
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
         List<ProcessExecutionStepEntity> steps = Optional.ofNullable(execution.getSteps()).orElseGet(() -> {
             List<ProcessExecutionStepEntity> newSteps = new ArrayList<>();
@@ -185,5 +200,19 @@ public class ProcessExecutionTxService {
             .ifPresentOrElse(
                 existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
                 () -> steps.add(stepEntity));
+    }
+
+    @Transactional
+    public Optional<UUID> deleteExecutionSteps(UUID executionId) {
+        Optional<ProcessExecutionEntity> executionOpt =
+                processExecutionRepository.findById(executionId);
+
+        if (executionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        ProcessExecutionEntity execution = executionOpt.get();
+        execution.getSteps().clear();
+        processExecutionRepository.save(execution);
+        return Optional.of(executionId);
     }
 }

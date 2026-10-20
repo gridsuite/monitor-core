@@ -46,6 +46,9 @@ class StepExecutionServiceTest {
     private ReportRestClient reportRestClient;
 
     @Mock
+    private TaskManager taskManager;
+
+    @Mock
     private ProcessStep<ProcessConfig> processStep;
 
     @Mock
@@ -55,7 +58,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService(notificationService, reportRestClient);
+        stepExecutionService = new StepExecutionService(notificationService, reportRestClient, taskManager);
     }
 
     @Test
@@ -132,7 +135,7 @@ class StepExecutionServiceTest {
             RuntimeException.class,
             () -> stepExecutionService.executeStep(stepWithContext)
         );
-        assertEquals("Step execution failed", thrownException.getMessage());
+        assertEquals("Step execution failed", thrownException.getCause().getMessage());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);
         inOrder.verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->

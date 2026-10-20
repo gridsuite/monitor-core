@@ -317,18 +317,34 @@ class MonitorControllerTest {
     @Test
     void deleteExecutionReturnsOK() throws Exception {
         UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.of(ProcessStatus.RUNNING));
         when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Optional.of(executionId));
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
 
+        verify(processExecutionService).getExecutionStatus(executionId);
         verify(processExecutionService).deleteExecution(executionId);
+    }
+
+    @Test
+    void deleteExecutionReturnsConflict() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.of(ProcessStatus.COMPLETED));
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+                .andExpect(status().isConflict());
+
+        verify(processExecutionService).getExecutionStatus(executionId);
     }
 
     @Test
     void deleteExecutionReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.empty());
         when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Optional.empty());
 

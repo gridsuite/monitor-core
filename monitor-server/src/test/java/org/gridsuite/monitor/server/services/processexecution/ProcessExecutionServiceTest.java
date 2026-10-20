@@ -41,12 +41,7 @@ import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,6 +79,7 @@ class ProcessExecutionServiceTest {
     private UUID caseUuid;
     private UUID executionId;
     private UUID reportId;
+    private String debugFileLocation;
     private String userId;
 
     @BeforeEach
@@ -91,6 +87,7 @@ class ProcessExecutionServiceTest {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         reportId = UUID.randomUUID();
+        debugFileLocation = "debug/file/location";
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
@@ -291,7 +288,9 @@ class ProcessExecutionServiceTest {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         when(processExecutionTxService.deleteExecution(executionId))
-            .thenReturn(Optional.of(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)))));
+            .thenReturn(Optional.of(new ProcessDeletionInfos(reportId,
+                    List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)),
+                    debugFileLocation)));
 
         doNothing().when(reportRestClient).deleteReport(reportId);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
@@ -346,7 +345,6 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getExistingDebugInfoError() throws Exception {
-        String debugFileLocation = "debug/file/location";
 
         when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.of(debugFileLocation));
 

@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.processexecution;
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
@@ -23,6 +24,8 @@ import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.gridsuite.monitor.server.services.result.ResultService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -89,6 +92,10 @@ public class ProcessExecutionService {
     public void updateExecutionStatus(UUID executionId, ProcessType processType, ProcessExecutionStatusUpdate payload) {
         processExecutionTxService.updateExecutionStatus(executionId, payload);
         notificationService.sendProcessUpdatedMessage(executionId, processType);
+        if (payload.getStatus() == ProcessStatus.CANCELLED) {
+            processExecutionTxService.getProcessDeletionInfos(executionId).ifPresent(this::cleanExecution);
+            processExecutionTxService.deleteExecutionSteps(executionId);
+        }
     }
 
     public void updateStepStatus(UUID executionId, ProcessType processType, ProcessExecutionStep processExecutionStep) {
@@ -157,6 +164,10 @@ public class ProcessExecutionService {
         return processExecutions.stream().map(execution -> execution.withUserIdentity(getFullName(userIdentities, execution.userId()))).toList();
     }
 
+    public Optional<ProcessStatus> getExecutionStatus(UUID executionId) {
+        return processExecutionTxService.getExecution(executionId).map(ProcessExecution::status);
+    }
+
     public Optional<ProcessExecution> getExecution(UUID executionId) {
         Optional<ProcessExecution> processExecution = processExecutionTxService.getExecution(executionId);
         return processExecution.map(execution -> {
@@ -172,12 +183,45 @@ public class ProcessExecutionService {
     public Optional<UUID> deleteExecution(UUID executionId) {
         Optional<ProcessDeletionInfos> executionDeletionData = processExecutionTxService.deleteExecution(executionId);
         if (executionDeletionData.isPresent()) {
-            executionDeletionData.get().resultInfos().forEach(resultService::deleteResult);
-            if (executionDeletionData.get().reportId() != null) {
-                reportRestClient.deleteReport(executionDeletionData.get().reportId());
-            }
+            cleanExecution(executionDeletionData.get());
             return Optional.of(executionId);
         }
         return Optional.empty();
+    }
+
+    private void cleanExecution(ProcessDeletionInfos deletionInfos) {
+        deletionInfos.resultInfos().forEach(resultService::deleteResult);
+        if (deletionInfos.reportId() != null) {
+            reportRestClient.deleteReport(deletionInfos.reportId());
+        }
+        if (deletionInfos.debugLocationFile() != null) {
+            s3RestClient.deleteDirectory(deletionInfos.debugLocationFile());
+        }
+    }
+
+    public ResponseEntity<Void> cancelProcess(UUID executionId) {
+        ProcessExecution execution = processExecutionTxService.getExecution(executionId).orElse(null);
+
+        if (execution == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return switch (execution.status()) {
+            case SCHEDULED -> {
+                processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELLED);
+                notificationService.sendProcessUpdatedMessage(executionId, null);
+                yield ResponseEntity.ok().build();
+            }
+            case RUNNING -> {
+                processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELLING);
+                notificationService.sendProcessUpdatedMessage(executionId, null);
+                notificationService.sendProcessCancelMessage(executionId);
+                yield ResponseEntity.ok().build();
+            }
+            case CANCELLED, CANCELLING -> ResponseEntity.noContent().build();
+            case COMPLETED, FAILED -> ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .build();
+        };
     }
 }

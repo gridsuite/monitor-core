@@ -86,4 +86,21 @@ public class S3RestClient {
 
         return filesS3Keys;
     }
+
+    public void deleteDirectory(String debugFileLocation) {
+        List<String> keys = getFilesKeysInDirectory(debugFileLocation);
+
+        for (int i = 0; i < keys.size(); i += 1000) {
+            List<ObjectIdentifier> objects = keys.subList(i, Math.min(i + 1000, keys.size()))
+                    .stream()
+                    .map(key -> ObjectIdentifier.builder().key(key).build())
+                    .toList();
+
+            s3Client.deleteObjects(DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(delete -> delete.objects(objects))
+                    .build());
+        }
+        s3Client.deleteObject(request -> request.bucket(bucketName).key(debugFileLocation));
+    }
 }

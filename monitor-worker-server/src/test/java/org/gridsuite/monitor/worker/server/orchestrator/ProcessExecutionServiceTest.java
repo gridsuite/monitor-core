@@ -13,6 +13,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.worker.server.clients.MonitorRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
@@ -56,6 +57,9 @@ class ProcessExecutionServiceTest {
     @Mock
     private ReportRestClient reportRestClient;
 
+    @Mock
+    private MonitorRestClient monitorRestClient;
+
     private ProcessExecutionService processExecutionService;
 
     private static final String EXECUTION_ENV_NAME = "test-env";
@@ -63,7 +67,7 @@ class ProcessExecutionServiceTest {
     @BeforeEach
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, EXECUTION_ENV_NAME);
+        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, monitorRestClient, EXECUTION_ENV_NAME);
     }
 
     private static ProcessStep<ProcessConfig> mockStep(String typeName) {
@@ -89,6 +93,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.executeProcess(runMessage);
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
+        verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
@@ -208,6 +213,18 @@ class ProcessExecutionServiceTest {
         assertThatThrownBy(() -> processExecutionService.executeProcess(runMessage))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("No process found for type");
+        verifyNoInteractions(reportRestClient);
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void executeProcessShouldSkipWhenExecutionCanceled() {
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(monitorRestClient.isExecutionCanceled(any(UUID.class))).thenReturn(true);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
+
+        processExecutionService.executeProcess(runMessage);
+        verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
         verifyNoInteractions(reportRestClient);
         verifyNoInteractions(notificationService);
     }

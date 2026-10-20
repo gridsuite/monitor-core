@@ -41,6 +41,11 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
     }
 
     @Override
+    public boolean isAsync() {
+        return true;
+    }
+
+    @Override
     public void execute(ProcessStepExecutionContext<SecurityAnalysisConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 

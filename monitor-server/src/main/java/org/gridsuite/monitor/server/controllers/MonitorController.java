@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.server.dto.processexecution.CsvExportRequest;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
@@ -62,6 +63,17 @@ public class MonitorController {
             @RequestHeader(HEADER_USER_ID) String userId) {
         Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/executions/{executionId}/cancel")
+    @Operation(summary = "Cancel a process")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process execution has been started"),
+                           @ApiResponse(responseCode = "204", description = "Process is already canceled"),
+                           @ApiResponse(responseCode = "404", description = "Process execution was not found"),
+                           @ApiResponse(responseCode = "409", description = "Process execution is completed of failed")})
+    public ResponseEntity<Void> cancelProcess(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return processExecutionService.cancelProcess(executionId);
     }
 
     @GetMapping("/executions/{executionId}/logs")
@@ -194,6 +206,12 @@ public class MonitorController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
+        ProcessStatus status = processExecutionService.getExecutionStatus(executionId).orElse(null);
+        if (status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .build();
+        }
         Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }

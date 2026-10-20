@@ -40,6 +40,11 @@ public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConf
     }
 
     @Override
+    public boolean isAsync() {
+        return true;
+    }
+
+    @Override
     public void execute(ProcessStepExecutionContext<LoadFlowConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 

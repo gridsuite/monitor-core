@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.util.UUID;
+import java.util.concurrent.Future;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -31,17 +33,42 @@ public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 
+    private final TaskManager taskManager;
+
     @Override
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
+        UUID processExecutionId = context.getProcessExecutionId();
+
+        if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
+            sendReportSafely(context);
+            updateStepStatus(context, StepStatus.CANCELED);
+            throw new RuntimeException("Execution canceled");
+        }
         initializeStep(context);
         StepStatus status = StepStatus.COMPLETED;
 
         try {
-            stepWithContext.step().execute(context);
+            if (stepWithContext.step().isAsync()) {
+                Future<?> future = taskManager.submit(
+                        processExecutionId,
+                        () -> stepWithContext.step().execute(context)
+                );
+                try {
+                    future.get();
+                } finally {
+                    taskManager.removeTask(processExecutionId);
+                }
+            } else {
+                stepWithContext.step().execute(context);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            status = StepStatus.CANCELED;
+            throw new RuntimeException("Execution interrupted", e);
         } catch (Exception e) {
             status = StepStatus.FAILED;
-            throw e;
+            throw new RuntimeException(e);
         } finally {
             sendReportSafely(context);
             updateStepStatus(context, status);

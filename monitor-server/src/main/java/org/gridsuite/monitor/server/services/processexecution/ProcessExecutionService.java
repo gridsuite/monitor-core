@@ -128,8 +128,9 @@ public class ProcessExecutionService {
 
     public Optional<byte[]> exportResults(UUID executionId, ResultQueryParams queryParams, String csvTranslations) {
         Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
+        // Return only the first result until multi-result support is implemented
         return resultInfos.filter(results -> !results.isEmpty())
-            .map(results -> resultService.exportResult(results.get(0), queryParams, csvTranslations));
+            .map(results -> resultService.exportResult(results.getFirst(), queryParams, csvTranslations));
     }
 
     public Optional<byte[]> getDebugInfos(UUID executionId) {

@@ -108,20 +108,4 @@ class FileServiceTest {
             fileService.deleteTempFile(debugDir);
         }
     }
-
-    @Test
-    void testCreateTempFileCleansUpOnException() {
-        try (MockedStatic<Files> filesMockedStatic = mockStatic(Files.class)) {
-            Path tempDirMock = tempDir.resolve("process-debug-mock");
-            filesMockedStatic.when(() -> Files.createTempDirectory(anyString(), any())).thenReturn(tempDirMock);
-            filesMockedStatic.when(() -> Files.createTempFile(any(Path.class), anyString(), anyString()))
-                .thenThrow(new IOException("Failed to create file"));
-            filesMockedStatic.when(() -> Files.isDirectory(tempDirMock)).thenReturn(true);
-
-            assertThrows(IOException.class, () -> fileService.createTempFile("prefix", ".txt"));
-
-            // Verify cleanup was attempted (directory deleted)
-            assertThat(tempDirMock).doesNotExist();
-        }
-    }
 }

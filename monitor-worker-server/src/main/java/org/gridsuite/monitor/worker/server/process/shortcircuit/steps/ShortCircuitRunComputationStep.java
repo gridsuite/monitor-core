@@ -18,9 +18,9 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
-import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
+import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
@@ -28,8 +28,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +42,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     private final ShortCircuitParametersService shortCircuitParametersService;
     private final ShortCircuitRestClient shortCircuitRestClient;
     private final S3Service s3Service;
+    private final FileService fileService;
     @Getter
     private final String defaultProvider;
 
@@ -51,12 +50,15 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
 
     public ShortCircuitRunComputationStep(
         ShortCircuitParametersService shortCircuitParametersService,
-        ShortCircuitRestClient shortCircuitRestClient, S3Service s3Service,
+        ShortCircuitRestClient shortCircuitRestClient,
+        S3Service s3Service,
+        FileService fileService,
         @Value("${shortcircuit-analysis.default-provider}") String defaultProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
         this.s3Service = s3Service;
+        this.fileService = fileService;
         this.defaultProvider = defaultProvider;
     }
 
@@ -75,7 +77,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
             Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
             ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
             if (context.getDebugFileLocation() != null) {
-                debugDir = createDebugDir(context.getProcessStepType());
+                debugDir = fileService.createDebugDir(context.getProcessStepType());
                 commonParameters.setDebugDir(debugDir.toString());
             }
 
@@ -106,21 +108,6 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
                 saveDebugFiles(context, debugDir);
             }
         }
-    }
-
-    private Path createDebugDir(ProcessStepType processStepType) {
-        Path localDir = LocalComputationManager.getDefault().getLocalDir();
-        try {
-            String debugDirPrefix = buildComputationDirPrefix(processStepType) + "debug_";
-            return Files.createTempDirectory(localDir, debugDirPrefix);
-        } catch (IOException e) {
-            throw new UncheckedIOException(String.format("Error occurred while creating a debug directory inside the local directory %s",
-                localDir.toAbsolutePath()), e);
-        }
-    }
-
-    protected String buildComputationDirPrefix(ProcessStepType processStepType) {
-        return processStepType.getName().replaceAll("\\s+", "_").toLowerCase() + "_";
     }
 
     protected void saveDebugFiles(ProcessStepExecutionContext<ShortCircuitConfig> context, Path debugDir) {

@@ -1,7 +1,9 @@
 package org.gridsuite.monitor.worker.server.services;
 
+import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.ws.commons.ZipUtils;
 import org.apache.commons.io.FileUtils;
+import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -56,6 +58,21 @@ public class FileService {
 
         ZipUtils.zip(source, compressedFile);
         return compressedFile;
+    }
+
+    public Path createDebugDir(ProcessStepType processStepType) {
+        Path localDir = LocalComputationManager.getDefault().getLocalDir();
+        try {
+            String debugDirPrefix = buildComputationDirPrefix(processStepType) + "debug_";
+            return Files.createTempDirectory(localDir, debugDirPrefix);
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(String.format("Error occurred while creating a debug directory inside the local directory %s",
+                localDir.toAbsolutePath()), e);
+        }
+    }
+
+    private String buildComputationDirPrefix(ProcessStepType processStepType) {
+        return processStepType.getName().replaceAll("\\s+", "_").toLowerCase() + "_";
     }
 
     public void deleteTempFile(Path path) {

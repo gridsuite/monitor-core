@@ -8,9 +8,9 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.worker.server.clients.S3RestClient;
 import org.springframework.stereotype.Service;
-import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -32,12 +32,14 @@ public class S3Service {
     public void compressAndUploadToS3(
         Path source,
         String s3Key,
-        String fileName) throws IOException {
+        String uploadedFileName) throws IOException {
 
-        Path compressedFile = fileService.compress(source);
+        Path compressedFile = Files.isDirectory(source) ?
+            fileService.compressDirectory(source) :
+            fileService.compressFile(source);
 
         try {
-            s3RestClient.uploadFile(compressedFile, s3Key, fileName);
+            s3RestClient.uploadFile(compressedFile, s3Key, uploadedFileName);
         } finally {
             fileService.deleteTempFile(compressedFile);
         }

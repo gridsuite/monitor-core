@@ -11,10 +11,8 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.commons.report.TypedValue;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.shortcircuit.*;
-import com.powsybl.ws.commons.ZipUtils;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
@@ -96,9 +94,6 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
             shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
             context.setResultInfos(resultInfos);
-            if (context.getDebugFileLocation() != null && debugDir != null) {
-                saveDebugFiles(context, debugDir); //TODO: ugly way to handle debugDir
-            }
         } catch (Exception e) {
             reportNode.newReportNode()
                 .withMessageTemplate("monitor.worker.server.shortcircuit.step.error")
@@ -106,6 +101,10 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
                 .withSeverity(TypedValue.ERROR_SEVERITY)
                 .add();
             throw e;
+        } finally {
+            if (debugDir != null) {
+                saveDebugFiles(context, debugDir);
+            }
         }
     }
 
@@ -125,18 +124,17 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     }
 
     protected void saveDebugFiles(ProcessStepExecutionContext<ShortCircuitConfig> context, Path debugDir) {
-        Path parentDir = debugDir.getParent();
-        Path debugFilePath = parentDir.resolve(debugDir.getFileName().toString());
-        String fileName = debugFilePath.getFileName().toString();
+        String s3FileName = DEBUG_FILENAME_PREFIX + ".zip";
+        Path debugParentDir = debugDir.getParent();
+        Path debugDirPath = debugParentDir.resolve(debugDir.getFileName().toString());
+        String s3Key = S3PathResolver.getProcessStepDebugFilePath(
+            context.getDebugFileLocation(),
+            context.getProcessStepType().getName(),
+            context.getStepOrder(),
+            s3FileName);
 
         try {
-            s3Service.compressAndUploadToS3(debugFilePath,
-                S3PathResolver.getProcessStepDebugFilePath(
-                context.getDebugFileLocation(),
-                ProcessType.SHORT_CIRCUIT.name(),
-                context.getStepOrder(),
-                String.join("", DEBUG_FILENAME_PREFIX, ".gz")),
-                fileName);
+            s3Service.compressAndUploadToS3(debugDirPath, s3Key, s3FileName);
         } catch (IOException e) {
             throw new PowsyblException("An error occurred while saving debug file: " + e.getCause(), e);
         }

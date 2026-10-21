@@ -48,7 +48,8 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     private static final String DEBUG_FILENAME_SUFFIX = ".xiidm";
 
     public ApplyModificationsStep(NetworkModificationService networkModificationService,
-                                  NetworkModificationRestClient networkModificationRestClient, FileService fileService,
+                                  NetworkModificationRestClient networkModificationRestClient,
+                                  FileService fileService,
                                   S3Service s3Service,
                                   FilterService filterService) {
         super(CommonStepType.APPLY_MODIFICATIONS);
@@ -75,24 +76,21 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     }
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
-        String fileName = DEBUG_FILENAME_PREFIX + ".gz";
+        String networkFileName = DEBUG_FILENAME_PREFIX + DEBUG_FILENAME_SUFFIX;
+        String s3FileName = networkFileName + ".gz";
+        String s3Key = S3PathResolver.getProcessStepDebugFilePath(
+            context.getDebugFileLocation(),
+            context.getProcessStepType().getName(),
+            context.getStepOrder(),
+            s3FileName);
 
-        Path debugFile = fileService.createTempFile(
-            DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX);
+        Path tempNetworkFile = fileService.createTempFile(DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX);
 
         try {
-            context.getNetwork().write("XIIDM", null, debugFile);
-
-            s3Service.compressAndUploadToS3(
-                debugFile,
-                S3PathResolver.getProcessStepDebugFilePath(
-                    context.getDebugFileLocation(),
-                    context.getProcessStepType().getName(),
-                    context.getStepOrder(),
-                    DEBUG_FILENAME_PREFIX),
-                fileName);
+            context.getNetwork().write("XIIDM", null, tempNetworkFile);
+            s3Service.compressAndUploadToS3(tempNetworkFile, s3Key, networkFileName);
         } finally {
-            fileService.deleteTempFile(debugFile);
+            fileService.deleteTempFile(tempNetworkFile);
         }
     }
 

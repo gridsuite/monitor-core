@@ -35,22 +35,13 @@ public class FileService {
         }
     }
 
-    public Path compress(Path source) throws IOException {
-        boolean isDirectory = Files.isDirectory(source);
-
-        Path compressedFile = createTempFile(
-            source.getFileName().toString(),
-            isDirectory ? ".zip" : ".gz");
+    public Path compressFile(Path source) throws IOException {
+        Path compressedFile = createTempFile(source.getFileName().toString(), ".gz");
 
         try {
-            if (isDirectory) {
-                ZipUtils.zip(source, compressedFile);
-            } else {
-                try (InputStream in = Files.newInputStream(source);
-                     OutputStream out = new GZIPOutputStream(
-                         Files.newOutputStream(compressedFile))) {
-                    in.transferTo(out);
-                }
+            try (InputStream in = Files.newInputStream(source);
+                 OutputStream out = new GZIPOutputStream(Files.newOutputStream(compressedFile))) {
+                in.transferTo(out);
             }
 
             return compressedFile;
@@ -58,6 +49,13 @@ public class FileService {
             deleteTempFile(compressedFile);
             throw e;
         }
+    }
+
+    public Path compressDirectory(Path source) throws IOException {
+        Path compressedFile = createTempFile(source.getFileName().toString(), ".zip");
+
+        ZipUtils.zip(source, compressedFile);
+        return compressedFile;
     }
 
     public void deleteTempFile(Path path) {

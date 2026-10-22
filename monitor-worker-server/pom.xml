@@ -172,6 +172,12 @@
             <artifactId>spring-cloud-stream-binder-rabbit</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- FIXME: remove this dependency when injected JARs include their required transitive dependencies -->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

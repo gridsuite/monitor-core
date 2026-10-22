@@ -18,6 +18,9 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
+import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
+import org.gridsuite.monitor.worker.server.services.FileService;
+import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,8 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,13 +60,19 @@ class ShortCircuitRunComputationStepTest {
     @Mock
     private ShortCircuitConfig config;
 
+    @Mock
+    private S3Service s3Service;
+
+    @Mock
+    private FileService fileService;
+
     private ShortCircuitRunComputationStep runComputationStep;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, "ShortCircuit-provider");
+        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
@@ -75,6 +86,15 @@ class ShortCircuitRunComputationStepTest {
 
     @Test
     void executeSuccess() {
+        testExecute(false);
+    }
+
+    @Test
+    void executeSuccessDebugOn() {
+        testExecute(true);
+    }
+
+    private void testExecute(boolean debug) {
         Network network = EurostagTutorialExample1Factory.create();
         ShortCircuitParameters commonParameters = new ShortCircuitParameters();
         ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
@@ -92,6 +112,15 @@ class ShortCircuitRunComputationStepTest {
             .thenReturn(List.of(mock(Fault.class)));
         doNothing().when(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
 
+        String debugFileLocation = "debug/file/location";
+        Path tempDebugDir = Path.of("/tmp/debug_123/itesla_courcirc_3");
+        if (debug) {
+            when(stepContext.getDebugFileLocation()).thenReturn(debugFileLocation);
+            when(stepContext.getProcessStepType()).thenReturn(ShortCircuitStepType.RUN_SC_COMPUTATION);
+            when(stepContext.getStepOrder()).thenReturn(3);
+            when(fileService.createDebugDir(ShortCircuitStepType.RUN_SC_COMPUTATION)).thenReturn(tempDebugDir);
+        }
+
         ShortCircuitAnalysisResult analysisResult = mock(ShortCircuitAnalysisResult.class);
         try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class)) {
             ShortCircuitAnalysis.Runner runner = mock(ShortCircuitAnalysis.Runner.class);
@@ -101,6 +130,18 @@ class ShortCircuitRunComputationStepTest {
             runComputationStep.execute(stepContext);
 
             verify(runner).run(eq(network), any(), same(commonParameters), any(), any(), any());
+            if (debug) {
+                assertEquals("/tmp/debug_123/itesla_courcirc_3", commonParameters.getDebugDir());
+                try {
+                    verify(s3Service).compressAndUploadToS3(
+                        tempDebugDir,
+                        debugFileLocation + "/RUN_SC_COMPUTATION_3/debug.zip",
+                        "debug.zip"
+                    );
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
 
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);

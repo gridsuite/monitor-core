@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.process.shortcircuit.steps;
 
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.commons.report.TypedValue;
 import com.powsybl.computation.local.LocalComputationManager;
@@ -19,10 +20,15 @@ import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionCont
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
+import org.gridsuite.monitor.worker.server.services.FileService;
+import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
+import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,21 +41,30 @@ import java.util.UUID;
 public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCircuitConfig> {
     private final ShortCircuitParametersService shortCircuitParametersService;
     private final ShortCircuitRestClient shortCircuitRestClient;
+    private final S3Service s3Service;
+    private final FileService fileService;
     @Getter
     private final String defaultProvider;
+
+    private static final String DEBUG_FILENAME_PREFIX = "debug";
 
     public ShortCircuitRunComputationStep(
         ShortCircuitParametersService shortCircuitParametersService,
         ShortCircuitRestClient shortCircuitRestClient,
+        S3Service s3Service,
+        FileService fileService,
         @Value("${shortcircuit-analysis.default-provider}") String defaultProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
+        this.s3Service = s3Service;
+        this.fileService = fileService;
         this.defaultProvider = defaultProvider;
     }
 
     @Override
     public void execute(ProcessStepExecutionContext<ShortCircuitConfig> context) {
+        Path debugDir = null;
         Objects.requireNonNull(context.getNetwork());
 
         ReportNode reportNode = context.getReportNode();
@@ -61,6 +76,10 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
             String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
             Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
             ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
+            if (context.getDebugFileLocation() != null) {
+                debugDir = fileService.createDebugDir(context.getProcessStepType());
+                commonParameters.setDebugDir(debugDir.toString());
+            }
 
             List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
 
@@ -84,6 +103,27 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
                 .withSeverity(TypedValue.ERROR_SEVERITY)
                 .add();
             throw e;
+        } finally {
+            if (debugDir != null) {
+                saveDebugFiles(context, debugDir);
+            }
+        }
+    }
+
+    protected void saveDebugFiles(ProcessStepExecutionContext<ShortCircuitConfig> context, Path debugDir) {
+        String s3FileName = DEBUG_FILENAME_PREFIX + ".zip";
+        Path debugParentDir = debugDir.getParent();
+        Path debugDirPath = debugParentDir.resolve(debugDir.getFileName().toString());
+        String s3Key = S3PathResolver.getProcessStepDebugFilePath(
+            context.getDebugFileLocation(),
+            context.getProcessStepType().getName(),
+            context.getStepOrder(),
+            s3FileName);
+
+        try {
+            s3Service.compressAndUploadToS3(debugDirPath, s3Key, s3FileName);
+        } catch (IOException e) {
+            throw new PowsyblException("An error occurred while saving debug file: " + e.getCause(), e);
         }
     }
 }

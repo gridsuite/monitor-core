@@ -17,12 +17,14 @@ import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
+import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,6 +40,7 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     private final NetworkModificationService networkModificationService;
     private final NetworkModificationRestClient networkModificationRestClient;
+    private final FileService fileService;
     private final S3Service s3Service;
     private final FilterService filterService;
 
@@ -46,11 +49,13 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
 
     public ApplyModificationsStep(NetworkModificationService networkModificationService,
                                   NetworkModificationRestClient networkModificationRestClient,
+                                  FileService fileService,
                                   S3Service s3Service,
                                   FilterService filterService) {
         super(CommonStepType.APPLY_MODIFICATIONS);
         this.networkModificationService = networkModificationService;
         this.networkModificationRestClient = networkModificationRestClient;
+        this.fileService = fileService;
         this.s3Service = s3Service;
         this.filterService = filterService;
     }
@@ -71,16 +76,22 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     }
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
-        s3Service.exportCompressedToS3(
-            S3PathResolver.getProcessStepDebugFilePath(
-                context.getDebugFileLocation(),
-                context.getProcessStepType().getName(),
-                context.getStepOrder(),
-                String.join("", DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX, ".gz")),
-            DEBUG_FILENAME_PREFIX,
-            DEBUG_FILENAME_SUFFIX,
-            networkFile -> context.getNetwork().write("XIIDM", null, networkFile)
-        );
+        String networkFileName = DEBUG_FILENAME_PREFIX + DEBUG_FILENAME_SUFFIX;
+        String s3FileName = networkFileName + ".gz";
+        String s3Key = S3PathResolver.getProcessStepDebugFilePath(
+            context.getDebugFileLocation(),
+            context.getProcessStepType().getName(),
+            context.getStepOrder(),
+            s3FileName);
+
+        Path tempNetworkFile = fileService.createTempFile(DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX);
+
+        try {
+            context.getNetwork().write("XIIDM", null, tempNetworkFile);
+            s3Service.compressAndUploadToS3(tempNetworkFile, s3Key, networkFileName);
+        } finally {
+            fileService.deleteTempFile(tempNetworkFile);
+        }
     }
 
     private void applyModifications(List<ModificationInfo> modifications, Network network, ReportNode reportNode) {

@@ -20,16 +20,15 @@ import org.gridsuite.monitor.worker.server.clients.NetworkModificationRestClient
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.networkmodifications.NetworkModificationsWithMissingInfo;
 import org.gridsuite.monitor.worker.server.report.MonitorWorkerServerReportResourceBundle;
+import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.FilterService;
 import org.gridsuite.monitor.worker.server.services.NetworkModificationService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -41,7 +40,6 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -55,6 +53,9 @@ class ApplyModificationsStepTest {
 
     @Mock
     private NetworkModificationRestClient networkModificationRestClient;
+
+    @Mock
+    private FileService fileService;
 
     @Mock
     private FilterService filterService;
@@ -79,7 +80,7 @@ class ApplyModificationsStepTest {
 
     @BeforeEach
     void setUp() {
-        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, s3Service, filterService);
+        applyModificationsStep = new ApplyModificationsStep<>(networkModificationService, networkModificationRestClient, fileService, s3Service, filterService);
         when(config.modifications()).thenReturn(List.of(new ModificationInfo(MODIFICATION_UUID, "descr", true)));
         when(stepContext.getConfig()).thenReturn(config);
         reportNode = ReportNode.newRootReportNode()
@@ -213,6 +214,8 @@ class ApplyModificationsStepTest {
         when(stepContext.getDebugFileLocation()).thenReturn(debugFileLocation);
         when(stepContext.getProcessStepType()).thenReturn(CommonStepType.APPLY_MODIFICATIONS);
         when(stepContext.getStepOrder()).thenReturn(7);
+        Path tempNetworkFile = mock(Path.class);
+        when(fileService.createTempFile("debug", ".xiidm")).thenReturn(tempNetworkFile);
 
         // -- execute method
         applyModificationsStep.execute(stepContext);
@@ -221,21 +224,12 @@ class ApplyModificationsStepTest {
         verify(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
         // --- verify debug behaviour ---
-        ArgumentCaptor<ThrowingConsumer<Path>> networkWriterCapture = ArgumentCaptor.forClass(ThrowingConsumer.class);
-
-        verify(s3Service).exportCompressedToS3(
-            eq(debugFileLocation + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz"),
-            eq("debug"),
-            eq(".xiidm"), // very important - file suffix is very important when using network.write(...)
-            networkWriterCapture.capture()
+        verify(network).write("XIIDM", null, tempNetworkFile);
+        verify(s3Service).compressAndUploadToS3(
+            tempNetworkFile,
+            debugFileLocation + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz",
+            "debug.xiidm"
         );
-
-        // --- assert networkWriterCapture.get() is actually calling network.write() ---
-        Path mockedPath = mock(Path.class);
-        ThrowingConsumer<Path> networkWriter = networkWriterCapture.getValue();
-
-        networkWriter.accept(mockedPath);
-
-        verify(network).write("XIIDM", null, mockedPath);
+        verify(fileService).deleteTempFile(tempNetworkFile);
     }
 }

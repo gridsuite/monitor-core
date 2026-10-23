@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.services;
 
 import org.gridsuite.monitor.worker.server.clients.S3RestClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,11 +23,18 @@ public class S3Service {
     private final S3RestClient s3RestClient;
     private final FileService fileService;
 
-    public S3Service(
+    S3Service(
         S3RestClient s3RestClient,
         FileService fileService) {
         this.s3RestClient = s3RestClient;
         this.fileService = fileService;
+    }
+
+    public void exportCompressedToS3(String s3Key, String fileNamePrefix, String fileNameSuffix, ThrowingConsumer<Path> writer) throws IOException {
+        fileService.withTempFile(fileNamePrefix, fileNameSuffix, tempFile -> {
+            writer.accept(tempFile);
+            compressAndUploadToS3(tempFile, s3Key, fileNamePrefix + fileNameSuffix + ".gz");
+        });
     }
 
     public void compressAndUploadToS3(
@@ -34,14 +42,14 @@ public class S3Service {
         String s3Key,
         String uploadedFileName) throws IOException {
 
-        Path compressedFile = Files.isDirectory(source) ?
-            fileService.compressDirectory(source) :
-            fileService.compressFile(source);
-
-        try {
+        boolean directory = Files.isDirectory(source);
+        fileService.withTempFile(source.getFileName().toString(), directory ? ".zip" : ".gz", compressedFile -> {
+            if (directory) {
+                fileService.compressDirectory(source, compressedFile);
+            } else {
+                fileService.compressFile(source, compressedFile);
+            }
             s3RestClient.uploadFile(compressedFile, s3Key, uploadedFileName);
-        } finally {
-            fileService.deleteTempFile(compressedFile);
-        }
+        });
     }
 }

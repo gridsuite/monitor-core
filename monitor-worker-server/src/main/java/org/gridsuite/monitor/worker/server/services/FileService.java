@@ -3,6 +3,7 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.ws.commons.ZipUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.function.IOConsumer;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 
 @Service
@@ -24,43 +26,39 @@ public class FileService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileService.class);
 
-    public Path createTempFile(String prefix, String suffix) throws IOException {
+    public void withTempFile(String prefix, String suffix, IOConsumer<Path> action) throws IOException {
         FileAttribute<Set<PosixFilePermission>> attrs = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
 
         Path tempDir = Files.createTempDirectory("process-debug", attrs);
 
         try {
-            return Files.createTempFile(tempDir, prefix, suffix);
-        } catch (IOException e) {
-            deleteTempFile(tempDir);
-            throw e;
+            action.accept(Files.createTempFile(tempDir, prefix, suffix));
+        } finally {
+            deleteTempDirectory(tempDir);
         }
     }
 
-    public Path compressFile(Path source) throws IOException {
-        Path compressedFile = createTempFile(source.getFileName().toString(), ".gz");
+    void compressFile(Path source, Path destination) throws IOException {
+        try (InputStream in = Files.newInputStream(source);
+             OutputStream out = new GZIPOutputStream(Files.newOutputStream(destination))) {
+            in.transferTo(out);
+        }
+    }
 
+    void compressDirectory(Path source, Path destination) throws IOException {
+        ZipUtils.zip(source, destination);
+    }
+
+    public void withDebugDir(ProcessStepType processStepType, Consumer<Path> action) {
+        Path debugDir = createDebugDir(processStepType);
         try {
-            try (InputStream in = Files.newInputStream(source);
-                 OutputStream out = new GZIPOutputStream(Files.newOutputStream(compressedFile))) {
-                in.transferTo(out);
-            }
-
-            return compressedFile;
-        } catch (IOException e) {
-            deleteTempFile(compressedFile);
-            throw e;
+            action.accept(debugDir);
+        } finally {
+            deleteTempDirectory(debugDir);
         }
     }
 
-    public Path compressDirectory(Path source) throws IOException {
-        Path compressedFile = createTempFile(source.getFileName().toString(), ".zip");
-
-        ZipUtils.zip(source, compressedFile);
-        return compressedFile;
-    }
-
-    public Path createDebugDir(ProcessStepType processStepType) {
+    private Path createDebugDir(ProcessStepType processStepType) {
         Path localDir = LocalComputationManager.getDefault().getLocalDir();
         try {
             String debugDirPrefix = buildComputationDirPrefix(processStepType) + "debug_";
@@ -75,17 +73,11 @@ public class FileService {
         return processStepType.getName().replaceAll("\\s+", "_").toLowerCase() + "_";
     }
 
-    public void deleteTempFile(Path path) {
-        if (path == null) {
-            return;
-        }
-
+    private void deleteTempDirectory(Path directory) {
         try {
-            Path directory = Files.isDirectory(path) ? path : path.getParent();
-
             FileUtils.deleteDirectory(directory.toFile());
         } catch (IOException e) {
-            LOGGER.error("Error cleaning up temporary file: {}", path, e);
+            LOGGER.error("Error cleaning up temporary directory: {}", directory, e);
         }
     }
 }

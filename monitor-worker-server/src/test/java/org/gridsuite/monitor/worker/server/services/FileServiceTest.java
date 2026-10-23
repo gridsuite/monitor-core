@@ -10,15 +10,19 @@ import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStep
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FileServiceTest {
 
@@ -28,15 +32,31 @@ class FileServiceTest {
     Path tempDir;
 
     @Test
-    void testCreateTempFile() throws Exception {
-        Path tempFile = fileService.createTempFile("prefix", ".txt");
-        try {
+    void testWithTempFile() throws Exception {
+        AtomicReference<Path> createdFile = new AtomicReference<>();
+        fileService.withTempFile("prefix", ".txt", tempFile -> {
+            createdFile.set(tempFile);
             assertThat(tempFile).exists();
             assertThat(tempFile.getFileName().toString()).startsWith("prefix").endsWith(".txt");
             assertThat(tempFile.getParent().getFileName().toString()).startsWith("process-debug");
-        } finally {
-            fileService.deleteTempFile(tempFile);
-        }
+        });
+        assertThat(createdFile.get()).doesNotExist();
+        assertThat(createdFile.get().getParent()).doesNotExist();
+    }
+
+    @Test
+    void testWithTempFileCleansUpOnFailure() {
+        AtomicReference<Path> createdFile = new AtomicReference<>();
+        IOException failure = new IOException("Writing failed");
+
+        assertSame(failure, assertThrows(IOException.class, () ->
+            fileService.withTempFile("prefix", ".txt", tempFile -> {
+                createdFile.set(tempFile);
+                throw failure;
+            })));
+
+        assertThat(createdFile.get()).doesNotExist();
+        assertThat(createdFile.get().getParent()).doesNotExist();
     }
 
     @Test
@@ -44,8 +64,8 @@ class FileServiceTest {
         Path sourceFile = tempDir.resolve("source.txt");
         Files.writeString(sourceFile, "hello world");
 
-        Path compressedFile = fileService.compressFile(sourceFile);
-        try {
+        fileService.withTempFile("compressed", ".gz", compressedFile -> {
+            fileService.compressFile(sourceFile, compressedFile);
             assertThat(compressedFile).exists();
             assertThat(compressedFile.getFileName().toString()).endsWith(".gz");
 
@@ -53,9 +73,7 @@ class FileServiceTest {
                 String content = new String(in.readAllBytes(), UTF_8);
                 assertThat(content).isEqualTo("hello world");
             }
-        } finally {
-            fileService.deleteTempFile(compressedFile);
-        }
+        });
     }
 
     @Test
@@ -64,8 +82,8 @@ class FileServiceTest {
         Files.createDirectory(sourceDir);
         Files.writeString(sourceDir.resolve("file1.txt"), "content1");
 
-        Path compressedFile = fileService.compressDirectory(sourceDir);
-        try {
+        fileService.withTempFile("compressed", ".zip", compressedFile -> {
+            fileService.compressDirectory(sourceDir, compressedFile);
             assertThat(compressedFile).exists();
             assertThat(compressedFile.getFileName().toString()).endsWith(".zip");
 
@@ -76,30 +94,38 @@ class FileServiceTest {
                 String content = new String(zin.readAllBytes(), UTF_8);
                 assertThat(content).isEqualTo("content1");
             }
-        } finally {
-            fileService.deleteTempFile(compressedFile);
-        }
+        });
     }
 
     @Test
-    void testDeleteTempFile() throws Exception {
-        Path tempFile = fileService.createTempFile("prefix", ".txt");
-        Path parentDir = tempFile.getParent();
-
-        fileService.deleteTempFile(tempFile);
-
-        assertThat(tempFile).doesNotExist();
-        assertThat(parentDir).doesNotExist();
-    }
-
-    @Test
-    void testCreateDebugDir() {
-        Path debugDir = fileService.createDebugDir(ShortCircuitStepType.RUN_SC_COMPUTATION);
-        try {
+    void testWithDebugDir() {
+        AtomicReference<Path> createdDir = new AtomicReference<>();
+        fileService.withDebugDir(ShortCircuitStepType.RUN_SC_COMPUTATION, debugDir -> {
+            createdDir.set(debugDir);
             assertThat(debugDir).exists();
             assertThat(debugDir.getFileName().toString()).contains(ShortCircuitStepType.RUN_SC_COMPUTATION.getName().toLowerCase() + "_debug_");
-        } finally {
-            fileService.deleteTempFile(debugDir);
-        }
+            try {
+                Files.writeString(Files.createDirectory(debugDir.resolve("nested")).resolve("debug.txt"), "debug");
+            } catch (IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        });
+        assertThat(createdDir.get()).doesNotExist();
+        assertThat(createdDir.get().getParent()).exists();
+    }
+
+    @Test
+    void testWithDebugDirCleansUpOnFailure() {
+        AtomicReference<Path> createdDir = new AtomicReference<>();
+        RuntimeException failure = new RuntimeException("Computation failed");
+
+        assertSame(failure, assertThrows(RuntimeException.class, () ->
+            fileService.withDebugDir(ShortCircuitStepType.RUN_SC_COMPUTATION, debugDir -> {
+                createdDir.set(debugDir);
+                throw failure;
+            })));
+
+        assertThat(createdDir.get()).doesNotExist();
+        assertThat(createdDir.get().getParent()).exists();
     }
 }

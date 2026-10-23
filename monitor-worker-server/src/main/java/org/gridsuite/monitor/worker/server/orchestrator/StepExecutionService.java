@@ -56,7 +56,14 @@ public class StepExecutionService implements StepExecutor {
                         () -> stepWithContext.step().execute(context)
                 );
                 try {
+                    if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
+                        future.cancel(true);
+                        throw new ProcessCancelledException("Execution canceled");
+                    }
                     future.get();
+                } catch (InterruptedException | CancellationException e) {
+                    future.cancel(true);
+                    throw e;
                 } finally {
                     taskManager.removeTask(processExecutionId);
                 }
@@ -95,7 +102,7 @@ public class StepExecutionService implements StepExecutor {
                 .resultId(context.getResultInfos() != null ? context.getResultInfos().resultUUID() : null)
                 .resultType(context.getResultInfos() != null ? context.getResultInfos().resultType() : null)
                 .startedAt(context.getStartedAt())
-                .completedAt(status == StepStatus.COMPLETED || status == StepStatus.FAILED ? Instant.now() : null)
+                .completedAt(status == StepStatus.COMPLETED || status == StepStatus.FAILED || status == StepStatus.CANCELED ? Instant.now() : null)
                 .build();
 
         notificationService.updateStepStatus(context.getProcessExecutionId(), context.getConfig().processType(), updatedStep);

@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.orchestrator;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -20,7 +19,12 @@ import java.util.concurrent.*;
 public class TaskManager {
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
     private final ConcurrentMap<UUID, Future<?>> tasks = new ConcurrentHashMap<>();
-    private final Set<UUID> canceledExecutions = ConcurrentHashMap.newKeySet();
+    private final ConcurrentMap<UUID, Long> canceledExecutions = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+
+    public TaskManager() {
+        cleanupExecutor.scheduleAtFixedRate(this::cleanupCanceledExecutions, 1, 1, TimeUnit.HOURS);
+    }
 
     Future<Void> submit(UUID id, Runnable work) {
         FutureTask<Void> future = new FutureTask<>(() -> {
@@ -47,16 +51,22 @@ public class TaskManager {
         tasks.remove(id);
     }
 
-    public boolean addCanceledExecution(UUID id) {
-        return canceledExecutions.add(id);
+    public void addCanceledExecution(UUID id) {
+        canceledExecutions.put(id, System.currentTimeMillis());
     }
 
     public boolean checkIfCanceledAndRemove(UUID id) {
-        return canceledExecutions.remove(id);
+        return canceledExecutions.remove(id) != null;
+    }
+
+    private void cleanupCanceledExecutions() {
+        long oneHourAgo = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1);
+        canceledExecutions.entrySet().removeIf(entry -> entry.getValue() < oneHourAgo);
     }
 
     @PreDestroy
     void shutdown() {
+        cleanupExecutor.shutdownNow();
         executor.shutdownNow();
     }
 }

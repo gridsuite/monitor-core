@@ -54,7 +54,7 @@ class MonitorRestClientTest {
                 .andExpect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
                 .andRespond(MockRestResponseCreators.withSuccess()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(new ObjectMapper().writeValueAsString(new ExecutionStatusResponse(ProcessStatus.CANCELLED))));
+                        .body(new ObjectMapper().writeValueAsString(new ExecutionStatusResponse(ProcessStatus.CANCELED))));
         boolean isExecutionCanceled = monitorRestClient.isExecutionCanceled(EXECUTION_UUID);
         assertThat(isExecutionCanceled).isTrue();
     }

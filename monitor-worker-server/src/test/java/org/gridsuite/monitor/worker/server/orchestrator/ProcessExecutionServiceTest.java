@@ -248,7 +248,7 @@ class ProcessExecutionServiceTest {
                 () -> processExecutionService.executeProcess(runMessage));
 
         verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
-                update.getStatus() == ProcessStatus.CANCELLED &&
+                update.getStatus() == ProcessStatus.CANCELED &&
                         update.getCompletedAt() != null
         ));
     }

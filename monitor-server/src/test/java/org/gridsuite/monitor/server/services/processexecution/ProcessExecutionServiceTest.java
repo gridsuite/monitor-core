@@ -135,12 +135,30 @@ class ProcessExecutionServiceTest {
         Instant completedAt = Instant.now();
         String executionEnvName = "test-env";
 
-        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELLED, executionEnvName, startedAt, completedAt);
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, executionEnvName, startedAt, completedAt);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecutionStatus(executionId, update);
         verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
         verify(processExecutionTxService).deleteExecutionSteps(executionId);
+        verify(processExecutionTxService).clearResourceReferences(executionId);
+    }
+
+    @Test
+    void deleteAfterCancelShouldNotCleanResourcesAgain() {
+        // Simulate cancel: resources are cleaned and references nulled
+        ProcessExecutionStatusUpdate cancelUpdate = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, null);
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, cancelUpdate);
+        verify(processExecutionTxService).clearResourceReferences(executionId);
+
+        // Simulate delete: deleteExecution returns infos with null reportId and null debugFileLocation (already cleared)
+        ProcessDeletionInfos emptyInfos = new ProcessDeletionInfos(null, List.of(), null);
+        when(processExecutionTxService.deleteExecution(executionId)).thenReturn(Optional.of(emptyInfos));
+        processExecutionService.deleteExecution(executionId);
+
+        // No external cleanup should happen since references were nulled
+        verifyNoInteractions(reportRestClient);
+        verifyNoInteractions(s3RestClient);
     }
 
     @Test
@@ -504,30 +522,32 @@ class ProcessExecutionServiceTest {
     @Test
     void cancelProcessShouldCancelImmediatelyWhenScheduled() {
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.SCHEDULED)));
+        when(processExecutionTxService.updateStatusIfEligible(eq(executionId), eq(ProcessStatus.CANCELED), anyList())).thenReturn(true);
 
         ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.CANCELLED);
+        verify(processExecutionTxService).updateStatusIfEligible(eq(executionId), eq(ProcessStatus.CANCELED), anyList());
         verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
-        verify(notificationService, never()).sendProcessCancelMessage(any());
+        verify(notificationService).sendProcessCancelMessage(executionId);
     }
 
     @Test
     void cancelProcessShouldSendCancelMessageWhenRunning() {
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.RUNNING)));
+        when(processExecutionTxService.updateStatusIfEligible(eq(executionId), eq(ProcessStatus.CANCELING), anyList())).thenReturn(true);
 
         ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.CANCELLING);
+        verify(processExecutionTxService).updateStatusIfEligible(eq(executionId), eq(ProcessStatus.CANCELING), anyList());
         verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
         verify(notificationService).sendProcessCancelMessage(executionId);
     }
 
     @Test
     void cancelProcessShouldReturn204WhenAlreadyCancelled() {
-        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELLED)));
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELED)));
 
         ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
 
@@ -538,7 +558,7 @@ class ProcessExecutionServiceTest {
 
     @Test
     void cancelProcessShouldReturn204WhenAlreadyCancelling() {
-        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELLING)));
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELING)));
 
         ResponseEntity<Void> response = processExecutionService.cancelProcess(executionId);
 

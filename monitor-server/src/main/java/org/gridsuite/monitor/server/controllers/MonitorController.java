@@ -204,13 +204,15 @@ public class MonitorController {
     @DeleteMapping("/executions/{executionId}")
     @Operation(summary = "Delete an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
-                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+                           @ApiResponse(responseCode = "404", description = "execution id was not found"),
+                           @ApiResponse(responseCode = "409", description = "Execution is not in a terminal state")})
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
         ProcessStatus status = processExecutionService.getExecutionStatus(executionId).orElse(null);
-        if (status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .build();
+        if (status == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (status != ProcessStatus.COMPLETED && status != ProcessStatus.FAILED && status != ProcessStatus.CANCELED) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();

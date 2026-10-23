@@ -85,8 +85,19 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
+    public boolean updateStatusIfEligible(UUID executionId, ProcessStatus newStatus, List<ProcessStatus> eligibleStatuses) {
+        return processExecutionRepository.updateStatusIfEligible(executionId, newStatus, eligibleStatuses) > 0;
+    }
+
+    @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            if (execution.getStatus() == ProcessStatus.CANCELED || execution.getStatus() == ProcessStatus.CANCELING) {
+                if (payload.getStatus() != ProcessStatus.CANCELED) {
+                    LOGGER.info("Ignoring status update to {} for already {} execution {}", payload.getStatus(), execution.getStatus(), executionId);
+                    return;
+                }
+            }
             execution.setStatus(payload.getStatus());
             if (payload.getExecutionEnvName() != null) {
                 execution.setExecutionEnvName(payload.getExecutionEnvName());
@@ -179,6 +190,15 @@ public class ProcessExecutionTxService {
         processExecutionRepository.delete(entity);
 
         return Optional.of(infos);
+    }
+
+    @Transactional
+    public void clearResourceReferences(UUID executionId) {
+        processExecutionRepository.findById(executionId).ifPresent(execution -> {
+            execution.setReportId(null);
+            execution.setDebugFileLocation(null);
+            processExecutionRepository.save(execution);
+        });
     }
 
     public Optional<ProcessDeletionInfos> getProcessDeletionInfos(UUID executionId) {

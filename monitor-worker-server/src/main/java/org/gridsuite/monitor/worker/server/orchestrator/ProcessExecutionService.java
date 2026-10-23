@@ -86,7 +86,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             executeSteps(context, steps);
             updateExecutionStatus(context, ProcessStatus.COMPLETED);
         } catch (ProcessCancelledException e) {
-            updateExecutionStatus(context, ProcessStatus.CANCELLED);
+            updateExecutionStatus(context, ProcessStatus.CANCELED);
             throw e;
         } catch (Exception e) {
             updateExecutionStatus(context, ProcessStatus.FAILED);
@@ -126,7 +126,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             status,
             context.getExecutionEnvName(),
             status == ProcessStatus.RUNNING ? Instant.now() : null,
-            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED || status == ProcessStatus.CANCELLED ? Instant.now() : null
+            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED || status == ProcessStatus.CANCELED ? Instant.now() : null
         );
 
         notificationService.updateExecutionStatus(context.getExecutionId(), context.getConfig().processType(), processExecutionStatusUpdate);

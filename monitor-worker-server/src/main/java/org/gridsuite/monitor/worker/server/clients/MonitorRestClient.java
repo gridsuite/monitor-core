@@ -33,7 +33,7 @@ public class MonitorRestClient {
     }
 
     public boolean isExecutionCanceled(UUID executionId) {
-        return getExecutionStatus(executionId) == ProcessStatus.CANCELLED;
+        return getExecutionStatus(executionId) == ProcessStatus.CANCELED;
     }
 
     private ProcessStatus getExecutionStatus(UUID executionId) {

@@ -314,11 +314,13 @@ class MonitorControllerTest {
         verify(processExecutionService).getStepsInfos(executionId);
     }
 
-    @Test
-    void deleteExecutionReturnsOK() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"COMPLETED", "FAILED", "CANCELED"})
+    void deleteExecutionReturnsOK(String statusStr) throws Exception {
         UUID executionId = UUID.randomUUID();
+        ProcessStatus status = ProcessStatus.valueOf(statusStr);
         when(processExecutionService.getExecutionStatus(executionId))
-                .thenReturn(Optional.of(ProcessStatus.RUNNING));
+                .thenReturn(Optional.of(status));
         when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Optional.of(executionId));
 
@@ -329,15 +331,19 @@ class MonitorControllerTest {
         verify(processExecutionService).deleteExecution(executionId);
     }
 
-    @Test
-    void deleteExecutionReturnsConflict() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"SCHEDULED", "RUNNING", "CANCELING"})
+    void deleteExecutionReturnsConflictWhenNotTerminal(String statusStr) throws Exception {
         UUID executionId = UUID.randomUUID();
+        ProcessStatus status = ProcessStatus.valueOf(statusStr);
         when(processExecutionService.getExecutionStatus(executionId))
-                .thenReturn(Optional.of(ProcessStatus.COMPLETED));
+                .thenReturn(Optional.of(status));
+
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
                 .andExpect(status().isConflict());
 
         verify(processExecutionService).getExecutionStatus(executionId);
+        verify(processExecutionService, never()).deleteExecution(executionId);
     }
 
     @Test
@@ -345,13 +351,12 @@ class MonitorControllerTest {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.getExecutionStatus(executionId))
                 .thenReturn(Optional.empty());
-        when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).deleteExecution(executionId);
+        verify(processExecutionService).getExecutionStatus(executionId);
+        verify(processExecutionService, never()).deleteExecution(executionId);
     }
 
     @Test

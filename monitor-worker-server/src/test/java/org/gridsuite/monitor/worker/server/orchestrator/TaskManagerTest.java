@@ -62,8 +62,8 @@ class TaskManagerTest {
     void canceledExecutionMarkerShouldBeAddedAndConsumedOnce() {
         UUID id = UUID.randomUUID();
 
-        assertThat(taskManager.addCanceledExecution(id)).isTrue();
-        assertThat(taskManager.addCanceledExecution(id)).isFalse();
+        taskManager.addCanceledExecution(id);
+        taskManager.addCanceledExecution(id);
 
         assertThat(taskManager.checkIfCanceledAndRemove(id)).isTrue();
         assertThat(taskManager.checkIfCanceledAndRemove(id)).isFalse();

@@ -91,11 +91,12 @@ public class ProcessExecutionService {
 
     public void updateExecutionStatus(UUID executionId, ProcessType processType, ProcessExecutionStatusUpdate payload) {
         processExecutionTxService.updateExecutionStatus(executionId, payload);
-        notificationService.sendProcessUpdatedMessage(executionId, processType);
-        if (payload.getStatus() == ProcessStatus.CANCELLED) {
+        if (payload.getStatus() == ProcessStatus.CANCELED) {
             processExecutionTxService.getProcessDeletionInfos(executionId).ifPresent(this::cleanExecution);
             processExecutionTxService.deleteExecutionSteps(executionId);
+            processExecutionTxService.clearResourceReferences(executionId);
         }
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
     public void updateStepStatus(UUID executionId, ProcessType processType, ProcessExecutionStep processExecutionStep) {
@@ -206,22 +207,31 @@ public class ProcessExecutionService {
             return ResponseEntity.notFound().build();
         }
 
-        return switch (execution.status()) {
-            case SCHEDULED -> {
-                processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELLED);
-                notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
-                yield ResponseEntity.ok().build();
+        ProcessStatus currentStatus = execution.status();
+        for (int i = 0; i < 5; i++) {
+            switch (currentStatus) {
+                case SCHEDULED, RUNNING -> {
+                    ProcessStatus targetStatus = currentStatus == ProcessStatus.SCHEDULED ? ProcessStatus.CANCELED : ProcessStatus.CANCELING;
+                    if (processExecutionTxService.updateStatusIfEligible(executionId, targetStatus, List.of(currentStatus))) {
+                        notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
+                        notificationService.sendProcessCancelMessage(executionId);
+                        return ResponseEntity.ok().build();
+                    }
+                }
+                case CANCELED, CANCELING -> {
+                    return ResponseEntity.noContent().build();
+                }
+                case COMPLETED, FAILED -> {
+                    return ResponseEntity
+                            .status(HttpStatus.CONFLICT)
+                            .build();
+                }
             }
-            case RUNNING -> {
-                processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELLING);
-                notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
-                notificationService.sendProcessCancelMessage(executionId);
-                yield ResponseEntity.ok().build();
+            currentStatus = processExecutionTxService.getExecution(executionId).map(ProcessExecution::status).orElse(null);
+            if (currentStatus == null) {
+                return ResponseEntity.notFound().build();
             }
-            case CANCELLED, CANCELLING -> ResponseEntity.noContent().build();
-            case COMPLETED, FAILED -> ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .build();
-        };
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 }

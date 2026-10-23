@@ -138,6 +138,10 @@ class S3RestClientTest {
                 .build();
         when(s3Client.listObjectsV2(any(ListObjectsV2Request.class)))
                 .thenReturn(response);
+        DeleteObjectsResponse deleteResponse = DeleteObjectsResponse.builder()
+                .build();
+        when(s3Client.deleteObjects(any(DeleteObjectsRequest.class)))
+                .thenReturn(deleteResponse);
 
         s3RestClient.deleteDirectory("executionId1");
         verify(s3Client).deleteObjects(any(DeleteObjectsRequest.class));

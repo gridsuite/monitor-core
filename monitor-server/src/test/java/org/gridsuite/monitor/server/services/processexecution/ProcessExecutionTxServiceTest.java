@@ -68,6 +68,7 @@ class ProcessExecutionTxServiceTest {
     private UUID caseUuid;
     private UUID executionId;
     private UUID reportId;
+    private String debugFileLocation;
     private String userId;
 
     @BeforeEach
@@ -75,6 +76,7 @@ class ProcessExecutionTxServiceTest {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         reportId = UUID.randomUUID();
+        debugFileLocation = "debug/file/location";
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
@@ -85,7 +87,6 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void executeProcessCreateExecution() {
-        String debugFileLocation = "debug/file/location";
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
@@ -576,6 +577,7 @@ class ProcessExecutionTxServiceTest {
             .id(executionId)
             .reportId(reportId)
             .steps(List.of(step0, step1))
+            .debugFileLocation(debugFileLocation)
             .build();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
@@ -583,7 +585,7 @@ class ProcessExecutionTxServiceTest {
 
         Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.deleteExecution(executionId);
         assertThat(processDeletionInfos.get()).usingRecursiveComparison()
-            .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))));
+            .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)), debugFileLocation));
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).delete(execution);
@@ -602,7 +604,6 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void getExistingDebugInfo() {
-        String debugFileLocation = "debug/file/location";
         ProcessExecutionEntity execution = new ProcessExecutionEntity();
         execution.setDebugFileLocation(debugFileLocation);
 
@@ -638,5 +639,28 @@ class ProcessExecutionTxServiceTest {
         assertThat(result).isEmpty();
 
         verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void getProcessDeletionInfos() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.getProcessDeletionInfos(executionId);
+        assertThat(processDeletionInfos).isPresent();
+        verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void deleteExecutionSteps() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.deleteExecutionSteps(executionId);
+
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
     }
 }

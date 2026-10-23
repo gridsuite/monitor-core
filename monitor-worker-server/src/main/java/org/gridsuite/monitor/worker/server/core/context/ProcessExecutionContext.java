@@ -47,6 +47,10 @@ public class ProcessExecutionContext<C extends ProcessConfig> {
                 .build();
     }
 
+    public ProcessExecutionContext(UUID executionId, String executionEnvName) {
+        this(executionId, null, null, null, executionEnvName, null);
+    }
+
     public ProcessStepExecutionContext<C> createStepContext(ProcessStepType stepType, int stepOrder) {
         return new ProcessStepExecutionContext<>(this, stepType, stepOrder);
     }

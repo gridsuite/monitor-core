@@ -85,8 +85,19 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
+    public boolean updateStatusIfEligible(UUID executionId, ProcessStatus newStatus, List<ProcessStatus> eligibleStatuses) {
+        return processExecutionRepository.updateStatusIfEligible(executionId, newStatus, eligibleStatuses) > 0;
+    }
+
+    @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            if (execution.getStatus() == ProcessStatus.CANCELED || execution.getStatus() == ProcessStatus.CANCELING) {
+                if (payload.getStatus() != ProcessStatus.CANCELED) {
+                    LOGGER.info("Ignoring status update to {} for already {} execution {}", payload.getStatus(), execution.getStatus(), executionId);
+                    return;
+                }
+            }
             execution.setStatus(payload.getStatus());
             if (payload.getExecutionEnvName() != null) {
                 execution.setExecutionEnvName(payload.getExecutionEnvName());
@@ -97,6 +108,14 @@ public class ProcessExecutionTxService {
             if (payload.getCompletedAt() != null) {
                 execution.setCompletedAt(payload.getCompletedAt());
             }
+            processExecutionRepository.save(execution);
+        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+    }
+
+    @Transactional
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            execution.setStatus(status);
             processExecutionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
     }
@@ -173,6 +192,21 @@ public class ProcessExecutionTxService {
         return Optional.of(infos);
     }
 
+    @Transactional
+    public void clearResourceReferences(UUID executionId) {
+        processExecutionRepository.findById(executionId).ifPresent(execution -> {
+            execution.setReportId(null);
+            execution.setDebugFileLocation(null);
+            processExecutionRepository.save(execution);
+        });
+    }
+
+    public Optional<ProcessDeletionInfos> getProcessDeletionInfos(UUID executionId) {
+        Optional<ProcessExecutionEntity> opt =
+            processExecutionRepository.findById(executionId);
+        return opt.map(ProcessDeletionInfos::fromProcessExecutionEntity);
+    }
+
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
         List<ProcessExecutionStepEntity> steps = Optional.ofNullable(execution.getSteps()).orElseGet(() -> {
             List<ProcessExecutionStepEntity> newSteps = new ArrayList<>();
@@ -185,5 +219,19 @@ public class ProcessExecutionTxService {
             .ifPresentOrElse(
                 existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
                 () -> steps.add(stepEntity));
+    }
+
+    @Transactional
+    public Optional<UUID> deleteExecutionSteps(UUID executionId) {
+        Optional<ProcessExecutionEntity> executionOpt =
+                processExecutionRepository.findById(executionId);
+
+        if (executionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        ProcessExecutionEntity execution = executionOpt.get();
+        execution.getSteps().clear();
+        processExecutionRepository.save(execution);
+        return Optional.of(executionId);
     }
 }

@@ -49,6 +49,11 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     }
 
     @Override
+    public boolean isAsync() {
+        return true;
+    }
+
+    @Override
     public void execute(ProcessStepExecutionContext<ShortCircuitConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 

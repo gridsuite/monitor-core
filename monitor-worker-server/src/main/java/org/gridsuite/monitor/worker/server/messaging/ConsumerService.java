@@ -10,10 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -28,5 +30,13 @@ public class ConsumerService {
     @Bean
     public <T extends ProcessConfig> Consumer<Message<ProcessRunMessage<T>>> consumeRun() {
         return message -> executionService.executeProcess(message.getPayload());
+    }
+
+    @Bean
+    public Consumer<Message<UUID>> consumeCancel(TaskManager taskManager) {
+        return message -> {
+            taskManager.addCanceledExecution(message.getPayload());
+            taskManager.cancelTask(message.getPayload());
+        };
     }
 }

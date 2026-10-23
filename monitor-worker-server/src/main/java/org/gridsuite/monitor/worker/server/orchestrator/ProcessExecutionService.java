@@ -11,9 +11,11 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.*;
+import org.gridsuite.monitor.worker.server.clients.MonitorRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -38,11 +40,13 @@ public class ProcessExecutionService implements ProcessExecutor {
     private final Notificator notificationService;
     private final String executionEnvName;
     private final ReportRestClient reportRestClient;
+    private final MonitorRestClient monitorRestClient;
 
     public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
                                    StepExecutor stepExecutor,
                                    Notificator notificationService,
                                    ReportRestClient reportRestClient,
+                                   MonitorRestClient monitorRestClient,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));
@@ -50,6 +54,7 @@ public class ProcessExecutionService implements ProcessExecutor {
         this.notificationService = notificationService;
         this.executionEnvName = executionEnvName;
         this.reportRestClient = reportRestClient;
+        this.monitorRestClient = monitorRestClient;
     }
 
     @Override
@@ -58,6 +63,10 @@ public class ProcessExecutionService implements ProcessExecutor {
         Process<T> process = (Process<T>) processes.get(runMessage.processType());
         if (process == null) {
             throw new IllegalArgumentException("No process found for type: " + runMessage.processType());
+        }
+
+        if (monitorRestClient.isExecutionCanceled(runMessage.executionId())) {
+            return;
         }
 
         ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
@@ -76,6 +85,9 @@ public class ProcessExecutionService implements ProcessExecutor {
             List<StepWithContext<T>> steps = initializeSteps(process, context);
             executeSteps(context, steps);
             updateExecutionStatus(context, ProcessStatus.COMPLETED);
+        } catch (ProcessCancelledException e) {
+            updateExecutionStatus(context, ProcessStatus.CANCELED);
+            throw e;
         } catch (Exception e) {
             updateExecutionStatus(context, ProcessStatus.FAILED);
             throw e;
@@ -114,7 +126,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             status,
             context.getExecutionEnvName(),
             status == ProcessStatus.RUNNING ? Instant.now() : null,
-            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
+            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED || status == ProcessStatus.CANCELED ? Instant.now() : null
         );
 
         notificationService.updateExecutionStatus(context.getExecutionId(), context.getConfig().processType(), processExecutionStatusUpdate);

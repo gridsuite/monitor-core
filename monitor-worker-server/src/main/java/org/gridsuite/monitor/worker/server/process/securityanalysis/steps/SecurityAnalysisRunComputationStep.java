@@ -11,6 +11,7 @@ import com.powsybl.commons.report.TypedValue;
 import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisRunParameters;
+import org.gridsuite.computation.dto.securityanalysis.SecurityAnalysisEnricher;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
@@ -56,7 +57,7 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
             SecurityAnalysisReport saReport = SecurityAnalysis.find(inputData.provider()).run(context.getNetwork(), inputData.contingencies(), runParameters);
 
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-            securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), saReport.getResult());
+            securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), SecurityAnalysisEnricher.enrich(saReport.getResult(), context.getNetwork()));
             context.setResultInfos(resultInfos);
         } catch (Exception e) {
             reportNode.newReportNode()

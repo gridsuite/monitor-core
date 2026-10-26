@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.clients;
 
-import com.powsybl.security.SecurityAnalysisResult;
+import org.gridsuite.computation.dto.securityanalysis.EnrichedSecurityAnalysisResultDTO;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -34,7 +34,7 @@ public class SecurityAnalysisRestClient {
             .build();
     }
 
-    public void saveResult(UUID resultUuid, SecurityAnalysisResult result) {
+    public void saveResult(UUID resultUuid, EnrichedSecurityAnalysisResultDTO result) {
         Objects.requireNonNull(result);
         restClient.post()
             .uri("/results/{resultUuid}", resultUuid)

@@ -64,7 +64,6 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
 
     @Override
     public void execute(ProcessStepExecutionContext<ShortCircuitConfig> context) {
-        Path debugDir = null;
         Objects.requireNonNull(context.getNetwork());
 
         ReportNode reportNode = context.getReportNode();
@@ -76,26 +75,11 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
             String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
             Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
             ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
-            if (context.getDebugFileLocation() != null) {
-                debugDir = fileService.createDebugDir(context.getProcessStepType());
-                commonParameters.setDebugDir(debugDir.toString());
+            if (context.getDebugFileLocation() == null) {
+                runComputation(context, provider, commonParameters, specificParameters);
+            } else {
+                runComputationWithDebug(context, provider, commonParameters, specificParameters);
             }
-
-            List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
-
-            shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), reportNode);
-
-            ShortCircuitAnalysisResult result = ShortCircuitAnalysis.find(provider).run(
-                context.getNetwork(),
-                faults,
-                commonParameters,
-                LocalComputationManager.getDefault(),
-                List.of(),
-                reportNode);
-
-            ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
-            shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
-            context.setResultInfos(resultInfos);
         } catch (Exception e) {
             reportNode.newReportNode()
                 .withMessageTemplate("monitor.worker.server.shortcircuit.step.error")
@@ -103,11 +87,37 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
                 .withSeverity(TypedValue.ERROR_SEVERITY)
                 .add();
             throw e;
-        } finally {
-            if (debugDir != null) {
+        }
+    }
+
+    private void runComputationWithDebug(ProcessStepExecutionContext<ShortCircuitConfig> context, String provider,
+                                        ShortCircuitParameters parameters, Map<String, String> specificParameters) {
+        fileService.withDebugDir(context.getProcessStepType(), debugDir -> {
+            try {
+                parameters.setDebugDir(debugDir.toString());
+                runComputation(context, provider, parameters, specificParameters);
+            } finally {
                 saveDebugFiles(context, debugDir);
             }
-        }
+        });
+    }
+
+    private void runComputation(ProcessStepExecutionContext<ShortCircuitConfig> context, String provider,
+                                ShortCircuitParameters parameters, Map<String, String> specificParameters) {
+        List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
+        shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), context.getReportNode());
+
+        ShortCircuitAnalysisResult result = ShortCircuitAnalysis.find(provider).run(
+            context.getNetwork(),
+            faults,
+            parameters,
+            LocalComputationManager.getDefault(),
+            List.of(),
+            context.getReportNode());
+
+        ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
+        shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
+        context.setResultInfos(resultInfos);
     }
 
     protected void saveDebugFiles(ProcessStepExecutionContext<ShortCircuitConfig> context, Path debugDir) {

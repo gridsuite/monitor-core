@@ -221,21 +221,15 @@ class ApplyModificationsStepTest {
         verify(networkModificationService).applyModifications(any(Network.class), any(List.class), any(ReportNode.class), any(FilterService.class));
 
         // --- verify debug behaviour ---
-        ArgumentCaptor<ThrowingConsumer<Path>> networkWriterCapture = ArgumentCaptor.forClass(ThrowingConsumer.class);
-
+        ArgumentCaptor<ThrowingConsumer<Path>> writerCaptor = ArgumentCaptor.captor();
         verify(s3Service).exportCompressedToS3(
             eq(debugFileLocation + "/APPLY_MODIFICATIONS_7/debug.xiidm.gz"),
             eq("debug"),
-            eq(".xiidm"), // very important - file suffix is very important when using network.write(...)
-            networkWriterCapture.capture()
-        );
+            eq(".xiidm"),
+            writerCaptor.capture());
 
-        // --- assert networkWriterCapture.get() is actually calling network.write() ---
-        Path mockedPath = mock(Path.class);
-        ThrowingConsumer<Path> networkWriter = networkWriterCapture.getValue();
-
-        networkWriter.accept(mockedPath);
-
-        verify(network).write("XIIDM", null, mockedPath);
+        Path tempNetworkFile = mock(Path.class);
+        writerCaptor.getValue().accept(tempNetworkFile);
+        verify(network).write("XIIDM", null, tempNetworkFile);
     }
 }

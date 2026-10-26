@@ -6,63 +6,50 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import org.apache.commons.io.FileUtils;
 import org.gridsuite.monitor.worker.server.clients.S3RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.function.ThrowingConsumer;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Set;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 @Service
 public class S3Service {
-    private static final Logger LOGGER = LoggerFactory.getLogger(S3Service.class);
-    private final S3RestClient s3RestClient;
 
-    public S3Service(S3RestClient s3RestClient) {
+    private final S3RestClient s3RestClient;
+    private final FileService fileService;
+
+    S3Service(
+        S3RestClient s3RestClient,
+        FileService fileService) {
         this.s3RestClient = s3RestClient;
+        this.fileService = fileService;
     }
 
     public void exportCompressedToS3(String s3Key, String fileNamePrefix, String fileNameSuffix, ThrowingConsumer<Path> writer) throws IOException {
-        FileAttribute<Set<PosixFilePermission>> attrs =
-            PosixFilePermissions.asFileAttribute(
-                PosixFilePermissions.fromString("rwx------"));
+        fileService.withTempFile(fileNamePrefix, fileNameSuffix, tempFile -> {
+            writer.accept(tempFile);
+            compressAndUploadToS3(tempFile, s3Key, fileNamePrefix + fileNameSuffix + ".gz");
+        });
+    }
 
-        Path tempDir = Files.createTempDirectory("process-debug", attrs);
+    public void compressAndUploadToS3(
+        Path source,
+        String s3Key,
+        String uploadedFileName) throws IOException {
 
-        try {
-            Path debugFile = Files.createTempFile(tempDir, fileNamePrefix, fileNameSuffix);
-            Path compressedDebugFile = Files.createTempFile(tempDir, String.join("", fileNamePrefix, fileNameSuffix), ".gz");
-
-            writer.accept(debugFile);
-
-            try (InputStream in = Files.newInputStream(debugFile);
-                OutputStream out = new GZIPOutputStream(Files.newOutputStream(compressedDebugFile))) {
-                in.transferTo(out);
+        boolean directory = Files.isDirectory(source);
+        fileService.withTempFile(source.getFileName().toString(), directory ? ".zip" : ".gz", compressedFile -> {
+            if (directory) {
+                fileService.compressDirectory(source, compressedFile);
+            } else {
+                fileService.compressFile(source, compressedFile);
             }
-
-            s3RestClient.uploadFile(compressedDebugFile, s3Key, String.join("", fileNamePrefix, fileNameSuffix, ".gz"));
-        } finally {
-            try {
-                if (Files.exists(tempDir)) {
-                    FileUtils.deleteDirectory(tempDir.toFile());
-                }
-            } catch (IOException e) {
-                LOGGER.error("Error cleaning up temporary debug directory: {}", tempDir, e);
-            }
-        }
+            s3RestClient.uploadFile(compressedFile, s3Key, uploadedFileName);
+        });
     }
 }

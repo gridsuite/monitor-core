@@ -71,16 +71,17 @@ public class ApplyModificationsStep<C extends ProcessConfig> extends AbstractPro
     }
 
     private void exportUpdatedNetworkToS3(ProcessStepExecutionContext<C> context) throws IOException {
+        String s3Key = S3PathResolver.getProcessStepDebugFilePath(
+            context.getDebugFileLocation(),
+            context.getProcessStepType().getName(),
+            context.getStepOrder(),
+            DEBUG_FILENAME_PREFIX + DEBUG_FILENAME_SUFFIX + ".gz");
+
         s3Service.exportCompressedToS3(
-            S3PathResolver.getProcessStepDebugFilePath(
-                context.getDebugFileLocation(),
-                context.getProcessStepType().getName(),
-                context.getStepOrder(),
-                String.join("", DEBUG_FILENAME_PREFIX, DEBUG_FILENAME_SUFFIX, ".gz")),
+            s3Key,
             DEBUG_FILENAME_PREFIX,
             DEBUG_FILENAME_SUFFIX,
-            networkFile -> context.getNetwork().write("XIIDM", null, networkFile)
-        );
+            path -> context.getNetwork().write("XIIDM", null, path));
     }
 
     private void applyModifications(List<ModificationInfo> modifications, Network network, ReportNode reportNode) {

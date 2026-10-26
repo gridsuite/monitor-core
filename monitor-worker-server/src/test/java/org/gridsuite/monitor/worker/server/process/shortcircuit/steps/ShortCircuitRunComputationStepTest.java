@@ -18,21 +18,32 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
+import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
+import org.gridsuite.monitor.worker.server.services.FileService;
+import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -55,13 +66,19 @@ class ShortCircuitRunComputationStepTest {
     @Mock
     private ShortCircuitConfig config;
 
+    @Mock
+    private S3Service s3Service;
+
+    @Spy
+    private FileService fileService;
+
     private ShortCircuitRunComputationStep runComputationStep;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, "ShortCircuit-provider");
+        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
@@ -75,6 +92,25 @@ class ShortCircuitRunComputationStepTest {
 
     @Test
     void executeSuccess() {
+        testExecute(false);
+    }
+
+    @Test
+    void executeSuccessDebugOn() {
+        testExecute(true);
+    }
+
+    private void testExecute(boolean debug) {
+        testExecute(debug, null);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"computation", "upload"})
+    void executeDebugFailureClosesDirectory(String failingStage) {
+        testExecute(true, failingStage);
+    }
+
+    private void testExecute(boolean debug, String failingStage) {
         Network network = EurostagTutorialExample1Factory.create();
         ShortCircuitParameters commonParameters = new ShortCircuitParameters();
         ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
@@ -92,25 +128,72 @@ class ShortCircuitRunComputationStepTest {
             .thenReturn(List.of(mock(Fault.class)));
         doNothing().when(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
 
+        String debugFileLocation = "debug/file/location";
+        if (debug) {
+            when(stepContext.getDebugFileLocation()).thenReturn(debugFileLocation);
+            when(stepContext.getProcessStepType()).thenReturn(ShortCircuitStepType.RUN_SC_COMPUTATION);
+            when(stepContext.getStepOrder()).thenReturn(3);
+            try {
+                doAnswer(invocation -> {
+                    Path debugDir = invocation.getArgument(0);
+                    assertTrue(Files.isDirectory(debugDir));
+                    if ("upload".equals(failingStage)) {
+                        throw new IOException("Upload failed");
+                    }
+                    return null;
+                }).when(s3Service).compressAndUploadToS3(
+                    any(), eq(debugFileLocation + "/RUN_SC_COMPUTATION_3/debug.zip"), eq("debug.zip"));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         ShortCircuitAnalysisResult analysisResult = mock(ShortCircuitAnalysisResult.class);
         try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class)) {
             ShortCircuitAnalysis.Runner runner = mock(ShortCircuitAnalysis.Runner.class);
             shortCircuitAnalysis.when(() -> ShortCircuitAnalysis.find("ShortCircuit-provider")).thenReturn(runner);
-            when(runner.run(eq(network), any(), any(), any(), any(), any())).thenReturn(analysisResult);
+            if ("computation".equals(failingStage)) {
+                when(runner.run(eq(network), any(), any(), any(), any(), any())).thenThrow(new RuntimeException("Computation failed"));
+            } else {
+                when(runner.run(eq(network), any(), any(), any(), any(), any())).thenReturn(analysisResult);
+            }
 
-            runComputationStep.execute(stepContext);
+            if (failingStage == null) {
+                runComputationStep.execute(stepContext);
+            } else {
+                assertThrows(RuntimeException.class, () -> runComputationStep.execute(stepContext));
+            }
 
             verify(runner).run(eq(network), any(), same(commonParameters), any(), any(), any());
+            if (debug) {
+                Path tempDebugDir = Path.of(commonParameters.getDebugDir());
+                assertFalse(Files.exists(tempDebugDir));
+                assertTrue(Files.isDirectory(tempDebugDir.getParent()));
+                try {
+                    verify(s3Service).compressAndUploadToS3(
+                        tempDebugDir,
+                        debugFileLocation + "/RUN_SC_COMPUTATION_3/debug.zip",
+                        "debug.zip"
+                    );
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
 
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);
         verify(shortCircuitParametersService).getAllBusFaults(network, parametersInfos.getSpecificParametersPerProvider().get("ShortCircuit-provider"));
         verify(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
-        verify(shortCircuitRestClient).saveResult(any(UUID.class), same(analysisResult));
-        verify(stepContext).setResultInfos(argThat(resultInfos ->
-            resultInfos.resultUUID() != null &&
-                resultInfos.resultType() == ResultType.SHORT_CIRCUIT
-        ));
+        if ("computation".equals(failingStage)) {
+            verify(shortCircuitRestClient, never()).saveResult(any(), any());
+            verify(stepContext, never()).setResultInfos(any());
+        } else {
+            verify(shortCircuitRestClient).saveResult(any(UUID.class), same(analysisResult));
+            verify(stepContext).setResultInfos(argThat(resultInfos ->
+                resultInfos.resultUUID() != null &&
+                    resultInfos.resultType() == ResultType.SHORT_CIRCUIT
+            ));
+        }
 
         assertEquals("RUN_SC_COMPUTATION", runComputationStep.getType().getName());
     }

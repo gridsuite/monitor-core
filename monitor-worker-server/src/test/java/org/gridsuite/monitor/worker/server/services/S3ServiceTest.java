@@ -39,7 +39,7 @@ class S3ServiceTest {
     @Mock
     S3RestClient s3RestClient;
     @Spy
-    FileService fileService = new FileService();
+    FileService fileService;
     @Mock
     ThrowingConsumer<Path> writer;
 

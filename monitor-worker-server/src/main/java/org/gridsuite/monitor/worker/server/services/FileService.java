@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -46,7 +47,11 @@ public class FileService {
     }
 
     void compressDirectory(Path source, Path destination) throws IOException {
-        ZipUtils.zip(source, destination);
+        try {
+            ZipUtils.zip(source, destination);
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
     }
 
     public void withDebugDir(ProcessStepType processStepType, Consumer<Path> action) {

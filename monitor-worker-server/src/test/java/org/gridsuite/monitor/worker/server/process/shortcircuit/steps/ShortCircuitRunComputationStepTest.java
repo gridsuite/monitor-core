@@ -70,7 +70,7 @@ class ShortCircuitRunComputationStepTest {
     private S3Service s3Service;
 
     @Spy
-    private FileService fileService = new FileService();
+    private FileService fileService;
 
     private ShortCircuitRunComputationStep runComputationStep;
 

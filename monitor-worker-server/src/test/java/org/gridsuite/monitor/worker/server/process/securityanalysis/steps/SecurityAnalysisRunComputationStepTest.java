@@ -10,11 +10,16 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.contingency.Contingency;
 import com.powsybl.contingency.LineContingency;
 import com.powsybl.iidm.network.Network;
+import com.powsybl.security.LimitViolationsResult;
 import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisParameters;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisResult;
 import com.powsybl.security.SecurityAnalysisRunParameters;
+import com.powsybl.security.results.PreContingencyResult;
+import org.gridsuite.computation.dto.securityanalysis.EnrichedLimitViolationDTO;
+import org.gridsuite.computation.dto.securityanalysis.EnrichedSecurityAnalysisResultDTO;
+import org.gridsuite.computation.utils.ComputationResultUtils;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
@@ -27,17 +32,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -89,12 +97,29 @@ class SecurityAnalysisRunComputationStepTest {
             .thenReturn(inputData);
 
         SecurityAnalysisResult analysisResult = mock(SecurityAnalysisResult.class);
+        PreContingencyResult preContingencyResult = mock(PreContingencyResult.class);
+        LimitViolationsResult limitViolationsResult = mock(LimitViolationsResult.class);
+        com.powsybl.contingency.violations.LimitViolation violation = mock(com.powsybl.contingency.violations.LimitViolation.class);
+
+        when(analysisResult.getPreContingencyResult()).thenReturn(preContingencyResult);
+        when(analysisResult.getPostContingencyResults()).thenReturn(Collections.emptyList());
+        when(preContingencyResult.getLimitViolationsResult()).thenReturn(limitViolationsResult);
+        when(limitViolationsResult.getLimitViolations()).thenReturn(List.of(violation));
+
         SecurityAnalysisReport analysisReport = mock(SecurityAnalysisReport.class);
         when(analysisReport.getResult()).thenReturn(analysisResult);
-        try (MockedStatic<SecurityAnalysis> securityAnalysis = mockStatic(SecurityAnalysis.class)) {
+        try (MockedStatic<SecurityAnalysis> securityAnalysis = mockStatic(SecurityAnalysis.class);
+             MockedStatic<ComputationResultUtils> computationResultUtils = mockStatic(ComputationResultUtils.class)) {
             SecurityAnalysis.Runner runner = mock(SecurityAnalysis.Runner.class);
             securityAnalysis.when(() -> SecurityAnalysis.find("OpenLoadFlow")).thenReturn(runner);
             when(runner.run(any(), any(), any(SecurityAnalysisRunParameters.class))).thenReturn(analysisReport);
+
+            computationResultUtils.when(() -> ComputationResultUtils.getPatlLimit(any(), any())).thenReturn(100.0);
+            computationResultUtils.when(() -> ComputationResultUtils.computeLoading(any(), any())).thenReturn(50.0);
+            computationResultUtils.when(() -> ComputationResultUtils.getNextLimitName(any(), any())).thenReturn("TATL");
+            computationResultUtils.when(() -> ComputationResultUtils.getViolationLocationId(any(), any())).thenReturn("Location1");
+            computationResultUtils.when(() -> ComputationResultUtils.calculateActualOverloadDuration(any(), any())).thenReturn(3600);
+            computationResultUtils.when(() -> ComputationResultUtils.getViolationId(any())).thenReturn("violationId");
 
             runComputationStep.execute(stepContext);
 
@@ -105,7 +130,20 @@ class SecurityAnalysisRunComputationStepTest {
         assertEquals("RUN_SA_COMPUTATION", stepType);
 
         verify(securityAnalysisParametersService).buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network);
-        verify(securityAnalysisRestClient).saveResult(any(UUID.class), same(analysisResult));
+        verify(securityAnalysisRestClient).saveResult(any(UUID.class), argThat(enrichedResult -> {
+            assertEquals(analysisResult, enrichedResult.getResult());
+            Map<String, EnrichedLimitViolationDTO> preEnrichment = enrichedResult.getPreContingencyEnrichment();
+            assertNotNull(preEnrichment);
+            String violationId = "violationId";
+            assertTrue(preEnrichment.containsKey(violationId));
+            EnrichedLimitViolationDTO enrichedViolation = preEnrichment.get(violationId);
+            assertEquals(100.0, enrichedViolation.getPatlLimit(), 0.001);
+            assertEquals(50.0, enrichedViolation.getPatlLoading(), 0.001);
+            assertEquals("TATL", enrichedViolation.getNextLimitName());
+            assertEquals("Location1", enrichedViolation.getLocationId());
+            assertEquals(3600, enrichedViolation.getAcceptableDuration());
+            return true;
+        }));
         verify(stepContext).setResultInfos(argThat(resultInfos ->
                         resultInfos.resultUUID() != null &&
                         resultInfos.resultType() == ResultType.SECURITY_ANALYSIS
@@ -122,7 +160,7 @@ class SecurityAnalysisRunComputationStepTest {
         assertThrows(RuntimeException.class,
             () -> runComputationStep.execute(stepContext));
 
-        verify(securityAnalysisRestClient, never()).saveResult(any(UUID.class), any(SecurityAnalysisResult.class));
+        verify(securityAnalysisRestClient, never()).saveResult(any(UUID.class), any(EnrichedSecurityAnalysisResultDTO.class));
         verify(stepContext, never()).setResultInfos(any());
     }
 }

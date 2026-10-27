@@ -9,7 +9,6 @@ package org.gridsuite.monitor.worker.server.messaging;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.orchestrator.ProcessExecutionService;
-import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import java.util.UUID;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -49,15 +47,5 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(processExecutionService).executeProcess(runMessage);
-    }
-
-    @Test
-    void consumeCancel() {
-        TaskManager taskManager = mock(TaskManager.class);
-        UUID executionId = UUID.randomUUID();
-
-        consumerService.consumeCancel(taskManager).accept(MessageBuilder.withPayload(executionId).build());
-
-        verify(taskManager).cancelTask(executionId);
     }
 }

@@ -13,8 +13,6 @@ import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.gridsuite.monitor.worker.server.dto.processexecution.ExecutionStatusResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
 import org.springframework.http.HttpMethod;
@@ -50,43 +48,23 @@ class MonitorRestClientTest {
         server.verify();
     }
 
-    @ParameterizedTest
-    @EnumSource(value = ProcessStatus.class, names = {"CANCELED", "CANCELING", "SCHEDULED"})
-    void getExecutionStatusShouldReturnStatus(ProcessStatus status) throws JsonProcessingException {
+    @Test
+    void isExecutionCanceledOk() throws JsonProcessingException {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
                 .andExpect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
                 .andRespond(MockRestResponseCreators.withSuccess()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(new ObjectMapper().writeValueAsString(new ExecutionStatusResponse(status))));
-        assertThat(monitorRestClient.getExecutionStatus(EXECUTION_UUID)).isEqualTo(status);
+                        .body(new ObjectMapper().writeValueAsString(new ExecutionStatusResponse(ProcessStatus.CANCELED))));
+        boolean isExecutionCanceled = monitorRestClient.isExecutionCanceled(EXECUTION_UUID);
+        assertThat(isExecutionCanceled).isTrue();
     }
 
     @Test
-    void getExecutionStatusShouldPropagateServerError() {
+    void isExecutionCanceledFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> monitorRestClient.getExecutionStatus(EXECUTION_UUID)).isInstanceOf(RestClientException.class);
-    }
-
-    @Test
-    void getExecutionStatusShouldRejectMissingStatus() {
-        server.expect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
-            .andRespond(MockRestResponseCreators.withSuccess("{}", MediaType.APPLICATION_JSON));
-
-        assertThatThrownBy(() -> monitorRestClient.getExecutionStatus(EXECUTION_UUID))
-            .isInstanceOf(RestClientException.class)
-            .hasMessageContaining("Missing status");
-    }
-
-    @Test
-    void getExecutionStatusShouldRejectEmptyResponse() {
-        server.expect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
-            .andRespond(MockRestResponseCreators.withSuccess());
-
-        assertThatThrownBy(() -> monitorRestClient.getExecutionStatus(EXECUTION_UUID))
-            .isInstanceOf(RestClientException.class)
-            .hasMessageContaining("Missing status");
+        assertThatThrownBy(() -> monitorRestClient.isExecutionCanceled(EXECUTION_UUID)).isInstanceOf(RestClientException.class);
     }
 }

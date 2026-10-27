@@ -18,9 +18,7 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
-import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,15 +56,12 @@ class ShortCircuitRunComputationStepTest {
     private ShortCircuitConfig config;
 
     private ShortCircuitRunComputationStep runComputationStep;
-    private final TaskManager taskManager = new TaskManager();
-    private final UUID executionId = UUID.randomUUID();
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        taskManager.registerExecution(executionId);
-        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, taskManager, "ShortCircuit-provider");
+        runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
@@ -79,15 +73,9 @@ class ShortCircuitRunComputationStepTest {
         when(stepContext.getReportNode()).thenReturn(reportNode);
     }
 
-    @AfterEach
-    void tearDown() {
-        taskManager.unregisterExecution(executionId);
-    }
-
     @Test
     void executeSuccess() {
         Network network = EurostagTutorialExample1Factory.create();
-        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         ShortCircuitParameters commonParameters = new ShortCircuitParameters();
         ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
             .commonParameters(commonParameters)
@@ -108,11 +96,11 @@ class ShortCircuitRunComputationStepTest {
         try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class)) {
             ShortCircuitAnalysis.Runner runner = mock(ShortCircuitAnalysis.Runner.class);
             shortCircuitAnalysis.when(() -> ShortCircuitAnalysis.find("ShortCircuit-provider")).thenReturn(runner);
-            when(runner.runAsync(eq(network), any(), any(), any(), any(), any())).thenReturn(CompletableFuture.completedFuture(analysisResult));
+            when(runner.run(eq(network), any(), any(), any(), any(), any())).thenReturn(analysisResult);
 
             runComputationStep.execute(stepContext);
 
-            verify(runner).runAsync(eq(network), any(), same(commonParameters), any(), any(), any());
+            verify(runner).run(eq(network), any(), same(commonParameters), any(), any(), any());
         }
 
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);

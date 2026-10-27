@@ -28,7 +28,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 import java.util.UUID;
@@ -63,14 +62,13 @@ class ProcessExecutionServiceTest {
     private MonitorRestClient monitorRestClient;
 
     private ProcessExecutionService processExecutionService;
-    private final TaskManager taskManager = new TaskManager();
 
     private static final String EXECUTION_ENV_NAME = "test-env";
 
     @BeforeEach
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, monitorRestClient, taskManager, EXECUTION_ENV_NAME);
+        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, monitorRestClient, EXECUTION_ENV_NAME);
     }
 
     private static ProcessStep<ProcessConfig> mockStep(String typeName) {
@@ -91,13 +89,12 @@ class ProcessExecutionServiceTest {
         ProcessStep<ProcessConfig> step3 = mockStep("STEP_3");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        when(monitorRestClient.getExecutionStatus(executionId)).thenReturn(ProcessStatus.SCHEDULED);
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         processExecutionService.executeProcess(runMessage);
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
-        verify(monitorRestClient, times(1)).getExecutionStatus(executionId);
+        verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
@@ -130,7 +127,6 @@ class ProcessExecutionServiceTest {
         ));
 
         verifyNoMoreInteractions(notificationService);
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -145,7 +141,6 @@ class ProcessExecutionServiceTest {
         doThrow(stepException).when(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1, step2, step3));
-        when(monitorRestClient.getExecutionStatus(executionId)).thenReturn(ProcessStatus.SCHEDULED);
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         assertThrows(RuntimeException.class,
@@ -187,7 +182,6 @@ class ProcessExecutionServiceTest {
         ));
 
         verifyNoMoreInteractions(notificationService);
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -197,7 +191,6 @@ class ProcessExecutionServiceTest {
         ProcessStep<ProcessConfig> step = mockStep("STEP");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step));
-        when(monitorRestClient.getExecutionStatus(any(UUID.class))).thenReturn(ProcessStatus.SCHEDULED);
 
         processExecutionService.executeProcess(new ProcessRunMessage<>(
                 firstExecutionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null));
@@ -228,14 +221,13 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessShouldSkipWhenExecutionCanceled() {
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(monitorRestClient.getExecutionStatus(any(UUID.class))).thenReturn(ProcessStatus.CANCELED);
+        when(monitorRestClient.isExecutionCanceled(any(UUID.class))).thenReturn(true);
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 
         processExecutionService.executeProcess(runMessage);
-        verify(monitorRestClient, times(1)).getExecutionStatus(runMessage.executionId());
+        verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
         verifyNoInteractions(reportRestClient);
         verifyNoInteractions(notificationService);
-        assertThatThrownBy(() -> taskManager.checkCancellation(runMessage.executionId())).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -247,7 +239,6 @@ class ProcessExecutionServiceTest {
 
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
         when(process.getSteps()).thenReturn(List.of(step1));
-        when(monitorRestClient.getExecutionStatus(executionId)).thenReturn(ProcessStatus.SCHEDULED);
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
 
         doThrow(new ProcessCancelledException("Execution canceled"))
@@ -260,80 +251,5 @@ class ProcessExecutionServiceTest {
                 update.getStatus() == ProcessStatus.CANCELED &&
                         update.getCompletedAt() != null
         ));
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    void cancellationBeforeRegistrationShouldBeRecoveredFromDatabase() {
-        UUID executionId = UUID.randomUUID();
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(monitorRestClient.getExecutionStatus(executionId)).thenReturn(ProcessStatus.CANCELING);
-        taskManager.cancelTask(executionId);
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
-            executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
-
-        assertThrows(ProcessCancelledException.class, () -> processExecutionService.executeProcess(runMessage));
-
-        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
-            update.getStatus() == ProcessStatus.CANCELED && update.getCompletedAt() != null));
-        verifyNoMoreInteractions(notificationService);
-        verifyNoInteractions(reportRestClient, stepExecutor);
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    void cancellationDuringDatabaseCheckShouldNotBeLost() {
-        UUID executionId = UUID.randomUUID();
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(monitorRestClient.getExecutionStatus(executionId)).thenAnswer(invocation -> {
-            taskManager.cancelTask(executionId);
-            return ProcessStatus.SCHEDULED;
-        });
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
-            executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
-
-        assertThrows(ProcessCancelledException.class, () -> processExecutionService.executeProcess(runMessage));
-
-        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
-            update.getStatus() == ProcessStatus.CANCELED));
-        verifyNoInteractions(reportRestClient, stepExecutor);
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    void failedDatabaseCheckShouldRemoveExecutionRegistration() {
-        UUID executionId = UUID.randomUUID();
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(monitorRestClient.getExecutionStatus(executionId)).thenThrow(new RestClientException("Monitor unavailable"));
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
-            executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
-
-        assertThrows(RestClientException.class, () -> processExecutionService.executeProcess(runMessage));
-
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
-        verifyNoInteractions(reportRestClient, stepExecutor, notificationService);
-    }
-
-    @Test
-    void cancellationDuringLastStepShouldNotPublishCompletedStatus() {
-        UUID executionId = UUID.randomUUID();
-        ProcessStep<ProcessConfig> step = mockStep("LAST_STEP");
-        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        when(process.getSteps()).thenReturn(List.of(step));
-        when(monitorRestClient.getExecutionStatus(executionId)).thenReturn(ProcessStatus.SCHEDULED);
-        doAnswer(invocation -> {
-            taskManager.cancelTask(executionId);
-            return null;
-        }).when(stepExecutor).executeStep(any());
-        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(
-            executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
-
-        assertThrows(ProcessCancelledException.class, () -> processExecutionService.executeProcess(runMessage));
-
-        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
-            update.getStatus() == ProcessStatus.CANCELED));
-        verify(notificationService, never()).updateExecutionStatus(any(), any(), argThat(update ->
-            update.getStatus() == ProcessStatus.COMPLETED));
-        assertThatThrownBy(() -> taskManager.checkCancellation(executionId)).isInstanceOf(IllegalStateException.class);
     }
 }

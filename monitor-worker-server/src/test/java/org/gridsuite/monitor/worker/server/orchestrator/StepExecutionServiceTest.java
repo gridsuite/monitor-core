@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -178,7 +178,7 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         when(processStepType.getName()).thenReturn("TEST_STEP");
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
-        doThrow(new ProcessCancelledException("Execution canceled")).when(taskManager).checkCancellation(executionId);
+        when(taskManager.checkIfCanceledAndRemove(executionId)).thenReturn(true);
 
         StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
         ProcessCancelledException exception = assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));
@@ -191,11 +191,14 @@ class StepExecutionServiceTest {
     }
 
     @Test
-    void executeStepShouldCancelWhenComputationIsInterrupted() {
+    void executeStepShouldCancelWhenInterruptedDuringAsyncExecution() throws Exception {
         UUID executionId = UUID.randomUUID();
         when(processStepType.getName()).thenReturn("TEST_STEP");
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
-        doThrow(new ProcessCancelledException("Execution interrupted")).when(processStep).execute(context);
+        when(processStep.isAsync()).thenReturn(true);
+        Future future = mock(Future.class);
+        when(taskManager.submit(eq(executionId), any())).thenReturn(future);
+        when(future.get()).thenThrow(new InterruptedException("Interrupted"));
 
         StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
         assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));
@@ -206,11 +209,14 @@ class StepExecutionServiceTest {
     }
 
     @Test
-    void executeStepShouldCancelWhenComputationIsCanceled() {
+    void executeStepShouldCancelWhenCancelledDuringAsyncExecution() throws Exception {
         UUID executionId = UUID.randomUUID();
         when(processStepType.getName()).thenReturn("TEST_STEP");
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
-        doThrow(new CancellationException("Canceled")).when(processStep).execute(context);
+        when(processStep.isAsync()).thenReturn(true);
+        Future future = mock(Future.class);
+        when(taskManager.submit(eq(executionId), any())).thenReturn(future);
+        when(future.get()).thenThrow(new java.util.concurrent.CancellationException("Cancelled"));
 
         StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
         assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));

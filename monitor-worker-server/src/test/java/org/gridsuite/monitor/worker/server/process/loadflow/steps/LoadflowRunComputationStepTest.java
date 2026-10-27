@@ -17,8 +17,6 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
-import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,8 +25,6 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,16 +47,13 @@ class LoadflowRunComputationStepTest {
     private LoadFlowConfig config;
 
     private LoadflowRunComputationStep runComputationStep;
-    private final TaskManager taskManager = new TaskManager();
-    private final UUID executionId = UUID.randomUUID();
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID RESULT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        taskManager.registerExecution(executionId);
-        runComputationStep = new LoadflowRunComputationStep(loadFlowRestClient, taskManager);
+        runComputationStep = new LoadflowRunComputationStep(loadFlowRestClient);
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.loadflowParametersUuid()).thenReturn(PARAMS_UUID);
@@ -72,11 +65,6 @@ class LoadflowRunComputationStepTest {
         when(stepContext.getReportNode()).thenReturn(reportNode);
     }
 
-    @AfterEach
-    void tearDown() {
-        taskManager.unregisterExecution(executionId);
-    }
-
     @Test
     void executeRunLoadflowWithProvider() {
         Network network = mock(Network.class);
@@ -86,7 +74,6 @@ class LoadflowRunComputationStepTest {
             .build();
 
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(loadflowParametersInfos);
         when(loadFlowRestClient.saveResult(any(LoadFlowResult.class))).thenReturn(RESULT_UUID);
 
@@ -94,11 +81,11 @@ class LoadflowRunComputationStepTest {
         try (MockedStatic<LoadFlow> loadFlow = mockStatic(LoadFlow.class)) {
             LoadFlow.Runner runner = mock(LoadFlow.Runner.class);
             loadFlow.when(() -> LoadFlow.find("TEST_PROVIDER")).thenReturn(runner);
-            when(runner.runAsync(any(), any(LoadFlowRunParameters.class))).thenReturn(CompletableFuture.completedFuture(loadFlowResult));
+            when(runner.run(any(), any(LoadFlowRunParameters.class))).thenReturn(loadFlowResult);
 
             runComputationStep.execute(stepContext);
 
-            verify(runner).runAsync(eq(network), argThat((LoadFlowRunParameters params) ->
+            verify(runner).run(eq(network), argThat((LoadFlowRunParameters params) ->
                     params.getLoadFlowParameters() == loadflowParametersInfos.getCommonParameters()));
         }
 
@@ -111,30 +98,6 @@ class LoadflowRunComputationStepTest {
             resultInfos.resultUUID() != null &&
                 resultInfos.resultType() == ResultType.LOADFLOW
         ));
-    }
-
-    @Test
-    void canceledComputationShouldNotSaveResult() {
-        Network network = mock(Network.class);
-        when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
-        when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(LoadFlowParametersInfos.builder()
-            .provider("TEST_PROVIDER")
-            .commonParameters(new LoadFlowParameters())
-            .build());
-        CompletableFuture<LoadFlowResult> future = new CompletableFuture<>();
-        future.cancel(true);
-
-        try (MockedStatic<LoadFlow> loadFlow = mockStatic(LoadFlow.class)) {
-            LoadFlow.Runner runner = mock(LoadFlow.Runner.class);
-            loadFlow.when(() -> LoadFlow.find("TEST_PROVIDER")).thenReturn(runner);
-            when(runner.runAsync(any(), any(LoadFlowRunParameters.class))).thenReturn(future);
-
-            assertThrows(CancellationException.class, () -> runComputationStep.execute(stepContext));
-        }
-
-        verify(loadFlowRestClient, never()).saveResult(any());
-        verify(stepContext, never()).setResultInfos(any());
     }
 
     @Test

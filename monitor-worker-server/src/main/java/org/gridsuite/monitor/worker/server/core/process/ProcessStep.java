@@ -33,8 +33,4 @@ public interface ProcessStep<C extends ProcessConfig> {
      *                          translating it into monitoring status updates and deciding what to do next
      */
     void execute(ProcessStepExecutionContext<C> context);
-
-    default boolean isAsync() {
-        return false;
-    }
 }

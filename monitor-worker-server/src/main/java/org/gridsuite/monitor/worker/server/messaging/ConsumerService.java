@@ -34,9 +34,6 @@ public class ConsumerService {
 
     @Bean
     public Consumer<Message<UUID>> consumeCancel(TaskManager taskManager) {
-        return message -> {
-            taskManager.addCanceledExecution(message.getPayload());
-            taskManager.cancelTask(message.getPayload());
-        };
+        return message -> taskManager.cancelTask(message.getPayload());
     }
 }

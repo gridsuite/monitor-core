@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.Future;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -45,39 +44,15 @@ public class StepExecutionService implements StepExecutor {
 
         try {
             if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
-                status = StepStatus.CANCELED;
                 throw new ProcessCancelledException("Execution canceled");
             }
             initializeStep(context);
-
-            if (stepWithContext.step().isAsync()) {
-                Future<Void> future = taskManager.submit(
-                        processExecutionId,
-                        () -> stepWithContext.step().execute(context)
-                );
-                try {
-                    if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
-                        future.cancel(true);
-                        throw new ProcessCancelledException("Execution canceled");
-                    }
-                    future.get();
-                } catch (InterruptedException | CancellationException e) {
-                    future.cancel(true);
-                    throw e;
-                } finally {
-                    taskManager.removeTask(processExecutionId);
-                }
-            } else {
-                stepWithContext.step().execute(context);
-            }
-        } catch (InterruptedException | CancellationException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+            stepWithContext.step().execute(context);
+        } catch (CancellationException e) {
             status = StepStatus.CANCELED;
             throw new ProcessCancelledException("Execution canceled", e);
         } catch (ProcessCancelledException e) {
-            // Already handled status = StepStatus.CANCELED
+            status = StepStatus.CANCELED;
             throw e;
         } catch (Exception e) {
             status = StepStatus.FAILED;

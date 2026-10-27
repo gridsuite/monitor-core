@@ -16,8 +16,10 @@ import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -35,22 +38,20 @@ import java.util.UUID;
 public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCircuitConfig> {
     private final ShortCircuitParametersService shortCircuitParametersService;
     private final ShortCircuitRestClient shortCircuitRestClient;
+    private final TaskManager taskManager;
     @Getter
     private final String defaultProvider;
 
     public ShortCircuitRunComputationStep(
         ShortCircuitParametersService shortCircuitParametersService,
         ShortCircuitRestClient shortCircuitRestClient,
+        TaskManager taskManager,
         @Value("${shortcircuit-analysis.default-provider}") String defaultProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
+        this.taskManager = taskManager;
         this.defaultProvider = defaultProvider;
-    }
-
-    @Override
-    public boolean isAsync() {
-        return true;
     }
 
     @Override
@@ -71,17 +72,20 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
 
             shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), reportNode);
 
-            ShortCircuitAnalysisResult result = ShortCircuitAnalysis.find(provider).run(
-                context.getNetwork(),
-                faults,
-                commonParameters,
-                LocalComputationManager.getDefault(),
-                List.of(),
-                reportNode);
+            ShortCircuitAnalysisResult result = taskManager.runComputation(context.getProcessExecutionId(),
+                () -> ShortCircuitAnalysis.find(provider).runAsync(
+                    context.getNetwork(),
+                    faults,
+                    commonParameters,
+                    LocalComputationManager.getDefault(),
+                    List.of(),
+                    reportNode));
 
             ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
             shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
             context.setResultInfos(resultInfos);
+        } catch (CancellationException | ProcessCancelledException e) {
+            throw e;
         } catch (Exception e) {
             reportNode.newReportNode()
                 .withMessageTemplate("monitor.worker.server.shortcircuit.step.error")

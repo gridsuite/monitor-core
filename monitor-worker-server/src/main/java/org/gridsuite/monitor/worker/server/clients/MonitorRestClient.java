@@ -33,15 +33,16 @@ public class MonitorRestClient {
             .build();
     }
 
-    public ProcessStatus getExecutionStatus(UUID executionId) {
+    public boolean isExecutionCanceled(UUID executionId) {
+        return getExecutionStatus(executionId) == ProcessStatus.CANCELED;
+    }
+
+    private ProcessStatus getExecutionStatus(UUID executionId) {
         ExecutionStatusResponse response = restClient.get()
                 .uri("/executions/{executionId}", executionId)
                 .retrieve()
                 .body(ExecutionStatusResponse.class);
 
-        if (response == null || response.status() == null) {
-            throw new RestClientException("Missing status for execution " + executionId);
-        }
-        return response.status();
+        return response == null ? null : response.status();
     }
 }

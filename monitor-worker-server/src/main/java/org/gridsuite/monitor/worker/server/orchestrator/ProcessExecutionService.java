@@ -70,12 +70,8 @@ public class ProcessExecutionService implements ProcessExecutor {
 
         taskManager.registerExecution(runMessage.executionId());
         try {
-            ProcessStatus status = monitorRestClient.getExecutionStatus(runMessage.executionId());
-            if (status == ProcessStatus.CANCELED) {
+            if (monitorRestClient.isExecutionCanceled(runMessage.executionId())) {
                 return;
-            }
-            if (status == ProcessStatus.CANCELING) {
-                taskManager.cancelTask(runMessage.executionId());
             }
 
             ProcessExecutionContext<T> context = new ProcessExecutionContext<>(

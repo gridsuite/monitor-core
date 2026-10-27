@@ -1,7 +1,6 @@
 package org.gridsuite.monitor.worker.server.orchestrator;
 
 import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -21,23 +20,21 @@ class TaskManagerTest {
 
     private final TaskManager taskManager = new TaskManager();
 
-    @AfterEach
-    void tearDown() {
-        taskManager.shutdown();
-    }
-
     @Test
-    void runComputationShouldReturnResultAndRemoveCompletedTask() {
+    void runComputationShouldAllowSubsequentComputationInSameExecution() {
         UUID id = UUID.randomUUID();
+        taskManager.registerExecution(id);
         String result = taskManager.runComputation(id, () -> CompletableFuture.completedFuture("result"));
 
         assertThat(result).isEqualTo("result");
+        assertThat(taskManager.runComputation(id, () -> CompletableFuture.completedFuture("next"))).isEqualTo("next");
         assertThat(taskManager.cancelTask(id)).isFalse();
     }
 
     @Test
     void cancelTaskShouldCancelProviderFuture() throws Exception {
         UUID id = UUID.randomUUID();
+        taskManager.registerExecution(id);
         CountDownLatch computationStarted = new CountDownLatch(1);
         CompletableFuture<String> providerFuture = new CompletableFuture<>();
 
@@ -60,22 +57,25 @@ class TaskManagerTest {
     }
 
     @Test
-    void cancellationBeforeRegistrationShouldPreventComputationFromStarting() {
+    void cancellationBeforeComputationShouldPreventItFromStarting() {
         UUID id = UUID.randomUUID();
+        taskManager.registerExecution(id);
         Supplier<CompletableFuture<String>> computation = mock(Supplier.class);
         taskManager.cancelTask(id);
 
         assertThatThrownBy(() -> taskManager.runComputation(id, computation))
-            .isInstanceOf(CancellationException.class);
+            .isInstanceOf(ProcessCancelledException.class);
         verifyNoInteractions(computation);
     }
 
     @Test
     void interruptedWaitShouldCancelProviderFutureAndRestoreInterruptFlag() {
+        UUID id = UUID.randomUUID();
+        taskManager.registerExecution(id);
         CompletableFuture<String> providerFuture = new CompletableFuture<>();
         Thread.currentThread().interrupt();
         try {
-            assertThatThrownBy(() -> taskManager.runComputation(UUID.randomUUID(), () -> providerFuture))
+            assertThatThrownBy(() -> taskManager.runComputation(id, () -> providerFuture))
                 .isInstanceOf(ProcessCancelledException.class);
             assertThat(providerFuture.isCancelled()).isTrue();
             assertThat(Thread.currentThread().isInterrupted()).isTrue();
@@ -87,6 +87,7 @@ class TaskManagerTest {
     @Test
     void failedComputationShouldPropagateFailureAndRemoveTask() {
         UUID id = UUID.randomUUID();
+        taskManager.registerExecution(id);
         RuntimeException failure = new RuntimeException("Computation failed");
 
         assertThatThrownBy(() -> taskManager.runComputation(id, () -> CompletableFuture.failedFuture(failure)))
@@ -96,18 +97,49 @@ class TaskManagerTest {
     }
 
     @Test
-    void cancelTaskShouldReturnFalseWhenTaskDoesNotExist() {
-        assertThat(taskManager.cancelTask(UUID.randomUUID())).isFalse();
+    void cancellationForUnknownExecutionShouldNotLeavePendingState() {
+        UUID id = UUID.randomUUID();
+        assertThat(taskManager.cancelTask(id)).isFalse();
+
+        taskManager.registerExecution(id);
+
+        assertThat(taskManager.runComputation(id, () -> CompletableFuture.completedFuture("result"))).isEqualTo("result");
     }
 
     @Test
-    void canceledExecutionMarkerShouldBeAddedAndConsumedOnce() {
+    void cancellationBetweenComputationsShouldRemainUntilExecutionEnds() {
         UUID id = UUID.randomUUID();
-
+        taskManager.registerExecution(id);
+        taskManager.runComputation(id, () -> CompletableFuture.completedFuture("first"));
         taskManager.cancelTask(id);
+
+        assertThatThrownBy(() -> taskManager.checkCancellation(id)).isInstanceOf(ProcessCancelledException.class);
+        assertThatThrownBy(() -> taskManager.checkCancellation(id)).isInstanceOf(ProcessCancelledException.class);
+        assertThatThrownBy(() -> taskManager.runComputation(id, () -> CompletableFuture.completedFuture("second")))
+            .isInstanceOf(ProcessCancelledException.class);
+
+        taskManager.unregisterExecution(id);
+        assertThatThrownBy(() -> taskManager.checkCancellation(id)).isInstanceOf(IllegalStateException.class);
+        taskManager.registerExecution(id);
+        assertThat(taskManager.runComputation(id, () -> CompletableFuture.completedFuture("new execution"))).isEqualTo("new execution");
+    }
+
+    @Test
+    void duplicateRegistrationShouldNotReplaceCancellationState() {
+        UUID id = UUID.randomUUID();
+        taskManager.registerExecution(id);
         taskManager.cancelTask(id);
 
-        assertThat(taskManager.checkIfCanceledAndRemove(id)).isTrue();
-        assertThat(taskManager.checkIfCanceledAndRemove(id)).isFalse();
+        assertThatThrownBy(() -> taskManager.registerExecution(id)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> taskManager.checkCancellation(id)).isInstanceOf(ProcessCancelledException.class);
+    }
+
+    @Test
+    void unregisteredExecutionShouldNotStartComputation() {
+        Supplier<CompletableFuture<String>> computation = mock(Supplier.class);
+
+        assertThatThrownBy(() -> taskManager.runComputation(UUID.randomUUID(), computation))
+            .isInstanceOf(IllegalStateException.class);
+        verifyNoInteractions(computation);
     }
 }

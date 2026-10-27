@@ -60,11 +60,13 @@ class ShortCircuitRunComputationStepTest {
 
     private ShortCircuitRunComputationStep runComputationStep;
     private final TaskManager taskManager = new TaskManager();
+    private final UUID executionId = UUID.randomUUID();
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
+        taskManager.registerExecution(executionId);
         runComputationStep = new ShortCircuitRunComputationStep(shortCircuitParametersService, shortCircuitRestClient, taskManager, "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
@@ -79,13 +81,13 @@ class ShortCircuitRunComputationStepTest {
 
     @AfterEach
     void tearDown() {
-        taskManager.shutdown();
+        taskManager.unregisterExecution(executionId);
     }
 
     @Test
     void executeSuccess() {
         Network network = EurostagTutorialExample1Factory.create();
-        when(stepContext.getProcessExecutionId()).thenReturn(UUID.randomUUID());
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         ShortCircuitParameters commonParameters = new ShortCircuitParameters();
         ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
             .commonParameters(commonParameters)

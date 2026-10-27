@@ -178,7 +178,7 @@ class StepExecutionServiceTest {
         UUID executionId = UUID.randomUUID();
         when(processStepType.getName()).thenReturn("TEST_STEP");
         ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
-        when(taskManager.checkIfCanceledAndRemove(executionId)).thenReturn(true);
+        doThrow(new ProcessCancelledException("Execution canceled")).when(taskManager).checkCancellation(executionId);
 
         StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
         ProcessCancelledException exception = assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));

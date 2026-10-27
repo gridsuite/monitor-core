@@ -64,12 +64,14 @@ class SecurityAnalysisRunComputationStepTest {
 
     private SecurityAnalysisRunComputationStep runComputationStep;
     private final TaskManager taskManager = new TaskManager();
+    private final UUID executionId = UUID.randomUUID();
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID LOADFLOW_PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
+        taskManager.registerExecution(executionId);
         runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient, securityAnalysisParametersService, taskManager);
 
         when(stepContext.getConfig()).thenReturn(config);
@@ -85,7 +87,7 @@ class SecurityAnalysisRunComputationStepTest {
 
     @AfterEach
     void tearDown() {
-        taskManager.shutdown();
+        taskManager.unregisterExecution(executionId);
     }
 
     @Test
@@ -94,7 +96,7 @@ class SecurityAnalysisRunComputationStepTest {
         Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
         SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency), "OpenLoadFlow");
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getProcessExecutionId()).thenReturn(UUID.randomUUID());
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
             .thenReturn(inputData);
 

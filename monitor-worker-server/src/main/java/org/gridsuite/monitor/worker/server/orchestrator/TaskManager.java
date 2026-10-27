@@ -6,12 +6,15 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
-import jakarta.annotation.PreDestroy;
 import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 /**
@@ -19,23 +22,32 @@ import java.util.function.Supplier;
  */
 @Component
 public class TaskManager {
-    private final Object lockRunAndCancel = new Object();
-    private final ConcurrentMap<UUID, CompletableFuture<?>> tasks = new ConcurrentHashMap<>();
-    private final ConcurrentMap<UUID, Long> canceledExecutions = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ConcurrentMap<UUID, ExecutionState> executions = new ConcurrentHashMap<>();
 
-    public TaskManager() {
-        cleanupExecutor.scheduleAtFixedRate(this::cleanupCanceledExecutions, 1, 1, TimeUnit.HOURS);
+    public void registerExecution(UUID id) {
+        if (executions.putIfAbsent(id, new ExecutionState()) != null) {
+            throw new IllegalStateException("Execution " + id + " is already registered");
+        }
+    }
+
+    public void unregisterExecution(UUID id) {
+        executions.remove(id);
+    }
+
+    public void checkCancellation(UUID id) {
+        getExecution(id).checkCancellation();
     }
 
     public <R> R runComputation(UUID id, Supplier<CompletableFuture<R>> computation) {
+        ExecutionState execution = getExecution(id);
         CompletableFuture<R> future;
-        synchronized (lockRunAndCancel) {
-            if (checkIfCanceledAndRemove(id)) {
-                throw new CancellationException("Execution canceled");
+        synchronized (execution) {
+            execution.checkCancellation();
+            if (execution.future != null) {
+                throw new IllegalStateException("Execution " + id + " already has a running computation");
             }
             future = computation.get();
-            tasks.put(id, future);
+            execution.future = future;
         }
         try {
             return future.get();
@@ -46,29 +58,39 @@ public class TaskManager {
         } catch (ExecutionException e) {
             throw new CompletionException(e.getCause());
         } finally {
-            tasks.remove(id, future);
+            synchronized (execution) {
+                execution.future = null;
+            }
         }
     }
 
     public boolean cancelTask(UUID id) {
-        synchronized (lockRunAndCancel) {
-            canceledExecutions.put(id, System.currentTimeMillis());
-            CompletableFuture<?> task = tasks.get(id);
-            return task != null && task.cancel(true);
+        ExecutionState execution = executions.get(id);
+        if (execution == null) {
+            return false;
+        }
+        synchronized (execution) {
+            execution.canceled = true;
+            return execution.future != null && execution.future.cancel(true);
         }
     }
 
-    public boolean checkIfCanceledAndRemove(UUID id) {
-        return canceledExecutions.remove(id) != null;
+    private ExecutionState getExecution(UUID id) {
+        ExecutionState execution = executions.get(id);
+        if (execution == null) {
+            throw new IllegalStateException("Execution " + id + " is not registered");
+        }
+        return execution;
     }
 
-    private void cleanupCanceledExecutions() {
-        long oneHourAgo = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1);
-        canceledExecutions.entrySet().removeIf(entry -> entry.getValue() < oneHourAgo);
-    }
+    private static final class ExecutionState {
+        private boolean canceled;
+        private CompletableFuture<?> future;
 
-    @PreDestroy
-    public void shutdown() {
-        cleanupExecutor.shutdownNow();
+        private synchronized void checkCancellation() {
+            if (canceled) {
+                throw new ProcessCancelledException("Execution canceled");
+            }
+        }
     }
 }

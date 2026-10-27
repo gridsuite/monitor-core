@@ -41,12 +41,14 @@ public class ProcessExecutionService implements ProcessExecutor {
     private final String executionEnvName;
     private final ReportRestClient reportRestClient;
     private final MonitorRestClient monitorRestClient;
+    private final TaskManager taskManager;
 
     public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
                                    StepExecutor stepExecutor,
                                    Notificator notificationService,
                                    ReportRestClient reportRestClient,
                                    MonitorRestClient monitorRestClient,
+                                   TaskManager taskManager,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));
@@ -55,6 +57,7 @@ public class ProcessExecutionService implements ProcessExecutor {
         this.executionEnvName = executionEnvName;
         this.reportRestClient = reportRestClient;
         this.monitorRestClient = monitorRestClient;
+        this.taskManager = taskManager;
     }
 
     @Override
@@ -65,32 +68,42 @@ public class ProcessExecutionService implements ProcessExecutor {
             throw new IllegalArgumentException("No process found for type: " + runMessage.processType());
         }
 
-        if (monitorRestClient.isExecutionCanceled(runMessage.executionId())) {
-            return;
-        }
-
-        ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
-            runMessage.executionId(),
-            runMessage.caseUuid(),
-            runMessage.config(),
-            runMessage.reportId(),
-            executionEnvName,
-            runMessage.debugFileLocation()
-        );
-
-        updateExecutionStatus(context, ProcessStatus.RUNNING);
-
+        taskManager.registerExecution(runMessage.executionId());
         try {
-            reportRestClient.sendReport(context.getReportId(), context.getReportNode());
-            List<StepWithContext<T>> steps = initializeSteps(process, context);
-            executeSteps(context, steps);
-            updateExecutionStatus(context, ProcessStatus.COMPLETED);
-        } catch (ProcessCancelledException e) {
-            updateExecutionStatus(context, ProcessStatus.CANCELED);
-            throw e;
-        } catch (Exception e) {
-            updateExecutionStatus(context, ProcessStatus.FAILED);
-            throw e;
+            ProcessStatus status = monitorRestClient.getExecutionStatus(runMessage.executionId());
+            if (status == ProcessStatus.CANCELED) {
+                return;
+            }
+            if (status == ProcessStatus.CANCELING) {
+                taskManager.cancelTask(runMessage.executionId());
+            }
+
+            ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
+                runMessage.executionId(),
+                runMessage.caseUuid(),
+                runMessage.config(),
+                runMessage.reportId(),
+                executionEnvName,
+                runMessage.debugFileLocation()
+            );
+
+            try {
+                taskManager.checkCancellation(runMessage.executionId());
+                updateExecutionStatus(context, ProcessStatus.RUNNING);
+                reportRestClient.sendReport(context.getReportId(), context.getReportNode());
+                List<StepWithContext<T>> steps = initializeSteps(process, context);
+                executeSteps(context, steps);
+                taskManager.checkCancellation(runMessage.executionId());
+                updateExecutionStatus(context, ProcessStatus.COMPLETED);
+            } catch (ProcessCancelledException e) {
+                updateExecutionStatus(context, ProcessStatus.CANCELED);
+                throw e;
+            } catch (Exception e) {
+                updateExecutionStatus(context, ProcessStatus.FAILED);
+                throw e;
+            }
+        } finally {
+            taskManager.unregisterExecution(runMessage.executionId());
         }
     }
 

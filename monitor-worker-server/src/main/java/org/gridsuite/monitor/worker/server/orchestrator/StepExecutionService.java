@@ -43,9 +43,7 @@ public class StepExecutionService implements StepExecutor {
         StepStatus status = StepStatus.COMPLETED;
 
         try {
-            if (taskManager.checkIfCanceledAndRemove(processExecutionId)) {
-                throw new ProcessCancelledException("Execution canceled");
-            }
+            taskManager.checkCancellation(processExecutionId);
             initializeStep(context);
             stepWithContext.step().execute(context);
         } catch (CancellationException e) {

@@ -11,6 +11,7 @@ import org.gridsuite.monitor.worker.server.dto.processexecution.ExecutionStatusR
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.UUID;
 
@@ -32,16 +33,15 @@ public class MonitorRestClient {
             .build();
     }
 
-    public boolean isExecutionCanceled(UUID executionId) {
-        return getExecutionStatus(executionId) == ProcessStatus.CANCELED;
-    }
-
-    private ProcessStatus getExecutionStatus(UUID executionId) {
+    public ProcessStatus getExecutionStatus(UUID executionId) {
         ExecutionStatusResponse response = restClient.get()
                 .uri("/executions/{executionId}", executionId)
                 .retrieve()
                 .body(ExecutionStatusResponse.class);
 
-        return response == null ? null : response.status();
+        if (response == null || response.status() == null) {
+            throw new RestClientException("Missing status for execution " + executionId);
+        }
+        return response.status();
     }
 }

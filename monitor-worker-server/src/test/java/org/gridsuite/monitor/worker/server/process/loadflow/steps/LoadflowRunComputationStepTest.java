@@ -52,12 +52,14 @@ class LoadflowRunComputationStepTest {
 
     private LoadflowRunComputationStep runComputationStep;
     private final TaskManager taskManager = new TaskManager();
+    private final UUID executionId = UUID.randomUUID();
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID RESULT_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
+        taskManager.registerExecution(executionId);
         runComputationStep = new LoadflowRunComputationStep(loadFlowRestClient, taskManager);
 
         when(stepContext.getConfig()).thenReturn(config);
@@ -72,7 +74,7 @@ class LoadflowRunComputationStepTest {
 
     @AfterEach
     void tearDown() {
-        taskManager.shutdown();
+        taskManager.unregisterExecution(executionId);
     }
 
     @Test
@@ -84,7 +86,7 @@ class LoadflowRunComputationStepTest {
             .build();
 
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getProcessExecutionId()).thenReturn(UUID.randomUUID());
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(loadflowParametersInfos);
         when(loadFlowRestClient.saveResult(any(LoadFlowResult.class))).thenReturn(RESULT_UUID);
 
@@ -115,7 +117,7 @@ class LoadflowRunComputationStepTest {
     void canceledComputationShouldNotSaveResult() {
         Network network = mock(Network.class);
         when(stepContext.getNetwork()).thenReturn(network);
-        when(stepContext.getProcessExecutionId()).thenReturn(UUID.randomUUID());
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(LoadFlowParametersInfos.builder()
             .provider("TEST_PROVIDER")
             .commonParameters(new LoadFlowParameters())

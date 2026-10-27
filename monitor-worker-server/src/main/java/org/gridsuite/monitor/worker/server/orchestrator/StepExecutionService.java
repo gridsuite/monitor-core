@@ -6,6 +6,9 @@
  */
 package org.gridsuite.monitor.worker.server.orchestrator;
 
+import com.powsybl.commons.PowsyblException;
+import com.powsybl.commons.report.ReportNode;
+import com.powsybl.commons.report.TypedValue;
 import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
@@ -31,6 +34,20 @@ public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 
+    private void handleException(ReportNode reportNode, Exception e) {
+        boolean isApplicationException = PowsyblException.class.isAssignableFrom(e.getClass());
+        if (!isApplicationException && LOGGER.isErrorEnabled()) {
+            LOGGER.error(e.toString(), e);
+        }
+        String errorMessage = isApplicationException ? e.getMessage() : "Technical error: " + e;
+
+        reportNode.newReportNode()
+            .withMessageTemplate("monitor.worker.server.step.error")
+            .withUntypedValue("errorMessage", errorMessage)
+            .withSeverity(TypedValue.ERROR_SEVERITY)
+            .add();
+    }
+
     @Override
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
@@ -41,6 +58,7 @@ public class StepExecutionService implements StepExecutor {
             stepWithContext.step().execute(context);
         } catch (Exception e) {
             status = StepStatus.FAILED;
+            handleException(context.getReportNode(), e);
             throw e;
         } finally {
             sendReportSafely(context);

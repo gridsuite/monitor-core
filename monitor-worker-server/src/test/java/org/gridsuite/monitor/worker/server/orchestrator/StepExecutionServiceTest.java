@@ -18,6 +18,7 @@ import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
+import org.gridsuite.monitor.worker.server.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -118,7 +120,7 @@ class StepExecutionServiceTest {
     }
 
     @Test
-    void executeStepShouldSendFailedStatusWhenExceptionThrown() {
+    void executeStepShouldSendFailedStatusAndReportErrorWhenExceptionThrown() {
         UUID executionId = UUID.randomUUID();
         UUID processReportId = UUID.randomUUID();
         int stepOrder = 2;
@@ -132,6 +134,9 @@ class StepExecutionServiceTest {
             RuntimeException.class,
             () -> stepExecutionService.executeStep(stepWithContext)
         );
+
+        assertTrue(TestUtils.assertMessageFoundFromReporter("Technical error: java.lang.RuntimeException: Step execution failed", "monitor.worker.server.step.error", context.getReportNode()));
+
         assertEquals("Step execution failed", thrownException.getMessage());
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));
         InOrder inOrder = inOrder(notificationService);

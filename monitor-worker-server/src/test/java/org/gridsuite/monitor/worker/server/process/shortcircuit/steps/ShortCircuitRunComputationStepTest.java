@@ -82,12 +82,6 @@ class ShortCircuitRunComputationStepTest {
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
-
-        ReportNode reportNode = ReportNode.newRootReportNode()
-            .withResourceBundles("i18n.reports")
-            .withMessageTemplate("test")
-            .build();
-        when(stepContext.getReportNode()).thenReturn(reportNode);
     }
 
     @Test

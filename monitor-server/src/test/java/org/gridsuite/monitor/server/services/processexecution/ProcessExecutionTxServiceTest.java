@@ -685,12 +685,18 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void deleteExecutionSteps() {
-        ProcessExecutionEntity execution = new ProcessExecutionEntity();
-        execution.setSteps(new ArrayList<>());
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .steps(new ArrayList<>(List.of(
+                ProcessExecutionStepEntity.builder().id(UUID.randomUUID()).build(),
+                ProcessExecutionStepEntity.builder().id(UUID.randomUUID()).build()
+            )))
+            .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.deleteExecutionSteps(executionId);
+        Optional<UUID> result = processExecutionTxService.deleteExecutionSteps(executionId);
 
+        assertThat(result).contains(executionId);
+        assertThat(execution.getSteps()).isEmpty();
         verify(executionRepository).findById(executionId);
         verify(executionRepository).save(execution);
     }

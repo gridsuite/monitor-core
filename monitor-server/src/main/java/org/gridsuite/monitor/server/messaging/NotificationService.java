@@ -46,9 +46,7 @@ public class NotificationService {
     }
 
     public void sendProcessCancelMessage(UUID executionId) {
-        if (!publisher.send(PUBLISH_PROCESS_CANCEL_0, executionId)) {
-            LOGGER.warn("Could not publish cancellation request for execution {}", executionId);
-        }
+        publisher.send(PUBLISH_PROCESS_CANCEL_0, executionId);
     }
 
     public void sendProcessUpdatedMessage(UUID executionId, ProcessType processType) {

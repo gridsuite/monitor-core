@@ -7,10 +7,11 @@
 package org.gridsuite.monitor.worker.server.process.shortcircuit.steps;
 
 import com.powsybl.commons.PowsyblException;
-import com.powsybl.commons.report.ReportNode;
-import com.powsybl.commons.report.TypedValue;
 import com.powsybl.computation.local.LocalComputationManager;
-import com.powsybl.shortcircuit.*;
+import com.powsybl.shortcircuit.Fault;
+import com.powsybl.shortcircuit.ShortCircuitAnalysis;
+import com.powsybl.shortcircuit.ShortCircuitAnalysisResult;
+import com.powsybl.shortcircuit.ShortCircuitParameters;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
@@ -66,27 +67,16 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     public void execute(ProcessStepExecutionContext<ShortCircuitConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 
-        ReportNode reportNode = context.getReportNode();
+        ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
+        // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
 
-        try {
-            ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
-            // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
-
-            String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
-            Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
-            ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
-            if (context.getDebugFileLocation() == null) {
-                runComputation(context, provider, commonParameters, specificParameters);
-            } else {
-                runComputationWithDebug(context, provider, commonParameters, specificParameters);
-            }
-        } catch (Exception e) {
-            reportNode.newReportNode()
-                .withMessageTemplate("monitor.worker.server.shortcircuit.step.error")
-                .withUntypedValue("errorMessage", e.getMessage())
-                .withSeverity(TypedValue.ERROR_SEVERITY)
-                .add();
-            throw e;
+        String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
+        Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
+        ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
+        if (context.getDebugFileLocation() == null) {
+            runComputation(context, provider, commonParameters, specificParameters);
+        } else {
+            runComputationWithDebug(context, provider, commonParameters, specificParameters);
         }
     }
 

@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.worker.server.process.loadflow.steps;
 
 import com.powsybl.commons.report.ReportNode;
-import com.powsybl.commons.report.TypedValue;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
 import com.powsybl.loadflow.LoadFlowResult;
@@ -45,24 +44,15 @@ public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConf
 
         ReportNode reportNode = context.getReportNode();
 
-        try {
-            LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
-            LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
-            LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
-                .setParameters(loadflowParameters)
-                .setReportNode(reportNode);
-            LoadFlowResult result = LoadFlow.find(parametersInfos.getProvider()).run(context.getNetwork(), runParameters);
+        LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
+        LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
+        LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
+            .setParameters(loadflowParameters)
+            .setReportNode(reportNode);
+        LoadFlowResult result = LoadFlow.find(parametersInfos.getProvider()).run(context.getNetwork(), runParameters);
 
-            UUID resultUuid = loadflowRestClient.saveResult(result);
-            ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
-            context.setResultInfos(resultInfos);
-        } catch (Exception e) {
-            reportNode.newReportNode()
-                .withMessageTemplate("monitor.worker.server.loadflow.step.error")
-                .withUntypedValue("errorMessage", e.getMessage())
-                .withSeverity(TypedValue.ERROR_SEVERITY)
-                .add();
-            throw e;
-        }
+        UUID resultUuid = loadflowRestClient.saveResult(result);
+        ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
+        context.setResultInfos(resultInfos);
     }
 }

@@ -48,9 +48,6 @@ class StepExecutionServiceTest {
     private ReportRestClient reportRestClient;
 
     @Mock
-    private TaskManager taskManager;
-
-    @Mock
     private ProcessStep<ProcessConfig> processStep;
 
     @Mock
@@ -60,7 +57,7 @@ class StepExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        stepExecutionService = new StepExecutionService(notificationService, reportRestClient, taskManager);
+        stepExecutionService = new StepExecutionService(notificationService, reportRestClient);
     }
 
     @Test
@@ -171,23 +168,6 @@ class StepExecutionServiceTest {
         stepExecutionService.executeStep(new StepWithContext<>(processStep, context));
 
         assertThat(context.getStartedAt()).isBetween(before, Instant.now());
-    }
-
-    @Test
-    void executeStepShouldCancelWhenAlreadyCanceledInTaskManager() {
-        UUID executionId = UUID.randomUUID();
-        when(processStepType.getName()).thenReturn("TEST_STEP");
-        ProcessStepExecutionContext<ProcessConfig> context = createStepExecutionContext(executionId, UUID.randomUUID(), 0);
-        doThrow(new ProcessCancelledException("Execution canceled")).when(taskManager).checkCancellation(executionId);
-
-        StepWithContext<ProcessConfig> stepWithContext = new StepWithContext<>(processStep, context);
-        ProcessCancelledException exception = assertThrows(ProcessCancelledException.class, () -> stepExecutionService.executeStep(stepWithContext));
-        assertEquals("Execution canceled", exception.getMessage());
-
-        verify(notificationService).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(step ->
-                step.getStatus() == StepStatus.CANCELED
-        ));
-        verify(processStep, never()).execute(any());
     }
 
     @Test

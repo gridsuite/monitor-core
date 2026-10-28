@@ -67,33 +67,4 @@ class MonitorRestClientTest {
 
         assertThatThrownBy(() -> monitorRestClient.isExecutionCanceled(EXECUTION_UUID)).isInstanceOf(RestClientException.class);
     }
-
-    @Test
-    void isCancellationRequestedWhenExecutionIsCanceling() throws JsonProcessingException {
-        expectExecutionStatus(ProcessStatus.CANCELING);
-
-        assertThat(monitorRestClient.isCancellationRequested(EXECUTION_UUID)).isTrue();
-    }
-
-    @Test
-    void isCancellationRequestedWhenExecutionIsCanceled() throws JsonProcessingException {
-        expectExecutionStatus(ProcessStatus.CANCELED);
-
-        assertThat(monitorRestClient.isCancellationRequested(EXECUTION_UUID)).isTrue();
-    }
-
-    @Test
-    void isCancellationNotRequestedWhenExecutionIsRunning() throws JsonProcessingException {
-        expectExecutionStatus(ProcessStatus.RUNNING);
-
-        assertThat(monitorRestClient.isCancellationRequested(EXECUTION_UUID)).isFalse();
-    }
-
-    private void expectExecutionStatus(ProcessStatus status) throws JsonProcessingException {
-        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
-            .andExpect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
-            .andRespond(MockRestResponseCreators.withSuccess()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ObjectMapper().writeValueAsString(ProcessExecution.builder().status(status).build())));
-    }
 }

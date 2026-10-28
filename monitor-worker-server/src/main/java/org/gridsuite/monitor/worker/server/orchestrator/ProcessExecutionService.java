@@ -91,9 +91,8 @@ public class ProcessExecutionService implements ProcessExecutor {
                 executeSteps(context, steps);
                 taskManager.checkCancellation(runMessage.executionId());
                 updateExecutionStatus(context, ProcessStatus.COMPLETED);
-            } catch (ProcessCancelledException e) {
+            } catch (ProcessCancelledException _) {
                 updateExecutionStatus(context, ProcessStatus.CANCELED);
-                throw e;
             } catch (Exception e) {
                 updateExecutionStatus(context, ProcessStatus.FAILED);
                 throw e;

@@ -106,7 +106,7 @@ public class S3RestClient {
             if (!response.errors().isEmpty()) {
                 LOGGER.error("S3 partial deletion failure for directory '{}': {} object(s) could not be deleted: {}",
                         directoryKey, response.errors().size(), response.errors());
-                throw new RuntimeException("S3 deletion failed for " + response.errors().size() + " object(s) in directory: " + directoryKey);
+                throw S3Exception.builder().message("S3 deletion failed for " + response.errors().size() + " object(s) in directory: " + directoryKey).build();
             }
         }
     }

@@ -96,6 +96,6 @@ class NotificationServiceTest {
     void sendProcessCancelMessage() {
         notificationService.sendProcessCancelMessage(executionId);
 
-        verify(publisher).send(eq(PUBLISH_PROCESS_CANCEL_0), eq(executionId));
+        verify(publisher).send(PUBLISH_PROCESS_CANCEL_0, executionId);
     }
 }

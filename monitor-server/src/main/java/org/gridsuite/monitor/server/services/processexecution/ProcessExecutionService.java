@@ -222,10 +222,12 @@ public class ProcessExecutionService {
                 yield CancelProcessResult.CANCEL_REQUESTED;
             }
             case CANCELED -> {
+                // sanity check in case the status was updated but the worker is still running
                 notificationService.sendProcessCancelMessage(executionId);
                 yield CancelProcessResult.ALREADY_CANCELED;
             }
             case CANCELING -> {
+                // sanity check in case the status was updated but the worker is still running
                 notificationService.sendProcessCancelMessage(executionId);
                 yield CancelProcessResult.ALREADY_CANCELING;
             }

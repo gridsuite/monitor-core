@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -234,7 +235,7 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void executeProcessShouldNoticeCancellationBetweenSteps() {
+    void executeProcessShouldStopAfterCancellationBetweenSteps() {
         UUID executionId = UUID.randomUUID();
         ProcessStep<ProcessConfig> step1 = mockStep("STEP_1");
         ProcessStep<ProcessConfig> step2 = mockStep("STEP_2");
@@ -246,7 +247,7 @@ class ProcessExecutionServiceTest {
         }).when(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 
-        assertThrows(ProcessCancelledException.class, () -> processExecutionService.executeProcess(runMessage));
+        assertDoesNotThrow(() -> processExecutionService.executeProcess(runMessage));
 
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         verify(stepExecutor, never()).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
@@ -255,7 +256,7 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void executeProcessShouldNoticeCancellationAfterLastStep() {
+    void executeProcessShouldRemainCanceledWhenCancellationArrivesAfterLastStep() {
         UUID executionId = UUID.randomUUID();
         ProcessStep<ProcessConfig> step = mockStep("STEP");
         when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
@@ -266,7 +267,7 @@ class ProcessExecutionServiceTest {
         }).when(stepExecutor).executeStep(any());
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
 
-        assertThrows(ProcessCancelledException.class, () -> processExecutionService.executeProcess(runMessage));
+        assertDoesNotThrow(() -> processExecutionService.executeProcess(runMessage));
 
         verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
             update.getStatus() == ProcessStatus.CANCELED && update.getCompletedAt() != null));
@@ -275,7 +276,7 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void executeProcessShouldSendCancelledStatusWhenProcessCancelledExceptionThrown() {
+    void executeProcessShouldSendCancelledStatusWhenStepThrowsProcessCancelledException() {
         UUID executionId = UUID.randomUUID();
         UUID caseUuid = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
@@ -288,8 +289,7 @@ class ProcessExecutionServiceTest {
         doThrow(new ProcessCancelledException("Execution canceled"))
                 .when(stepExecutor).executeStep(any());
 
-        assertThrows(ProcessCancelledException.class,
-                () -> processExecutionService.executeProcess(runMessage));
+        assertDoesNotThrow(() -> processExecutionService.executeProcess(runMessage));
 
         verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
                 update.getStatus() == ProcessStatus.CANCELED &&

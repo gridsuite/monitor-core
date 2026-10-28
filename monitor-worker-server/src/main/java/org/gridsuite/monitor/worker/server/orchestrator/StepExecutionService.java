@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
-import java.util.UUID;
 import java.util.concurrent.CancellationException;
 
 /**
@@ -37,7 +36,6 @@ public class StepExecutionService implements StepExecutor {
     @Override
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
-        UUID processExecutionId = context.getProcessExecutionId();
         StepStatus status = StepStatus.COMPLETED;
 
         try {

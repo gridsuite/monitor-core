@@ -34,8 +34,6 @@ public class StepExecutionService implements StepExecutor {
     private final Notificator notificationService;
     private final ReportRestClient reportRestClient;
 
-    private final TaskManager taskManager;
-
     @Override
     public <C extends ProcessConfig> void executeStep(StepWithContext<C> stepWithContext) {
         ProcessStepExecutionContext<C> context = stepWithContext.stepExecutionContext();
@@ -43,7 +41,6 @@ public class StepExecutionService implements StepExecutor {
         StepStatus status = StepStatus.COMPLETED;
 
         try {
-            taskManager.checkCancellation(processExecutionId);
             initializeStep(context);
             stepWithContext.step().execute(context);
         } catch (CancellationException e) {

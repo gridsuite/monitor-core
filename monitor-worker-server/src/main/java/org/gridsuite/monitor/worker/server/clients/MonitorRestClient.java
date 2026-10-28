@@ -37,11 +37,6 @@ public class MonitorRestClient {
         return execution != null && execution.status() == ProcessStatus.CANCELED;
     }
 
-    public boolean isCancellationRequested(UUID executionId) {
-        ProcessExecution execution = getExecution(executionId);
-        return execution != null && (execution.status() == ProcessStatus.CANCELING || execution.status() == ProcessStatus.CANCELED);
-    }
-
     private ProcessExecution getExecution(UUID executionId) {
         return restClient.get()
                 .uri("/executions/{executionId}", executionId)

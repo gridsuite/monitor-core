@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -85,12 +84,12 @@ public class ProcessExecutionService implements ProcessExecutor {
             );
 
             try {
-                checkCancellation(runMessage.executionId());
+                taskManager.checkCancellation(runMessage.executionId());
                 updateExecutionStatus(context, ProcessStatus.RUNNING);
                 reportRestClient.sendReport(context.getReportId(), context.getReportNode());
                 List<StepWithContext<T>> steps = initializeSteps(process, context);
                 executeSteps(context, steps);
-                checkCancellation(runMessage.executionId());
+                taskManager.checkCancellation(runMessage.executionId());
                 updateExecutionStatus(context, ProcessStatus.COMPLETED);
             } catch (ProcessCancelledException e) {
                 updateExecutionStatus(context, ProcessStatus.CANCELED);
@@ -119,19 +118,12 @@ public class ProcessExecutionService implements ProcessExecutor {
     private <T extends ProcessConfig> void executeSteps(ProcessExecutionContext<T> context, List<StepWithContext<T>> steps) {
         for (int i = 0; i < steps.size(); i++) {
             try {
-                checkCancellation(context.getExecutionId());
+                taskManager.checkCancellation(context.getExecutionId());
                 stepExecutor.executeStep(steps.get(i));
             } catch (Exception e) {
                 skipRemainingSteps(context, steps, i + 1);
                 throw e;
             }
-        }
-    }
-
-    private void checkCancellation(UUID executionId) {
-        taskManager.checkCancellation(executionId);
-        if (monitorRestClient.isCancellationRequested(executionId)) {
-            throw new ProcessCancelledException("Execution canceled");
         }
     }
 

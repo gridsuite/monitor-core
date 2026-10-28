@@ -130,6 +130,7 @@ public class ProcessExecutionService implements ProcessExecutor {
 
     private void checkCancellation(UUID executionId) {
         taskManager.checkCancellation(executionId);
+        // A cancellation message may arrive before local registration, check the persisted status too
         if (monitorRestClient.isCancellationRequested(executionId)) {
             throw new ProcessCancelledException("Execution canceled");
         }

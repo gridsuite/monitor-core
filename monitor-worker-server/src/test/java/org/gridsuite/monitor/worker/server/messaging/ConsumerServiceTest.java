@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.messaging;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.orchestrator.ProcessExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import java.util.UUID;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -42,6 +44,19 @@ class ConsumerServiceTest {
     void consumeRun() {
         ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
         Message<ProcessRunMessage<ProcessConfig>> message = MessageBuilder.withPayload(runMessage).build();
+        var consumer = consumerService.consumeRun();
+
+        consumer.accept(message);
+
+        verify(processExecutionService).executeProcess(runMessage);
+    }
+
+    @Test
+    void consumeRunShouldSwallowProcessCancellation() {
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
+        Message<ProcessRunMessage<ProcessConfig>> message = MessageBuilder.withPayload(runMessage).build();
+        doThrow(new ProcessCancelledException("Execution canceled"))
+            .when(processExecutionService).executeProcess(runMessage);
         var consumer = consumerService.consumeRun();
 
         consumer.accept(message);

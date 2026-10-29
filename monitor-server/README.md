@@ -38,30 +38,7 @@ mvn install -DskipTests -Dpowsybl.docker.install
 
 ### Generate the OpenAPI specification
 
-The generated file is `monitor-server/target/openapi.json`.
-
-#### Build and start the server
-
-Run from the repository root with the local infrastructure (Postgres, RabbitMQ) running:
-
-```shell
-mvn -pl monitor-server -am clean install -DskipTests &&
-mvn -pl monitor-server spring-boot:start \
-  org.springdoc:springdoc-openapi-maven-plugin:1.5:generate \
-  spring-boot:stop \
-  -Dspring-boot.run.profiles=local \
-  -Dspringdoc.apiDocsUrl=http://localhost:5043/v3/api-docs
-```
-
-#### Use an already running server
-
-If the server is already running locally on port 5043, generate the specification without rebuilding or starting/stopping the server:
-
-```shell
-mvn -pl monitor-server \
-  org.springdoc:springdoc-openapi-maven-plugin:1.5:generate \
-  -Dspringdoc.apiDocsUrl=http://localhost:5043/v3/api-docs
-```
+Please read [OpenAPI usage](https://github.com/powsybl/powsybl-parent/#openapi-usage) for instructions to generate `api-docs.json`. Run the commands from the `monitor-server` directory and use port `5043`.
 
 ### Generate Liquibase changesets
 

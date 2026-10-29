@@ -17,6 +17,7 @@ import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
 import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
@@ -40,10 +41,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -216,6 +219,41 @@ class ShortCircuitRunComputationStepTest {
         assertThrows(RuntimeException.class,
             () -> runComputationStep.execute(stepContext));
 
+        verify(shortCircuitRestClient, never()).saveResult(any(), any());
+        verify(stepContext, never()).setResultInfos(any());
+    }
+
+    @Test
+    void executeCanceledComputationDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new CancellationException("Computation canceled"));
+    }
+
+    @Test
+    void executeCanceledProcessDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new ProcessCancelledException("Execution canceled"));
+    }
+
+    private void assertCancellationDoesNotReportFailure(RuntimeException cancellation) {
+        TaskManager taskManager = mock(TaskManager.class);
+        runComputationStep = new ShortCircuitRunComputationStep(
+            shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, taskManager, "ShortCircuit-provider");
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
+        Network network = EurostagTutorialExample1Factory.create();
+        when(stepContext.getNetwork()).thenReturn(network);
+        ShortCircuitParameters parameters = new ShortCircuitParameters();
+        ShortCircuitParametersInfos parametersInfos = ShortCircuitParametersInfos.builder()
+            .provider("ShortCircuit-provider")
+            .commonParameters(parameters)
+            .specificParametersPerProvider(Map.of("ShortCircuit-provider", Map.of()))
+            .build();
+        when(shortCircuitRestClient.getParameters(PARAMS_UUID)).thenReturn(parametersInfos);
+        when(shortCircuitParametersService.buildParameters(parametersInfos, "ShortCircuit-provider", Map.of()))
+            .thenReturn(parameters);
+        when(taskManager.runComputation(eq(executionId), any())).thenThrow(cancellation);
+
+        assertSame(cancellation, assertThrows(cancellation.getClass(), () -> runComputationStep.execute(stepContext)));
+
+        assertTrue(stepContext.getReportNode().getChildren().isEmpty());
         verify(shortCircuitRestClient, never()).saveResult(any(), any());
         verify(stepContext, never()).setResultInfos(any());
     }

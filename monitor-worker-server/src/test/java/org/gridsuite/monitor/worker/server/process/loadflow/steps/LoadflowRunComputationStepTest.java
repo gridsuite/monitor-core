@@ -16,6 +16,7 @@ import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +27,13 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
@@ -117,6 +121,35 @@ class LoadflowRunComputationStepTest {
         assertThrows(RuntimeException.class,
             () -> runComputationStep.execute(stepContext));
 
+        verify(loadFlowRestClient, never()).saveResult(any());
+        verify(stepContext, never()).setResultInfos(any());
+    }
+
+    @Test
+    void executeCanceledComputationDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new CancellationException("Computation canceled"));
+    }
+
+    @Test
+    void executeCanceledProcessDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new ProcessCancelledException("Execution canceled"));
+    }
+
+    private void assertCancellationDoesNotReportFailure(RuntimeException cancellation) {
+        TaskManager taskManager = mock(TaskManager.class);
+        runComputationStep = new LoadflowRunComputationStep(loadFlowRestClient, taskManager);
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
+        Network network = mock(Network.class);
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(loadFlowRestClient.getParameters(PARAMS_UUID)).thenReturn(LoadFlowParametersInfos.builder()
+            .provider("TEST_PROVIDER")
+            .commonParameters(new LoadFlowParameters())
+            .build());
+        when(taskManager.runComputation(eq(executionId), any())).thenThrow(cancellation);
+
+        assertSame(cancellation, assertThrows(cancellation.getClass(), () -> runComputationStep.execute(stepContext)));
+
+        assertTrue(stepContext.getReportNode().getChildren().isEmpty());
         verify(loadFlowRestClient, never()).saveResult(any());
         verify(stepContext, never()).setResultInfos(any());
     }

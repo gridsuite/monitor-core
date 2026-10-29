@@ -19,6 +19,7 @@ import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
 import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
@@ -30,9 +31,12 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -132,6 +136,34 @@ class SecurityAnalysisRunComputationStepTest {
             () -> runComputationStep.execute(stepContext));
 
         verify(securityAnalysisRestClient, never()).saveResult(any(UUID.class), any(SecurityAnalysisResult.class));
+        verify(stepContext, never()).setResultInfos(any());
+    }
+
+    @Test
+    void executeCanceledComputationDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new CancellationException("Computation canceled"));
+    }
+
+    @Test
+    void executeCanceledProcessDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new ProcessCancelledException("Execution canceled"));
+    }
+
+    private void assertCancellationDoesNotReportFailure(RuntimeException cancellation) {
+        TaskManager taskManager = mock(TaskManager.class);
+        runComputationStep = new SecurityAnalysisRunComputationStep(
+            securityAnalysisRestClient, securityAnalysisParametersService, taskManager);
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
+        Network network = mock(Network.class);
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
+            .thenReturn(new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(), "OpenLoadFlow"));
+        when(taskManager.runComputation(eq(executionId), any())).thenThrow(cancellation);
+
+        assertSame(cancellation, assertThrows(cancellation.getClass(), () -> runComputationStep.execute(stepContext)));
+
+        assertTrue(stepContext.getReportNode().getChildren().isEmpty());
+        verify(securityAnalysisRestClient, never()).saveResult(any(), any());
         verify(stepContext, never()).setResultInfos(any());
     }
 }

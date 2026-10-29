@@ -91,4 +91,11 @@ class NotificationServiceTest {
                             ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get(PROCESS_TYPE)))
         );
     }
+
+    @Test
+    void sendProcessCancelMessage() {
+        notificationService.sendProcessCancelMessage(executionId);
+
+        verify(publisher).send(PUBLISH_PROCESS_CANCEL_0, executionId);
+    }
 }

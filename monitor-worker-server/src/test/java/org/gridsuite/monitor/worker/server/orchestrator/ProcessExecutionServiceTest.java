@@ -13,7 +13,9 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.worker.server.clients.MonitorRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
 import org.gridsuite.monitor.worker.server.core.process.Process;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
@@ -32,6 +34,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -56,14 +59,19 @@ class ProcessExecutionServiceTest {
     @Mock
     private ReportRestClient reportRestClient;
 
+    @Mock
+    private MonitorRestClient monitorRestClient;
+
     private ProcessExecutionService processExecutionService;
+    private TaskManager taskManager;
 
     private static final String EXECUTION_ENV_NAME = "test-env";
 
     @BeforeEach
     void setUp() {
         when(process.getProcessType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
-        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, EXECUTION_ENV_NAME);
+        taskManager = new TaskManager();
+        processExecutionService = new ProcessExecutionService(List.of(process), stepExecutor, notificationService, reportRestClient, monitorRestClient, taskManager, EXECUTION_ENV_NAME);
     }
 
     private static ProcessStep<ProcessConfig> mockStep(String typeName) {
@@ -89,6 +97,8 @@ class ProcessExecutionServiceTest {
         processExecutionService.executeProcess(runMessage);
 
         verify(reportRestClient, times(1)).sendReport(any(UUID.class), any(ReportNode.class));
+        verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
+        verifyNoMoreInteractions(monitorRestClient);
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
         verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step3));
@@ -210,5 +220,80 @@ class ProcessExecutionServiceTest {
             .hasMessageContaining("No process found for type");
         verifyNoInteractions(reportRestClient);
         verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void executeProcessShouldSkipWhenExecutionCanceled() {
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(monitorRestClient.isExecutionCanceled(any(UUID.class))).thenReturn(true);
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(UUID.randomUUID(), UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
+
+        processExecutionService.executeProcess(runMessage);
+        verify(monitorRestClient, times(1)).isExecutionCanceled(any(UUID.class));
+        verifyNoInteractions(reportRestClient);
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void executeProcessShouldStopAfterCancellationBetweenSteps() {
+        UUID executionId = UUID.randomUUID();
+        ProcessStep<ProcessConfig> step1 = mockStep("STEP_1");
+        ProcessStep<ProcessConfig> step2 = mockStep("STEP_2");
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getSteps()).thenReturn(List.of(step1, step2));
+        doAnswer(invocation -> {
+            taskManager.cancelTask(executionId);
+            return null;
+        }).when(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
+
+        assertDoesNotThrow(() -> processExecutionService.executeProcess(runMessage));
+
+        verify(stepExecutor).executeStep(argThat(stepWithContext -> stepWithContext.step() == step1));
+        verify(stepExecutor, never()).executeStep(argThat(stepWithContext -> stepWithContext.step() == step2));
+        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
+            update.getStatus() == ProcessStatus.CANCELED && update.getCompletedAt() != null));
+    }
+
+    @Test
+    void executeProcessShouldRemainCanceledWhenCancellationArrivesAfterLastStep() {
+        UUID executionId = UUID.randomUUID();
+        ProcessStep<ProcessConfig> step = mockStep("STEP");
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getSteps()).thenReturn(List.of(step));
+        doAnswer(invocation -> {
+            taskManager.cancelTask(executionId);
+            return null;
+        }).when(stepExecutor).executeStep(any());
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, UUID.randomUUID(), processConfig, UUID.randomUUID(), null);
+
+        assertDoesNotThrow(() -> processExecutionService.executeProcess(runMessage));
+
+        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
+            update.getStatus() == ProcessStatus.CANCELED && update.getCompletedAt() != null));
+        verify(notificationService, never()).updateExecutionStatus(eq(executionId), any(), argThat(update ->
+            update.getStatus() == ProcessStatus.COMPLETED));
+    }
+
+    @Test
+    void executeProcessShouldSendCancelledStatusWhenStepThrowsProcessCancelledException() {
+        UUID executionId = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
+        UUID reportId = UUID.randomUUID();
+        ProcessStep<ProcessConfig> step1 = mockStep("STEP_1");
+
+        when(processConfig.processType()).thenReturn(ProcessType.SECURITY_ANALYSIS);
+        when(process.getSteps()).thenReturn(List.of(step1));
+        ProcessRunMessage<ProcessConfig> runMessage = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, null);
+
+        doThrow(new ProcessCancelledException("Execution canceled"))
+                .when(stepExecutor).executeStep(any());
+
+        assertDoesNotThrow(() -> processExecutionService.executeProcess(runMessage));
+
+        verify(notificationService).updateExecutionStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), argThat(update ->
+                update.getStatus() == ProcessStatus.CANCELED &&
+                        update.getCompletedAt() != null
+        ));
     }
 }

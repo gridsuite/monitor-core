@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -24,9 +26,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationService.class);
+
     public static final String PROCESS_EXECUTION_ID = "processExecutionId";
     public static final String PROCESS_TYPE = "processType";
     public static final String PUBLISH_MONITOR_UPDATE_OUT_0 = "publishMonitorUpdate-out-0";
+    public static final String PUBLISH_PROCESS_CANCEL_0 = "publishProcessCancel-out-0";
     public static final String UPDATE_TYPE = "updateType";
     private final StreamBridge publisher;
 
@@ -38,6 +43,10 @@ public class NotificationService {
         };
         ProcessRunMessage<?> message = new ProcessRunMessage<>(executionId, caseUuid, processConfig, reportId, debugFileLocation);
         publisher.send(bindingName, message);
+    }
+
+    public void sendProcessCancelMessage(UUID executionId) {
+        publisher.send(PUBLISH_PROCESS_CANCEL_0, executionId);
     }
 
     public void sendProcessUpdatedMessage(UUID executionId, ProcessType processType) {

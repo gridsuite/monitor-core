@@ -10,18 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.services.processexecution.CancelProcessResult;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -105,6 +106,43 @@ class MonitorControllerTest {
             .andExpect(jsonPath("$").value(executionId.toString()));
 
         verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue));
+    }
+
+    @Test
+    void cancelExecutionReturnsOkWhenCancellationIsRequested() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.CANCEL_REQUESTED);
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ALREADY_CANCELED", "ALREADY_CANCELING"})
+    void cancelExecutionReturnsNoContentWhenCancellationWasAlreadyRequested(String result) throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.valueOf(result));
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void cancelExecutionReturnsNotFoundWhenExecutionDoesNotExist() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.NOT_FOUND);
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancelExecutionReturnsConflictWhenExecutionCannotBeCanceled() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.NOT_CANCELLABLE);
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isConflict());
     }
 
     @Test
@@ -314,28 +352,49 @@ class MonitorControllerTest {
         verify(processExecutionService).getStepsInfos(executionId);
     }
 
-    @Test
-    void deleteExecutionReturnsOK() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"COMPLETED", "FAILED", "CANCELED"})
+    void deleteExecutionReturnsOK(String statusStr) throws Exception {
         UUID executionId = UUID.randomUUID();
+        ProcessStatus status = ProcessStatus.valueOf(statusStr);
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.of(status));
         when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Optional.of(executionId));
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
 
+        verify(processExecutionService).getExecutionStatus(executionId);
         verify(processExecutionService).deleteExecution(executionId);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SCHEDULED", "RUNNING", "CANCELING"})
+    void deleteExecutionReturnsConflictWhenNotTerminal(String statusStr) throws Exception {
+        UUID executionId = UUID.randomUUID();
+        ProcessStatus status = ProcessStatus.valueOf(statusStr);
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.of(status));
+
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+                .andExpect(status().isConflict());
+
+        verify(processExecutionService).getExecutionStatus(executionId);
+        verify(processExecutionService, never()).deleteExecution(executionId);
     }
 
     @Test
     void deleteExecutionReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Optional.empty());
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).deleteExecution(executionId);
+        verify(processExecutionService).getExecutionStatus(executionId);
+        verify(processExecutionService, never()).deleteExecution(executionId);
     }
 
     @Test

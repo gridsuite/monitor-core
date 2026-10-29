@@ -11,9 +11,11 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.*;
+import org.gridsuite.monitor.worker.server.clients.MonitorRestClient;
 import org.gridsuite.monitor.worker.server.clients.ReportRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessExecutionContext;
 import org.gridsuite.monitor.worker.server.core.context.StepWithContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.messaging.Notificator;
 import org.gridsuite.monitor.worker.server.core.orchestrator.ProcessExecutor;
 import org.gridsuite.monitor.worker.server.core.orchestrator.StepExecutor;
@@ -38,11 +40,15 @@ public class ProcessExecutionService implements ProcessExecutor {
     private final Notificator notificationService;
     private final String executionEnvName;
     private final ReportRestClient reportRestClient;
+    private final MonitorRestClient monitorRestClient;
+    private final TaskManager taskManager;
 
     public ProcessExecutionService(List<Process<? extends ProcessConfig>> processList,
                                    StepExecutor stepExecutor,
                                    Notificator notificationService,
                                    ReportRestClient reportRestClient,
+                                   MonitorRestClient monitorRestClient,
+                                   TaskManager taskManager,
                                    @Value("${worker.execution-env-name:default-env}") String executionEnvName) {
         this.processes = processList.stream()
             .collect(Collectors.toMap(Process::getProcessType, w -> w));
@@ -50,6 +56,8 @@ public class ProcessExecutionService implements ProcessExecutor {
         this.notificationService = notificationService;
         this.executionEnvName = executionEnvName;
         this.reportRestClient = reportRestClient;
+        this.monitorRestClient = monitorRestClient;
+        this.taskManager = taskManager;
     }
 
     @Override
@@ -60,25 +68,37 @@ public class ProcessExecutionService implements ProcessExecutor {
             throw new IllegalArgumentException("No process found for type: " + runMessage.processType());
         }
 
-        ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
-            runMessage.executionId(),
-            runMessage.caseUuid(),
-            runMessage.config(),
-            runMessage.reportId(),
-            executionEnvName,
-            runMessage.debugFileLocation()
-        );
-
-        updateExecutionStatus(context, ProcessStatus.RUNNING);
-
+        taskManager.registerExecution(runMessage.executionId());
         try {
-            reportRestClient.sendReport(context.getReportId(), context.getReportNode());
-            List<StepWithContext<T>> steps = initializeSteps(process, context);
-            executeSteps(context, steps);
-            updateExecutionStatus(context, ProcessStatus.COMPLETED);
-        } catch (Exception e) {
-            updateExecutionStatus(context, ProcessStatus.FAILED);
-            throw e;
+            if (monitorRestClient.isExecutionCanceled(runMessage.executionId())) {
+                return;
+            }
+
+            ProcessExecutionContext<T> context = new ProcessExecutionContext<>(
+                runMessage.executionId(),
+                runMessage.caseUuid(),
+                runMessage.config(),
+                runMessage.reportId(),
+                executionEnvName,
+                runMessage.debugFileLocation()
+            );
+
+            try {
+                taskManager.checkCancellation(runMessage.executionId());
+                updateExecutionStatus(context, ProcessStatus.RUNNING);
+                reportRestClient.sendReport(context.getReportId(), context.getReportNode());
+                List<StepWithContext<T>> steps = initializeSteps(process, context);
+                executeSteps(context, steps);
+                taskManager.checkCancellation(runMessage.executionId());
+                updateExecutionStatus(context, ProcessStatus.COMPLETED);
+            } catch (ProcessCancelledException _) {
+                updateExecutionStatus(context, ProcessStatus.CANCELED);
+            } catch (Exception e) {
+                updateExecutionStatus(context, ProcessStatus.FAILED);
+                throw e;
+            }
+        } finally {
+            taskManager.unregisterExecution(runMessage.executionId());
         }
     }
 
@@ -97,6 +117,7 @@ public class ProcessExecutionService implements ProcessExecutor {
     private <T extends ProcessConfig> void executeSteps(ProcessExecutionContext<T> context, List<StepWithContext<T>> steps) {
         for (int i = 0; i < steps.size(); i++) {
             try {
+                taskManager.checkCancellation(context.getExecutionId());
                 stepExecutor.executeStep(steps.get(i));
             } catch (Exception e) {
                 skipRemainingSteps(context, steps, i + 1);
@@ -114,7 +135,7 @@ public class ProcessExecutionService implements ProcessExecutor {
             status,
             context.getExecutionEnvName(),
             status == ProcessStatus.RUNNING ? Instant.now() : null,
-            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED ? Instant.now() : null
+            status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED || status == ProcessStatus.CANCELED ? Instant.now() : null
         );
 
         notificationService.updateExecutionStatus(context.getExecutionId(), context.getConfig().processType(), processExecutionStatusUpdate);

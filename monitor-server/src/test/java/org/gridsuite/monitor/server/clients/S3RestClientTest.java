@@ -126,4 +126,24 @@ class S3RestClientTest {
             assertEquals("byteContent", new String(zis.readAllBytes()));
         }
     }
+
+    @Test
+    void deleteS3Directory() {
+        S3Object obj = S3Object.builder()
+                .key("executionId1/debug/file.txt")
+                .build();
+        ListObjectsV2Response response = ListObjectsV2Response.builder()
+                .contents(obj)
+                .isTruncated(false)
+                .build();
+        when(s3Client.listObjectsV2(any(ListObjectsV2Request.class)))
+                .thenReturn(response);
+        DeleteObjectsResponse deleteResponse = DeleteObjectsResponse.builder()
+                .build();
+        when(s3Client.deleteObjects(any(DeleteObjectsRequest.class)))
+                .thenReturn(deleteResponse);
+
+        s3RestClient.deleteDirectory("executionId1");
+        verify(s3Client).deleteObjects(any(DeleteObjectsRequest.class));
+    }
 }

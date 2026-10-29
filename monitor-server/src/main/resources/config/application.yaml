@@ -12,6 +12,8 @@ spring:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run
         publishMonitorUpdate-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
+        publishProcessCancel-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.cancel
         consumeMonitorWorkerUpdate-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
           group: monitorWorkerUpdateGroup

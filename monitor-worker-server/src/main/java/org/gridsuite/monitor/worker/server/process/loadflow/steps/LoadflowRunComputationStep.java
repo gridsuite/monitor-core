@@ -17,14 +17,17 @@ import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.loadflow.LoadflowStepType;
 import org.gridsuite.monitor.worker.server.services.LoadFlowParametersService;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -33,10 +36,12 @@ import java.util.UUID;
 public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConfig> {
 
     private final LoadFlowRestClient loadflowRestClient;
+    private final TaskManager taskManager;
 
-    protected LoadflowRunComputationStep(LoadFlowRestClient loadflowRestClient) {
+    protected LoadflowRunComputationStep(LoadFlowRestClient loadflowRestClient, TaskManager taskManager) {
         super(LoadflowStepType.RUN_LF_COMPUTATION);
         this.loadflowRestClient = loadflowRestClient;
+        this.taskManager = taskManager;
     }
 
     @Override
@@ -51,11 +56,14 @@ public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConf
             LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
                 .setParameters(loadflowParameters)
                 .setReportNode(reportNode);
-            LoadFlowResult result = LoadFlow.find(parametersInfos.getProvider()).run(context.getNetwork(), runParameters);
+            LoadFlowResult result = taskManager.runComputation(context.getProcessExecutionId(),
+                () -> LoadFlow.find(parametersInfos.getProvider()).runAsync(context.getNetwork(), runParameters));
 
             UUID resultUuid = loadflowRestClient.saveResult(result);
             ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
             context.setResultInfos(resultInfos);
+        } catch (CancellationException | ProcessCancelledException e) {
+            throw e;
         } catch (Exception e) {
             reportNode.newReportNode()
                 .withMessageTemplate("monitor.worker.server.loadflow.step.error")

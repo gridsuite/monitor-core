@@ -15,8 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.server.dto.processexecution.CsvExportRequest;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
@@ -62,6 +63,22 @@ public class MonitorController {
             @RequestHeader(HEADER_USER_ID) String userId) {
         Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/executions/{executionId}/cancel")
+    @Operation(summary = "Cancel a process")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process cancellation has been requested"),
+                           @ApiResponse(responseCode = "204", description = "Process is already canceled or canceling"),
+                           @ApiResponse(responseCode = "404", description = "Process execution was not found"),
+                           @ApiResponse(responseCode = "409", description = "Process execution is completed or failed")})
+    public ResponseEntity<Void> cancelProcess(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return switch (processExecutionService.cancelProcess(executionId)) {
+            case CANCEL_REQUESTED -> ResponseEntity.ok().build();
+            case ALREADY_CANCELED, ALREADY_CANCELING -> ResponseEntity.noContent().build();
+            case NOT_FOUND -> ResponseEntity.notFound().build();
+            case NOT_CANCELLABLE -> ResponseEntity.status(HttpStatus.CONFLICT).build();
+        };
     }
 
     @GetMapping("/executions/{executionId}/logs")
@@ -192,8 +209,16 @@ public class MonitorController {
     @DeleteMapping("/executions/{executionId}")
     @Operation(summary = "Delete an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
-                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+                           @ApiResponse(responseCode = "404", description = "execution id was not found"),
+                           @ApiResponse(responseCode = "409", description = "Execution is not in a terminal state")})
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
+        ProcessStatus status = processExecutionService.getExecutionStatus(executionId).orElse(null);
+        if (status == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (status != ProcessStatus.COMPLETED && status != ProcessStatus.FAILED && status != ProcessStatus.CANCELED) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }

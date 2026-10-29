@@ -19,7 +19,9 @@ import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
+import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +31,12 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -60,13 +66,18 @@ class SecurityAnalysisRunComputationStepTest {
     private SecurityAnalysisConfig config;
 
     private SecurityAnalysisRunComputationStep runComputationStep;
+    private UUID executionId;
 
     private static final UUID PARAMS_UUID = UUID.randomUUID();
     private static final UUID LOADFLOW_PARAMS_UUID = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
-        runComputationStep = new SecurityAnalysisRunComputationStep(securityAnalysisRestClient, securityAnalysisParametersService);
+        TaskManager taskManager = new TaskManager();
+        executionId = UUID.randomUUID();
+        taskManager.registerExecution(executionId);
+        runComputationStep = new SecurityAnalysisRunComputationStep(
+            securityAnalysisRestClient, securityAnalysisParametersService, taskManager);
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.securityAnalysisParametersUuid()).thenReturn(PARAMS_UUID);
@@ -81,6 +92,7 @@ class SecurityAnalysisRunComputationStepTest {
 
     @Test
     void executeRunSecurityAnalysis() {
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         Network network = mock(Network.class);
         Contingency contingency = new Contingency("NHV1_NHV2_1", "NHV1_NHV2_1", List.of(new LineContingency("NHV1_NHV2_1")));
         SecurityAnalysisInputData inputData = new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(contingency), "OpenLoadFlow");
@@ -94,11 +106,12 @@ class SecurityAnalysisRunComputationStepTest {
         try (MockedStatic<SecurityAnalysis> securityAnalysis = mockStatic(SecurityAnalysis.class)) {
             SecurityAnalysis.Runner runner = mock(SecurityAnalysis.Runner.class);
             securityAnalysis.when(() -> SecurityAnalysis.find("OpenLoadFlow")).thenReturn(runner);
-            when(runner.run(any(), any(), any(SecurityAnalysisRunParameters.class))).thenReturn(analysisReport);
+            when(runner.runAsync(any(), any(), any(SecurityAnalysisRunParameters.class)))
+                .thenReturn(CompletableFuture.completedFuture(analysisReport));
 
             runComputationStep.execute(stepContext);
 
-            verify(runner).run(eq(network), eq(List.of(contingency)), any(SecurityAnalysisRunParameters.class));
+            verify(runner).runAsync(eq(network), eq(List.of(contingency)), any(SecurityAnalysisRunParameters.class));
         }
 
         String stepType = runComputationStep.getType().getName();
@@ -123,6 +136,34 @@ class SecurityAnalysisRunComputationStepTest {
             () -> runComputationStep.execute(stepContext));
 
         verify(securityAnalysisRestClient, never()).saveResult(any(UUID.class), any(SecurityAnalysisResult.class));
+        verify(stepContext, never()).setResultInfos(any());
+    }
+
+    @Test
+    void executeCanceledComputationDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new CancellationException("Computation canceled"));
+    }
+
+    @Test
+    void executeCanceledProcessDoesNotReportFailure() {
+        assertCancellationDoesNotReportFailure(new ProcessCancelledException("Execution canceled"));
+    }
+
+    private void assertCancellationDoesNotReportFailure(RuntimeException cancellation) {
+        TaskManager taskManager = mock(TaskManager.class);
+        runComputationStep = new SecurityAnalysisRunComputationStep(
+            securityAnalysisRestClient, securityAnalysisParametersService, taskManager);
+        when(stepContext.getProcessExecutionId()).thenReturn(executionId);
+        Network network = mock(Network.class);
+        when(stepContext.getNetwork()).thenReturn(network);
+        when(securityAnalysisParametersService.buildSecurityAnalysisInputData(PARAMS_UUID, LOADFLOW_PARAMS_UUID, network))
+            .thenReturn(new SecurityAnalysisInputData(new SecurityAnalysisParameters(), List.of(), "OpenLoadFlow"));
+        when(taskManager.runComputation(eq(executionId), any())).thenThrow(cancellation);
+
+        assertSame(cancellation, assertThrows(cancellation.getClass(), () -> runComputationStep.execute(stepContext)));
+
+        assertTrue(stepContext.getReportNode().getChildren().isEmpty());
+        verify(securityAnalysisRestClient, never()).saveResult(any(), any());
         verify(stepContext, never()).setResultInfos(any());
     }
 }

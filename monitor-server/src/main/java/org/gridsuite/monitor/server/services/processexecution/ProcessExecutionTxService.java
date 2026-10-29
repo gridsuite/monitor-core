@@ -8,10 +8,10 @@ package org.gridsuite.monitor.server.services.processexecution;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
@@ -85,7 +85,7 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
+    public void updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             execution.setStatus(payload.getStatus());
             if (payload.getExecutionEnvName() != null) {
@@ -97,6 +97,14 @@ public class ProcessExecutionTxService {
             if (payload.getCompletedAt() != null) {
                 execution.setCompletedAt(payload.getCompletedAt());
             }
+            processExecutionRepository.save(execution);
+        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+    }
+
+    @Transactional
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            execution.setStatus(status);
             processExecutionRepository.save(execution);
         }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
     }
@@ -173,6 +181,21 @@ public class ProcessExecutionTxService {
         return Optional.of(infos);
     }
 
+    @Transactional
+    public void clearResourceReferences(UUID executionId) {
+        processExecutionRepository.findById(executionId).ifPresent(execution -> {
+            execution.setReportId(null);
+            execution.setDebugFileLocation(null);
+            processExecutionRepository.save(execution);
+        });
+    }
+
+    public Optional<ProcessDeletionInfos> getProcessDeletionInfos(UUID executionId) {
+        Optional<ProcessExecutionEntity> opt =
+            processExecutionRepository.findById(executionId);
+        return opt.map(ProcessDeletionInfos::fromProcessExecutionEntity);
+    }
+
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
         List<ProcessExecutionStepEntity> steps = Optional.ofNullable(execution.getSteps()).orElseGet(() -> {
             List<ProcessExecutionStepEntity> newSteps = new ArrayList<>();
@@ -185,5 +208,19 @@ public class ProcessExecutionTxService {
             .ifPresentOrElse(
                 existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
                 () -> steps.add(stepEntity));
+    }
+
+    @Transactional
+    public Optional<UUID> deleteExecutionSteps(UUID executionId) {
+        Optional<ProcessExecutionEntity> executionOpt =
+                processExecutionRepository.findById(executionId);
+
+        if (executionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        ProcessExecutionEntity execution = executionOpt.get();
+        execution.getSteps().clear();
+        processExecutionRepository.save(execution);
+        return Optional.of(executionId);
     }
 }

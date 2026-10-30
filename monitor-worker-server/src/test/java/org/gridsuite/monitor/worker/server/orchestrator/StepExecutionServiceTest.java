@@ -19,7 +19,7 @@ import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledExcep
 import org.gridsuite.monitor.worker.server.core.process.ProcessStep;
 import org.gridsuite.monitor.worker.server.core.process.ProcessStepType;
 import org.gridsuite.monitor.worker.server.messaging.NotificationService;
-import org.gridsuite.monitor.worker.server.utils.TestUtils;
+import org.gridsuite.monitor.worker.server.utils.ReportTestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -137,7 +137,7 @@ class StepExecutionServiceTest {
             () -> stepExecutionService.executeStep(stepWithContext)
         );
 
-        assertTrue(TestUtils.assertMessageFoundFromReporter("Technical error: java.lang.RuntimeException: Step execution failed", "monitor.worker.server.step.error", context.getReportNode()));
+        assertTrue(ReportTestUtils.assertMessageFoundFromReporter("Technical error: java.lang.RuntimeException: Step execution failed", "monitor.worker.server.step.error", context.getReportNode()));
         assertEquals("Step execution failed", thrownException.getMessage());
 
         verify(notificationService, times(2)).updateStepStatus(eq(executionId), eq(ProcessType.SECURITY_ANALYSIS), any(ProcessExecutionStep.class));

@@ -12,8 +12,8 @@ import org.apache.commons.text.StringSubstitutor;
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-public final class TestUtils {
-    private TestUtils() {
+public final class ReportTestUtils {
+    private ReportTestUtils() {
         throw new IllegalCallerException("Utility class");
     }
 

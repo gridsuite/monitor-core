@@ -30,11 +30,17 @@ Responsibilities:
 
 ## Development Scripts
 
-Build Docker image
+### Build Docker image
 
 ```shell
 mvn install -DskipTests -Dpowsybl.docker.install
 ```
+
+### Generate the OpenAPI specification
+
+Please read [OpenAPI usage](https://github.com/powsybl/powsybl-parent/#openapi-usage) for instructions to generate `api-docs.json`. Run the commands from the `monitor-server` directory and use port `5043`.
+
+### Generate Liquibase changesets
 
 Please read [liquibase usage](https://github.com/powsybl/powsybl-parent/#liquibase-usage) for instructions to automatically generate changesets. After you generated a changeset do not forget to add it to git and in src/resource/db/changelog/db.changelog-master.yml
 

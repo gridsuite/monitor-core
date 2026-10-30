@@ -7,17 +7,17 @@
 package org.gridsuite.monitor.worker.server.process.shortcircuit.steps;
 
 import com.powsybl.commons.PowsyblException;
-import com.powsybl.commons.report.ReportNode;
-import com.powsybl.commons.report.TypedValue;
 import com.powsybl.computation.local.LocalComputationManager;
-import com.powsybl.shortcircuit.*;
+import com.powsybl.shortcircuit.Fault;
+import com.powsybl.shortcircuit.ShortCircuitAnalysis;
+import com.powsybl.shortcircuit.ShortCircuitAnalysisResult;
+import com.powsybl.shortcircuit.ShortCircuitParameters;
 import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
 import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -72,29 +71,16 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     public void execute(ProcessStepExecutionContext<ShortCircuitConfig> context) {
         Objects.requireNonNull(context.getNetwork());
 
-        ReportNode reportNode = context.getReportNode();
+        ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
+        // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
 
-        try {
-            ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
-            // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
-
-            String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
-            Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
-            ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
-            if (context.getDebugFileLocation() == null) {
-                runComputation(context, provider, commonParameters, specificParameters);
-            } else {
-                runComputationWithDebug(context, provider, commonParameters, specificParameters);
-            }
-        } catch (CancellationException | ProcessCancelledException e) {
-            throw e;
-        } catch (Exception e) {
-            reportNode.newReportNode()
-                .withMessageTemplate("monitor.worker.server.shortcircuit.step.error")
-                .withUntypedValue("errorMessage", e.getMessage())
-                .withSeverity(TypedValue.ERROR_SEVERITY)
-                .add();
-            throw e;
+        String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
+        Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
+        ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
+        if (context.getDebugFileLocation() == null) {
+            runComputation(context, provider, commonParameters, specificParameters);
+        } else {
+            runComputationWithDebug(context, provider, commonParameters, specificParameters);
         }
     }
 

@@ -92,12 +92,6 @@ class ShortCircuitRunComputationStepTest {
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
-
-        ReportNode reportNode = ReportNode.newRootReportNode()
-            .withResourceBundles("i18n.reports")
-            .withMessageTemplate("test")
-            .build();
-        when(stepContext.getReportNode()).thenReturn(reportNode);
     }
 
     @Test
@@ -238,6 +232,12 @@ class ShortCircuitRunComputationStepTest {
         runComputationStep = new ShortCircuitRunComputationStep(
             shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, taskManager, "ShortCircuit-provider");
         when(stepContext.getProcessExecutionId()).thenReturn(executionId);
+        when(stepContext.getConfig()).thenReturn(config);
+        ReportNode reportNode = ReportNode.newRootReportNode()
+            .withResourceBundles("i18n.reports")
+            .withMessageTemplate("test")
+            .build();
+        when(stepContext.getReportNode()).thenReturn(reportNode);
         Network network = EurostagTutorialExample1Factory.create();
         when(stepContext.getNetwork()).thenReturn(network);
         ShortCircuitParameters parameters = new ShortCircuitParameters();

@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.worker.server.process.loadflow.steps;
 
 import com.powsybl.commons.report.ReportNode;
-import com.powsybl.commons.report.TypedValue;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
 import com.powsybl.loadflow.LoadFlowResult;
@@ -17,7 +16,6 @@ import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
-import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
 import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
 
 /**
  * @author Caroline Jeandat {@literal <caroline.jeandat at rte-france.com>}
@@ -50,27 +47,16 @@ public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConf
 
         ReportNode reportNode = context.getReportNode();
 
-        try {
-            LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
-            LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
-            LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
-                .setParameters(loadflowParameters)
-                .setReportNode(reportNode);
-            LoadFlowResult result = taskManager.runComputation(context.getProcessExecutionId(),
+        LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
+        LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
+        LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
+            .setParameters(loadflowParameters)
+            .setReportNode(reportNode);
+        LoadFlowResult result = taskManager.runComputation(context.getProcessExecutionId(),
                 () -> LoadFlow.find(parametersInfos.getProvider()).runAsync(context.getNetwork(), runParameters));
 
-            UUID resultUuid = loadflowRestClient.saveResult(result);
-            ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
-            context.setResultInfos(resultInfos);
-        } catch (CancellationException | ProcessCancelledException e) {
-            throw e;
-        } catch (Exception e) {
-            reportNode.newReportNode()
-                .withMessageTemplate("monitor.worker.server.loadflow.step.error")
-                .withUntypedValue("errorMessage", e.getMessage())
-                .withSeverity(TypedValue.ERROR_SEVERITY)
-                .add();
-            throw e;
-        }
+        UUID resultUuid = loadflowRestClient.saveResult(result);
+        ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
+        context.setResultInfos(resultInfos);
     }
 }

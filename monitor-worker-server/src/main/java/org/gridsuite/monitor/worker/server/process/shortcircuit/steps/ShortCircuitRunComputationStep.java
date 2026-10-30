@@ -20,6 +20,7 @@ import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.shortcircuit.ShortCircuitParametersInfos;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStepType;
 import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
@@ -44,6 +45,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     private final ShortCircuitRestClient shortCircuitRestClient;
     private final S3Service s3Service;
     private final FileService fileService;
+    private final TaskManager taskManager;
     @Getter
     private final String defaultProvider;
 
@@ -54,12 +56,14 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         ShortCircuitRestClient shortCircuitRestClient,
         S3Service s3Service,
         FileService fileService,
+        TaskManager taskManager,
         @Value("${shortcircuit-analysis.default-provider}") String defaultProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
         this.s3Service = s3Service;
         this.fileService = fileService;
+        this.taskManager = taskManager;
         this.defaultProvider = defaultProvider;
     }
 
@@ -97,13 +101,14 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
         shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), context.getReportNode());
 
-        ShortCircuitAnalysisResult result = ShortCircuitAnalysis.find(provider).run(
-            context.getNetwork(),
-            faults,
-            parameters,
-            LocalComputationManager.getDefault(),
-            List.of(),
-            context.getReportNode());
+        ShortCircuitAnalysisResult result = taskManager.runComputation(context.getProcessExecutionId(),
+                () -> ShortCircuitAnalysis.find(provider).runAsync(
+                        context.getNetwork(),
+                        faults,
+                        parameters,
+                        LocalComputationManager.getDefault(),
+                        List.of(),
+                        context.getReportNode()));
 
         ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
         shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);

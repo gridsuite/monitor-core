@@ -17,6 +17,7 @@ import org.gridsuite.monitor.worker.server.clients.SecurityAnalysisRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisInputData;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.securityanalysis.SecurityAnalysisStepType;
 import org.gridsuite.monitor.worker.server.services.SecurityAnalysisParametersService;
 import org.springframework.stereotype.Component;
@@ -32,12 +33,15 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
 
     private final SecurityAnalysisRestClient securityAnalysisRestClient;
     private final SecurityAnalysisParametersService securityAnalysisParametersService;
+    private final TaskManager taskManager;
 
     public SecurityAnalysisRunComputationStep(SecurityAnalysisRestClient securityAnalysisRestClient,
-                                              SecurityAnalysisParametersService securityAnalysisParametersService) {
+                                              SecurityAnalysisParametersService securityAnalysisParametersService,
+                                              TaskManager taskManager) {
         super(SecurityAnalysisStepType.RUN_SA_COMPUTATION);
         this.securityAnalysisRestClient = securityAnalysisRestClient;
         this.securityAnalysisParametersService = securityAnalysisParametersService;
+        this.taskManager = taskManager;
     }
 
     @Override
@@ -52,7 +56,8 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
         SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
             .setSecurityAnalysisParameters(inputData.securityAnalysisParameters())
             .setReportNode(reportNode);
-        SecurityAnalysisReport saReport = SecurityAnalysis.find(inputData.provider()).run(context.getNetwork(), inputData.contingencies(), runParameters);
+        SecurityAnalysisReport saReport = taskManager.runComputation(context.getProcessExecutionId(),
+                () -> SecurityAnalysis.find(inputData.provider()).runAsync(context.getNetwork(), inputData.contingencies(), runParameters));
 
         ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
         securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), saReport.getResult());

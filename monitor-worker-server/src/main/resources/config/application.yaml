@@ -3,12 +3,14 @@ spring:
     name: monitor-worker-server
   cloud:
     function:
-      definition: consumeRun
+      definition: consumeRun;consumeCancel
     stream:
       bindings:
         consumeRun-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.${worker.process}.run
           group: process${worker.process}RunGroup
+        consumeCancel-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.cancel
         publishMonitorWorkerUpdate-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
       output-bindings: publishMonitorWorkerUpdate-out-0

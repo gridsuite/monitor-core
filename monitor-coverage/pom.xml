@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.gridsuite</groupId>
+        <artifactId>gridsuite-monitor-core</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>gridsuite-monitor-coverage</artifactId>
+    <packaging>pom</packaging>
+    <name>Monitor coverage</name>
+    <description>
+        Aggregates JaCoCo coverage for Sonar so monitor-commons code exercised by server and worker tests is counted.
+        This reporting-only module is enabled by the jacoco profile.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.gridsuite</groupId>
+            <artifactId>gridsuite-monitor-commons</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.gridsuite</groupId>
+            <artifactId>gridsuite-monitor-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.gridsuite</groupId>
+            <artifactId>gridsuite-monitor-worker-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>report-aggregate</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report-aggregate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

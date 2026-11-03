@@ -38,7 +38,7 @@ mvn install -DskipTests -Dpowsybl.docker.install
 
 ### Generate the OpenAPI specification
 
-Please read [OpenAPI usage](https://github.com/powsybl/powsybl-parent/#openapi-usage) for instructions to generate `api-docs.json`. Run the commands from the `monitor-server` directory and use port `5043`.
+Please read [OpenAPI usage](https://github.com/powsybl/powsybl-parent/#openapi-usage) for instructions to generate `target/api-docs.json`. Run the documented Maven command from the `monitor-server` directory after starting the required infrastructure (such as PostgreSQL and RabbitMQ).
 
 ### Generate Liquibase changesets
 

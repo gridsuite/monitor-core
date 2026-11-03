@@ -18,6 +18,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok-mapstruct-bindings.version>0.2.0</lombok-mapstruct-bindings.version>
         <aws-sdk.version>2.29.52</aws-sdk.version>
+        <archunit.version>1.5.1</archunit.version>
     </properties>
 
     <build>
@@ -170,6 +171,12 @@
         </dependency>
 
         <!-- Test dependencies -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-config-test</artifactId>

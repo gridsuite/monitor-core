@@ -30,11 +30,17 @@ Responsibilities:
 
 ## Development Scripts
 
-Build Docker image
+### Build Docker image
 
 ```shell
 mvn install -DskipTests -Dpowsybl.docker.install
 ```
+
+### Generate the OpenAPI specification
+
+Please read [OpenAPI usage](https://github.com/powsybl/powsybl-parent/#openapi-usage) for instructions to generate `target/api-docs.json`. Run the documented Maven command from the `monitor-server` directory after starting the required infrastructure (such as PostgreSQL and RabbitMQ).
+
+### Generate Liquibase changesets
 
 Please read [liquibase usage](https://github.com/powsybl/powsybl-parent/#liquibase-usage) for instructions to automatically generate changesets. After you generated a changeset do not forget to add it to git and in src/resource/db/changelog/db.changelog-master.yml
 
@@ -51,17 +57,18 @@ For example, `ProcessExecutionService.executeProcess` calls `ProcessExecutionTxS
 When called without an outer transaction, the database commit completes before publication, so workers can read the execution.
 This does not make database changes and external operations atomic: a later REST or messaging failure cannot undo an already committed transaction and may require retry or compensation.
 
-
-# Status Management
+## Status Management
 
 `monitor-server` stores the status of process executions and process steps.
 
-`monitor-worker-server` orchestrates step sequencing and status transitions.
+`monitor-worker-server` orchestrates step sequencing and publishes status updates.
 
 Execution statuses:
 
 - `SCHEDULED`
 - `RUNNING`
+- `CANCELING`
+- `CANCELED`
 - `COMPLETED`
 - `FAILED`
 
@@ -72,6 +79,9 @@ Step statuses:
 - `COMPLETED`
 - `FAILED`
 - `SKIPPED`
+- `CANCELED`
+
+Steps normally progress from `SCHEDULED` to `RUNNING`, then `COMPLETED` or `FAILED`. A step interrupted by cancellation is marked `CANCELED`; steps after an interrupted or failed step are marked `SKIPPED`. Step records are removed when the server processes the execution's `CANCELED` status.
 
 ## Error Management
 

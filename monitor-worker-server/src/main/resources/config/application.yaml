@@ -17,7 +17,7 @@ spring:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
       output-bindings: publishMonitorWorkerUpdate-out-0
       rabbit:
-        binder:
+        bindings:
           consumeRun-in-0:
             consumer:
               auto-bind-dlq: true

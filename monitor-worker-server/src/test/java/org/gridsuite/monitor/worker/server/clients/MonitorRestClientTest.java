@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.clients;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.junit.jupiter.api.AfterEach;
@@ -54,7 +55,10 @@ class MonitorRestClientTest {
                 .andExpect(MockRestRequestMatchers.requestTo("http://monitor-server/v1/executions/" + EXECUTION_UUID))
                 .andRespond(MockRestResponseCreators.withSuccess()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(new ObjectMapper().writeValueAsString(ProcessExecution.builder().status(ProcessStatus.CANCELED).build())));
+                        .body(new ObjectMapper().writeValueAsString(ProcessExecution.builder()
+                            .status(ProcessStatus.CANCELED)
+                            .triggerType(ProcessExecutionTriggerType.MANUAL)
+                            .build())));
         boolean isExecutionCanceled = monitorRestClient.isExecutionCanceled(EXECUTION_UUID);
         assertThat(isExecutionCanceled).isTrue();
     }

@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -46,6 +47,7 @@ class ProcessExecutionRepositoryTest {
                 .scheduledAt(Instant.now())
                 .steps(new ArrayList<>())
                 .build();
+        assertThat(execution.getTriggerType()).isEqualTo(ProcessExecutionTriggerType.MANUAL);
 
         // Add steps in non-sequential order (1 before 0)
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()

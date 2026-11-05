@@ -32,6 +32,7 @@ public class NotificationService {
     public static final String PROCESS_TYPE = "processType";
     public static final String PUBLISH_MONITOR_UPDATE_OUT_0 = "publishMonitorUpdate-out-0";
     public static final String PUBLISH_PROCESS_CANCEL_0 = "publishProcessCancel-out-0";
+    public static final String PUBLISH_AUTOMATIC_EXECUTION_OUT_0 = "publishAutomaticExecution-out-0";
     public static final String UPDATE_TYPE = "updateType";
     private final StreamBridge publisher;
 
@@ -47,6 +48,10 @@ public class NotificationService {
 
     public void sendProcessCancelMessage(UUID executionId) {
         publisher.send(PUBLISH_PROCESS_CANCEL_0, executionId);
+    }
+
+    public void sendAutomaticExecutionMessage(UUID caseUuid) {
+        publisher.send(PUBLISH_AUTOMATIC_EXECUTION_OUT_0, caseUuid.toString());
     }
 
     public void sendProcessUpdatedMessage(UUID executionId, ProcessType processType) {

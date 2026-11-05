@@ -11,6 +11,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -86,11 +87,13 @@ class ProcessExecutionTxServiceTest {
     }
 
     @Test
-    void executeProcessCreateExecution() {
+    void createExecutionPersistsTriggerType() {
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
-        Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true);
+        Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(
+            caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true, ProcessExecutionTriggerType.AUTO
+        );
 
         assertThat(result).isNotEmpty();
         verify(processConfigService).getProcessConfig(any(UUID.class));
@@ -99,6 +102,7 @@ class ProcessExecutionTxServiceTest {
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
                         caseUuid.equals(execution.getCaseUuid()) &&
                         userId.equals(execution.getUserId()) &&
+                        ProcessExecutionTriggerType.AUTO.equals(execution.getTriggerType()) &&
                         ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
                         execution.getScheduledAt() != null &&
                         execution.getStartedAt() == null
@@ -468,10 +472,14 @@ class ProcessExecutionTxServiceTest {
 
         List<ProcessExecution> result = processExecutionTxService.getProcessExecutions();
 
-        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1,
-            startedAt1, completedAt1, report1Uuid, "user1", null);
-        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.LOADFLOW.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2,
-            startedAt2, null, report2Uuid, "user2", null);
+        ProcessExecution processExecution1 = new ProcessExecution(
+            execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED,
+            ProcessExecutionTriggerType.MANUAL, "env1", scheduledAt1, startedAt1, completedAt1, report1Uuid, "user1", null
+        );
+        ProcessExecution processExecution2 = new ProcessExecution(
+            execution2Uuid, ProcessType.LOADFLOW.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING,
+            ProcessExecutionTriggerType.MANUAL, "env2", scheduledAt2, startedAt2, null, report2Uuid, "user2", null
+        );
 
         assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
         verify(executionRepository).findAllByScheduledAtIsNotNullOrderByScheduledAtDesc();
@@ -498,8 +506,10 @@ class ProcessExecutionTxServiceTest {
             .reportId(reportUuid)
             .userId("user1")
             .build();
-        ProcessExecution processExecution = new ProcessExecution(executionUuid, ProcessType.SECURITY_ANALYSIS.name(), caseUuid, configUuid, ProcessStatus.COMPLETED, "env1", scheduledAt,
-            startedAt, completedAt, reportUuid, "user1", null);
+        ProcessExecution processExecution = new ProcessExecution(
+            executionUuid, ProcessType.SECURITY_ANALYSIS.name(), caseUuid, configUuid, ProcessStatus.COMPLETED,
+            ProcessExecutionTriggerType.MANUAL, "env1", scheduledAt, startedAt, completedAt, reportUuid, "user1", null
+        );
 
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(processExecutionEntity));
 

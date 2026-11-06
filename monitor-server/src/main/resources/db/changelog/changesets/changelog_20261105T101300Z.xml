@@ -19,7 +19,6 @@
             <column name="changed_by" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="config_name" type="VARCHAR(255)"/>
             <column name="process_type" type="VARCHAR(32)">
                 <constraints nullable="false"/>
             </column>

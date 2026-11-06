@@ -64,7 +64,6 @@ class AutomaticProcessConfigRepositoryTest {
         assertThat(historyRepository.findById(persistedHistory.getId()))
             .hasValueSatisfying(savedHistory -> {
                 assertThat(savedHistory.getProcessConfig().getId()).isEqualTo(savedProcessConfig.getId());
-                assertThat(savedHistory.getConfigName()).isNull();
                 assertThat(savedHistory.getChangedBy()).isEqualTo("admin");
             });
 

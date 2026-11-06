@@ -41,9 +41,6 @@ public class AutomaticProcessConfigHistoryEntity {
     )
     private AbstractProcessConfigEntity processConfig;
 
-    @Column(name = "config_name")
-    private String configName;
-
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
 

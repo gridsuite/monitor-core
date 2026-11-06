@@ -11,6 +11,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -88,7 +89,7 @@ class MonitorControllerTest {
         boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
         when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
-        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
+        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue), eq(ProcessExecutionTriggerType.MANUAL)))
                 .thenReturn(Optional.of(executionId));
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
@@ -105,7 +106,7 @@ class MonitorControllerTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue));
+        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue), eq(ProcessExecutionTriggerType.MANUAL));
     }
 
     @Test
@@ -150,7 +151,7 @@ class MonitorControllerTest {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false)).thenReturn(Optional.empty());
+        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false, ProcessExecutionTriggerType.MANUAL)).thenReturn(Optional.empty());
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
@@ -160,7 +161,7 @@ class MonitorControllerTest {
         mockMvc.perform(request)
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).executeProcess(caseUuid, "user1", processConfigUuid, false);
+        verify(processExecutionService).executeProcess(caseUuid, "user1", processConfigUuid, false, ProcessExecutionTriggerType.MANUAL);
     }
 
     @Test
@@ -275,12 +276,21 @@ class MonitorControllerTest {
 
     @Test
     void getProcessExecutions() throws Exception {
-        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1",
-                Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), UUID.randomUUID(), "user1", "user1");
-        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED, "env2",
-                Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, UUID.randomUUID(), "user2", "user2");
-        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3",
-                Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, UUID.randomUUID(), "user3", "user3");
+        ProcessExecution processExecution1 = new ProcessExecution(
+            UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED,
+            ProcessExecutionTriggerType.MANUAL, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60),
+            Instant.now().minusSeconds(30), UUID.randomUUID(), "user1", "user1"
+        );
+        ProcessExecution processExecution2 = new ProcessExecution(
+            UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED,
+            ProcessExecutionTriggerType.MANUAL, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null,
+            UUID.randomUUID(), "user2", "user2"
+        );
+        ProcessExecution processExecution3 = new ProcessExecution(
+            UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING,
+            ProcessExecutionTriggerType.MANUAL, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null,
+            UUID.randomUUID(), "user3", "user3"
+        );
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 
@@ -290,6 +300,7 @@ class MonitorControllerTest {
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(jsonPath("$[0].triggerType").value(ProcessExecutionTriggerType.MANUAL.name()))
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
         verify(processExecutionService).getProcessExecutions();

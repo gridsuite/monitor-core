@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.automaticprocessconfig.AutomaticProcessConfigRequest;
-import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
+import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -33,12 +33,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = {AutomaticProcessConfigController.class, PropertyServerNameProvider.class})
 class AutomaticProcessConfigControllerTest {
+    public static final String AUTOMATIC_PROCESS_CONFIGS_PATH = "/v1/automatic-process-configs";
     @Autowired
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
     @MockitoBean
-    private AutomaticProcessConfigService configService;
+    private AutomaticProcessConfigTxService configService;
 
     @Test
     void updateConfigUsesUserIdHeader() throws Exception {
@@ -46,7 +47,7 @@ class AutomaticProcessConfigControllerTest {
         AutomaticProcessConfigRequest request = new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid);
         when(configService.update(request, "admin")).thenReturn(Optional.of(configUuid));
 
-        mockMvc.perform(put("/v1/processes/automatic-process-configs")
+        mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH)
                 .header(MonitorController.HEADER_USER_ID, "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -61,7 +62,7 @@ class AutomaticProcessConfigControllerTest {
         AutomaticProcessConfigRequest request = new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid);
         when(configService.update(request, "admin")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/v1/processes/automatic-process-configs")
+        mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH)
                 .header(MonitorController.HEADER_USER_ID, "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -73,7 +74,7 @@ class AutomaticProcessConfigControllerTest {
         UUID configUuid = UUID.randomUUID();
         when(configService.get(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(configUuid));
 
-        mockMvc.perform(get("/v1/processes/automatic-process-configs")
+        mockMvc.perform(get(AUTOMATIC_PROCESS_CONFIGS_PATH)
                 .param("processType", ProcessType.SECURITY_ANALYSIS.name()))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -84,7 +85,7 @@ class AutomaticProcessConfigControllerTest {
     void getConfigReturnsNotFoundWhenNoConfigIsStored() throws Exception {
         when(configService.get(ProcessType.LOADFLOW)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/v1/processes/automatic-process-configs")
+        mockMvc.perform(get(AUTOMATIC_PROCESS_CONFIGS_PATH)
                 .param("processType", ProcessType.LOADFLOW.name()))
             .andExpect(status().isNotFound());
     }

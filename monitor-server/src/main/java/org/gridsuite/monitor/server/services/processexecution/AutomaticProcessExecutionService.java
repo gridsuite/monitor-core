@@ -8,7 +8,7 @@ package org.gridsuite.monitor.server.services.processexecution;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
+import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,10 +30,10 @@ public class AutomaticProcessExecutionService {
         ProcessType.LOADFLOW
     );
 
-    private final AutomaticProcessConfigService configService;
+    private final AutomaticProcessConfigTxService configService;
     private final ProcessExecutionService processExecutionService;
 
-    public AutomaticProcessExecutionService(AutomaticProcessConfigService configService, ProcessExecutionService processExecutionService) {
+    public AutomaticProcessExecutionService(AutomaticProcessConfigTxService configService, ProcessExecutionService processExecutionService) {
         this.configService = configService;
         this.processExecutionService = processExecutionService;
     }

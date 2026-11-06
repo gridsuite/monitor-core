@@ -1,35 +1,38 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet author="khouadrired" id="create-automatic-process-config">
+    <changeSet author="khouadrired (generated)" id="1793956609442-1">
         <createTable tableName="automatic_process_config">
             <column name="process_type" type="VARCHAR(32)">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="automaticProcessConfigPK"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="automatic_process_configPK"/>
             </column>
-            <column name="config_uuid" type="UUID">
-                <constraints nullable="false"/>
-            </column>
+            <column name="config_uuid" type="UUID"/>
         </createTable>
-        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config" constraintName="automaticProcessConfig_processConfig_fk" onDelete="RESTRICT" referencedColumnNames="id" referencedTableName="process_config"/>
     </changeSet>
-    <changeSet author="khouadrired" id="create-automatic-process-config-history">
+    <changeSet author="khouadrired (generated)" id="1793956609442-2">
         <createTable tableName="automatic_process_config_history">
             <column name="id" type="UUID">
-                <constraints nullable="false" primaryKey="true" primaryKeyName="automaticProcessConfigHistoryPK"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="automatic_process_config_historyPK"/>
             </column>
-            <column name="process_type" type="VARCHAR(32)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="config_uuid" type="UUID">
-                <constraints nullable="false"/>
-            </column>
-            <column name="config_name" type="VARCHAR(255)"/>
-            <column name="changed_at" type="TIMESTAMP WITH TIME ZONE">
+            <column name="changed_at" type="TIMESTAMP(6) WITH TIME ZONE">
                 <constraints nullable="false"/>
             </column>
             <column name="changed_by" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
+            <column name="config_name" type="VARCHAR(255)"/>
+            <column name="process_type" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="config_uuid" type="UUID"/>
         </createTable>
-        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config_history" constraintName="automaticProcessConfigHistory_processConfig_fk" onDelete="RESTRICT" referencedColumnNames="id" referencedTableName="process_config"/>
+    </changeSet>
+    <changeSet author="khouadrired (generated)" id="1793956609442-4">
+        <addUniqueConstraint columnNames="config_uuid" constraintName="UC_AUTOMATIC_PROCESS_CONFIGCONFIG_UUID_COL" tableName="automatic_process_config"/>
+    </changeSet>
+    <changeSet author="khouadrired (generated)" id="1793956609442-5">
+        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config_history" constraintName="automaticProcessConfigHistory_processConfig_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" onDelete="RESTRICT" referencedTableName="process_config" validate="true"/>
+    </changeSet>
+    <changeSet author="khouadrired (generated)" id="1793956609442-6">
+        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config" constraintName="automaticProcessConfig_processConfig_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" onDelete="RESTRICT" referencedTableName="process_config" validate="true"/>
     </changeSet>
 </databaseChangeLog>

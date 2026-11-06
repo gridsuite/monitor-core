@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AutomaticProcessExecutionServiceTest {
     @Mock
-    private AutomaticProcessConfigService configService;
+    private AutomaticProcessConfigTxService configService;
     @Mock
     private ProcessExecutionService processExecutionService;
 

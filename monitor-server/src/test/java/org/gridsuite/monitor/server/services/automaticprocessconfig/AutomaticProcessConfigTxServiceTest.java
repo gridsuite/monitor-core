@@ -6,29 +6,28 @@
  */
 package org.gridsuite.monitor.server.services.automaticprocessconfig;
 
-import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.automaticprocessconfig.AutomaticProcessConfigRequest;
-import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigHistoryEntity;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.repositories.automaticprocessconfig.AutomaticProcessConfigHistoryRepository;
 import org.gridsuite.monitor.server.repositories.automaticprocessconfig.AutomaticProcessConfigRepository;
-import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.repositories.processconfig.ProcessConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,19 +36,21 @@ import static org.mockito.Mockito.when;
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
 @ExtendWith(MockitoExtension.class)
-class AutomaticProcessConfigServiceTest {
+class AutomaticProcessConfigTxServiceTest {
     @Mock
     private AutomaticProcessConfigRepository repository;
     @Mock
     private AutomaticProcessConfigHistoryRepository historyRepository;
     @Mock
-    private ProcessConfigService processConfigService;
+    private ProcessConfigRepository processConfigRepository;
+    @Mock
+    private AbstractProcessConfigEntity processConfigEntity;
 
-    private AutomaticProcessConfigService service;
+    private AutomaticProcessConfigTxService service;
 
     @BeforeEach
     void setUp() {
-        service = new AutomaticProcessConfigService(repository, historyRepository, processConfigService);
+        service = new AutomaticProcessConfigTxService(repository, historyRepository, processConfigRepository);
     }
 
     @Test
@@ -57,23 +58,23 @@ class AutomaticProcessConfigServiceTest {
         UUID configUuid = UUID.randomUUID();
         String user = "admin";
         AutomaticProcessConfigRequest request = new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid);
-        when(processConfigService.getProcessConfig(configUuid)).thenReturn(Optional.of(new PersistedProcessConfig(
-            configUuid, new LoadFlowConfig(UUID.randomUUID(), List.of())
-        )));
+        when(processConfigRepository.findById(configUuid)).thenReturn(Optional.of(processConfigEntity));
+        when(processConfigEntity.getProcessType()).thenReturn(ProcessType.LOADFLOW);
         when(repository.findById(ProcessType.LOADFLOW)).thenReturn(Optional.empty());
         when(repository.save(any(AutomaticProcessConfigEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(historyRepository.save(any(AutomaticProcessConfigHistoryEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var result = service.update(request, user);
 
         assertThat(result).contains(configUuid);
-        verify(repository).save(any(AutomaticProcessConfigEntity.class));
-        verify(historyRepository).save(any(AutomaticProcessConfigHistoryEntity.class));
+        verify(repository).save(argThat(saved -> saved.getProcessConfig() == processConfigEntity));
+        verify(historyRepository).save(argThat(saved -> saved.getProcessConfig() == processConfigEntity));
+        verify(processConfigEntity).getProcessType();
     }
 
     @Test
     void updateReturnsEmptyWhenProcessConfigDoesNotExist() {
         UUID configUuid = UUID.randomUUID();
-        when(processConfigService.getProcessConfig(configUuid)).thenReturn(Optional.empty());
+        when(processConfigRepository.findById(configUuid)).thenReturn(Optional.empty());
 
         assertThat(service.update(new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid), "admin")).isEmpty();
 
@@ -84,11 +85,11 @@ class AutomaticProcessConfigServiceTest {
     @Test
     void updateRejectsProcessConfigWithDifferentType() {
         UUID configUuid = UUID.randomUUID();
-        when(processConfigService.getProcessConfig(configUuid)).thenReturn(Optional.of(new PersistedProcessConfig(
-            configUuid, new LoadFlowConfig(UUID.randomUUID(), List.of())
-        )));
+        when(processConfigRepository.findById(configUuid)).thenReturn(Optional.of(processConfigEntity));
+        when(processConfigEntity.getProcessType()).thenReturn(ProcessType.LOADFLOW);
 
-        assertThatThrownBy(() -> service.update(new AutomaticProcessConfigRequest(ProcessType.SECURITY_ANALYSIS, configUuid), "admin"))
+        AutomaticProcessConfigRequest updateRequest = new AutomaticProcessConfigRequest(ProcessType.SECURITY_ANALYSIS, configUuid);
+        assertThatThrownBy(() -> service.update(updateRequest, "admin"))
             .isInstanceOf(MonitorServerException.class)
             .hasMessageContaining("does not match");
 
@@ -101,7 +102,8 @@ class AutomaticProcessConfigServiceTest {
         UUID configUuid = UUID.randomUUID();
         AutomaticProcessConfigEntity entity = new AutomaticProcessConfigEntity();
         entity.setProcessType(ProcessType.SECURITY_ANALYSIS);
-        entity.setConfigUuid(configUuid);
+        when(processConfigEntity.getId()).thenReturn(configUuid);
+        entity.setProcessConfig(processConfigEntity);
         when(repository.findById(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(entity));
 
         assertThat(service.get(ProcessType.SECURITY_ANALYSIS)).contains(configUuid);
@@ -112,10 +114,10 @@ class AutomaticProcessConfigServiceTest {
         UUID configUuid = UUID.randomUUID();
         AutomaticProcessConfigEntity activeConfig = new AutomaticProcessConfigEntity();
         activeConfig.setProcessType(ProcessType.LOADFLOW);
-        activeConfig.setConfigUuid(configUuid);
-        when(processConfigService.getProcessConfig(configUuid)).thenReturn(Optional.of(new PersistedProcessConfig(
-            configUuid, new LoadFlowConfig(UUID.randomUUID(), List.of())
-        )));
+        when(processConfigRepository.findById(configUuid)).thenReturn(Optional.of(processConfigEntity));
+        when(processConfigEntity.getId()).thenReturn(configUuid);
+        when(processConfigEntity.getProcessType()).thenReturn(ProcessType.LOADFLOW);
+        activeConfig.setProcessConfig(processConfigEntity);
         when(repository.findById(ProcessType.LOADFLOW)).thenReturn(Optional.of(activeConfig));
 
         var result = service.update(new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid), "admin");

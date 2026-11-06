@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@DataJpaTest
+@DataJpaTest(properties = {"spring.jpa.hibernate.ddl-auto=create-drop", "spring.liquibase.enabled=false"})
 class ProcessExecutionRepositoryTest {
 
     @Autowired

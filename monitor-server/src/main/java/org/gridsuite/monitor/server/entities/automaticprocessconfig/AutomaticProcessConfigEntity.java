@@ -6,18 +6,12 @@
  */
 package org.gridsuite.monitor.server.entities.automaticprocessconfig;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-
-import java.util.UUID;
+import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
 
 /**
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
@@ -33,6 +27,10 @@ public class AutomaticProcessConfigEntity {
     @Column(name = "process_type", nullable = false, length = 32)
     private ProcessType processType;
 
-    @Column(name = "config_uuid", nullable = false)
-    private UUID configUuid;
+    @OneToOne
+    @JoinColumn(
+            name = "config_uuid",
+            foreignKey = @ForeignKey(name = "automaticProcessConfig_processConfig_fk")
+    )
+    private AbstractProcessConfigEntity processConfig;
 }

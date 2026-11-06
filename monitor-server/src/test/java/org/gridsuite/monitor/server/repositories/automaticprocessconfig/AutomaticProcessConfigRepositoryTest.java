@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.repositories.automaticprocessconfig;
 
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.Query;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigHistoryEntity;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
-@DataJpaTest
+@DataJpaTest(properties = {"spring.jpa.hibernate.ddl-auto=create-drop", "spring.liquibase.enabled=false"})
 class AutomaticProcessConfigRepositoryTest {
     @Autowired
     private AutomaticProcessConfigRepository repository;
@@ -45,32 +46,32 @@ class AutomaticProcessConfigRepositoryTest {
 
         AutomaticProcessConfigEntity config = new AutomaticProcessConfigEntity();
         config.setProcessType(ProcessType.LOADFLOW);
-        config.setConfigUuid(savedProcessConfig.getId());
+        config.setProcessConfig(savedProcessConfig);
         repository.save(config);
 
         AutomaticProcessConfigHistoryEntity history = new AutomaticProcessConfigHistoryEntity();
-        history.setId(java.util.UUID.randomUUID());
         history.setProcessType(ProcessType.LOADFLOW);
-        history.setConfigUuid(savedProcessConfig.getId());
+        history.setProcessConfig(savedProcessConfig);
         history.setChangedAt(Instant.parse("2026-10-30T10:00:00Z"));
         history.setChangedBy("admin");
-        historyRepository.save(history);
+        AutomaticProcessConfigHistoryEntity persistedHistory = historyRepository.save(history);
         entityManager.flush();
         entityManager.clear();
 
         AutomaticProcessConfigEntity retrieved = repository.findById(ProcessType.LOADFLOW).orElseThrow();
-        assertThat(retrieved.getConfigUuid()).isEqualTo(savedProcessConfig.getId());
-        assertThat(historyRepository.findById(history.getId()))
+        assertThat(retrieved.getProcessConfig().getId()).isEqualTo(savedProcessConfig.getId());
+        assertThat(persistedHistory.getId()).isNotNull();
+        assertThat(historyRepository.findById(persistedHistory.getId()))
             .hasValueSatisfying(savedHistory -> {
-                assertThat(savedHistory.getConfigUuid()).isEqualTo(savedProcessConfig.getId());
+                assertThat(savedHistory.getProcessConfig().getId()).isEqualTo(savedProcessConfig.getId());
                 assertThat(savedHistory.getConfigName()).isNull();
                 assertThat(savedHistory.getChangedBy()).isEqualTo("admin");
             });
 
-        assertThatThrownBy(() -> entityManager.getEntityManager()
-            .createNativeQuery("DELETE FROM process_config WHERE id = :id")
-            .setParameter("id", savedProcessConfig.getId())
-            .executeUpdate())
+        Query query = entityManager.getEntityManager()
+                .createNativeQuery("DELETE FROM process_config WHERE id = :id")
+                .setParameter("id", savedProcessConfig.getId());
+        assertThatThrownBy(query::executeUpdate)
             .isInstanceOf(PersistenceException.class);
     }
 }

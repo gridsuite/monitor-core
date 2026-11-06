@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.dto.automaticprocessconfig.AutomaticProcessConfigRequest;
-import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
+import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,12 +32,12 @@ import java.util.UUID;
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
 @RestController
-@RequestMapping("/" + MonitorApi.API_VERSION + "/processes/automatic-process-configs")
+@RequestMapping("/" + MonitorApi.API_VERSION + "/automatic-process-configs")
 @Tag(name = "Automatic execution")
 public class AutomaticProcessConfigController {
-    private final AutomaticProcessConfigService configService;
+    private final AutomaticProcessConfigTxService configService;
 
-    public AutomaticProcessConfigController(AutomaticProcessConfigService configService) {
+    public AutomaticProcessConfigController(AutomaticProcessConfigTxService configService) {
         this.configService = configService;
     }
 

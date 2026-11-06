@@ -9,7 +9,8 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.iidm.network.Network;
 import org.gridsuite.filter.AbstractFilter;
 import org.gridsuite.filter.utils.FilterServiceUtils;
-import org.gridsuite.modification.IFilterService;
+import org.gridsuite.filter.wip.Filter;
+import org.gridsuite.modification.context.dto.FilterWithDistributionKeys;
 import org.gridsuite.modification.dto.FilterEquipments;
 import org.gridsuite.modification.dto.IdentifiableAttributes;
 import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
@@ -27,16 +28,23 @@ import java.util.stream.Stream;
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @Service
-public class FilterService implements IFilterService {
+public class FilterService {
     private final FilterRestClient filterRestClient;
 
     public FilterService(FilterRestClient filterRestClient) {
         this.filterRestClient = filterRestClient;
     }
 
-    @Override
     public List<AbstractFilter> getFilters(List<UUID> filtersUuids) {
         return filterRestClient.getFilters(filtersUuids);
+    }
+
+    public Map<UUID, Filter> getStandaloneFilters(List<UUID> filtersUuids) {
+        return filterRestClient.getStandaloneFilters(filtersUuids);
+    }
+
+    public Map<UUID, FilterWithDistributionKeys> getStandaloneFiltersWithDistributionKeys(List<UUID> filtersUuids) {
+        return filterRestClient.getStandaloneFiltersWithDistributionKeys(filtersUuids);
     }
 
     public Stream<org.gridsuite.filter.identifierlistfilter.FilterEquipments> exportFilters(List<UUID> filtersUuids, Network network) {

@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
+import org.gridsuite.modification.context.ModificationContext;
 import org.gridsuite.modification.dto.AttributeModification;
 import org.gridsuite.modification.dto.LoadModificationInfos;
 import org.gridsuite.modification.dto.ModificationInfos;
@@ -24,12 +25,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -66,8 +67,8 @@ class NetworkModificationServiceTest {
         AbstractModification abstractModification1 = mock(AbstractModification.class);
         AbstractModification abstractModification2 = mock(AbstractModification.class);
 
-        when(modification1.toModification()).thenReturn(abstractModification1);
-        when(modification2.toModification()).thenReturn(abstractModification2);
+        doReturn(abstractModification1).when(modification1).toModification(any(ModificationContext.class));
+        doReturn(abstractModification2).when(modification2).toModification(any(ModificationContext.class));
 
         doNothing().when(abstractModification1).check(any());
         doNothing().when(abstractModification2).check(any());
@@ -82,11 +83,11 @@ class NetworkModificationServiceTest {
         );
 
         verify(abstractModification1).check(network);
-        verify(abstractModification1).initApplicationContext(filterService, null);
+        verify(abstractModification1).initApplicationContext(null);
         verify(abstractModification1).apply(network, reportNode);
 
         verify(abstractModification2).check(network);
-        verify(abstractModification2).initApplicationContext(filterService, null);
+        verify(abstractModification2).initApplicationContext(null);
         verify(abstractModification2).apply(network, reportNode);
     }
 
@@ -111,8 +112,8 @@ class NetworkModificationServiceTest {
         AbstractModification abstractModification1 = mock(AbstractModification.class);
         AbstractModification abstractModification2 = mock(AbstractModification.class);
 
-        when(modification1.toModification()).thenReturn(abstractModification1);
-        when(modification2.toModification()).thenReturn(abstractModification2);
+        doReturn(abstractModification1).when(modification1).toModification(any(ModificationContext.class));
+        doReturn(abstractModification2).when(modification2).toModification(any(ModificationContext.class));
 
         doThrow(new PowsyblException("Error in modification"))
             .when(abstractModification1).check(any());
@@ -132,11 +133,11 @@ class NetworkModificationServiceTest {
         );
 
         verify(abstractModification1).check(network);
-        verify(abstractModification1, never()).initApplicationContext(filterService, null);
+        verify(abstractModification1, never()).initApplicationContext(null);
         verify(abstractModification1, never()).apply(network, reportNode);
 
         verify(abstractModification2).check(network);
-        verify(abstractModification2, never()).initApplicationContext(filterService, null);
+        verify(abstractModification2, never()).initApplicationContext(null);
         verify(abstractModification2, never()).apply(network, reportNode);
     }
 }

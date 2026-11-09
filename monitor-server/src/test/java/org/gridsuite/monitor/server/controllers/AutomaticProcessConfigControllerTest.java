@@ -9,7 +9,6 @@ package org.gridsuite.monitor.server.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
-import org.gridsuite.monitor.server.dto.automaticprocessconfig.AutomaticProcessConfigRequest;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,28 +43,26 @@ class AutomaticProcessConfigControllerTest {
     @Test
     void updateConfigUsesUserIdHeader() throws Exception {
         UUID configUuid = UUID.randomUUID();
-        AutomaticProcessConfigRequest request = new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid);
-        when(configService.update(request, "admin")).thenReturn(Optional.of(configUuid));
+        when(configService.update(configUuid, ProcessType.LOADFLOW, "admin")).thenReturn(Optional.of(configUuid));
 
-        mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH)
+        mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH + "/" + ProcessType.LOADFLOW)
                 .header(MonitorController.HEADER_USER_ID, "admin")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(configUuid)))
             .andExpect(status().isOk());
 
-        verify(configService).update(request, "admin");
+        verify(configService).update(configUuid, ProcessType.LOADFLOW, "admin");
     }
 
     @Test
     void updateConfigReturnsNotFoundWhenProcessConfigDoesNotExist() throws Exception {
         UUID configUuid = UUID.randomUUID();
-        AutomaticProcessConfigRequest request = new AutomaticProcessConfigRequest(ProcessType.LOADFLOW, configUuid);
-        when(configService.update(request, "admin")).thenReturn(Optional.empty());
+        when(configService.update(configUuid, ProcessType.LOADFLOW, "admin")).thenReturn(Optional.empty());
 
-        mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH)
+        mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH + "/" + ProcessType.LOADFLOW)
                 .header(MonitorController.HEADER_USER_ID, "admin")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(configUuid)))
             .andExpect(status().isNotFound());
     }
 

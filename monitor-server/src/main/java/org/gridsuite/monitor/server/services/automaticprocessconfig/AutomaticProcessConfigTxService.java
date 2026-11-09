@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.server.services.automaticprocessconfig;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.dto.automaticprocessconfig.AutomaticProcessConfigRequest;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigHistoryEntity;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
@@ -45,35 +44,35 @@ public class AutomaticProcessConfigTxService {
     }
 
     @Transactional
-    public Optional<UUID> update(AutomaticProcessConfigRequest request, String user) {
-        Optional<AbstractProcessConfigEntity> processConfig = processConfigRepository.findById(request.configUuid());
+    public Optional<UUID> update(UUID configUuid, ProcessType processType, String user) {
+        Optional<AbstractProcessConfigEntity> processConfig = processConfigRepository.findById(configUuid);
         if (processConfig.isEmpty()) {
             return Optional.empty();
         }
 
         ProcessType actualType = processConfig.get().getProcessType();
-        if (actualType != request.processType()) {
+        if (actualType != processType) {
             throw new MonitorServerException(DIFFERENT_PROCESS_CONFIG_TYPE, "Process config type does not match the requested process type",
-                Map.of("processConfigType", actualType, "requestedProcessType", request.processType()));
+                Map.of("processConfigType", actualType, "requestedProcessType", processType));
         }
 
-        Optional<AutomaticProcessConfigEntity> existing = repository.findById(request.processType());
-        if (existing.filter(entity -> entity.getProcessConfig().getId().equals(request.configUuid())).isPresent()) {
-            return Optional.of(request.configUuid());
+        Optional<AutomaticProcessConfigEntity> existing = repository.findById(processType);
+        if (existing.filter(entity -> entity.getProcessConfig().getId().equals(configUuid)).isPresent()) {
+            return Optional.of(configUuid);
         }
 
         AutomaticProcessConfigEntity entity = existing.orElseGet(AutomaticProcessConfigEntity::new);
-        entity.setProcessType(request.processType());
+        entity.setProcessType(processType);
         entity.setProcessConfig(processConfig.get());
         repository.save(entity);
 
         AutomaticProcessConfigHistoryEntity history = new AutomaticProcessConfigHistoryEntity();
-        history.setProcessType(request.processType());
+        history.setProcessType(processType);
         history.setProcessConfig(processConfig.get());
         history.setChangedAt(Instant.now());
         history.setChangedBy(user);
         historyRepository.save(history);
-        return Optional.of(request.configUuid());
+        return Optional.of(configUuid);
     }
 
     @Transactional(readOnly = true)

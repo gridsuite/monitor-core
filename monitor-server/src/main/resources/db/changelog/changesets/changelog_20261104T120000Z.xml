@@ -2,9 +2,17 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
     <changeSet author="khouadrired (generated)" id="1793956609442-3">
         <addColumn tableName="process_execution">
-            <column name="trigger_type" type="VARCHAR(255)" defaultValue="MANUAL">
-                <constraints nullable="false"/>
-            </column>
+            <column name="trigger_type" type="VARCHAR(255)"/>
         </addColumn>
+
+        <update tableName="process_execution">
+            <column name="trigger_type" value="MANUAL"/>
+            <where>trigger_type IS NULL</where>
+        </update>
+
+        <addNotNullConstraint
+                tableName="process_execution"
+                columnName="trigger_type"
+                columnDataType="VARCHAR(255)"/>
     </changeSet>
 </databaseChangeLog>

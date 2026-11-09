@@ -29,9 +29,9 @@
         <addUniqueConstraint columnNames="config_uuid" constraintName="UC_AUTOMATIC_PROCESS_CONFIGCONFIG_UUID_COL" tableName="automatic_process_config"/>
     </changeSet>
     <changeSet author="khouadrired (generated)" id="1793956609442-5">
-        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config_history" constraintName="automaticProcessConfigHistory_processConfig_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" onDelete="RESTRICT" referencedTableName="process_config" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config_history" constraintName="automaticProcessConfigHistory_processConfig_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
     </changeSet>
     <changeSet author="khouadrired (generated)" id="1793956609442-6">
-        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config" constraintName="automaticProcessConfig_processConfig_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" onDelete="RESTRICT" referencedTableName="process_config" validate="true"/>
+        <addForeignKeyConstraint baseColumnNames="config_uuid" baseTableName="automatic_process_config" constraintName="automaticProcessConfig_processConfig_fk" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
     </changeSet>
 </databaseChangeLog>

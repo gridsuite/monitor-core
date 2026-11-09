@@ -43,10 +43,9 @@ public class ProcessExecutionEntity {
     @Enumerated(EnumType.STRING)
     private ProcessStatus status;
 
-    @Builder.Default
-    @Column(name = "trigger_type", nullable = false)
+    @Column
     @Enumerated(EnumType.STRING)
-    private ProcessExecutionTriggerType triggerType = ProcessExecutionTriggerType.MANUAL;
+    private ProcessExecutionTriggerType triggerType;
 
     @Column
     private String executionEnvName;

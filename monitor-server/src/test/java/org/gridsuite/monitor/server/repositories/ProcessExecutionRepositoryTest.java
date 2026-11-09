@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@DataJpaTest(properties = {"spring.jpa.hibernate.ddl-auto=create-drop", "spring.liquibase.enabled=false"})
+@DataJpaTest
 class ProcessExecutionRepositoryTest {
 
     @Autowired
@@ -44,6 +44,7 @@ class ProcessExecutionRepositoryTest {
                 .type("SECURITY_ANALYSIS")
                 .caseUuid(UUID.randomUUID())
                 .status(ProcessStatus.RUNNING)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .steps(new ArrayList<>())
                 .build();
@@ -94,6 +95,7 @@ class ProcessExecutionRepositoryTest {
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case1Uuid)
             .status(ProcessStatus.COMPLETED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env1")
             .scheduledAt(scheduledAt1)
             .startedAt(startedAt1)
@@ -111,6 +113,7 @@ class ProcessExecutionRepositoryTest {
             .type(ProcessType.LOADFLOW.name())
             .caseUuid(case2Uuid)
             .status(ProcessStatus.RUNNING)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env2")
             .scheduledAt(scheduledAt2)
             .startedAt(startedAt2)
@@ -126,6 +129,7 @@ class ProcessExecutionRepositoryTest {
             .type(ProcessType.SHORT_CIRCUIT.name())
             .caseUuid(case3Uuid)
             .status(ProcessStatus.SCHEDULED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env3")
             .scheduledAt(scheduledAt3)
             .reportId(report3Uuid)

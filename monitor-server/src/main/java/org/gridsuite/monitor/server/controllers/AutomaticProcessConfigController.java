@@ -11,19 +11,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.dto.automaticprocessconfig.AutomaticProcessConfigRequest;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -41,17 +33,18 @@ public class AutomaticProcessConfigController {
         this.configService = configService;
     }
 
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(path = "/{processType}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Set the process config used by automatic executions")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Automatic process config was updated"),
         @ApiResponse(responseCode = "400", description = "Process config type does not match process type"),
         @ApiResponse(responseCode = "404", description = "Process config was not found")})
     public ResponseEntity<Void> updateAutomaticProcessConfig(
-        @Valid @RequestBody AutomaticProcessConfigRequest request,
-        @RequestHeader(MonitorController.HEADER_USER_ID) String userId
+            @PathVariable @Parameter(description = "process type") ProcessType processType,
+            @RequestBody UUID configUuid,
+            @RequestHeader(MonitorController.HEADER_USER_ID) String userId
     ) {
-        Optional<UUID> updated = configService.update(request, userId);
+        Optional<UUID> updated = configService.update(configUuid, processType, userId);
         return updated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 

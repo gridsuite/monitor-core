@@ -8,6 +8,9 @@ package org.gridsuite.monitor.commons.types.processexecution;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -18,5 +21,21 @@ public enum ProcessStatus {
     CANCELING,
     CANCELED,
     COMPLETED,
-    FAILED
+    FAILED;
+
+    private static final Map<ProcessStatus, Set<ProcessStatus>> ALLOWED_TRANSITIONS = Map.of(
+        SCHEDULED, Set.of(RUNNING, FAILED, CANCELED),
+        RUNNING, Set.of(COMPLETED, FAILED, CANCELING, CANCELED),
+        CANCELING, Set.of(CANCELED)
+    );
+
+    /**
+     * @return true if moving from this status to the target status is an allowed transition.
+     * A status without any allowed transition is a final status.
+     */
+    public boolean canTransitionTo(ProcessStatus target) {
+        return this == target || ALLOWED_TRANSITIONS
+            .getOrDefault(this, Set.of())
+            .contains(target);
+    }
 }

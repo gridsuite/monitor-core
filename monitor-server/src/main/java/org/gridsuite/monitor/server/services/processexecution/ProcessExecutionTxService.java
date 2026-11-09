@@ -10,6 +10,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdat
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
@@ -84,9 +85,16 @@ public class ProcessExecutionTxService {
         return Optional.empty();
     }
 
+    /**
+     * @return true if the update was applied, false if it was rejected (forbidden transition) or the execution was not found
+     */
     @Transactional
-    public void updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
-        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+    public boolean updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
+        return processExecutionRepository.findById(executionId).map(execution -> {
+            if (isExecutionStatusUpdateForbidden(execution, payload.getStatus())) {
+                LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), payload.getStatus());
+                return false;
+            }
             execution.setStatus(payload.getStatus());
             if (payload.getExecutionEnvName() != null) {
                 execution.setExecutionEnvName(payload.getExecutionEnvName());
@@ -98,15 +106,33 @@ public class ProcessExecutionTxService {
                 execution.setCompletedAt(payload.getCompletedAt());
             }
             processExecutionRepository.save(execution);
-        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+            return true;
+        }).orElseGet(() -> {
+            LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId);
+            return false;
+        });
     }
 
+    /**
+     * @return true if the update was applied, false if it was rejected (forbidden transition) or the execution was not found
+     */
     @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            if (isExecutionStatusUpdateForbidden(execution, status)) {
+                LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), status);
+                return;
+            }
             execution.setStatus(status);
             processExecutionRepository.save(execution);
-        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+        }, () -> {
+            LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId);
+        });
+    }
+
+    private boolean isExecutionStatusUpdateForbidden(ProcessExecutionEntity execution, ProcessStatus requested) {
+        ProcessStatus current = execution.getStatus();
+        return current != null && !current.canTransitionTo(requested);
     }
 
     @Transactional
@@ -206,8 +232,19 @@ public class ProcessExecutionTxService {
             .filter(s -> s.getId().equals(stepEntity.getId()))
             .findFirst()
             .ifPresentOrElse(
-                existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
+                existingStep -> {
+                    if (isStepTransitionApplicable(existingStep, stepEntity.getStatus())) {
+                        processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep);
+                    } else {
+                        LOGGER.error("Forbidden status transition for step {}: {} -> {}, update ignored", existingStep.getId(), existingStep.getStatus(), stepEntity.getStatus());
+                    }
+                },
                 () -> steps.add(stepEntity));
+    }
+
+    private boolean isStepTransitionApplicable(ProcessExecutionStepEntity existingStep, StepStatus requested) {
+        StepStatus current = existingStep.getStatus();
+        return current == null || current.canTransitionTo(requested);
     }
 
     @Transactional

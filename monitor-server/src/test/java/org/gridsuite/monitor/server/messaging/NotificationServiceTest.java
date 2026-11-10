@@ -98,4 +98,11 @@ class NotificationServiceTest {
 
         verify(publisher).send(PUBLISH_PROCESS_CANCEL_0, executionId);
     }
+
+    @Test
+    void sendAutomaticExecutionMessage() {
+        notificationService.sendAutomaticExecutionMessage(caseUuid);
+
+        verify(publisher).send(PUBLISH_AUTOMATIC_EXECUTION_OUT_0, caseUuid.toString());
+    }
 }

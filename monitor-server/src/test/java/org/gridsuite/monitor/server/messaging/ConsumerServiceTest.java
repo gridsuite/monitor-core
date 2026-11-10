@@ -15,6 +15,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.services.processexecution.AutomaticProcessExecutionService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,8 @@ class ConsumerServiceTest {
 
     @Mock
     private ProcessExecutionService processExecutionService;
+    @Mock
+    private AutomaticProcessExecutionService automaticProcessExecutionService;
 
     private ObjectMapper objectMapper;
     private ConsumerService consumerService;
@@ -55,7 +58,16 @@ class ConsumerServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
-        consumerService = new ConsumerService(processExecutionService, objectMapper);
+        consumerService = new ConsumerService(processExecutionService, automaticProcessExecutionService, objectMapper);
+    }
+
+    @Test
+    void consumeAutomaticExecutionMessage() {
+        UUID caseUuid = UUID.randomUUID();
+
+        consumerService.consumeAutomaticExecution().accept(caseUuid.toString());
+
+        verify(automaticProcessExecutionService).executeAutomaticProcesses(caseUuid);
     }
 
     @Test

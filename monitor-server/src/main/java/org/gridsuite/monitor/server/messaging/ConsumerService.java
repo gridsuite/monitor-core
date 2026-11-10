@@ -76,17 +76,7 @@ public class ConsumerService {
     }
 
     @Bean
-    public Consumer<Message<ProcessRunMessage<?>>> consumeSecurityAnalysisRunDlq() {
-        return this::handleRunDeadLetter;
-    }
-
-    @Bean
-    public Consumer<Message<ProcessRunMessage<?>>> consumeLoadFlowRunDlq() {
-        return this::handleRunDeadLetter;
-    }
-
-    @Bean
-    public Consumer<Message<ProcessRunMessage<?>>> consumeShortCircuitRunDlq() {
+    public Consumer<Message<ProcessRunMessage<?>>> consumeRunDlq() {
         return this::handleRunDeadLetter;
     }
 

@@ -75,7 +75,7 @@ class ConsumerServiceTest {
     }
 
     @Test
-    void consumeRunDeadLetterMessages() {
+    void consumeRunDeadLetterMessagesForEachProcessType() {
         UUID securityAnalysisExecutionId = UUID.randomUUID();
         ProcessRunMessage<SecurityAnalysisConfig> securityAnalysisMessage = new ProcessRunMessage<>(
             securityAnalysisExecutionId,
@@ -101,9 +101,10 @@ class ConsumerServiceTest {
             null
         );
 
-        consumerService.consumeSecurityAnalysisRunDlq().accept(new GenericMessage<>(securityAnalysisMessage));
-        consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage));
-        consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage));
+        Consumer<Message<ProcessRunMessage<?>>> consumer = consumerService.consumeRunDlq();
+        consumer.accept(new GenericMessage<>(securityAnalysisMessage));
+        consumer.accept(new GenericMessage<>(loadFlowMessage));
+        consumer.accept(new GenericMessage<>(shortCircuitMessage));
 
         verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS);
         verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW);

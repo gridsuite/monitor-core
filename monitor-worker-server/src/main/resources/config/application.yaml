@@ -22,7 +22,7 @@ spring:
             consumer:
               auto-bind-dlq: true
               dead-letter-exchange: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.${worker.process}.run.dlx
-              dead-letter-queue-name: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.${worker.process}.run.dlx.dlq
+              dead-letter-queue-name: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run.dlx.dlq
               dead-letter-exchange-type: topic
               quorum:
                 enabled: true

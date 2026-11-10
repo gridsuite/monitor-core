@@ -8,8 +8,8 @@ package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.iidm.network.IdentifiableType;
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.filter.identifierlistfilter.FilterEquipments;
-import org.gridsuite.filter.identifierlistfilter.IdentifiableAttributes;
+import org.gridsuite.filter.dto.identifierlistfilter.FilterEquipments;
+import org.gridsuite.filter.dto.identifierlistfilter.IdentifiableAttributes;
 import org.gridsuite.filter.utils.FilterServiceUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

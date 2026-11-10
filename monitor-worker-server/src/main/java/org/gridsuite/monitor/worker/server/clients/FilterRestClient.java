@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.clients;
 
 import org.gridsuite.actions.FilterProvider;
-import org.gridsuite.filter.AbstractFilter;
+import org.gridsuite.filter.dto.AbstractFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;

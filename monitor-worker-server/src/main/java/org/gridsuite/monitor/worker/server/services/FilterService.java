@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.worker.server.services;
 
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.filter.AbstractFilter;
+import org.gridsuite.filter.dto.AbstractFilter;
 import org.gridsuite.filter.utils.FilterServiceUtils;
 import org.gridsuite.modification.IFilterService;
 import org.gridsuite.modification.dto.FilterEquipments;
@@ -39,7 +39,7 @@ public class FilterService implements IFilterService {
         return filterRestClient.getFilters(filtersUuids);
     }
 
-    public Stream<org.gridsuite.filter.identifierlistfilter.FilterEquipments> exportFilters(List<UUID> filtersUuids, Network network) {
+    public Stream<org.gridsuite.filter.dto.identifierlistfilter.FilterEquipments> exportFilters(List<UUID> filtersUuids, Network network) {
         return FilterServiceUtils.getFilterEquipmentsFromUuid(network, filtersUuids, this::getFilters).stream();
     }
 

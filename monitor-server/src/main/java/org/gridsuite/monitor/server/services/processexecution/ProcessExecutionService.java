@@ -10,6 +10,7 @@ import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
@@ -63,12 +64,18 @@ public class ProcessExecutionService {
         this.userIdentityRestClient = userIdentityRestClient;
     }
 
-    public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
+    public Optional<UUID> executeProcess(
+        UUID caseUuid,
+        String userId,
+        UUID processConfigId,
+        boolean isDebug,
+        ProcessExecutionTriggerType triggerType
+    ) {
         UUID executionId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
 
         Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(
-            caseUuid, userId, processConfigId, executionId, reportId, isDebug
+            caseUuid, userId, processConfigId, executionId, reportId, isDebug, triggerType
         );
 
         if (result.isEmpty()) {

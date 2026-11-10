@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.processexecution;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
@@ -56,7 +57,15 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
-    public Optional<ProcessCreationResult> createExecution(UUID caseUuid, String userId, UUID processConfigId, UUID executionId, UUID reportId, boolean isDebug) {
+    public Optional<ProcessCreationResult> createExecution(
+        UUID caseUuid,
+        String userId,
+        UUID processConfigId,
+        UUID executionId,
+        UUID reportId,
+        boolean isDebug,
+        ProcessExecutionTriggerType triggerType
+    ) {
         Optional<PersistedProcessConfig> persistedProcessConfigOpt = processConfigService.getProcessConfig(processConfigId);
         if (persistedProcessConfigOpt.isPresent()) {
             PersistedProcessConfig persistedProcessConfig = persistedProcessConfigOpt.get();
@@ -71,6 +80,7 @@ public class ProcessExecutionTxService {
                 .caseUuid(caseUuid)
                 .processConfigId(persistedProcessConfig.id())
                 .status(ProcessStatus.SCHEDULED)
+                .triggerType(triggerType)
                 .scheduledAt(Instant.now())
                 .reportId(reportId)
                 .userId(userId)

@@ -12,6 +12,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -99,9 +100,11 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessCreateExecutionAndSendNotifications() {
         doReturn(Optional.of(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig)))
-            .when(processExecutionTxService).createExecution(eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean());
+            .when(processExecutionTxService).createExecution(
+                eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean(), eq(ProcessExecutionTriggerType.MANUAL)
+            );
 
-        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
+        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true, ProcessExecutionTriggerType.MANUAL);
 
         assertThat(result).isNotEmpty();
         verify(notificationService).sendProcessRunMessage(
@@ -415,6 +418,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(ProcessStatus.RUNNING)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .userId(userId)
                 .build();
@@ -426,6 +430,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(ProcessStatus.SCHEDULED)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .userId(userId)
                 .build();
@@ -516,6 +521,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(status)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .executionEnvName("test-env")
                 .userId(userId)
                 .build();

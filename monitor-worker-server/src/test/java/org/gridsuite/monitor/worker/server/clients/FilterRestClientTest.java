@@ -88,6 +88,36 @@ class FilterRestClientTest {
     }
 
     @Test
+    void getStandaloneFilters() {
+        server.expect(MockRestRequestMatchers.requestTo("http://filter-server/v1/standalone-filters?ids=" + FILTER_1_UUID))
+            .andExpect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andRespond(MockRestResponseCreators.withSuccess("{}", MediaType.APPLICATION_JSON));
+        assertThat(filterRestClient.getStandaloneFilters(List.of(FILTER_1_UUID))).isEmpty();
+    }
+
+    @Test
+    void getStandaloneFiltersWithDistributionKeys() {
+        server.expect(MockRestRequestMatchers.requestTo("http://filter-server/v1/standalone-filters/with-distribution-keys?ids=" + FILTER_1_UUID))
+            .andExpect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andRespond(MockRestResponseCreators.withSuccess("{}", MediaType.APPLICATION_JSON));
+        assertThat(filterRestClient.getStandaloneFiltersWithDistributionKeys(List.of(FILTER_1_UUID))).isEmpty();
+    }
+
+    @Test
+    void emptyStandaloneFiltersDoNotCallServer() {
+        assertThat(filterRestClient.getStandaloneFilters(List.of())).isEmpty();
+        assertThat(filterRestClient.getStandaloneFiltersWithDistributionKeys(List.of())).isEmpty();
+    }
+
+    @Test
+    void standaloneFilterErrorsArePropagated() {
+        server.expect(MockRestRequestMatchers.requestTo("http://filter-server/v1/standalone-filters?ids=" + FILTER_1_UUID))
+            .andRespond(MockRestResponseCreators.withServerError());
+        assertThatThrownBy(() -> filterRestClient.getStandaloneFilters(List.of(FILTER_1_UUID)))
+            .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+    }
+
+    @Test
     void getFiltersNotFound() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo("http://filter-server/v1/filters/metadata?ids=" + FILTER_ERROR_UUID))

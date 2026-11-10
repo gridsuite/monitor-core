@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.server.dto.processexecution.CsvExportRequest;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
@@ -61,7 +62,9 @@ public class MonitorController {
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
             @RequestHeader(HEADER_USER_ID) String userId) {
-        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+        Optional<UUID> executionId = processExecutionService.executeProcess(
+            caseUuid, userId, processConfigUuid, isDebug, ProcessExecutionTriggerType.MANUAL
+        );
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 

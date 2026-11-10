@@ -43,7 +43,7 @@ public class ProcessExecutionEntity {
     @Enumerated(EnumType.STRING)
     private ProcessStatus status;
 
-    @Column
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ProcessExecutionTriggerType triggerType;
 

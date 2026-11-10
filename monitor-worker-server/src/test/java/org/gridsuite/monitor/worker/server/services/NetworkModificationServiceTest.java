@@ -82,11 +82,11 @@ class NetworkModificationServiceTest {
         );
 
         verify(abstractModification1).check(network);
-        verify(abstractModification1).initApplicationContext(filterService, null);
+        verify(abstractModification1).initApplicationContext(filterService, null, null);
         verify(abstractModification1).apply(network, reportNode);
 
         verify(abstractModification2).check(network);
-        verify(abstractModification2).initApplicationContext(filterService, null);
+        verify(abstractModification2).initApplicationContext(filterService, null, null);
         verify(abstractModification2).apply(network, reportNode);
     }
 
@@ -132,11 +132,11 @@ class NetworkModificationServiceTest {
         );
 
         verify(abstractModification1).check(network);
-        verify(abstractModification1, never()).initApplicationContext(filterService, null);
+        verify(abstractModification1, never()).initApplicationContext(filterService, null, null);
         verify(abstractModification1, never()).apply(network, reportNode);
 
         verify(abstractModification2).check(network);
-        verify(abstractModification2, never()).initApplicationContext(filterService, null);
+        verify(abstractModification2, never()).initApplicationContext(filterService, null, null);
         verify(abstractModification2, never()).apply(network, reportNode);
     }
 }

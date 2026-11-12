@@ -8,12 +8,15 @@ package org.gridsuite.monitor.worker.server.clients;
 
 import org.gridsuite.actions.FilterProvider;
 import org.gridsuite.filter.AbstractFilter;
+import org.gridsuite.filter.wip.Filter;
+import org.gridsuite.modification.context.dto.FilterWithDistributionKeys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -31,6 +34,25 @@ public class FilterRestClient implements FilterProvider {
         this.restClient = restClientBuilder
             .baseUrl(filterServerBaseUri + DELIMITER + FILTER_SERVER_API_VERSION)
             .build();
+    }
+
+    public Map<UUID, Filter> getStandaloneFilters(List<UUID> filtersUuids) {
+        return getStandaloneFilters(filtersUuids, "/standalone-filters", new ParameterizedTypeReference<>() { });
+    }
+
+    public Map<UUID, FilterWithDistributionKeys> getStandaloneFiltersWithDistributionKeys(List<UUID> filtersUuids) {
+        return getStandaloneFilters(filtersUuids, "/standalone-filters/with-distribution-keys", new ParameterizedTypeReference<>() { });
+    }
+
+    private <T> Map<UUID, T> getStandaloneFilters(List<UUID> filtersUuids, String path, ParameterizedTypeReference<Map<UUID, T>> responseType) {
+        if (filtersUuids == null || filtersUuids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, T> filters = restClient.get()
+            .uri(uriBuilder -> uriBuilder.path(path).queryParam("ids", filtersUuids.toArray()).build())
+            .retrieve()
+            .body(responseType);
+        return filters == null ? Map.of() : filters;
     }
 
     public List<AbstractFilter> getFilters(List<UUID> filtersUuids) {

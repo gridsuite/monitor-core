@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.server.dto.processexecution.CsvExportRequest;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
@@ -41,14 +42,12 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping(value = "/" + MonitorApi.API_VERSION + "/")
-@Tag(name = "Monitor server")
-public class MonitorController {
+@Tag(name = "Process execution")
+public class ProcessExecutionController {
 
     private final ProcessExecutionService processExecutionService;
 
-    public static final String HEADER_USER_ID = "userId";
-
-    public MonitorController(ProcessExecutionService processExecutionService) {
+    public ProcessExecutionController(ProcessExecutionService processExecutionService) {
         this.processExecutionService = processExecutionService;
     }
 
@@ -60,8 +59,10 @@ public class MonitorController {
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
-            @RequestHeader(HEADER_USER_ID) String userId) {
-        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+            @RequestHeader(MonitorApi.HEADER_USER_ID) String userId) {
+        Optional<UUID> executionId = processExecutionService.executeProcess(
+            caseUuid, userId, processConfigUuid, isDebug, ProcessExecutionTriggerType.MANUAL
+        );
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 

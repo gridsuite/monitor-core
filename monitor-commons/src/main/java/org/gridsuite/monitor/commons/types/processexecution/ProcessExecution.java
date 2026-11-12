@@ -30,6 +30,8 @@ public record ProcessExecution(
     @NotNull
     ProcessStatus status,
     @NotNull
+    ProcessExecutionTriggerType triggerType,
+    @NotNull
     String executionEnvName,
     Instant scheduledAt,
     Instant startedAt,
@@ -46,6 +48,7 @@ public record ProcessExecution(
                 caseUuid,
                 processConfigId,
                 status,
+                triggerType,
                 executionEnvName,
                 scheduledAt,
                 startedAt,

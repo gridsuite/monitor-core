@@ -14,4 +14,5 @@ public final class MonitorApi {
     }
 
     public static final String API_VERSION = "v1";
+    public static final String HEADER_USER_ID = "userId";
 }

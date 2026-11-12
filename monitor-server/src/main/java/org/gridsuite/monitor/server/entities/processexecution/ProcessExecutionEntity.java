@@ -8,6 +8,7 @@ package org.gridsuite.monitor.server.entities.processexecution;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 
 import java.time.Instant;
@@ -41,6 +42,10 @@ public class ProcessExecutionEntity {
     @Column
     @Enumerated(EnumType.STRING)
     private ProcessStatus status;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ProcessExecutionTriggerType triggerType;
 
     @Column
     private String executionEnvName;

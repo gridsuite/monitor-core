@@ -25,7 +25,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/" + MonitorApi.API_VERSION + "/automatic-process-configs")
-@Tag(name = "Automatic execution")
+@Tag(name = "Automatic process config")
 public class AutomaticProcessConfigController {
     private final AutomaticProcessConfigTxService configService;
 
@@ -42,7 +42,7 @@ public class AutomaticProcessConfigController {
     public ResponseEntity<Void> updateAutomaticProcessConfig(
             @PathVariable @Parameter(description = "process type") ProcessType processType,
             @RequestBody UUID configUuid,
-            @RequestHeader(MonitorController.HEADER_USER_ID) String userId
+            @RequestHeader(MonitorApi.HEADER_USER_ID) String userId
     ) {
         Optional<UUID> updated = configService.update(configUuid, processType, userId);
         return updated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();

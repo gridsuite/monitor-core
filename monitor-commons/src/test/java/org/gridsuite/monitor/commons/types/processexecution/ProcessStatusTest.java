@@ -35,7 +35,7 @@ class ProcessStatusTest {
 
         assertThat(CANCELING.canTransitionTo(CANCELED)).isTrue();
         assertThat(CANCELING.canTransitionTo(COMPLETED)).isTrue();
-
+        assertThat(CANCELING.canTransitionTo(FAILED)).isTrue();
     }
 
     @Test

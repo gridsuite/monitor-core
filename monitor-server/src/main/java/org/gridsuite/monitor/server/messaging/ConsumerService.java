@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.services.processexecution.AutomaticProcessExecutionService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
@@ -72,6 +73,17 @@ public class ConsumerService {
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
             }
         };
+    }
+
+    @Bean
+    public Consumer<Message<ProcessRunMessage<?>>> consumeRunDlq() {
+        return this::handleRunDeadLetter;
+    }
+
+    private void handleRunDeadLetter(Message<ProcessRunMessage<?>> message) {
+        ProcessRunMessage<?> runMessage = message.getPayload();
+        LOGGER.error("Process execution {} reached the dead-letter queue", runMessage.executionId());
+        processExecutionService.failExecutionFromDeadLetter(runMessage.executionId(), runMessage.processType());
     }
 
     private void handleExecutionStatusUpdate(UUID executionId, ProcessType processType, Message<String> message) {

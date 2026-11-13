@@ -3,7 +3,7 @@ spring:
     name: monitor-server
   cloud:
     function:
-      definition: consumeMonitorWorkerUpdate;consumeAutomaticExecution
+      definition: consumeMonitorWorkerUpdate;consumeAutomaticExecution;consumeRunDlq
     stream:
       bindings:
         publishRunSecurityAnalysis-out-0:
@@ -24,7 +24,25 @@ spring:
         consumeAutomaticExecution-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.automatic-execution
           group: monitorAutomaticExecutionGroup
+        consumeRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run.dlx
+          group: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run.dlx.dlq
+          consumer:
+            max-attempts: 3
       output-bindings: publishRunSecurityAnalysis-out-0;publishRunLoadFlow-out-0;publishRunShortCircuit-out-0;publishMonitorUpdate-out-0;publishAutomaticExecution-out-0
+      rabbit:
+        bindings:
+          consumeRunDlq-in-0:
+            consumer:
+              bind-queue: false
+              declare-exchange: false
+              queue-name-group-only: true
+              auto-bind-dlq: true
+              dead-letter-exchange: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run.dlx.parking
+              dead-letter-queue-name: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.run.dlx.dlq.parking
+              dead-letter-exchange-type: topic
+              republish-to-dlq: true
+              requeue-rejected: false
 
 monitor:
   automatic-execution:

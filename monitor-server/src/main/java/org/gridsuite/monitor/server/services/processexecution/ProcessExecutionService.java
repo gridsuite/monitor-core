@@ -96,7 +96,10 @@ public class ProcessExecutionService {
     }
 
     public void updateExecutionStatus(UUID executionId, ProcessType processType, ProcessExecutionStatusUpdate payload) {
-        processExecutionTxService.updateExecution(executionId, payload);
+        boolean wasExecutionUpdated = processExecutionTxService.updateExecution(executionId, payload);
+        if (!wasExecutionUpdated) {
+            return;
+        }
         if (payload.getStatus() == ProcessStatus.CANCELED) {
             processExecutionTxService.getProcessDeletionInfos(executionId).ifPresent(this::cleanExecution);
             processExecutionTxService.deleteExecutionSteps(executionId);

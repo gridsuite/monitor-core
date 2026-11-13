@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import org.gridsuite.filter.wip.Filter;
+import org.gridsuite.filter.Filter;
 import org.gridsuite.modification.context.dto.FilterWithDistributionKeys;
 import org.gridsuite.monitor.worker.server.clients.FilterRestClient;
 import org.springframework.stereotype.Service;

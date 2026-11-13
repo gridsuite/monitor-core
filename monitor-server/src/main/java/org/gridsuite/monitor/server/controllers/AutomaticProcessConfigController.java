@@ -15,6 +15,8 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -39,12 +41,11 @@ public class AutomaticProcessConfigController {
         @ApiResponse(responseCode = "200", description = "Automatic process config was updated"),
         @ApiResponse(responseCode = "400", description = "Process config type does not match process type"),
         @ApiResponse(responseCode = "404", description = "Process config was not found")})
+    @PreAuthorize("@authorizationService.canWrite(#configUuid)")
     public ResponseEntity<Void> updateAutomaticProcessConfig(
             @PathVariable @Parameter(description = "process type") ProcessType processType,
-            @RequestBody UUID configUuid,
-            @RequestHeader(MonitorApi.HEADER_USER_ID) String userId
-    ) {
-        Optional<UUID> updated = configService.update(configUuid, processType, userId);
+            @RequestBody UUID configUuid) {
+        Optional<UUID> updated = configService.update(configUuid, processType, SecurityContextHolder.getContext().getAuthentication().getName());
         return updated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
@@ -53,6 +54,7 @@ public class AutomaticProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Automatic process config"),
         @ApiResponse(responseCode = "404", description = "Automatic process config was not found")})
+    @PreAuthorize("true")
     public ResponseEntity<UUID> getAutomaticProcessConfig(
         @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType
     ) {

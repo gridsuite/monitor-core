@@ -21,6 +21,9 @@ logging:
     net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener: WARN
 
 powsybl-ws:
+  autoconfigure:
+    authorization-system:
+      enable: true
   database:
     vendor: h2:mem
     query: ;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE

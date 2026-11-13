@@ -24,6 +24,9 @@ import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionSe
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
@@ -74,8 +77,10 @@ class ConsumerServiceTest {
         verify(automaticProcessExecutionService).executeAutomaticProcesses(caseUuid);
     }
 
-    @Test
-    void consumeRunDeadLetterMessages() {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "Connection refused")
+    void consumeRunDeadLetterMessages(String exceptionMessage) {
         UUID securityAnalysisExecutionId = UUID.randomUUID();
         ProcessRunMessage<SecurityAnalysisConfig> securityAnalysisMessage = new ProcessRunMessage<>(
             securityAnalysisExecutionId,
@@ -101,13 +106,14 @@ class ConsumerServiceTest {
             null
         );
 
-        consumerService.consumeSecurityAnalysisRunDlq().accept(new GenericMessage<>(securityAnalysisMessage));
-        consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage));
-        consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage));
+        Map<String, Object> headers = exceptionMessage == null ? Map.of() : Map.of("x-exception-message", exceptionMessage);
+        consumerService.consumeSecurityAnalysisRunDlq().accept(new GenericMessage<>(securityAnalysisMessage, headers));
+        consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage, headers));
+        consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage, headers));
 
-        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS);
-        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW);
-        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT);
+        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS, exceptionMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW, exceptionMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT, exceptionMessage);
     }
 
     @Test

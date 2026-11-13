@@ -118,6 +118,16 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void failExecutionFromDeadLetterShouldPersistExceptionMessageAndNotify() {
+        String exceptionMessage = "Connection refused";
+
+        processExecutionService.failExecutionFromDeadLetter(executionId, ProcessType.SHORT_CIRCUIT, exceptionMessage);
+
+        verify(processExecutionTxService).failExecutionFromDeadLetter(executionId, exceptionMessage);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SHORT_CIRCUIT);
+    }
+
+    @Test
     void updateExecutionStatusShouldDelegateToTxService() {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();

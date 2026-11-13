@@ -105,8 +105,8 @@ public class ProcessExecutionService {
         notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
-    public void failExecutionFromDeadLetter(UUID executionId, ProcessType processType) {
-        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+    public void failExecutionFromDeadLetter(UUID executionId, ProcessType processType, String exceptionMessage) {
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, exceptionMessage);
         notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 

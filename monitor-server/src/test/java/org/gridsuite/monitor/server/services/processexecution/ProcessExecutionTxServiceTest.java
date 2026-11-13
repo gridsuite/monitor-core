@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -188,8 +190,10 @@ class ProcessExecutionTxServiceTest {
         verify(executionRepository).save(execution);
     }
 
-    @Test
-    void failExecutionFromDeadLetterShouldFailExecutionAndIncompleteSteps() {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "Connection refused")
+    void failExecutionFromDeadLetterShouldFailExecutionAndIncompleteSteps(String exceptionMessage) {
         Instant executionStartedAt = Instant.now().minusSeconds(30);
         Instant runningStepStartedAt = Instant.now().minusSeconds(20);
         Instant completedStepAt = Instant.now().minusSeconds(10);
@@ -215,9 +219,10 @@ class ProcessExecutionTxServiceTest {
             .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, exceptionMessage);
 
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.FAILED);
+        assertThat(execution.getExceptionMessage()).isEqualTo(exceptionMessage);
         assertThat(execution.getStartedAt()).isEqualTo(executionStartedAt);
         assertThat(execution.getCompletedAt()).isNotNull();
         assertThat(runningStep.getStatus()).isEqualTo(StepStatus.FAILED);
@@ -238,14 +243,16 @@ class ProcessExecutionTxServiceTest {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .id(executionId)
             .status(status)
+            .exceptionMessage("Original failure")
             .completedAt(completedAt)
             .steps(new ArrayList<>())
             .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, "Another failure");
 
         assertThat(execution.getStatus()).isEqualTo(status);
+        assertThat(execution.getExceptionMessage()).isEqualTo("Original failure");
         assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
         verify(executionRepository, never()).save(any());
     }
@@ -254,7 +261,7 @@ class ProcessExecutionTxServiceTest {
     void failExecutionFromDeadLetterShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, "Connection refused");
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());

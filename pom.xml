@@ -48,7 +48,7 @@
         <jib.from.image>powsybl/java:4.0.0</jib.from.image>
         <gridsuite-dependencies.version>51.1.0</gridsuite-dependencies.version>
         <!-- FIXME remove this in the next gridsuite-dependencies update -->
-        <gridsuite-network-modification.version>2.6.0</gridsuite-network-modification.version>
+        <gridsuite-network-modification.version>2.7.0</gridsuite-network-modification.version>
         <!-- FIXME remove this in the next gridsuite-dependencies update -->
         <gridsuite-filter.version>2.0.0</gridsuite-filter.version>
         <sonar.organization>gridsuite</sonar.organization>

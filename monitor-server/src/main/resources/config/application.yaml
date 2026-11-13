@@ -26,43 +26,14 @@ spring:
           group: monitorAutomaticExecutionGroup
         consumeSecurityAnalysisRunDlq-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run.dlx
-          group: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run.dlx.dlq
-          consumer:
-            max-attempts: 3
+          group: dlq
         consumeLoadFlowRunDlq-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run.dlx
-          group: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run.dlx.dlq
-          consumer:
-            max-attempts: 3
+          group: dlq
         consumeShortCircuitRunDlq-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run.dlx
-          group: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run.dlx.dlq
-          consumer:
-            max-attempts: 3
+          group: dlq
       output-bindings: publishRunSecurityAnalysis-out-0;publishRunLoadFlow-out-0;publishRunShortCircuit-out-0;publishMonitorUpdate-out-0;publishAutomaticExecution-out-0
-      rabbit:
-        bindings:
-          consumeSecurityAnalysisRunDlq-in-0:
-            consumer: &dlqConsumer
-              bind-queue: false
-              declare-exchange: false
-              queue-name-group-only: true
-              auto-bind-dlq: true
-              dead-letter-exchange-type: topic
-              republish-to-dlq: true
-              requeue-rejected: false
-              dead-letter-exchange: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run.dlx.parking
-              dead-letter-queue-name: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run.dlx.dlq.parking
-          consumeLoadFlowRunDlq-in-0:
-            consumer:
-              <<: *dlqConsumer
-              dead-letter-exchange: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run.dlx.parking
-              dead-letter-queue-name: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run.dlx.dlq.parking
-          consumeShortCircuitRunDlq-in-0:
-            consumer:
-              <<: *dlqConsumer
-              dead-letter-exchange: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run.dlx.parking
-              dead-letter-queue-name: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run.dlx.dlq.parking
 
 monitor:
   automatic-execution:

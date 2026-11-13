@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.ws.commons.security.AllowAllAuthorizationTestConfiguration;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
@@ -21,7 +22,9 @@ import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +36,7 @@ import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,8 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @WebMvcTest(controllers = { ProcessConfigController.class, PropertyServerNameProvider.class })
+@Import(AllowAllAuthorizationTestConfiguration.class)
+@WithMockUser
 class ProcessConfigControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -68,7 +73,8 @@ class ProcessConfigControllerTest {
 
         mockMvc.perform(post("/v1/process-configs")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(config)))
+                        .content(objectMapper.writeValueAsString(config))
+                .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(processConfigId.toString()));
@@ -148,8 +154,9 @@ class ProcessConfigControllerTest {
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(config)))
-            .andExpect(status().isOk());
+                .content(objectMapper.writeValueAsString(config))
+                .with(csrf()))
+                .andExpect(status().isOk());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
     }
@@ -166,8 +173,9 @@ class ProcessConfigControllerTest {
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(config)))
-            .andExpect(status().isNotFound());
+                .content(objectMapper.writeValueAsString(config))
+                .with(csrf()))
+                .andExpect(status().isNotFound());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
     }
@@ -180,7 +188,8 @@ class ProcessConfigControllerTest {
         when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.of(newProcessConfigId));
 
-        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId))
+        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId)
+            .with(csrf()))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(newProcessConfigId.toString()));
@@ -195,7 +204,8 @@ class ProcessConfigControllerTest {
         when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId))
+        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId)
+            .with(csrf()))
             .andExpect(status().isNotFound());
 
         verify(processConfigService).duplicateProcessConfig(processConfigId);
@@ -208,7 +218,8 @@ class ProcessConfigControllerTest {
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
             .thenReturn(Optional.of(processConfigId));
 
-        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
+        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId)
+            .with(csrf()))
             .andExpect(status().isOk());
 
         verify(processConfigService).deleteProcessConfig(any(UUID.class));
@@ -221,7 +232,8 @@ class ProcessConfigControllerTest {
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
             .thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
+        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId)
+            .with(csrf()))
             .andExpect(status().isNotFound());
 
         verify(processConfigService).deleteProcessConfig(any(UUID.class));

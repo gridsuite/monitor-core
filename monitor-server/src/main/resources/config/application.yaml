@@ -32,6 +32,9 @@ monitor:
     case-uuid: 'f0d7fc6c-058d-4d77-b954-4b0f630eaa5b'
 
 powsybl-ws:
+  autoconfigure:
+    authorization-system:
+      enable: true
   database:
     queryBegin: '&'
     customQuery: ${powsybl-ws.database.customQueryBegin}reWriteBatchedInserts=true

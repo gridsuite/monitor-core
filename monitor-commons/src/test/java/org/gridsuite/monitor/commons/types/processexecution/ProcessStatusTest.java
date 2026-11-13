@@ -34,6 +34,8 @@ class ProcessStatusTest {
         assertThat(RUNNING.canTransitionTo(CANCELED)).isTrue();
 
         assertThat(CANCELING.canTransitionTo(CANCELED)).isTrue();
+        assertThat(CANCELING.canTransitionTo(COMPLETED)).isTrue();
+
     }
 
     @Test
@@ -42,7 +44,6 @@ class ProcessStatusTest {
         assertThat(SCHEDULED.canTransitionTo(CANCELING)).isFalse();
         assertThat(RUNNING.canTransitionTo(SCHEDULED)).isFalse();
         assertThat(CANCELING.canTransitionTo(RUNNING)).isFalse();
-        assertThat(CANCELING.canTransitionTo(COMPLETED)).isFalse();
 
         for (ProcessStatus status : List.of(COMPLETED, FAILED, CANCELED)) {
             assertThat(status.canTransitionTo(RUNNING)).isFalse();

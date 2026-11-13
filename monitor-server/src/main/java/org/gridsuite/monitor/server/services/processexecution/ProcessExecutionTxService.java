@@ -101,7 +101,7 @@ public class ProcessExecutionTxService {
     @Transactional
     public boolean updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
         return processExecutionRepository.findById(executionId).map(execution -> {
-            if (isExecutionStatusUpdateForbidden(execution, payload.getStatus())) {
+            if (!isStatusUpdateAllowed(execution, payload.getStatus())) {
                 LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), payload.getStatus());
                 return false;
             }
@@ -129,7 +129,7 @@ public class ProcessExecutionTxService {
     @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
-            if (isExecutionStatusUpdateForbidden(execution, status)) {
+            if (!isStatusUpdateAllowed(execution, status)) {
                 LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), status);
                 return;
             }
@@ -140,9 +140,9 @@ public class ProcessExecutionTxService {
         });
     }
 
-    private boolean isExecutionStatusUpdateForbidden(ProcessExecutionEntity execution, ProcessStatus requested) {
+    private boolean isStatusUpdateAllowed(ProcessExecutionEntity execution, ProcessStatus requested) {
         ProcessStatus current = execution.getStatus();
-        return current != null && !current.canTransitionTo(requested);
+        return current == null || current.canTransitionTo(requested);
     }
 
     @Transactional
@@ -243,7 +243,7 @@ public class ProcessExecutionTxService {
             .findFirst()
             .ifPresentOrElse(
                 existingStep -> {
-                    if (isStepTransitionApplicable(existingStep, stepEntity.getStatus())) {
+                    if (isStatusUpdateAllowed(existingStep, stepEntity.getStatus())) {
                         processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep);
                     } else {
                         LOGGER.error("Forbidden status transition for step {}: {} -> {}, update ignored", existingStep.getId(), existingStep.getStatus(), stepEntity.getStatus());
@@ -252,7 +252,7 @@ public class ProcessExecutionTxService {
                 () -> steps.add(stepEntity));
     }
 
-    private boolean isStepTransitionApplicable(ProcessExecutionStepEntity existingStep, StepStatus requested) {
+    private boolean isStatusUpdateAllowed(ProcessExecutionStepEntity existingStep, StepStatus requested) {
         StepStatus current = existingStep.getStatus();
         return current == null || current.canTransitionTo(requested);
     }

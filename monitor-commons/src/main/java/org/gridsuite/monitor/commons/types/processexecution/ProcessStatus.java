@@ -26,7 +26,7 @@ public enum ProcessStatus {
     private static final Map<ProcessStatus, Set<ProcessStatus>> ALLOWED_TRANSITIONS = Map.of(
         SCHEDULED, Set.of(RUNNING, FAILED, CANCELED),
         RUNNING, Set.of(COMPLETED, FAILED, CANCELING, CANCELED),
-        CANCELING, Set.of(CANCELED)
+        CANCELING, Set.of(CANCELED, COMPLETED, FAILED)
     );
 
     /**

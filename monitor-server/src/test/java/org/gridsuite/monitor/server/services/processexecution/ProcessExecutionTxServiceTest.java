@@ -262,7 +262,7 @@ class ProcessExecutionTxServiceTest {
     void updateExecutionShouldRejectForbiddenStatusUpdate() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .id(executionId)
-            .status(ProcessStatus.CANCELING)
+            .status(ProcessStatus.SCHEDULED)
             .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 

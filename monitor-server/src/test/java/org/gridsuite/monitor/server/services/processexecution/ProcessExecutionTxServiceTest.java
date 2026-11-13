@@ -316,6 +316,78 @@ class ProcessExecutionTxServiceTest {
     }
 
     @Test
+    void failExecutionFromDeadLetterShouldFailExecutionAndIncompleteSteps() {
+        Instant executionStartedAt = Instant.now().minusSeconds(30);
+        Instant runningStepStartedAt = Instant.now().minusSeconds(20);
+        Instant completedStepAt = Instant.now().minusSeconds(10);
+        ProcessExecutionStepEntity runningStep = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .status(StepStatus.RUNNING)
+            .startedAt(runningStepStartedAt)
+            .build();
+        ProcessExecutionStepEntity scheduledStep = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .status(StepStatus.SCHEDULED)
+            .build();
+        ProcessExecutionStepEntity completedStep = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .status(StepStatus.COMPLETED)
+            .completedAt(completedStepAt)
+            .build();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.RUNNING)
+            .startedAt(executionStartedAt)
+            .steps(new ArrayList<>(List.of(runningStep, scheduledStep, completedStep)))
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.FAILED);
+        assertThat(execution.getStartedAt()).isEqualTo(executionStartedAt);
+        assertThat(execution.getCompletedAt()).isNotNull();
+        assertThat(runningStep.getStatus()).isEqualTo(StepStatus.FAILED);
+        assertThat(runningStep.getStartedAt()).isEqualTo(runningStepStartedAt);
+        assertThat(runningStep.getCompletedAt()).isEqualTo(execution.getCompletedAt());
+        assertThat(scheduledStep.getStatus()).isEqualTo(StepStatus.SKIPPED);
+        assertThat(scheduledStep.getStartedAt()).isEqualTo(execution.getCompletedAt());
+        assertThat(scheduledStep.getCompletedAt()).isEqualTo(execution.getCompletedAt());
+        assertThat(completedStep.getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(completedStep.getCompletedAt()).isEqualTo(completedStepAt);
+        verify(executionRepository).save(execution);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessStatus.class, names = {"COMPLETED", "CANCELED", "FAILED"})
+    void failExecutionFromDeadLetterShouldPreserveTerminalExecution(ProcessStatus status) {
+        Instant completedAt = Instant.now().minusSeconds(5);
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(status)
+            .completedAt(completedAt)
+            .steps(new ArrayList<>())
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+
+        assertThat(execution.getStatus()).isEqualTo(status);
+        assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void failExecutionFromDeadLetterShouldHandleExecutionNotFound() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        processExecutionTxService.failExecutionFromDeadLetter(executionId);
+
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
     void updateStepStatusShouldAddNewStep() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(executionId)

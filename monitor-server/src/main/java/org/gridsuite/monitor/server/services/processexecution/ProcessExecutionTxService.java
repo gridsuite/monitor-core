@@ -146,6 +146,35 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
+    public void failExecutionFromDeadLetter(UUID executionId) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(this::markExecutionFailed,
+            () -> LOGGER.warn("Execution {} not found in DB, ignoring dead-letter message", executionId));
+    }
+
+    private void markExecutionFailed(ProcessExecutionEntity execution) {
+        if (execution.getStatus() == ProcessStatus.COMPLETED
+            || execution.getStatus() == ProcessStatus.CANCELED
+            || execution.getStatus() == ProcessStatus.FAILED) {
+            return;
+        }
+
+        Instant failedAt = Instant.now();
+        execution.setStatus(ProcessStatus.FAILED);
+        execution.setCompletedAt(failedAt);
+        Optional.ofNullable(execution.getSteps()).orElse(List.of()).forEach(step -> {
+            if (step.getStatus() == StepStatus.RUNNING) {
+                step.setStatus(StepStatus.FAILED);
+                step.setCompletedAt(failedAt);
+            } else if (step.getStatus() == StepStatus.SCHEDULED) {
+                step.setStatus(StepStatus.SKIPPED);
+                step.setStartedAt(failedAt);
+                step.setCompletedAt(failedAt);
+            }
+        });
+        processExecutionRepository.save(execution);
+    }
+
+    @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);

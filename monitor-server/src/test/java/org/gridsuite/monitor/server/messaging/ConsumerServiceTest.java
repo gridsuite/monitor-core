@@ -12,6 +12,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -68,6 +72,42 @@ class ConsumerServiceTest {
         consumerService.consumeAutomaticExecution().accept(caseUuid.toString());
 
         verify(automaticProcessExecutionService).executeAutomaticProcesses(caseUuid);
+    }
+
+    @Test
+    void consumeRunDeadLetterMessages() {
+        UUID securityAnalysisExecutionId = UUID.randomUUID();
+        ProcessRunMessage<SecurityAnalysisConfig> securityAnalysisMessage = new ProcessRunMessage<>(
+            securityAnalysisExecutionId,
+            UUID.randomUUID(),
+            new SecurityAnalysisConfig(UUID.randomUUID(), List.of(), UUID.randomUUID()),
+            UUID.randomUUID(),
+            null
+        );
+        UUID loadFlowExecutionId = UUID.randomUUID();
+        ProcessRunMessage<LoadFlowConfig> loadFlowMessage = new ProcessRunMessage<>(
+            loadFlowExecutionId,
+            UUID.randomUUID(),
+            new LoadFlowConfig(UUID.randomUUID(), List.of()),
+            UUID.randomUUID(),
+            null
+        );
+        UUID shortCircuitExecutionId = UUID.randomUUID();
+        ProcessRunMessage<ShortCircuitConfig> shortCircuitMessage = new ProcessRunMessage<>(
+            shortCircuitExecutionId,
+            UUID.randomUUID(),
+            new ShortCircuitConfig(UUID.randomUUID(), List.of()),
+            UUID.randomUUID(),
+            null
+        );
+
+        consumerService.consumeSecurityAnalysisRunDlq().accept(new GenericMessage<>(securityAnalysisMessage));
+        consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage));
+        consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage));
+
+        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS);
+        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW);
+        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT);
     }
 
     @Test

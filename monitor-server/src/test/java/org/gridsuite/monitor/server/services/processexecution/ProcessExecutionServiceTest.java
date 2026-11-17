@@ -12,6 +12,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -99,9 +100,11 @@ class ProcessExecutionServiceTest {
     @Test
     void executeProcessCreateExecutionAndSendNotifications() {
         doReturn(Optional.of(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig)))
-            .when(processExecutionTxService).createExecution(eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean());
+            .when(processExecutionTxService).createExecution(
+                eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean(), eq(ProcessExecutionTriggerType.MANUAL)
+            );
 
-        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
+        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true, ProcessExecutionTriggerType.MANUAL);
 
         assertThat(result).isNotEmpty();
         verify(notificationService).sendProcessRunMessage(
@@ -121,6 +124,7 @@ class ProcessExecutionServiceTest {
         String executionEnvName = "test-env";
 
         ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(true);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecution(executionId, update);
@@ -134,6 +138,7 @@ class ProcessExecutionServiceTest {
         String executionEnvName = "test-env";
 
         ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, executionEnvName, startedAt, completedAt);
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(true);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecution(executionId, update);
@@ -143,9 +148,24 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void rejectedUpdateExecutionToCanceledStatusShouldNotCleanNorNotify() {
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, Instant.now());
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(false);
+
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
+
+        verify(processExecutionTxService).updateExecution(executionId, update);
+        verify(processExecutionTxService, never()).getProcessDeletionInfos(any(UUID.class));
+        verify(processExecutionTxService, never()).deleteExecutionSteps(any(UUID.class));
+        verify(processExecutionTxService, never()).clearResourceReferences(any(UUID.class));
+        verify(notificationService, never()).sendProcessUpdatedMessage(any(UUID.class), any(ProcessType.class));
+    }
+
+    @Test
     void deleteAfterCancelShouldNotCleanResourcesAgain() {
         // Simulate cancel: resources are cleaned and references nulled
         ProcessExecutionStatusUpdate cancelUpdate = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, null);
+        when(processExecutionTxService.updateExecution(executionId, cancelUpdate)).thenReturn(true);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, cancelUpdate);
         verify(processExecutionTxService).clearResourceReferences(executionId);
 
@@ -398,6 +418,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(ProcessStatus.RUNNING)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .userId(userId)
                 .build();
@@ -409,6 +430,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(ProcessStatus.SCHEDULED)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .userId(userId)
                 .build();
@@ -499,6 +521,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(status)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .executionEnvName("test-env")
                 .userId(userId)
                 .build();
@@ -518,6 +541,7 @@ class ProcessExecutionServiceTest {
     @Test
     void cancelProcessShouldCancelImmediatelyWhenScheduled() {
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.SCHEDULED)));
+        when(processExecutionTxService.updateExecution(eq(executionId), any(ProcessExecutionStatusUpdate.class))).thenReturn(true);
 
         CancelProcessResult response = processExecutionService.cancelProcess(executionId);
 

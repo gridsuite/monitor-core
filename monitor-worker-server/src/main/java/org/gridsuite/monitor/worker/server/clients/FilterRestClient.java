@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -27,10 +26,6 @@ import java.util.UUID;
 public class FilterRestClient implements FilterProvider {
     private static final String FILTER_SERVER_API_VERSION = "v1";
     private static final String DELIMITER = "/";
-    private static final String STANDALONE_FILTERS_URI = "/filters/standalone-filters";
-    private static final String IDS_PARAM = "ids";
-    private static final ParameterizedTypeReference<Map<UUID, Filter>> STANDALONE_FILTERS_BY_ID = new ParameterizedTypeReference<>() { };
-    private static final ParameterizedTypeReference<Map<UUID, FilterWithDistributionKeys>> STANDALONE_FILTERS_WITH_DISTRIBUTION_KEYS_BY_ID = new ParameterizedTypeReference<>() { };
 
     private final RestClient restClient;
 
@@ -39,6 +34,25 @@ public class FilterRestClient implements FilterProvider {
         this.restClient = restClientBuilder
             .baseUrl(filterServerBaseUri + DELIMITER + FILTER_SERVER_API_VERSION)
             .build();
+    }
+
+    public Map<UUID, Filter> getStandaloneFilters(List<UUID> filtersUuids) {
+        return getStandaloneFilters(filtersUuids, "/standalone-filters", new ParameterizedTypeReference<>() { });
+    }
+
+    public Map<UUID, FilterWithDistributionKeys> getStandaloneFiltersWithDistributionKeys(List<UUID> filtersUuids) {
+        return getStandaloneFilters(filtersUuids, "/standalone-filters/with-distribution-keys", new ParameterizedTypeReference<>() { });
+    }
+
+    private <T> Map<UUID, T> getStandaloneFilters(List<UUID> filtersUuids, String path, ParameterizedTypeReference<Map<UUID, T>> responseType) {
+        if (filtersUuids == null || filtersUuids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, T> filters = restClient.get()
+            .uri(uriBuilder -> uriBuilder.path(path).queryParam("ids", filtersUuids.toArray()).build())
+            .retrieve()
+            .body(responseType);
+        return filters == null ? Map.of() : filters;
     }
 
     public List<AbstractFilter> getFilters(List<UUID> filtersUuids) {
@@ -51,24 +65,4 @@ public class FilterRestClient implements FilterProvider {
             .body(new ParameterizedTypeReference<>() { });
     }
 
-    public Map<UUID, Filter> getStandaloneFilters(List<UUID> filtersUuids) {
-        return restClient.get()
-            .uri(buildStandaloneFiltersUri(STANDALONE_FILTERS_URI, filtersUuids))
-            .retrieve()
-            .body(STANDALONE_FILTERS_BY_ID);
-    }
-
-    public Map<UUID, FilterWithDistributionKeys> getStandaloneFiltersWithDistributionKeys(List<UUID> filtersUuids) {
-        return restClient.get()
-            .uri(buildStandaloneFiltersUri(STANDALONE_FILTERS_URI + "/with-distribution-keys", filtersUuids))
-            .retrieve()
-            .body(STANDALONE_FILTERS_WITH_DISTRIBUTION_KEYS_BY_ID);
-    }
-
-    private String buildStandaloneFiltersUri(String path, List<UUID> filtersUuids) {
-        return UriComponentsBuilder.fromPath(path)
-            .queryParam(IDS_PARAM, filtersUuids)
-            .buildAndExpand()
-            .toUriString();
-    }
 }

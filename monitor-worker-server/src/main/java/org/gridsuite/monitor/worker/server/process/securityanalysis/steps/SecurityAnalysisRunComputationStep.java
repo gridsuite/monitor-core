@@ -10,6 +10,7 @@ import com.powsybl.commons.report.ReportNode;
 import com.powsybl.security.SecurityAnalysis;
 import com.powsybl.security.SecurityAnalysisReport;
 import com.powsybl.security.SecurityAnalysisRunParameters;
+import org.gridsuite.computation.utils.SecurityAnalysisEnricher;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
@@ -51,16 +52,16 @@ public class SecurityAnalysisRunComputationStep extends AbstractProcessStep<Secu
         ReportNode reportNode = context.getReportNode();
 
         SecurityAnalysisInputData inputData = securityAnalysisParametersService.buildSecurityAnalysisInputData(
-            context.getConfig().securityAnalysisParametersUuid(), context.getConfig().loadflowParametersUuid(), context.getNetwork());
+                context.getConfig().securityAnalysisParametersUuid(), context.getConfig().loadflowParametersUuid(), context.getNetwork());
 
         SecurityAnalysisRunParameters runParameters = new SecurityAnalysisRunParameters()
-            .setSecurityAnalysisParameters(inputData.securityAnalysisParameters())
-            .setReportNode(reportNode);
+                .setSecurityAnalysisParameters(inputData.securityAnalysisParameters())
+                .setReportNode(reportNode);
         SecurityAnalysisReport saReport = taskManager.runComputation(context.getProcessExecutionId(),
                 () -> SecurityAnalysis.find(inputData.provider()).runAsync(context.getNetwork(), inputData.contingencies(), runParameters));
 
         ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SECURITY_ANALYSIS);
-        securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), saReport.getResult());
+        securityAnalysisRestClient.saveResult(resultInfos.resultUUID(), SecurityAnalysisEnricher.enrich(saReport.getResult(), context.getNetwork()));
         context.setResultInfos(resultInfos);
     }
 }

@@ -10,6 +10,7 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
+import org.gridsuite.modification.ModificationType;
 import org.gridsuite.modification.context.ModificationContext;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.modifications.AbstractModification;
@@ -41,12 +42,12 @@ public class NetworkModificationService {
                     modification.apply(network, reportNode);
                 } catch (Exception e) {
                     // For now, we just log the error, and we continue to apply the following modifications
-                    handleException(modificationInfos.getMessageType(), e);
+                    handleException(modificationInfos.getType(), e);
                 }
             });
     }
 
-    private void handleException(String typeIfError, Exception e) {
+    private void handleException(ModificationType typeIfError, Exception e) {
         boolean isApplicationException = PowsyblException.class.isAssignableFrom(e.getClass());
         if (!isApplicationException) {
             LOGGER.error("{}", e.getMessage(), e);

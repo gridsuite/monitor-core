@@ -13,6 +13,7 @@ import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.services.processexecution.AutomaticProcessExecutionService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,19 @@ public class ConsumerService {
     public static final String HEADER_PROCESS_TYPE = "processType";
 
     private final ProcessExecutionService processExecutionService;
+    private final AutomaticProcessExecutionService automaticProcessExecutionService;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public ConsumerService(ProcessExecutionService processExecutionService, ObjectMapper objectMapper) {
+    public ConsumerService(ProcessExecutionService processExecutionService, AutomaticProcessExecutionService automaticProcessExecutionService, ObjectMapper objectMapper) {
         this.processExecutionService = processExecutionService;
+        this.automaticProcessExecutionService = automaticProcessExecutionService;
         this.objectMapper = objectMapper;
+    }
+
+    @Bean
+    public Consumer<String> consumeAutomaticExecution() {
+        return payload -> automaticProcessExecutionService.executeAutomaticProcesses(UUID.fromString(payload));
     }
 
     @Bean

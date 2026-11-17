@@ -9,7 +9,9 @@ package org.gridsuite.monitor.server.services.processexecution;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
@@ -55,7 +57,15 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
-    public Optional<ProcessCreationResult> createExecution(UUID caseUuid, String userId, UUID processConfigId, UUID executionId, UUID reportId, boolean isDebug) {
+    public Optional<ProcessCreationResult> createExecution(
+        UUID caseUuid,
+        String userId,
+        UUID processConfigId,
+        UUID executionId,
+        UUID reportId,
+        boolean isDebug,
+        ProcessExecutionTriggerType triggerType
+    ) {
         Optional<PersistedProcessConfig> persistedProcessConfigOpt = processConfigService.getProcessConfig(processConfigId);
         if (persistedProcessConfigOpt.isPresent()) {
             PersistedProcessConfig persistedProcessConfig = persistedProcessConfigOpt.get();
@@ -70,6 +80,7 @@ public class ProcessExecutionTxService {
                 .caseUuid(caseUuid)
                 .processConfigId(persistedProcessConfig.id())
                 .status(ProcessStatus.SCHEDULED)
+                .triggerType(triggerType)
                 .scheduledAt(Instant.now())
                 .reportId(reportId)
                 .userId(userId)
@@ -84,9 +95,16 @@ public class ProcessExecutionTxService {
         return Optional.empty();
     }
 
+    /**
+     * @return true if the update was applied, false if it was rejected (forbidden transition) or the execution was not found
+     */
     @Transactional
-    public void updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
-        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+    public boolean updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
+        return processExecutionRepository.findById(executionId).map(execution -> {
+            if (!isStatusUpdateAllowed(execution, payload.getStatus())) {
+                LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), payload.getStatus());
+                return false;
+            }
             execution.setStatus(payload.getStatus());
             if (payload.getExecutionEnvName() != null) {
                 execution.setExecutionEnvName(payload.getExecutionEnvName());
@@ -98,15 +116,33 @@ public class ProcessExecutionTxService {
                 execution.setCompletedAt(payload.getCompletedAt());
             }
             processExecutionRepository.save(execution);
-        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+            return true;
+        }).orElseGet(() -> {
+            LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId);
+            return false;
+        });
     }
 
+    /**
+     * @return true if the update was applied, false if it was rejected (forbidden transition) or the execution was not found
+     */
     @Transactional
     public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            if (!isStatusUpdateAllowed(execution, status)) {
+                LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), status);
+                return;
+            }
             execution.setStatus(status);
             processExecutionRepository.save(execution);
-        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+        }, () -> {
+            LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId);
+        });
+    }
+
+    private boolean isStatusUpdateAllowed(ProcessExecutionEntity execution, ProcessStatus requested) {
+        ProcessStatus current = execution.getStatus();
+        return current == null || current.canTransitionTo(requested);
     }
 
     @Transactional
@@ -206,8 +242,19 @@ public class ProcessExecutionTxService {
             .filter(s -> s.getId().equals(stepEntity.getId()))
             .findFirst()
             .ifPresentOrElse(
-                existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
+                existingStep -> {
+                    if (isStatusUpdateAllowed(existingStep, stepEntity.getStatus())) {
+                        processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep);
+                    } else {
+                        LOGGER.error("Forbidden status transition for step {}: {} -> {}, update ignored", existingStep.getId(), existingStep.getStatus(), stepEntity.getStatus());
+                    }
+                },
                 () -> steps.add(stepEntity));
+    }
+
+    private boolean isStatusUpdateAllowed(ProcessExecutionStepEntity existingStep, StepStatus requested) {
+        StepStatus current = existingStep.getStatus();
+        return current == null || current.canTransitionTo(requested);
     }
 
     @Transactional

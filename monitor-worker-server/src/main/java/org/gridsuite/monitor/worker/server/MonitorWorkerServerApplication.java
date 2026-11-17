@@ -13,7 +13,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-@SpringBootApplication
+@SpringBootApplication(excludeName = {
+    "org.gridsuite.computation.s3.S3AutoConfiguration",
+    "org.gridsuite.computation.rabbitmq.RabbitConsumerAutoConfiguration"
+})
 public class MonitorWorkerServerApplication {
 
     public static void main(String[] args) {

@@ -25,12 +25,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -67,8 +67,8 @@ class NetworkModificationServiceTest {
         AbstractModification abstractModification1 = mock(AbstractModification.class);
         AbstractModification abstractModification2 = mock(AbstractModification.class);
 
-        when(modification1.toModification(any(ModificationContext.class))).thenReturn(abstractModification1);
-        when(modification2.toModification(any(ModificationContext.class))).thenReturn(abstractModification2);
+        doReturn(abstractModification1).when(modification1).toModification(any(ModificationContext.class));
+        doReturn(abstractModification2).when(modification2).toModification(any(ModificationContext.class));
 
         doNothing().when(abstractModification1).check(any());
         doNothing().when(abstractModification2).check(any());
@@ -112,8 +112,8 @@ class NetworkModificationServiceTest {
         AbstractModification abstractModification1 = mock(AbstractModification.class);
         AbstractModification abstractModification2 = mock(AbstractModification.class);
 
-        when(modification1.toModification(any(ModificationContext.class))).thenReturn(abstractModification1);
-        when(modification2.toModification(any(ModificationContext.class))).thenReturn(abstractModification2);
+        doReturn(abstractModification1).when(modification1).toModification(any(ModificationContext.class));
+        doReturn(abstractModification2).when(modification2).toModification(any(ModificationContext.class));
 
         doThrow(new PowsyblException("Error in modification"))
             .when(abstractModification1).check(any());

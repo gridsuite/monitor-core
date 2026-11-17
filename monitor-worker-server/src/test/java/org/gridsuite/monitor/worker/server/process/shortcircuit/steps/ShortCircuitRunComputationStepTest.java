@@ -6,15 +6,18 @@
  */
 package org.gridsuite.monitor.worker.server.process.shortcircuit.steps;
 
+import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
-import com.powsybl.shortcircuit.Fault;
+import com.powsybl.shortcircuit.BusFault;
+import com.powsybl.shortcircuit.FaultResult;
 import com.powsybl.shortcircuit.ShortCircuitAnalysis;
 import com.powsybl.shortcircuit.ShortCircuitAnalysisResult;
 import com.powsybl.shortcircuit.ShortCircuitParameters;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.result.ResultType;
+import org.gridsuite.monitor.worker.server.clients.PccMinRestClient;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.exceptions.ProcessCancelledException;
@@ -24,15 +27,20 @@ import org.gridsuite.monitor.worker.server.process.shortcircuit.ShortCircuitStep
 import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
+import org.gridsuite.scpmin.provider.ScpMinProvider;
+import org.gridsuite.scpmin.provider.dto.ScpMinResult;
+import org.gridsuite.scpmin.provider.dto.SingleScpMinResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.RestClientException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,6 +74,9 @@ class ShortCircuitRunComputationStepTest {
     private ShortCircuitRestClient shortCircuitRestClient;
 
     @Mock
+    private PccMinRestClient pccMinRestClient;
+
+    @Mock
     private ProcessStepExecutionContext<ShortCircuitConfig> stepContext;
 
     @Mock
@@ -73,6 +84,9 @@ class ShortCircuitRunComputationStepTest {
 
     @Mock
     private S3Service s3Service;
+
+    @Mock
+    private ScpMinProvider scpMinProvider;
 
     @Spy
     private FileService fileService;
@@ -88,7 +102,7 @@ class ShortCircuitRunComputationStepTest {
         executionId = UUID.randomUUID();
         taskManager.registerExecution(executionId);
         runComputationStep = new ShortCircuitRunComputationStep(
-                shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, taskManager, "ShortCircuit-provider");
+                shortCircuitParametersService, shortCircuitRestClient, pccMinRestClient, s3Service, fileService, taskManager, "ScpMin-provider", "ShortCircuit-provider");
 
         when(stepContext.getConfig()).thenReturn(config);
         when(config.shortCircuitParametersUuid()).thenReturn(PARAMS_UUID);
@@ -104,12 +118,18 @@ class ShortCircuitRunComputationStepTest {
         testExecute(true);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"scp-provider", "scp-computation", "scp-status", "scp-cancellation", "scp-save", "shortcircuit-save"})
+    void executeFailureDoesNotPublishResult(String failingStage) {
+        testExecute(false, failingStage);
+    }
+
     private void testExecute(boolean debug) {
         testExecute(debug, null);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"computation", "upload"})
+    @ValueSource(strings = {"computation", "upload", "scp-save"})
     void executeDebugFailureClosesDirectory(String failingStage) {
         testExecute(true, failingStage);
     }
@@ -130,8 +150,32 @@ class ShortCircuitRunComputationStepTest {
         when(shortCircuitParametersService.buildParameters(parametersInfos, "ShortCircuit-provider", Collections.emptyMap()))
             .thenReturn(commonParameters);
         when(shortCircuitParametersService.getAllBusFaults(eq(network), any()))
-            .thenReturn(List.of(mock(Fault.class)));
+            .thenReturn(List.of(new BusFault("fault", "bus")));
         doNothing().when(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
+
+        ScpMinResult scpMinResult = new ScpMinResult(
+            List.of(new SingleScpMinResult("bus", 1.0, 2.0, "equipment", 3.0, 4.0)),
+            "scp-status".equals(failingStage) ? FaultResult.Status.FAILURE : FaultResult.Status.SUCCESS);
+        RestClientException saveFailure = new RestClientException("Result upload failed");
+        if ("scp-save".equals(failingStage)) {
+            doThrow(saveFailure).when(pccMinRestClient).saveResult(any(), same(scpMinResult));
+        } else if ("shortcircuit-save".equals(failingStage)) {
+            doThrow(saveFailure).when(shortCircuitRestClient).saveResult(any(), any());
+        }
+
+        if (!"computation".equals(failingStage) && !"scp-provider".equals(failingStage)) {
+            CompletableFuture<ScpMinResult> scpMinFuture;
+            if ("scp-computation".equals(failingStage)) {
+                scpMinFuture = CompletableFuture.failedFuture(new IllegalStateException("SCP-min failed"));
+            } else if ("scp-cancellation".equals(failingStage)) {
+                scpMinFuture = new CompletableFuture<>();
+                scpMinFuture.cancel(true);
+            } else {
+                scpMinFuture = CompletableFuture.completedFuture(scpMinResult);
+            }
+            when(scpMinProvider.runAsync(eq(network), eq(List.of("bus")), same(commonParameters), any(), any()))
+                .thenReturn(scpMinFuture);
+        }
 
         String debugFileLocation = "debug/file/location";
         if (debug) {
@@ -154,7 +198,8 @@ class ShortCircuitRunComputationStepTest {
         }
 
         ShortCircuitAnalysisResult analysisResult = mock(ShortCircuitAnalysisResult.class);
-        try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class)) {
+        try (MockedStatic<ShortCircuitAnalysis> shortCircuitAnalysis = mockStatic(ShortCircuitAnalysis.class);
+             MockedStatic<ScpMinProvider> scpMinDiscovery = mockStatic(ScpMinProvider.class)) {
             ShortCircuitAnalysis.Runner runner = mock(ShortCircuitAnalysis.Runner.class);
             shortCircuitAnalysis.when(() -> ShortCircuitAnalysis.find("ShortCircuit-provider")).thenReturn(runner);
             if ("computation".equals(failingStage)) {
@@ -163,13 +208,27 @@ class ShortCircuitRunComputationStepTest {
                 when(runner.runAsync(eq(network), any(), any(), any(), any(), any())).thenReturn(CompletableFuture.completedFuture(analysisResult));
             }
 
+            if ("scp-provider".equals(failingStage)) {
+                scpMinDiscovery.when(() -> ScpMinProvider.find("ScpMin-provider"))
+                    .thenThrow(new PowsyblException("No ScpMinProvider providers found"));
+            } else if (!"computation".equals(failingStage)) {
+                scpMinDiscovery.when(() -> ScpMinProvider.find("ScpMin-provider")).thenReturn(scpMinProvider);
+            }
+
             if (failingStage == null) {
                 runComputationStep.execute(stepContext);
+            } else if ("scp-save".equals(failingStage) || "shortcircuit-save".equals(failingStage)) {
+                assertSame(saveFailure, assertThrows(RestClientException.class, () -> runComputationStep.execute(stepContext)));
             } else {
                 assertThrows(RuntimeException.class, () -> runComputationStep.execute(stepContext));
             }
 
             verify(runner).runAsync(eq(network), any(), same(commonParameters), any(), any(), any());
+            if (!"computation".equals(failingStage)) {
+                scpMinDiscovery.verify(() -> ScpMinProvider.find("ScpMin-provider"));
+            } else {
+                scpMinDiscovery.verifyNoInteractions();
+            }
             if (debug) {
                 Path tempDebugDir = Path.of(commonParameters.getDebugDir());
                 assertFalse(Files.exists(tempDebugDir));
@@ -189,15 +248,31 @@ class ShortCircuitRunComputationStepTest {
         verify(shortCircuitRestClient).getParameters(PARAMS_UUID);
         verify(shortCircuitParametersService).getAllBusFaults(network, parametersInfos.getSpecificParametersPerProvider().get("ShortCircuit-provider"));
         verify(shortCircuitParametersService).checkInconsistentVoltageLevels(eq(network), any());
-        if ("computation".equals(failingStage)) {
-            verify(shortCircuitRestClient, never()).saveResult(any(), any());
-            verify(stepContext, never()).setResultInfos(any());
+        ArgumentCaptor<UUID> resultUuidCaptor = ArgumentCaptor.forClass(UUID.class);
+        if (failingStage == null || "upload".equals(failingStage) || "scp-save".equals(failingStage) || "shortcircuit-save".equals(failingStage)) {
+            verify(shortCircuitRestClient).saveResult(resultUuidCaptor.capture(), same(analysisResult));
+            if ("shortcircuit-save".equals(failingStage)) {
+                verifyNoInteractions(pccMinRestClient);
+            } else {
+                verify(pccMinRestClient).saveResult(eq(resultUuidCaptor.getValue()), same(scpMinResult));
+            }
         } else {
-            verify(shortCircuitRestClient).saveResult(any(UUID.class), same(analysisResult));
+            verify(shortCircuitRestClient, never()).saveResult(any(), any());
+            verifyNoInteractions(pccMinRestClient);
+        }
+        if (failingStage == null || "upload".equals(failingStage)) {
             verify(stepContext).setResultInfos(argThat(resultInfos ->
-                resultInfos.resultUUID() != null &&
+                resultInfos.resultUUID().equals(resultUuidCaptor.getValue()) &&
                     resultInfos.resultType() == ResultType.SHORT_CIRCUIT
             ));
+        } else {
+            verify(stepContext, never()).setResultInfos(any());
+        }
+
+        if (!"computation".equals(failingStage) && !"scp-provider".equals(failingStage)) {
+            verify(scpMinProvider).runAsync(eq(network), eq(List.of("bus")), same(commonParameters), any(), any());
+        } else {
+            verifyNoInteractions(scpMinProvider);
         }
 
         assertEquals("RUN_SC_COMPUTATION", runComputationStep.getType().getName());
@@ -214,6 +289,7 @@ class ShortCircuitRunComputationStepTest {
             () -> runComputationStep.execute(stepContext));
 
         verify(shortCircuitRestClient, never()).saveResult(any(), any());
+        verifyNoInteractions(pccMinRestClient);
         verify(stepContext, never()).setResultInfos(any());
     }
 
@@ -230,7 +306,7 @@ class ShortCircuitRunComputationStepTest {
     private void assertCancellationDoesNotReportFailure(RuntimeException cancellation) {
         TaskManager taskManager = mock(TaskManager.class);
         runComputationStep = new ShortCircuitRunComputationStep(
-            shortCircuitParametersService, shortCircuitRestClient, s3Service, fileService, taskManager, "ShortCircuit-provider");
+            shortCircuitParametersService, shortCircuitRestClient, pccMinRestClient, s3Service, fileService, taskManager, "ScpMin-provider", "ShortCircuit-provider");
         when(stepContext.getProcessExecutionId()).thenReturn(executionId);
         when(stepContext.getConfig()).thenReturn(config);
         ReportNode reportNode = ReportNode.newRootReportNode()
@@ -255,6 +331,7 @@ class ShortCircuitRunComputationStepTest {
 
         assertTrue(stepContext.getReportNode().getChildren().isEmpty());
         verify(shortCircuitRestClient, never()).saveResult(any(), any());
+        verifyNoInteractions(pccMinRestClient);
         verify(stepContext, never()).setResultInfos(any());
     }
 }

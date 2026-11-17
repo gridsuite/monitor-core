@@ -58,6 +58,18 @@ To deploy several worker types, run several instances of the same artifact with 
 | --- | --- | --- |
 | `worker.execution-env-name` | `default-env` | Name of the worker execution environment. |
 | `worker.process` | `securityanalysis` | Process type handled by this worker instance. |
+| `shortcircuit-analysis.scp-min-provider` | `Courcirc` | Name of the injected SCP-min provider used by the short-circuit step. |
+| `gridsuite.services.pccmin-server.base-uri` | `http://pcc-min-server/` | PCC-min server receiving SCP-min results. |
+
+For private RTE deployments, add `gridsuite-scp-min-provider-impl` and its runtime
+dependencies to the worker classpath and configure Courcirc. The short-circuit
+step calls `ScpMinProvider.find(name)` directly and runs SCP-min through the task
+manager with the same selected buses, parameters and report as the short-circuit
+calculation. Successful SCP-min results are saved to PCC-min server using
+`POST /v1/results/{resultUuid}`, with the same UUID as the short-circuit result
+saved to shortcircuit-server. A failed result upload fails the step. There is no
+enable flag: the named provider must be available
+through JAR injection when the step executes.
 
 ## Sequence diagram of a process execution
 ![Sequence diagram of a process execution](docs/diagrams/sequence_diagram.drawio.svg)

@@ -52,7 +52,7 @@ public class NetworkModificationService {
         if (!isApplicationException) {
             LOGGER.error("{}", e.getMessage(), e);
         } else {
-            LOGGER.error("{} : {}", typeIfError, e.getMessage(), e);
+            LOGGER.error("{} : {}", typeIfError.name(), e.getMessage(), e);
         }
     }
 }

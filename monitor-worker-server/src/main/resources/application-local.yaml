@@ -32,3 +32,5 @@ gridsuite:
       base-uri: http://localhost:5031
     monitor-server:
       base-uri: http://localhost:5043
+    pcc-min-server:
+      base-uri: http://localhost:6042

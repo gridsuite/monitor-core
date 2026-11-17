@@ -89,12 +89,12 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
 
         String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
-        Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
-        ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
+//        Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
+        ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, null);
         if (context.getDebugFileLocation() == null) {
-            runComputation(context, provider, commonParameters, specificParameters);
+            runComputation(context, provider, commonParameters, null);
         } else {
-            runComputationWithDebug(context, provider, commonParameters, specificParameters);
+            runComputationWithDebug(context, provider, commonParameters, null);
         }
     }
 

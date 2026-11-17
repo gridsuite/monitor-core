@@ -8,13 +8,13 @@ package org.gridsuite.monitor.worker.server.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gridsuite.filter.AbstractFilter;
-import org.gridsuite.filter.expertfilter.ExpertFilter;
-import org.gridsuite.filter.expertfilter.expertrule.AbstractExpertRule;
-import org.gridsuite.filter.expertfilter.expertrule.CombinatorExpertRule;
-import org.gridsuite.filter.expertfilter.expertrule.EnumExpertRule;
-import org.gridsuite.filter.identifierlistfilter.IdentifierListFilter;
-import org.gridsuite.filter.identifierlistfilter.IdentifierListFilterEquipmentAttributes;
+import org.gridsuite.filter.dto.AbstractFilter;
+import org.gridsuite.filter.dto.expertfilter.ExpertFilter;
+import org.gridsuite.filter.dto.expertfilter.expertrule.AbstractExpertRule;
+import org.gridsuite.filter.dto.expertfilter.expertrule.CombinatorExpertRule;
+import org.gridsuite.filter.dto.expertfilter.expertrule.EnumExpertRule;
+import org.gridsuite.filter.dto.identifierlistfilter.IdentifierListFilter;
+import org.gridsuite.filter.dto.identifierlistfilter.IdentifierListFilterEquipmentAttributes;
 import org.gridsuite.filter.utils.EquipmentType;
 import org.gridsuite.filter.utils.expertfilter.CombinatorType;
 import org.gridsuite.filter.utils.expertfilter.FieldType;
@@ -96,5 +96,23 @@ class FilterRestClientTest {
         List<UUID> filterUuids = List.of(FILTER_ERROR_UUID);
         assertThatThrownBy(() -> filterRestClient.getFilters(filterUuids))
             .isInstanceOf(HttpServerErrorException.InternalServerError.class);
+    }
+
+    @Test
+    void getStandaloneFilters() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo("http://filter-server/v1/filters/standalone-filters?ids=" + FILTER_1_UUID + "&ids=" + FILTER_2_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        assertThat(filterRestClient.getStandaloneFilters(List.of(FILTER_1_UUID, FILTER_2_UUID))).isEmpty();
+    }
+
+    @Test
+    void getStandaloneFiltersWithDistributionKeys() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo("http://filter-server/v1/filters/standalone-filters/with-distribution-keys?ids=" + FILTER_1_UUID + "&ids=" + FILTER_2_UUID))
+            .andRespond(MockRestResponseCreators.withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        assertThat(filterRestClient.getStandaloneFiltersWithDistributionKeys(List.of(FILTER_1_UUID, FILTER_2_UUID))).isEmpty();
     }
 }

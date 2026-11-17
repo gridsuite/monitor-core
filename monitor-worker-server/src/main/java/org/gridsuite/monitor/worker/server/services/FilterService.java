@@ -33,4 +33,5 @@ public class FilterService {
     public Map<UUID, FilterWithDistributionKeys> getStandaloneFiltersWithDistributionKeys(List<UUID> filtersUuids) {
         return filterRestClient.getStandaloneFiltersWithDistributionKeys(filtersUuids);
     }
+    
 }

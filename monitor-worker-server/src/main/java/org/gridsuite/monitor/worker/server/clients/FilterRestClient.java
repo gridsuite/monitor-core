@@ -64,5 +64,4 @@ public class FilterRestClient implements FilterProvider {
             .retrieve()
             .body(new ParameterizedTypeReference<>() { });
     }
-
 }

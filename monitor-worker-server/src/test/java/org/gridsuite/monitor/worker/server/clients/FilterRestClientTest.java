@@ -127,5 +127,4 @@ class FilterRestClientTest {
         assertThatThrownBy(() -> filterRestClient.getFilters(filterUuids))
             .isInstanceOf(HttpServerErrorException.InternalServerError.class);
     }
-
 }

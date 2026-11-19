@@ -118,12 +118,12 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void failExecutionFromDeadLetterShouldPersistExceptionMessageAndNotify() {
-        String exceptionMessage = "Connection refused";
+    void failExecutionFromDeadLetterShouldForwardFailureMessageAndNotify() {
+        String failureMessage = "Process execution was dead-lettered. Exception details: Connection refused";
 
-        processExecutionService.failExecutionFromDeadLetter(executionId, ProcessType.SHORT_CIRCUIT, exceptionMessage);
+        processExecutionService.failExecutionFromDeadLetter(executionId, ProcessType.SHORT_CIRCUIT, failureMessage);
 
-        verify(processExecutionTxService).failExecutionFromDeadLetter(executionId, exceptionMessage);
+        verify(processExecutionTxService).failExecutionFromDeadLetter(executionId, failureMessage);
         verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SHORT_CIRCUIT);
     }
 

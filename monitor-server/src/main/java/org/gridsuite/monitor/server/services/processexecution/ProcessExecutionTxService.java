@@ -146,12 +146,12 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
-    public void failExecutionFromDeadLetter(UUID executionId, String exceptionMessage) {
-        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> markExecutionFailed(execution, exceptionMessage),
+    public void failExecutionFromDeadLetter(UUID executionId, String failureMessage) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> markExecutionFailed(execution, failureMessage),
             () -> LOGGER.warn("Execution {} not found in DB, ignoring dead-letter message", executionId));
     }
 
-    private void markExecutionFailed(ProcessExecutionEntity execution, String exceptionMessage) {
+    private void markExecutionFailed(ProcessExecutionEntity execution, String failureMessage) {
         if (execution.getStatus() == ProcessStatus.COMPLETED
             || execution.getStatus() == ProcessStatus.CANCELED
             || execution.getStatus() == ProcessStatus.FAILED) {
@@ -160,7 +160,7 @@ public class ProcessExecutionTxService {
 
         Instant failedAt = Instant.now();
         execution.setStatus(ProcessStatus.FAILED);
-        execution.setExceptionMessage(exceptionMessage);
+        execution.setFailureMessage(failureMessage);
         execution.setCompletedAt(failedAt);
         Optional.ofNullable(execution.getSteps()).orElse(List.of()).forEach(step -> {
             if (step.getStatus() == StepStatus.RUNNING) {

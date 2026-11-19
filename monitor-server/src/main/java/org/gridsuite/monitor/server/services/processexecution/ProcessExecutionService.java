@@ -108,8 +108,8 @@ public class ProcessExecutionService {
         notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
-    public void failExecutionFromDeadLetter(UUID executionId, ProcessType processType, String exceptionMessage) {
-        processExecutionTxService.failExecutionFromDeadLetter(executionId, exceptionMessage);
+    public void failExecutionFromDeadLetter(UUID executionId, ProcessType processType, String failureMessage) {
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, failureMessage);
         notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 

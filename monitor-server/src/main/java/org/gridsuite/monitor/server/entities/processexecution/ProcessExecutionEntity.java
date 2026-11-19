@@ -44,7 +44,7 @@ public class ProcessExecutionEntity {
     private ProcessStatus status;
 
     @Column(columnDefinition = "text")
-    private String exceptionMessage;
+    private String failureMessage;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

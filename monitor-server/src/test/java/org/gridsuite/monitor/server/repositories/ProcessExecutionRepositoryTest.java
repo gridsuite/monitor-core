@@ -38,13 +38,13 @@ class ProcessExecutionRepositoryTest {
     private TestEntityManager entityManager;
 
     @Test
-    void shouldPersistLongExceptionMessage() {
-        String exceptionMessage = "Connection refused: " + "details ".repeat(100);
+    void shouldPersistLongFailureMessage() {
+        String failureMessage = "Connection refused: " + "details ".repeat(100);
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .id(UUID.randomUUID())
             .status(ProcessStatus.FAILED)
             .triggerType(ProcessExecutionTriggerType.MANUAL)
-            .exceptionMessage(exceptionMessage)
+            .failureMessage(failureMessage)
             .build();
 
         executionRepository.save(execution);
@@ -52,7 +52,7 @@ class ProcessExecutionRepositoryTest {
         entityManager.clear();
 
         ProcessExecutionEntity retrieved = executionRepository.findById(execution.getId()).orElseThrow();
-        assertThat(retrieved.getExceptionMessage()).isEqualTo(exceptionMessage);
+        assertThat(retrieved.getFailureMessage()).isEqualTo(failureMessage);
     }
 
     @Test

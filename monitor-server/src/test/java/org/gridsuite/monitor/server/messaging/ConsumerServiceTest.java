@@ -79,7 +79,7 @@ class ConsumerServiceTest {
 
     @ParameterizedTest
     @NullSource
-    @ValueSource(strings = "Connection refused")
+    @ValueSource(strings = {"Connection refused", "", "  "})
     void consumeRunDeadLetterMessages(String exceptionMessage) {
         UUID securityAnalysisExecutionId = UUID.randomUUID();
         ProcessRunMessage<SecurityAnalysisConfig> securityAnalysisMessage = new ProcessRunMessage<>(
@@ -111,9 +111,12 @@ class ConsumerServiceTest {
         consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage, headers));
         consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage, headers));
 
-        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS, exceptionMessage);
-        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW, exceptionMessage);
-        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT, exceptionMessage);
+        String expectedFailureMessage = exceptionMessage == null || exceptionMessage.isBlank()
+            ? "Process execution was dead-lettered. No exception details were provided."
+            : "Process execution was dead-lettered. Exception details: " + exceptionMessage;
+        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS, expectedFailureMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW, expectedFailureMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT, expectedFailureMessage);
     }
 
     @Test

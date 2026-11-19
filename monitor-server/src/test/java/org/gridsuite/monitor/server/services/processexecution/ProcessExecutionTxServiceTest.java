@@ -320,7 +320,7 @@ class ProcessExecutionTxServiceTest {
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = "Connection refused")
-    void failExecutionFromDeadLetterShouldFailExecutionAndIncompleteSteps(String exceptionMessage) {
+    void failExecutionFromDeadLetterShouldFailExecutionAndIncompleteSteps(String failureMessage) {
         Instant executionStartedAt = Instant.now().minusSeconds(30);
         Instant runningStepStartedAt = Instant.now().minusSeconds(20);
         Instant completedStepAt = Instant.now().minusSeconds(10);
@@ -346,10 +346,10 @@ class ProcessExecutionTxServiceTest {
             .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.failExecutionFromDeadLetter(executionId, exceptionMessage);
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, failureMessage);
 
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.FAILED);
-        assertThat(execution.getExceptionMessage()).isEqualTo(exceptionMessage);
+        assertThat(execution.getFailureMessage()).isEqualTo(failureMessage);
         assertThat(execution.getStartedAt()).isEqualTo(executionStartedAt);
         assertThat(execution.getCompletedAt()).isNotNull();
         assertThat(runningStep.getStatus()).isEqualTo(StepStatus.FAILED);
@@ -370,7 +370,7 @@ class ProcessExecutionTxServiceTest {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
             .id(executionId)
             .status(status)
-            .exceptionMessage("Original failure")
+            .failureMessage("Original failure")
             .completedAt(completedAt)
             .steps(new ArrayList<>())
             .build();
@@ -379,7 +379,7 @@ class ProcessExecutionTxServiceTest {
         processExecutionTxService.failExecutionFromDeadLetter(executionId, "Another failure");
 
         assertThat(execution.getStatus()).isEqualTo(status);
-        assertThat(execution.getExceptionMessage()).isEqualTo("Original failure");
+        assertThat(execution.getFailureMessage()).isEqualTo("Original failure");
         assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
         verify(executionRepository, never()).save(any());
     }

@@ -40,6 +40,8 @@ public class ConsumerService {
     public static final String HEADER_EXECUTION_ID = "executionId";
     public static final String HEADER_PROCESS_TYPE = "processType";
     public static final String HEADER_EXCEPTION_MESSAGE = "x-exception-message";
+    private static final String DEAD_LETTER_FAILURE_MESSAGE = "Process execution was dead-lettered. No exception details were provided.";
+    private static final String DEAD_LETTER_FAILURE_MESSAGE_WITH_EXCEPTION = "Process execution was dead-lettered. Exception details: ";
 
     private final ProcessExecutionService processExecutionService;
     private final AutomaticProcessExecutionService automaticProcessExecutionService;
@@ -95,7 +97,10 @@ public class ConsumerService {
         ProcessRunMessage<?> runMessage = message.getPayload();
         String exceptionMessage = message.getHeaders().get(HEADER_EXCEPTION_MESSAGE, String.class);
         LOGGER.error("Process execution {} reached the dead-letter queue", runMessage.executionId());
-        processExecutionService.failExecutionFromDeadLetter(runMessage.executionId(), runMessage.processType(), exceptionMessage);
+        String failureMessage = exceptionMessage == null || exceptionMessage.isBlank()
+            ? DEAD_LETTER_FAILURE_MESSAGE
+            : DEAD_LETTER_FAILURE_MESSAGE_WITH_EXCEPTION + exceptionMessage;
+        processExecutionService.failExecutionFromDeadLetter(runMessage.executionId(), runMessage.processType(), failureMessage);
     }
 
     private void handleExecutionStatusUpdate(UUID executionId, ProcessType processType, Message<String> message) {

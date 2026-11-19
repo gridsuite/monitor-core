@@ -6,7 +6,7 @@
  */
 package org.gridsuite.monitor.worker.server.clients;
 
-import org.gridsuite.scpmin.provider.dto.ScpMinResult;
+import org.gridsuite.powsybl.extras.scpmin.api.dto.ScpMinResult;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;

@@ -15,7 +15,8 @@
     <properties>
         <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
         <aws-sdk.version>2.29.52</aws-sdk.version>
-        <gridsuite-scp-min-provider.version>0.1.0-SNAPSHOT</gridsuite-scp-min-provider.version>
+        <gridsuite-powsybl-extras.version>0.1.0</gridsuite-powsybl-extras.version>
+        <gridsuite-powsybl-rte-extras.version>0.1.0</gridsuite-powsybl-rte-extras.version>
     </properties>
 
     <build>
@@ -102,13 +103,13 @@
         </dependency>
         <dependency>
             <groupId>org.gridsuite</groupId>
-            <artifactId>gridsuite-scp-min-provider</artifactId>
-            <version>${gridsuite-scp-min-provider.version}</version>
+            <artifactId>gridsuite-powsybl-extras</artifactId>
+            <version>${gridsuite-powsybl-extras.version}</version>
         </dependency>
         <dependency>
             <groupId>com.rte-france.gridsuite</groupId>
-            <artifactId>gridsuite-scp-min-provider-impl</artifactId>
-            <version>${gridsuite-scp-min-provider.version}</version>
+            <artifactId>gridsuite-powsybl-rte-extras</artifactId>
+            <version>${gridsuite-powsybl-rte-extras.version}</version>
         </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>

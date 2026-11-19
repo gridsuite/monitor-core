@@ -18,7 +18,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok-mapstruct-bindings.version>0.2.0</lombok-mapstruct-bindings.version>
         <aws-sdk.version>2.29.52</aws-sdk.version>
-        <powsybl-ws-commons.version>1.42.0-SNAPSHOT</powsybl-ws-commons.version>
+        <powsybl-ws-commons.version>1.42.0</powsybl-ws-commons.version>
     </properties>
 
     <build>

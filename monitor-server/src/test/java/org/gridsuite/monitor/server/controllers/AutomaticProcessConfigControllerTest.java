@@ -7,7 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.ws.commons.security.AllowAllAuthorizationTestConfiguration;
+import com.powsybl.ws.commons.security.AllowAllAuthTestConfiguration;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
 @WebMvcTest(controllers = {AutomaticProcessConfigController.class, PropertyServerNameProvider.class})
-@Import(AllowAllAuthorizationTestConfiguration.class)
+@Import(AllowAllAuthTestConfiguration.class)
 @WithMockUser(username = "admin")
 class AutomaticProcessConfigControllerTest {
     public static final String AUTOMATIC_PROCESS_CONFIGS_PATH = "/v1/automatic-process-configs";

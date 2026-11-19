@@ -12,7 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
+import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,10 +27,10 @@ import java.util.UUID;
 @RequestMapping("/" + MonitorApi.API_VERSION + "/automatic-process-configs")
 @Tag(name = "Automatic process config")
 public class AutomaticProcessConfigController {
-    private final AutomaticProcessConfigTxService configService;
+    private final AutomaticProcessConfigService automaticProcessConfigService;
 
-    public AutomaticProcessConfigController(AutomaticProcessConfigTxService configService) {
-        this.configService = configService;
+    public AutomaticProcessConfigController(AutomaticProcessConfigService automaticProcessConfigService) {
+        this.automaticProcessConfigService = automaticProcessConfigService;
     }
 
     @PutMapping(path = "/{processType}", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -44,7 +44,7 @@ public class AutomaticProcessConfigController {
             @RequestBody UUID configUuid,
             @RequestHeader(MonitorApi.HEADER_USER_ID) String userId
     ) {
-        Optional<UUID> updated = configService.update(configUuid, processType, userId);
+        Optional<UUID> updated = automaticProcessConfigService.update(configUuid, processType, userId);
         return updated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
@@ -56,7 +56,7 @@ public class AutomaticProcessConfigController {
     public ResponseEntity<UUID> getAutomaticProcessConfig(
         @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType
     ) {
-        return configService.get(processType)
+        return automaticProcessConfigService.get(processType)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.notFound().build());
     }

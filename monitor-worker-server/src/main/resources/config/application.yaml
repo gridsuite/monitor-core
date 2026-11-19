@@ -34,4 +34,4 @@ worker:
 
 shortcircuit-analysis:
   short-circuit-provider: default-provider
-  scp-min-provider: courcirc
+  scp-min-provider: Courcirc

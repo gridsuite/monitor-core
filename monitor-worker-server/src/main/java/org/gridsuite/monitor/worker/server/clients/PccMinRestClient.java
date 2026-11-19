@@ -20,13 +20,16 @@ import java.util.UUID;
  */
 @Service
 public class PccMinRestClient {
+    static final String PCCMIN_API_VERSION = "v1";
 
     private final RestClient restClient;
 
     public PccMinRestClient(
         RestClient.Builder restClientBuilder,
         @Value("${gridsuite.services.pccmin-server.base-uri:http://pcc-min-server/}") String pccMinServerBaseUri) {
-        this.restClient = restClientBuilder.baseUrl(pccMinServerBaseUri + "/v1").build();
+        this.restClient = restClientBuilder
+            .baseUrl(pccMinServerBaseUri + "/" + PCCMIN_API_VERSION)
+            .build();
     }
 
     public void saveResult(UUID resultUuid, ScpMinResult result) {

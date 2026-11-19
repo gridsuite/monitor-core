@@ -30,7 +30,7 @@ spring:
 
 worker:
   execution-env-name: "default-env"
-  process: shortcircuit
+  process: securityanalysis
 
 shortcircuit-analysis:
   short-circuit-provider: default-provider

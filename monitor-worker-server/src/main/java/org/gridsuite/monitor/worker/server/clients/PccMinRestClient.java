@@ -15,6 +15,9 @@ import org.springframework.web.client.RestClient;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
+ */
 @Service
 public class PccMinRestClient {
 

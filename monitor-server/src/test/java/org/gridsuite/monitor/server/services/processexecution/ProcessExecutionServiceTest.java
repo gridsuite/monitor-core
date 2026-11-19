@@ -124,6 +124,7 @@ class ProcessExecutionServiceTest {
         String executionEnvName = "test-env";
 
         ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(true);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecution(executionId, update);
@@ -137,6 +138,7 @@ class ProcessExecutionServiceTest {
         String executionEnvName = "test-env";
 
         ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, executionEnvName, startedAt, completedAt);
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(true);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecution(executionId, update);
@@ -146,9 +148,24 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void rejectedUpdateExecutionToCanceledStatusShouldNotCleanNorNotify() {
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, Instant.now());
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(false);
+
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
+
+        verify(processExecutionTxService).updateExecution(executionId, update);
+        verify(processExecutionTxService, never()).getProcessDeletionInfos(any(UUID.class));
+        verify(processExecutionTxService, never()).deleteExecutionSteps(any(UUID.class));
+        verify(processExecutionTxService, never()).clearResourceReferences(any(UUID.class));
+        verify(notificationService, never()).sendProcessUpdatedMessage(any(UUID.class), any(ProcessType.class));
+    }
+
+    @Test
     void deleteAfterCancelShouldNotCleanResourcesAgain() {
         // Simulate cancel: resources are cleaned and references nulled
         ProcessExecutionStatusUpdate cancelUpdate = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, null);
+        when(processExecutionTxService.updateExecution(executionId, cancelUpdate)).thenReturn(true);
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, cancelUpdate);
         verify(processExecutionTxService).clearResourceReferences(executionId);
 
@@ -524,6 +541,7 @@ class ProcessExecutionServiceTest {
     @Test
     void cancelProcessShouldCancelImmediatelyWhenScheduled() {
         when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.SCHEDULED)));
+        when(processExecutionTxService.updateExecution(eq(executionId), any(ProcessExecutionStatusUpdate.class))).thenReturn(true);
 
         CancelProcessResult response = processExecutionService.cancelProcess(executionId);
 

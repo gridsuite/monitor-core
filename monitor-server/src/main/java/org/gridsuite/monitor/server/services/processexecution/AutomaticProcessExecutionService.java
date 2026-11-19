@@ -8,7 +8,7 @@ package org.gridsuite.monitor.server.services.processexecution;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigTxService;
+import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,17 +30,17 @@ public class AutomaticProcessExecutionService {
         ProcessType.LOADFLOW
     );
 
-    private final AutomaticProcessConfigTxService configService;
+    private final AutomaticProcessConfigService automaticProcessConfigService;
     private final ProcessExecutionService processExecutionService;
 
-    public AutomaticProcessExecutionService(AutomaticProcessConfigTxService configService, ProcessExecutionService processExecutionService) {
-        this.configService = configService;
+    public AutomaticProcessExecutionService(AutomaticProcessConfigService automaticProcessConfigService, ProcessExecutionService processExecutionService) {
+        this.automaticProcessConfigService = automaticProcessConfigService;
         this.processExecutionService = processExecutionService;
     }
 
     public void executeAutomaticProcesses(UUID caseUuid) {
         for (ProcessType processType : PROCESS_TYPES) {
-            Optional<UUID> configUuid = configService.get(processType);
+            Optional<UUID> configUuid = automaticProcessConfigService.get(processType);
             if (configUuid.isEmpty()) {
                 LOGGER.warn("No automatic execution config found for process type {}", processType);
                 continue;

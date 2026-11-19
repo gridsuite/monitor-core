@@ -53,8 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(controllers = {MonitorController.class, PropertyServerNameProvider.class})
-class MonitorControllerTest {
+@WebMvcTest(controllers = {ProcessExecutionController.class, PropertyServerNameProvider.class})
+class ProcessExecutionControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

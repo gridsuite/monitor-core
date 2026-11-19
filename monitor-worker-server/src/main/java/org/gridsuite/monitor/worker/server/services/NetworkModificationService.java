@@ -10,7 +10,8 @@ package org.gridsuite.monitor.worker.server.services;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.commons.report.ReportNode;
 import com.powsybl.iidm.network.Network;
-import org.gridsuite.modification.NetworkModificationException;
+import org.gridsuite.modification.ModificationType;
+import org.gridsuite.modification.context.ModificationContext;
 import org.gridsuite.modification.dto.ModificationInfos;
 import org.gridsuite.modification.modifications.AbstractModification;
 import org.slf4j.Logger;
@@ -27,22 +28,26 @@ public class NetworkModificationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkModificationService.class);
 
     public void applyModifications(Network network, List<ModificationInfos> modificationsInfos, ReportNode reportNode, FilterService filterService) {
+        ModificationContext modificationContext = ModificationContext.builder()
+            .filterLoader(filterService::getStandaloneFilters)
+            .filterWithDistributionKeysLoader(filterService::getStandaloneFiltersWithDistributionKeys)
+            .build();
         modificationsInfos.stream()
             .filter(ModificationInfos::getActivated)
             .forEach(modificationInfos -> {
                 try {
-                    AbstractModification modification = modificationInfos.toModification();
+                    AbstractModification modification = modificationInfos.toModification(modificationContext);
                     modification.check(network);
-                    modification.initApplicationContext(filterService, null);
+                    modification.initApplicationContext(null);
                     modification.apply(network, reportNode);
                 } catch (Exception e) {
                     // For now, we just log the error, and we continue to apply the following modifications
-                    handleException(modificationInfos.getErrorType(), e);
+                    handleException(modificationInfos.getType(), e);
                 }
             });
     }
 
-    private void handleException(NetworkModificationException.Type typeIfError, Exception e) {
+    private void handleException(ModificationType typeIfError, Exception e) {
         boolean isApplicationException = PowsyblException.class.isAssignableFrom(e.getClass());
         if (!isApplicationException) {
             LOGGER.error("{}", e.getMessage(), e);

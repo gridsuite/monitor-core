@@ -46,7 +46,7 @@ class AutomaticProcessConfigControllerTest {
         when(configService.update(configUuid, ProcessType.LOADFLOW, "admin")).thenReturn(Optional.of(configUuid));
 
         mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH + "/" + ProcessType.LOADFLOW)
-                .header(MonitorController.HEADER_USER_ID, "admin")
+                .header(MonitorApi.HEADER_USER_ID, "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(configUuid)))
             .andExpect(status().isOk());
@@ -60,7 +60,7 @@ class AutomaticProcessConfigControllerTest {
         when(configService.update(configUuid, ProcessType.LOADFLOW, "admin")).thenReturn(Optional.empty());
 
         mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH + "/" + ProcessType.LOADFLOW)
-                .header(MonitorController.HEADER_USER_ID, "admin")
+                .header(MonitorApi.HEADER_USER_ID, "admin")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(configUuid)))
             .andExpect(status().isNotFound());

@@ -42,14 +42,12 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping(value = "/" + MonitorApi.API_VERSION + "/")
-@Tag(name = "Monitor server")
-public class MonitorController {
+@Tag(name = "Process execution")
+public class ProcessExecutionController {
 
     private final ProcessExecutionService processExecutionService;
 
-    public static final String HEADER_USER_ID = "userId";
-
-    public MonitorController(ProcessExecutionService processExecutionService) {
+    public ProcessExecutionController(ProcessExecutionService processExecutionService) {
         this.processExecutionService = processExecutionService;
     }
 
@@ -61,7 +59,7 @@ public class MonitorController {
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
-            @RequestHeader(HEADER_USER_ID) String userId) {
+            @RequestHeader(MonitorApi.HEADER_USER_ID) String userId) {
         Optional<UUID> executionId = processExecutionService.executeProcess(
             caseUuid, userId, processConfigUuid, isDebug, ProcessExecutionTriggerType.MANUAL
         );

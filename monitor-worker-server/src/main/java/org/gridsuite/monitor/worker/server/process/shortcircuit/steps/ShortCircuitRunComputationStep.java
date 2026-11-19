@@ -68,8 +68,8 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         S3Service s3Service,
         FileService fileService,
         TaskManager taskManager,
-        @Value("${shortcircuit-analysis.short-circuit-provider}") String shortCircuitProvider) {
-        @Value("${shortcircuit-analysis.scp-min-provider}") String scpMinProviderName,
+        @Value("${shortcircuit-analysis.short-circuit-provider}") String shortCircuitProvider,
+        @Value("${shortcircuit-analysis.scp-min-provider}") String scpMinProviderName) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;

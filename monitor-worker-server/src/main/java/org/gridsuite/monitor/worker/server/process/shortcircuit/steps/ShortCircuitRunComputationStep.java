@@ -47,7 +47,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     private final FileService fileService;
     private final TaskManager taskManager;
     @Getter
-    private final String defaultProvider;
+    private final String shortCircuitProvider;
 
     private static final String DEBUG_FILENAME_PREFIX = "debug";
 
@@ -57,14 +57,14 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         S3Service s3Service,
         FileService fileService,
         TaskManager taskManager,
-        @Value("${shortcircuit-analysis.default-provider}") String defaultProvider) {
+        @Value("${shortcircuit-analysis.short-circuit-provider}") String shortCircuitProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
         this.s3Service = s3Service;
         this.fileService = fileService;
         this.taskManager = taskManager;
-        this.defaultProvider = defaultProvider;
+        this.shortCircuitProvider = shortCircuitProvider;
     }
 
     @Override
@@ -74,7 +74,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
         // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
 
-        String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultProvider();
+        String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getShortCircuitProvider();
         Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
         ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
         if (context.getDebugFileLocation() == null) {

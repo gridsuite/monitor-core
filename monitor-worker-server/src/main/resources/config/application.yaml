@@ -33,4 +33,5 @@ worker:
   process: shortcircuit
 
 shortcircuit-analysis:
-  default-provider: default-provider
+  short-circuit-provider: default-provider
+  scp-min-provider: default-provider

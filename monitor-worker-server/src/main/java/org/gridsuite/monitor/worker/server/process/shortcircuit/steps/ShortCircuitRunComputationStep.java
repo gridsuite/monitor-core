@@ -57,7 +57,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     private final TaskManager taskManager;
     private final String scpMinProviderName;
     @Getter
-    private final String defaultShortCircuitProvider;
+    private final String shortCircuitProvider;
 
     private static final String DEBUG_FILENAME_PREFIX = "debug";
 
@@ -68,8 +68,8 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         S3Service s3Service,
         FileService fileService,
         TaskManager taskManager,
+        @Value("${shortcircuit-analysis.short-circuit-provider}") String shortCircuitProvider) {
         @Value("${shortcircuit-analysis.scp-min-provider}") String scpMinProviderName,
-        @Value("${shortcircuit-analysis.short-circuit-provider}") String defaultShortCircuitProvider) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
@@ -78,7 +78,7 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         this.fileService = fileService;
         this.taskManager = taskManager;
         this.scpMinProviderName = scpMinProviderName;
-        this.defaultShortCircuitProvider = defaultShortCircuitProvider;
+        this.shortCircuitProvider = shortCircuitProvider;
     }
 
     @Override
@@ -88,9 +88,9 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         ShortCircuitParametersInfos parametersInfos = shortCircuitRestClient.getParameters(context.getConfig().shortCircuitParametersUuid());
         // TODO: in shortcircuit-server, retrieved parameters are post processed before being passed to the short-circuit calculation
 
-        String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getDefaultShortCircuitProvider();
-//        Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
-        ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, null);
+        String provider = parametersInfos.getProvider() != null ? parametersInfos.getProvider() : getShortCircuitProvider();
+        Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
+        ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
         if (context.getDebugFileLocation() == null) {
             runComputation(context, provider, commonParameters, null);
         } else {

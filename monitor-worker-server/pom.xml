@@ -17,6 +17,7 @@
         <aws-sdk.version>2.29.52</aws-sdk.version>
         <!-- FIXME: to be removed at next gridsuite-dependencies upgrade  -->
         <gridsuite-powsybl-extras.version>0.1.0</gridsuite-powsybl-extras.version>
+        <gridsuite-powsybl-rte-extras.version>0.1.0</gridsuite-powsybl-rte-extras.version>
     </properties>
 
     <build>
@@ -110,6 +111,11 @@
         <dependency>
             <groupId>org.gridsuite</groupId>
             <artifactId>gridsuite-powsybl-extras</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rte-france.gridsuite</groupId>
+            <artifactId>gridsuite-powsybl-rte-extras</artifactId>
+            <version>${gridsuite-powsybl-rte-extras.version}</version>
         </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>

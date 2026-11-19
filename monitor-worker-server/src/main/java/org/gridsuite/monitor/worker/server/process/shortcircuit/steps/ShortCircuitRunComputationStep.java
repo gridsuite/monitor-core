@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.process.shortcircuit.steps;
 import com.powsybl.commons.PowsyblException;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.shortcircuit.Fault;
+import com.powsybl.shortcircuit.FaultResult;
 import com.powsybl.shortcircuit.ShortCircuitAnalysis;
 import com.powsybl.shortcircuit.ShortCircuitAnalysisResult;
 import com.powsybl.shortcircuit.ShortCircuitParameters;
@@ -16,6 +17,7 @@ import lombok.Getter;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
+import org.gridsuite.monitor.worker.server.clients.PccMinRestClient;
 import org.gridsuite.monitor.worker.server.clients.ShortCircuitRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
@@ -26,6 +28,10 @@ import org.gridsuite.monitor.worker.server.services.FileService;
 import org.gridsuite.monitor.worker.server.services.S3Service;
 import org.gridsuite.monitor.worker.server.services.ShortCircuitParametersService;
 import org.gridsuite.monitor.worker.server.utils.S3PathResolver;
+import org.gridsuite.powsybl.extras.scpmin.api.ScpMinProvider;
+import org.gridsuite.powsybl.extras.scpmin.api.dto.ScpMinResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -41,11 +47,15 @@ import java.util.UUID;
  */
 @Component
 public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCircuitConfig> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShortCircuitRunComputationStep.class);
+
     private final ShortCircuitParametersService shortCircuitParametersService;
     private final ShortCircuitRestClient shortCircuitRestClient;
+    private final PccMinRestClient pccMinRestClient;
     private final S3Service s3Service;
     private final FileService fileService;
     private final TaskManager taskManager;
+    private final String scpMinProviderName;
     @Getter
     private final String shortCircuitProvider;
 
@@ -54,16 +64,20 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
     public ShortCircuitRunComputationStep(
         ShortCircuitParametersService shortCircuitParametersService,
         ShortCircuitRestClient shortCircuitRestClient,
+        PccMinRestClient pccMinRestClient,
         S3Service s3Service,
         FileService fileService,
         TaskManager taskManager,
-        @Value("${shortcircuit-analysis.short-circuit-provider}") String shortCircuitProvider) {
+        @Value("${shortcircuit-analysis.short-circuit-provider}") String shortCircuitProvider,
+        @Value("${shortcircuit-analysis.scp-min-provider}") String scpMinProviderName) {
         super(ShortCircuitStepType.RUN_SC_COMPUTATION);
         this.shortCircuitParametersService = shortCircuitParametersService;
         this.shortCircuitRestClient = shortCircuitRestClient;
+        this.pccMinRestClient = pccMinRestClient;
         this.s3Service = s3Service;
         this.fileService = fileService;
         this.taskManager = taskManager;
+        this.scpMinProviderName = scpMinProviderName;
         this.shortCircuitProvider = shortCircuitProvider;
     }
 
@@ -78,9 +92,9 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         Map<String, String> specificParameters = parametersInfos.getSpecificParametersPerProvider().get(provider);
         ShortCircuitParameters commonParameters = shortCircuitParametersService.buildParameters(parametersInfos, provider, specificParameters);
         if (context.getDebugFileLocation() == null) {
-            runComputation(context, provider, commonParameters, specificParameters);
+            runComputation(context, provider, commonParameters, null);
         } else {
-            runComputationWithDebug(context, provider, commonParameters, specificParameters);
+            runComputationWithDebug(context, provider, commonParameters, null);
         }
     }
 
@@ -101,17 +115,27 @@ public class ShortCircuitRunComputationStep extends AbstractProcessStep<ShortCir
         List<Fault> faults = shortCircuitParametersService.getAllBusFaults(context.getNetwork(), specificParameters);
         shortCircuitParametersService.checkInconsistentVoltageLevels(context.getNetwork(), context.getReportNode());
 
-        ShortCircuitAnalysisResult result = taskManager.runComputation(context.getProcessExecutionId(),
-                () -> ShortCircuitAnalysis.find(provider).runAsync(
-                        context.getNetwork(),
-                        faults,
-                        parameters,
-                        LocalComputationManager.getDefault(),
-                        List.of(),
-                        context.getReportNode()));
+//        ShortCircuitAnalysisResult result = taskManager.runComputation(context.getProcessExecutionId(),
+//                () -> ShortCircuitAnalysis.find(provider).runAsync(
+//                        context.getNetwork(),
+//                        faults,
+//                        parameters,
+//                        LocalComputationManager.getDefault(),
+//                        List.of(),
+//                        context.getReportNode()));
+
+        List<String> busIds = faults.stream().map(Fault::getElementId).distinct().toList();
+        ScpMinResult scpMinResult = taskManager.runComputation(context.getProcessExecutionId(),
+            () -> ScpMinProvider.find(scpMinProviderName).runAsync(context.getNetwork(), busIds, parameters,
+                LocalComputationManager.getDefault(), context.getReportNode()));
+        if (scpMinResult.getStatus() != FaultResult.Status.SUCCESS) {
+            throw new PowsyblException("SCP-min computation failed with status " + scpMinResult.getStatus());
+        }
+        LOGGER.info("SCP-min computation completed with {} results", scpMinResult.getResults().size());
 
         ResultInfos resultInfos = new ResultInfos(UUID.randomUUID(), ResultType.SHORT_CIRCUIT);
-        shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
+//        shortCircuitRestClient.saveResult(resultInfos.resultUUID(), result);
+        pccMinRestClient.saveResult(resultInfos.resultUUID(), scpMinResult);
         context.setResultInfos(resultInfos);
     }
 

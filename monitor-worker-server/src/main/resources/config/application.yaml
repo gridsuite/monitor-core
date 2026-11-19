@@ -30,8 +30,8 @@ spring:
 
 worker:
   execution-env-name: "default-env"
-  process: securityanalysis
+  process: shortcircuit
 
 shortcircuit-analysis:
   short-circuit-provider: default-provider
-  scp-min-provider: default-provider
+  scp-min-provider: Courcirc

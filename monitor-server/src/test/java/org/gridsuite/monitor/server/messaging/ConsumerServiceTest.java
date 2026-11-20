@@ -12,6 +12,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -20,6 +24,9 @@ import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionSe
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
@@ -68,6 +75,48 @@ class ConsumerServiceTest {
         consumerService.consumeAutomaticExecution().accept(caseUuid.toString());
 
         verify(automaticProcessExecutionService).executeAutomaticProcesses(caseUuid);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"Connection refused", "", "  "})
+    void consumeRunDeadLetterMessages(String exceptionMessage) {
+        UUID securityAnalysisExecutionId = UUID.randomUUID();
+        ProcessRunMessage<SecurityAnalysisConfig> securityAnalysisMessage = new ProcessRunMessage<>(
+            securityAnalysisExecutionId,
+            UUID.randomUUID(),
+            new SecurityAnalysisConfig(UUID.randomUUID(), List.of(), UUID.randomUUID()),
+            UUID.randomUUID(),
+            null
+        );
+        UUID loadFlowExecutionId = UUID.randomUUID();
+        ProcessRunMessage<LoadFlowConfig> loadFlowMessage = new ProcessRunMessage<>(
+            loadFlowExecutionId,
+            UUID.randomUUID(),
+            new LoadFlowConfig(UUID.randomUUID(), List.of()),
+            UUID.randomUUID(),
+            null
+        );
+        UUID shortCircuitExecutionId = UUID.randomUUID();
+        ProcessRunMessage<ShortCircuitConfig> shortCircuitMessage = new ProcessRunMessage<>(
+            shortCircuitExecutionId,
+            UUID.randomUUID(),
+            new ShortCircuitConfig(UUID.randomUUID(), List.of()),
+            UUID.randomUUID(),
+            null
+        );
+
+        Map<String, Object> headers = exceptionMessage == null ? Map.of() : Map.of("x-exception-message", exceptionMessage);
+        consumerService.consumeSecurityAnalysisRunDlq().accept(new GenericMessage<>(securityAnalysisMessage, headers));
+        consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage, headers));
+        consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage, headers));
+
+        String expectedFailureMessage = exceptionMessage == null || exceptionMessage.isBlank()
+            ? "Process execution was dead-lettered. No exception details were provided."
+            : "Process execution was dead-lettered. Exception details: " + exceptionMessage;
+        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS, expectedFailureMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW, expectedFailureMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT, expectedFailureMessage);
     }
 
     @Test

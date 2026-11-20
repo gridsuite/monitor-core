@@ -3,7 +3,7 @@ spring:
     name: monitor-server
   cloud:
     function:
-      definition: consumeMonitorWorkerUpdate;consumeAutomaticExecution
+      definition: consumeMonitorWorkerUpdate;consumeAutomaticExecution;consumeSecurityAnalysisRunDlq;consumeLoadFlowRunDlq;consumeShortCircuitRunDlq
     stream:
       bindings:
         publishRunSecurityAnalysis-out-0:
@@ -24,6 +24,15 @@ spring:
         consumeAutomaticExecution-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.automatic-execution
           group: monitorAutomaticExecutionGroup
+        consumeSecurityAnalysisRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run.dlx
+          group: dlq
+        consumeLoadFlowRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run.dlx
+          group: dlq
+        consumeShortCircuitRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run.dlx
+          group: dlq
       output-bindings: publishRunSecurityAnalysis-out-0;publishRunLoadFlow-out-0;publishRunShortCircuit-out-0;publishMonitorUpdate-out-0;publishAutomaticExecution-out-0
 
 monitor:

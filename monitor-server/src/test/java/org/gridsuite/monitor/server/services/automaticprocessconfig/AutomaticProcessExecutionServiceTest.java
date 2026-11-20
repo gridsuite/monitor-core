@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AutomaticProcessExecutionServiceTest {
     @Mock
-    private AutomaticProcessConfigTxService configService;
+    private AutomaticProcessConfigService automaticProcessConfigService;
     @Mock
     private ProcessExecutionService processExecutionService;
 
@@ -39,10 +39,10 @@ class AutomaticProcessExecutionServiceTest {
         UUID securityConfigUuid = UUID.randomUUID();
         UUID shortCircuitConfigUuid = UUID.randomUUID();
         UUID loadflowConfigUuid = UUID.randomUUID();
-        when(configService.get(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(securityConfigUuid));
-        when(configService.get(ProcessType.SHORT_CIRCUIT)).thenReturn(Optional.of(shortCircuitConfigUuid));
-        when(configService.get(ProcessType.LOADFLOW)).thenReturn(Optional.of(loadflowConfigUuid));
-        AutomaticProcessExecutionService service = new AutomaticProcessExecutionService(configService, processExecutionService);
+        when(automaticProcessConfigService.get(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(securityConfigUuid));
+        when(automaticProcessConfigService.get(ProcessType.SHORT_CIRCUIT)).thenReturn(Optional.of(shortCircuitConfigUuid));
+        when(automaticProcessConfigService.get(ProcessType.LOADFLOW)).thenReturn(Optional.of(loadflowConfigUuid));
+        AutomaticProcessExecutionService service = new AutomaticProcessExecutionService(automaticProcessConfigService, processExecutionService);
 
         service.executeAutomaticProcesses(caseUuid);
 
@@ -56,10 +56,10 @@ class AutomaticProcessExecutionServiceTest {
         UUID caseUuid = UUID.randomUUID();
         UUID securityConfigUuid = UUID.randomUUID();
         UUID loadflowConfigUuid = UUID.randomUUID();
-        when(configService.get(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(securityConfigUuid));
-        when(configService.get(ProcessType.SHORT_CIRCUIT)).thenReturn(Optional.empty());
-        when(configService.get(ProcessType.LOADFLOW)).thenReturn(Optional.of(loadflowConfigUuid));
-        AutomaticProcessExecutionService service = new AutomaticProcessExecutionService(configService, processExecutionService);
+        when(automaticProcessConfigService.get(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(securityConfigUuid));
+        when(automaticProcessConfigService.get(ProcessType.SHORT_CIRCUIT)).thenReturn(Optional.empty());
+        when(automaticProcessConfigService.get(ProcessType.LOADFLOW)).thenReturn(Optional.of(loadflowConfigUuid));
+        AutomaticProcessExecutionService service = new AutomaticProcessExecutionService(automaticProcessConfigService, processExecutionService);
 
         service.executeAutomaticProcesses(caseUuid);
 

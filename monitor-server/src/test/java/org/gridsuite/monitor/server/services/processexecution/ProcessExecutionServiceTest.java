@@ -118,6 +118,16 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void failExecutionFromDeadLetterShouldForwardFailureMessageAndNotify() {
+        String failureMessage = "Process execution was dead-lettered. Exception details: Connection refused";
+
+        processExecutionService.failExecutionFromDeadLetter(executionId, ProcessType.SHORT_CIRCUIT, failureMessage);
+
+        verify(processExecutionTxService).failExecutionFromDeadLetter(executionId, failureMessage);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SHORT_CIRCUIT);
+    }
+
+    @Test
     void updateExecutionStatusShouldDelegateToTxService() {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();

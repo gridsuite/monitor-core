@@ -43,6 +43,9 @@ public class ProcessExecutionEntity {
     @Enumerated(EnumType.STRING)
     private ProcessStatus status;
 
+    @Column(columnDefinition = "text")
+    private String failureMessage;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ProcessExecutionTriggerType triggerType;

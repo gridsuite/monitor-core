@@ -146,6 +146,39 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
+    public void failExecutionFromDeadLetter(UUID executionId, String failureMessage) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> markExecutionFailed(execution, failureMessage),
+            () -> LOGGER.warn("Execution {} not found in DB, ignoring dead-letter message", executionId));
+    }
+
+    private void markExecutionFailed(ProcessExecutionEntity execution, String failureMessage) {
+        if (execution.getStatus() == ProcessStatus.COMPLETED
+                || execution.getStatus() == ProcessStatus.CANCELED
+                || execution.getStatus() == ProcessStatus.FAILED) {
+            // A dead-letter message must not overwrite an execution in terminal state
+            // This can happen if an execution throws an exception that is then forwarded to the dead-letter queue,
+            // but the execution was already marked as FAILED or CANCELED by the worker
+            return;
+        }
+
+        Instant failedAt = Instant.now();
+        execution.setStatus(ProcessStatus.FAILED);
+        execution.setFailureMessage(failureMessage);
+        execution.setCompletedAt(failedAt);
+        Optional.ofNullable(execution.getSteps()).orElse(List.of()).forEach(step -> {
+            if (step.getStatus() == StepStatus.RUNNING) {
+                step.setStatus(StepStatus.FAILED);
+                step.setCompletedAt(failedAt);
+            } else if (step.getStatus() == StepStatus.SCHEDULED) {
+                step.setStatus(StepStatus.SKIPPED);
+                step.setStartedAt(failedAt);
+                step.setCompletedAt(failedAt);
+            }
+        });
+        processExecutionRepository.save(execution);
+    }
+
+    @Transactional
     public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
         processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
             ProcessExecutionStepEntity stepEntity = processExecutionStepMapper.toEntity(processExecutionStep);

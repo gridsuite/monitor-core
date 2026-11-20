@@ -30,6 +30,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,13 +57,13 @@ public class ProcessExecutionController {
     @Operation(summary = "Execute a process")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process execution has been started"),
                            @ApiResponse(responseCode = "404", description = "Process config was not found")})
+    @PreAuthorize("@authorizationService.canRead(List.of(#caseUuid, #processConfigUuid))")
     public ResponseEntity<UUID> executeProcess(
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
-            @RequestParam(required = false, defaultValue = "false") boolean isDebug,
-            @RequestHeader(MonitorApi.HEADER_USER_ID) String userId) {
+            @RequestParam(required = false, defaultValue = "false") boolean isDebug) {
         Optional<UUID> executionId = processExecutionService.executeProcess(
-            caseUuid, userId, processConfigUuid, isDebug, ProcessExecutionTriggerType.MANUAL
+            caseUuid, SecurityContextHolder.getContext().getAuthentication().getName(), processConfigUuid, isDebug, ProcessExecutionTriggerType.MANUAL
         );
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -72,6 +74,7 @@ public class ProcessExecutionController {
                            @ApiResponse(responseCode = "204", description = "Process is already canceled or canceling"),
                            @ApiResponse(responseCode = "404", description = "Process execution was not found"),
                            @ApiResponse(responseCode = "409", description = "Process execution is completed or failed")})
+    @PreAuthorize("@authorizationService.canDelete(#executionId)")
     public ResponseEntity<Void> cancelProcess(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         return switch (processExecutionService.cancelProcess(executionId)) {
@@ -85,6 +88,7 @@ public class ProcessExecutionController {
     @GetMapping("/executions/{executionId}/logs")
     @Operation(summary = "Get logs for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution logs")})
+    @PreAuthorize("@authorizationService.canRead(#reportId)")
     public ResponseEntity<ReportPage> getExecutionLogs(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @Parameter(description = "Report UUID") @RequestParam UUID reportId,
@@ -100,6 +104,7 @@ public class ProcessExecutionController {
     @Operation(summary = "Get the positions of the search term matches in the logs")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Get the positions of the search term matches in the logs"),
                            @ApiResponse(responseCode = "404", description = "report id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#reportId)")
     public ResponseEntity<List<MatchPosition>> getExecutionLogsSearch(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @Parameter(description = "Report UUID") @RequestParam UUID reportId,
@@ -115,6 +120,7 @@ public class ProcessExecutionController {
     @Operation(summary = "Get reports for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<Report> getExecutionReports(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         Optional<Report> reports = processExecutionService.getReports(executionId);
         return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
@@ -124,6 +130,7 @@ public class ProcessExecutionController {
     @Operation(summary = "Get reports severities for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution reports' severities"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<Set<String>> getExecutionReportsSeverities(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         Optional<Set<String>> reports = processExecutionService.getReportsSeverities(executionId);
         return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
@@ -133,6 +140,7 @@ public class ProcessExecutionController {
     @Operation(summary = "Get results for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<String> getExecutionResults(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @RequestParam(required = false) String resultType,
@@ -153,6 +161,7 @@ public class ProcessExecutionController {
                 mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
                 schema = @Schema(type = "string", format = "binary"))),
         @ApiResponse(responseCode = "204", description = "No result found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<byte[]> exportExecutionResultsCsv(
             @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
             @RequestParam String resultType,
@@ -168,6 +177,7 @@ public class ProcessExecutionController {
     @GetMapping("/executions")
     @Operation(summary = "Get process executions")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process executions")})
+    @PreAuthorize("true")
     public ResponseEntity<List<ProcessExecution>> getProcessExecutions() {
         return ResponseEntity.ok(processExecutionService.getProcessExecutions());
     }
@@ -176,6 +186,7 @@ public class ProcessExecutionController {
     @Operation(summary = "Get an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process execution"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<ProcessExecution> getExecution(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         Optional<ProcessExecution> execution = processExecutionService.getExecution(executionId);
         return execution.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
@@ -186,6 +197,7 @@ public class ProcessExecutionController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "The execution steps statuses"),
         @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<List<ProcessExecutionStep>> getStepsInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         return processExecutionService.getStepsInfos(executionId).map(list -> ResponseEntity.ok().body(list))
             .orElseGet(() -> ResponseEntity.notFound().build());
@@ -196,6 +208,7 @@ public class ProcessExecutionController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Debug file downloaded"),
         @ApiResponse(responseCode = "404", description = "execution id was not found")})
+    @PreAuthorize("@authorizationService.canRead(#executionId)")
     public ResponseEntity<byte[]> getDebugInfos(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
         return processExecutionService.getDebugInfos(executionId)
             .map(bytes -> ResponseEntity.ok()
@@ -212,6 +225,7 @@ public class ProcessExecutionController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found"),
                            @ApiResponse(responseCode = "409", description = "Execution is not in a terminal state")})
+    @PreAuthorize("@authorizationService.canDelete(#executionId)")
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
         ProcessStatus status = processExecutionService.getExecutionStatus(executionId).orElse(null);
         if (status == null) {

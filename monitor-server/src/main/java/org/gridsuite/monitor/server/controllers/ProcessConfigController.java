@@ -21,6 +21,7 @@ import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +54,7 @@ public class ProcessConfigController {
     @Operation(summary = "Create process config")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was created")})
+    @PreAuthorize("true")
     public ResponseEntity<UUID> createProcessConfig(@Valid @RequestBody ProcessConfig processConfig) {
         return ResponseEntity.ok().body(processConfigService.createProcessConfig(processConfig));
     }
@@ -62,6 +64,7 @@ public class ProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was returned"),
         @ApiResponse(responseCode = "404", description = "process config was not found")})
+    @PreAuthorize("@authorizationService.canRead(#processConfigUuid)")
     public ResponseEntity<PersistedProcessConfig> getProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
         Optional<PersistedProcessConfig> processConfig = processConfigService.getProcessConfig(processConfigUuid);
@@ -72,6 +75,7 @@ public class ProcessConfigController {
     @Operation(summary = "Get process configs metadata")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process configs metadata were returned")})
+    @PreAuthorize("@authorizationService.canRead(#processConfigIds)")
     public ResponseEntity<List<MetadataInfos>> getProcessConfigsMetadata(@RequestParam("ids") List<UUID> processConfigIds) {
         List<MetadataInfos> processConfigs = processConfigService.getProcessConfigsMetadata(processConfigIds);
         return ResponseEntity.ok().body(processConfigs);
@@ -82,6 +86,7 @@ public class ProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was updated"),
         @ApiResponse(responseCode = "404", description = "process config was not found")})
+    @PreAuthorize("@authorizationService.canWrite(#processConfigUuid)")
     public ResponseEntity<Void> updateProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid,
             @Valid @RequestBody ProcessConfig processConfig) {
@@ -94,6 +99,7 @@ public class ProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was duplicated"),
         @ApiResponse(responseCode = "404", description = "process config to duplicate was not found")})
+    @PreAuthorize("@authorizationService.canRead(#sourceProcessConfigUuid)")
     public ResponseEntity<UUID> duplicateProcessConfig(
         @Parameter(description = "UUID of the process config to duplicate") @PathVariable("uuid") UUID sourceProcessConfigUuid) {
         Optional<UUID> newProcessConfigUuid = processConfigService.duplicateProcessConfig(sourceProcessConfigUuid);
@@ -107,6 +113,7 @@ public class ProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "process config was deleted"),
         @ApiResponse(responseCode = "404", description = "process config was not found")})
+    @PreAuthorize("@authorizationService.canDelete(#processConfigUuid)")
     public ResponseEntity<Void> deleteProcessConfig(
             @Parameter(description = "process config UUID") @PathVariable("uuid") UUID processConfigUuid) {
         Optional<UUID> deletedProcessConfigId = processConfigService.deleteProcessConfig(processConfigUuid);
@@ -117,6 +124,7 @@ public class ProcessConfigController {
     @Operation(summary = "Get all process configs of a given type")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "The process configs of the given type were returned")})
+    @PreAuthorize("true")
     public ResponseEntity<List<PersistedProcessConfig>> getProcessConfigs(
         @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType) {
         List<PersistedProcessConfig> processConfigs = processConfigService.getProcessConfigs(processType);
@@ -129,6 +137,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "200", description = "Comparison result returned"),
         @ApiResponse(responseCode = "404", description = "One or both process configs are not found"),
         @ApiResponse(responseCode = "400", description = "Process configs are of different types")})
+    @PreAuthorize("@authorizationService.canRead(List.of(#uuid1, #uuid2))")
     public ResponseEntity<ProcessConfigComparison> compareProcessConfigs(
         @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
         @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {

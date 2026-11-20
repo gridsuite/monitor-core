@@ -153,8 +153,11 @@ public class ProcessExecutionTxService {
 
     private void markExecutionFailed(ProcessExecutionEntity execution, String failureMessage) {
         if (execution.getStatus() == ProcessStatus.COMPLETED
-            || execution.getStatus() == ProcessStatus.CANCELED
-            || execution.getStatus() == ProcessStatus.FAILED) {
+                || execution.getStatus() == ProcessStatus.CANCELED
+                || execution.getStatus() == ProcessStatus.FAILED) {
+            // A dead-letter message must not overwrite an execution in terminal state
+            // This can happen if an execution throws an exception that is then forwarded to the dead-letter queue,
+            // but the execution was already marked as FAILED or CANCELED by the worker
             return;
         }
 

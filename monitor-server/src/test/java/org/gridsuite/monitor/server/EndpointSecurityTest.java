@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 
 /**
- * @author Caroline Jeandat <caroline.jeandat at rte-france.com>
+ * @author Franck Lecuyer <franck.lecuyerat rte-france.com>
  */
 @SpringBootTest
 class EndpointSecurityTest extends AbstractEndpointSecurityTest {

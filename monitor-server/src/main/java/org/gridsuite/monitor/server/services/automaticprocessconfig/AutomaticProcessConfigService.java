@@ -7,12 +7,11 @@
 package org.gridsuite.monitor.server.services.automaticprocessconfig;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.clients.DirectoryRestClient;
 import org.gridsuite.monitor.server.dto.processconfig.AutomaticProcessConfigInfos;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
@@ -20,9 +19,12 @@ import java.util.UUID;
 @Service
 public class AutomaticProcessConfigService {
     private final AutomaticProcessConfigTxService automaticProcessConfigTxService;
+    private final DirectoryRestClient directoryRestClient;
 
-    public AutomaticProcessConfigService(AutomaticProcessConfigTxService automaticProcessConfigTxService) {
+    public AutomaticProcessConfigService(AutomaticProcessConfigTxService automaticProcessConfigTxService,
+                                         DirectoryRestClient directoryRestClient) {
         this.automaticProcessConfigTxService = automaticProcessConfigTxService;
+        this.directoryRestClient = directoryRestClient;
     }
 
     public Optional<UUID> update(UUID configUuid, ProcessType processType, String user) {
@@ -34,10 +36,21 @@ public class AutomaticProcessConfigService {
     }
 
     public List<AutomaticProcessConfigInfos> getHistory() {
-        return automaticProcessConfigTxService.getHistory();
+        return withDirectoryNames(automaticProcessConfigTxService.getHistory());
     }
 
-    public List<AutomaticProcessConfigInfos> getCurrent() {
-        return automaticProcessConfigTxService.getCurrent();
+    public List<AutomaticProcessConfigInfos> getActives() {
+        return withDirectoryNames(automaticProcessConfigTxService.getActives());
+    }
+
+    private List<AutomaticProcessConfigInfos> withDirectoryNames(List<AutomaticProcessConfigInfos> infos) {
+        if (infos.isEmpty()) {
+            return infos;
+        }
+        List<UUID> processConfigUuids = infos.stream().map(AutomaticProcessConfigInfos::processConfigUuid).distinct().toList();
+        Map<UUID, String> processConfigNamesMap = Objects.requireNonNullElse(directoryRestClient.getElementNames(processConfigUuids), Collections.emptyMap());
+        return infos.stream()
+            .map(info -> info.withProcessConfigName(processConfigNamesMap.get(info.processConfigUuid())))
+            .toList();
     }
 }

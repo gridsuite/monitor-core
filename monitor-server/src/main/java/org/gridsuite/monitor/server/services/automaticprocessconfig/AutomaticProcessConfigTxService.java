@@ -87,6 +87,7 @@ public class AutomaticProcessConfigTxService {
         return historyRepository.findAllByOrderByChangedAtDesc().stream()
             .map(history -> new AutomaticProcessConfigInfos(
                 history.getProcessConfig().getId(),
+                null,
                 history.getProcessType(),
                 history.getChangedAt(),
                 history.getChangedBy()))
@@ -94,13 +95,13 @@ public class AutomaticProcessConfigTxService {
     }
 
     @Transactional(readOnly = true)
-    public List<AutomaticProcessConfigInfos> getCurrent() {
+    public List<AutomaticProcessConfigInfos> getActives() {
         return repository.findAll().stream()
             .map(entity -> {
                 UUID configUuid = entity.getProcessConfig().getId();
                 return historyRepository.findFirstByProcessTypeOrderByChangedAtDesc(entity.getProcessType())
-                    .map(history -> new AutomaticProcessConfigInfos(configUuid, entity.getProcessType(), history.getChangedAt(), history.getChangedBy()))
-                    .orElseGet(() -> new AutomaticProcessConfigInfos(configUuid, entity.getProcessType(), null, null));
+                    .map(history -> new AutomaticProcessConfigInfos(configUuid, null, entity.getProcessType(), history.getChangedAt(), history.getChangedBy()))
+                    .orElseGet(() -> new AutomaticProcessConfigInfos(configUuid, null, entity.getProcessType(), null, null));
             })
             .toList();
     }

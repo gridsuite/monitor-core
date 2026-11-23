@@ -16,8 +16,12 @@ import java.util.UUID;
  */
 public record AutomaticProcessConfigInfos(
     UUID processConfigUuid,
+    String processConfigName,
     ProcessType processType,
     Instant changedAt,
     String changedBy
 ) {
+    public AutomaticProcessConfigInfos withProcessConfigName(String name) {
+        return new AutomaticProcessConfigInfos(processConfigUuid, name, processType, changedAt, changedBy);
+    }
 }

@@ -55,7 +55,7 @@ public class AutomaticProcessConfigController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Current automatic process configs")})
     public ResponseEntity<List<AutomaticProcessConfigInfos>> getAutomaticProcessConfigs() {
-        return ResponseEntity.ok(automaticProcessConfigService.getCurrent());
+        return ResponseEntity.ok(automaticProcessConfigService.getActives());
     }
 
     @GetMapping(path = "/history", produces = MediaType.APPLICATION_JSON_VALUE)

@@ -137,7 +137,7 @@ public class ProcessConfigController {
         @ApiResponse(responseCode = "200", description = "Comparison result returned"),
         @ApiResponse(responseCode = "404", description = "One or both process configs are not found"),
         @ApiResponse(responseCode = "400", description = "Process configs are of different types")})
-    @PreAuthorize("@authorizationService.canRead(List.of(#uuid1, #uuid2))")
+    @PreAuthorize("@authorizationService.canRead(#uuid1) and @authorizationService.canRead(#uuid2)")
     public ResponseEntity<ProcessConfigComparison> compareProcessConfigs(
         @Parameter(description = "First process config UUID") @RequestParam("uuid1") UUID uuid1,
         @Parameter(description = "Second process config UUID") @RequestParam("uuid2") UUID uuid2) {

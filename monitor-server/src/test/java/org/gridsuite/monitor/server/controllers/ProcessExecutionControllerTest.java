@@ -16,7 +16,6 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTrig
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
-import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
@@ -31,7 +30,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -50,14 +50,14 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(controllers = {ProcessExecutionController.class, PropertyServerNameProvider.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 @Import(AllowAllAuthTestConfiguration.class)
 @WithMockUser(username = "user1")
 class ProcessExecutionControllerTest {
@@ -100,8 +100,7 @@ class ProcessExecutionControllerTest {
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
-            .param("processConfigUuid", processConfigUuid.toString())
-            .with(csrf());
+            .param("processConfigUuid", processConfigUuid.toString());
 
         if (isDebug != null) {
             request.param("isDebug", isDebug.toString());
@@ -120,7 +119,7 @@ class ProcessExecutionControllerTest {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.CANCEL_REQUESTED);
 
-        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId).with(csrf()))
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
             .andExpect(status().isOk());
     }
 
@@ -130,7 +129,7 @@ class ProcessExecutionControllerTest {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.valueOf(result));
 
-        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId).with(csrf()))
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
             .andExpect(status().isNoContent());
     }
 
@@ -139,7 +138,7 @@ class ProcessExecutionControllerTest {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.NOT_FOUND);
 
-        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId).with(csrf()))
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
             .andExpect(status().isNotFound());
     }
 
@@ -148,7 +147,7 @@ class ProcessExecutionControllerTest {
         UUID executionId = UUID.randomUUID();
         when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.NOT_CANCELLABLE);
 
-        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId).with(csrf()))
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
             .andExpect(status().isConflict());
     }
 
@@ -161,7 +160,7 @@ class ProcessExecutionControllerTest {
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
-            .param("processConfigUuid", processConfigUuid.toString()).with(csrf());
+            .param("processConfigUuid", processConfigUuid.toString());
 
         mockMvc.perform(request)
             .andExpect(status().isNotFound());
@@ -378,7 +377,7 @@ class ProcessExecutionControllerTest {
         when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Optional.of(executionId));
 
-        mockMvc.perform(delete("/v1/executions/{executionId}", executionId).with(csrf()))
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
 
         verify(processExecutionService).getExecutionStatus(executionId);
@@ -393,7 +392,7 @@ class ProcessExecutionControllerTest {
         when(processExecutionService.getExecutionStatus(executionId))
                 .thenReturn(Optional.of(status));
 
-        mockMvc.perform(delete("/v1/executions/{executionId}", executionId).with(csrf()))
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
                 .andExpect(status().isConflict());
 
         verify(processExecutionService).getExecutionStatus(executionId);
@@ -406,7 +405,7 @@ class ProcessExecutionControllerTest {
         when(processExecutionService.getExecutionStatus(executionId))
                 .thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/v1/executions/{executionId}", executionId).with(csrf()))
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());
 
         verify(processExecutionService).getExecutionStatus(executionId);

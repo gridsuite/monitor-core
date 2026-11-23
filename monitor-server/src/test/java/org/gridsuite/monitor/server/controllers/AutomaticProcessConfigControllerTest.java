@@ -9,11 +9,11 @@ package org.gridsuite.monitor.server.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.ws.commons.security.AllowAllAuthTestConfiguration;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -25,7 +25,6 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -34,7 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
-@WebMvcTest(controllers = {AutomaticProcessConfigController.class, PropertyServerNameProvider.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 @Import(AllowAllAuthTestConfiguration.class)
 @WithMockUser(username = "admin")
 class AutomaticProcessConfigControllerTest {
@@ -53,8 +53,7 @@ class AutomaticProcessConfigControllerTest {
 
         mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH + "/" + ProcessType.LOADFLOW)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(configUuid))
-                .with(csrf()))
+                .content(objectMapper.writeValueAsString(configUuid)))
             .andExpect(status().isOk());
 
         verify(automaticProcessConfigService).update(configUuid, ProcessType.LOADFLOW, "admin");
@@ -67,8 +66,7 @@ class AutomaticProcessConfigControllerTest {
 
         mockMvc.perform(put(AUTOMATIC_PROCESS_CONFIGS_PATH + "/" + ProcessType.LOADFLOW)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(configUuid))
-                .with(csrf()))
+                .content(objectMapper.writeValueAsString(configUuid)))
             .andExpect(status().isNotFound());
     }
 

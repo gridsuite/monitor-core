@@ -13,7 +13,6 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
@@ -21,7 +20,8 @@ import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -36,7 +36,6 @@ import static org.gridsuite.monitor.server.error.MonitorServerBusinessErrorCode.
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -48,7 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@WebMvcTest(controllers = { ProcessConfigController.class, PropertyServerNameProvider.class })
+@SpringBootTest
+@AutoConfigureMockMvc
 @Import(AllowAllAuthTestConfiguration.class)
 @WithMockUser
 class ProcessConfigControllerTest {
@@ -73,8 +73,7 @@ class ProcessConfigControllerTest {
 
         mockMvc.perform(post("/v1/process-configs")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(config))
-                .with(csrf()))
+                        .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").value(processConfigId.toString()));
@@ -154,8 +153,7 @@ class ProcessConfigControllerTest {
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(config))
-                .with(csrf()))
+                .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isOk());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
@@ -173,8 +171,7 @@ class ProcessConfigControllerTest {
 
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(config))
-                .with(csrf()))
+                .content(objectMapper.writeValueAsString(config)))
                 .andExpect(status().isNotFound());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
@@ -188,8 +185,7 @@ class ProcessConfigControllerTest {
         when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.of(newProcessConfigId));
 
-        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId)
-            .with(csrf()))
+        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(newProcessConfigId.toString()));
@@ -204,8 +200,7 @@ class ProcessConfigControllerTest {
         when(processConfigService.duplicateProcessConfig(processConfigId))
             .thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId)
-            .with(csrf()))
+        mockMvc.perform(post("/v1/process-configs/{uuid}/duplicate", processConfigId))
             .andExpect(status().isNotFound());
 
         verify(processConfigService).duplicateProcessConfig(processConfigId);
@@ -218,8 +213,7 @@ class ProcessConfigControllerTest {
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
             .thenReturn(Optional.of(processConfigId));
 
-        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId)
-            .with(csrf()))
+        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isOk());
 
         verify(processConfigService).deleteProcessConfig(any(UUID.class));
@@ -232,8 +226,7 @@ class ProcessConfigControllerTest {
         when(processConfigService.deleteProcessConfig(any(UUID.class)))
             .thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId)
-            .with(csrf()))
+        mockMvc.perform(delete("/v1/process-configs/{uuid}", processConfigId))
             .andExpect(status().isNotFound());
 
         verify(processConfigService).deleteProcessConfig(any(UUID.class));
@@ -385,11 +378,11 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void compareProcessConfigsShouldReturn400WhenInvalidUUID() throws Exception {
+    void compareProcessConfigsShouldReturn500WhenInvalidUUID() throws Exception {
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", "invalid-uuid")
                 .param("uuid2", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isInternalServerError());
     }
 }

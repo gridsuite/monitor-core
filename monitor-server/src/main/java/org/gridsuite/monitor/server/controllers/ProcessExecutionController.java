@@ -57,7 +57,7 @@ public class ProcessExecutionController {
     @Operation(summary = "Execute a process")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process execution has been started"),
                            @ApiResponse(responseCode = "404", description = "Process config was not found")})
-    @PreAuthorize("@authorizationService.canRead(List.of(#caseUuid, #processConfigUuid))")
+    @PreAuthorize("@authorizationService.canRead(#caseUuid) and @authorizationService.canRead(#processConfigUuid)")
     public ResponseEntity<UUID> executeProcess(
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,

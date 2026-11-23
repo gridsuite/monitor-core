@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services.automaticprocessconfig;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.dto.processconfig.AutomaticProcessConfigInfos;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigEntity;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigHistoryEntity;
 import org.gridsuite.monitor.server.entities.processconfig.AbstractProcessConfigEntity;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,5 +80,28 @@ public class AutomaticProcessConfigTxService {
     @Transactional(readOnly = true)
     public Optional<UUID> get(ProcessType processType) {
         return repository.findById(processType).map(entity -> entity.getProcessConfig().getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AutomaticProcessConfigInfos> getHistory() {
+        return historyRepository.findAllByOrderByChangedAtDesc().stream()
+            .map(history -> new AutomaticProcessConfigInfos(
+                history.getProcessConfig().getId(),
+                history.getProcessType(),
+                history.getChangedAt(),
+                history.getChangedBy()))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AutomaticProcessConfigInfos> getCurrent() {
+        return repository.findAll().stream()
+            .map(entity -> {
+                UUID configUuid = entity.getProcessConfig().getId();
+                return historyRepository.findFirstByProcessTypeOrderByChangedAtDesc(entity.getProcessType())
+                    .map(history -> new AutomaticProcessConfigInfos(configUuid, entity.getProcessType(), history.getChangedAt(), history.getChangedBy()))
+                    .orElseGet(() -> new AutomaticProcessConfigInfos(configUuid, entity.getProcessType(), null, null));
+            })
+            .toList();
     }
 }

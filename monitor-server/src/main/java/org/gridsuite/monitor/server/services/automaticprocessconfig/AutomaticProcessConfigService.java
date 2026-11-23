@@ -7,8 +7,10 @@
 package org.gridsuite.monitor.server.services.automaticprocessconfig;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.dto.processconfig.AutomaticProcessConfigInfos;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,5 +31,13 @@ public class AutomaticProcessConfigService {
 
     public Optional<UUID> get(ProcessType processType) {
         return automaticProcessConfigTxService.get(processType);
+    }
+
+    public List<AutomaticProcessConfigInfos> getHistory() {
+        return automaticProcessConfigTxService.getHistory();
+    }
+
+    public List<AutomaticProcessConfigInfos> getCurrent() {
+        return automaticProcessConfigTxService.getCurrent();
     }
 }

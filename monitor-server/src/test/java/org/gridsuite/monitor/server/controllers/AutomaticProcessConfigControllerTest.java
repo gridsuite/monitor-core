@@ -9,11 +9,12 @@ package org.gridsuite.monitor.server.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.ws.commons.security.AllowAllAuthTestConfiguration;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.DisableCsrfTestConfiguration;
+import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -33,9 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(AllowAllAuthTestConfiguration.class)
+@WebMvcTest(controllers = { AutomaticProcessConfigController.class, PropertyServerNameProvider.class })
+@Import({AllowAllAuthTestConfiguration.class, DisableCsrfTestConfiguration.class})
 @WithMockUser(username = "admin")
 class AutomaticProcessConfigControllerTest {
     public static final String AUTOMATIC_PROCESS_CONFIGS_PATH = "/v1/automatic-process-configs";

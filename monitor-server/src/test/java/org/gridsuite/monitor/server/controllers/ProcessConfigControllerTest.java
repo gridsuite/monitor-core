@@ -13,6 +13,8 @@ import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.DisableCsrfTestConfiguration;
+import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.processconfig.ProcessConfigComparison;
@@ -20,8 +22,7 @@ import org.gridsuite.monitor.server.error.MonitorServerException;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -47,9 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(AllowAllAuthTestConfiguration.class)
+@WebMvcTest(controllers = { ProcessConfigController.class, PropertyServerNameProvider.class })
+@Import({AllowAllAuthTestConfiguration.class, DisableCsrfTestConfiguration.class})
 @WithMockUser
 class ProcessConfigControllerTest {
     @Autowired
@@ -378,11 +378,11 @@ class ProcessConfigControllerTest {
     }
 
     @Test
-    void compareProcessConfigsShouldReturn500WhenInvalidUUID() throws Exception {
+    void compareProcessConfigsShouldReturn400WhenInvalidUUID() throws Exception {
         mockMvc.perform(get("/v1/process-configs/compare")
                 .param("uuid1", "invalid-uuid")
                 .param("uuid2", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isInternalServerError());
+            .andExpect(status().isBadRequest());
     }
 }

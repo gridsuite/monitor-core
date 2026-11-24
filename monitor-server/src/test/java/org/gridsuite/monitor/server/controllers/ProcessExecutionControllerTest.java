@@ -16,6 +16,8 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTrig
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.DisableCsrfTestConfiguration;
+import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
@@ -30,8 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -56,10 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(AllowAllAuthTestConfiguration.class)
-@WithMockUser(username = "user1")
+@WebMvcTest(controllers = { ProcessExecutionController.class, PropertyServerNameProvider.class })
+@Import({AllowAllAuthTestConfiguration.class, DisableCsrfTestConfiguration.class})
 class ProcessExecutionControllerTest {
 
     @Autowired
@@ -152,6 +151,7 @@ class ProcessExecutionControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void executeProcessWithConfigNotFoundShouldReturnError() throws Exception {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();

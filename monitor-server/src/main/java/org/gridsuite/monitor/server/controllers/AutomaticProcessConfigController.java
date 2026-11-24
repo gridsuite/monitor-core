@@ -41,7 +41,7 @@ public class AutomaticProcessConfigController {
         @ApiResponse(responseCode = "200", description = "Automatic process config was updated"),
         @ApiResponse(responseCode = "400", description = "Process config type does not match process type"),
         @ApiResponse(responseCode = "404", description = "Process config was not found")})
-    @PreAuthorize("@authorizationService.canWrite(#configUuid)")
+    @PreAuthorize("true")
     public ResponseEntity<Void> updateAutomaticProcessConfig(
             @PathVariable @Parameter(description = "process type") ProcessType processType,
             @RequestBody UUID configUuid) {

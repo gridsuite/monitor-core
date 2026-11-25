@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.services.automaticprocessconfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.clients.DirectoryRestClient;
 import org.gridsuite.monitor.server.dto.processconfig.AutomaticProcessConfigInfos;
+import org.gridsuite.monitor.server.messaging.NotificationService;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -20,15 +21,21 @@ import java.util.*;
 public class AutomaticProcessConfigService {
     private final AutomaticProcessConfigTxService automaticProcessConfigTxService;
     private final DirectoryRestClient directoryRestClient;
+    private final NotificationService notificationService;
 
     public AutomaticProcessConfigService(AutomaticProcessConfigTxService automaticProcessConfigTxService,
-                                         DirectoryRestClient directoryRestClient) {
+                                         DirectoryRestClient directoryRestClient, NotificationService notificationService) {
         this.automaticProcessConfigTxService = automaticProcessConfigTxService;
         this.directoryRestClient = directoryRestClient;
+        this.notificationService = notificationService;
     }
 
     public Optional<UUID> update(UUID configUuid, ProcessType processType, String user) {
-        return automaticProcessConfigTxService.update(configUuid, processType, user);
+        Optional<UUID> result = automaticProcessConfigTxService.update(configUuid, processType, user);
+        if (result.isPresent()) {
+            notificationService.sendAutomaticProcessConfigUpdateMessage();
+        }
+        return result;
     }
 
     public Optional<UUID> get(ProcessType processType) {

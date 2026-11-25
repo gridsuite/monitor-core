@@ -9,6 +9,7 @@ package org.gridsuite.monitor.server.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
+import org.gridsuite.monitor.server.dto.processconfig.AutomaticProcessConfigInfos;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -67,23 +71,25 @@ class AutomaticProcessConfigControllerTest {
     }
 
     @Test
-    void getConfigReturnsStoredConfigUuid() throws Exception {
+    void getActiveConfigsReturnsConfigNames() throws Exception {
         UUID configUuid = UUID.randomUUID();
-        when(automaticProcessConfigService.get(ProcessType.SECURITY_ANALYSIS)).thenReturn(Optional.of(configUuid));
+        AutomaticProcessConfigInfos infos = new AutomaticProcessConfigInfos(configUuid, "my config", ProcessType.SECURITY_ANALYSIS, null, null);
+        when(automaticProcessConfigService.getActives()).thenReturn(List.of(infos));
 
-        mockMvc.perform(get(AUTOMATIC_PROCESS_CONFIGS_PATH)
-                .param("processType", ProcessType.SECURITY_ANALYSIS.name()))
+        mockMvc.perform(get(AUTOMATIC_PROCESS_CONFIGS_PATH))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().json(objectMapper.writeValueAsString(configUuid)));
+            .andExpect(content().json(objectMapper.writeValueAsString(List.of(infos))));
     }
 
     @Test
-    void getConfigReturnsNotFoundWhenNoConfigIsStored() throws Exception {
-        when(automaticProcessConfigService.get(ProcessType.LOADFLOW)).thenReturn(Optional.empty());
+    void getHistoryReturnsConfigNames() throws Exception {
+        UUID configUuid = UUID.randomUUID();
+        AutomaticProcessConfigInfos infos = new AutomaticProcessConfigInfos(configUuid, "my config", ProcessType.LOADFLOW, Instant.parse("2026-01-01T00:00:00Z"), "admin");
+        when(automaticProcessConfigService.getHistory()).thenReturn(List.of(infos));
 
-        mockMvc.perform(get(AUTOMATIC_PROCESS_CONFIGS_PATH)
-                .param("processType", ProcessType.LOADFLOW.name()))
-            .andExpect(status().isNotFound());
+        mockMvc.perform(get(AUTOMATIC_PROCESS_CONFIGS_PATH + "/history"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].processConfigName").value("my config"));
     }
 }

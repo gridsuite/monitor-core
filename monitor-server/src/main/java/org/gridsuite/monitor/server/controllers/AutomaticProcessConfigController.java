@@ -35,7 +35,7 @@ public class AutomaticProcessConfigController {
         this.automaticProcessConfigService = automaticProcessConfigService;
     }
 
-    @PutMapping(path = "/{processType}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(path = "/{processType}", consumes = MediaType.TEXT_PLAIN_VALUE)
     @Operation(summary = "Set the process config used by automatic executions")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Automatic process config was updated"),
@@ -43,10 +43,10 @@ public class AutomaticProcessConfigController {
         @ApiResponse(responseCode = "404", description = "Process config was not found")})
     public ResponseEntity<Void> updateAutomaticProcessConfig(
             @PathVariable @Parameter(description = "process type") ProcessType processType,
-            @RequestBody UUID configUuid,
+            @RequestBody String configUuid,
             @RequestHeader(MonitorApi.HEADER_USER_ID) String userId
     ) {
-        Optional<UUID> updated = automaticProcessConfigService.update(configUuid, processType, userId);
+        Optional<UUID> updated = automaticProcessConfigService.update(UUID.fromString(configUuid), processType, userId);
         return updated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 

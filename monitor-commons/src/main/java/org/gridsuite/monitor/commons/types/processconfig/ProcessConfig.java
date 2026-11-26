@@ -23,6 +23,7 @@ import java.util.List;
     @JsonSubTypes.Type(value = SecurityAnalysisConfig.class, name = "SECURITY_ANALYSIS"),
     @JsonSubTypes.Type(value = LoadFlowConfig.class, name = "LOADFLOW"),
     @JsonSubTypes.Type(value = ShortCircuitConfig.class, name = "SHORT_CIRCUIT"),
+    @JsonSubTypes.Type(value = PccMinConfig.class, name = "PCC_MIN")
 })
 public interface ProcessConfig {
     ProcessType processType();

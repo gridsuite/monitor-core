@@ -1,6 +1,7 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.PccMinConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
@@ -30,7 +31,7 @@ public class ProcessConfigValidationService {
                 validateProvider(loadflowRestClient.getParameterProvider(config.loadflowParametersUuid()));
                 validateProvider(securityAnalysisRestClient.getParameterProvider(config.securityAnalysisParametersUuid()));
             }
-            case ShortCircuitConfig _ -> {
+            case ShortCircuitConfig _, PccMinConfig _ -> {
                 // No specific validation required
             }
             default -> throw new IllegalArgumentException("Unsupported process config type: " + processConfig.processType());

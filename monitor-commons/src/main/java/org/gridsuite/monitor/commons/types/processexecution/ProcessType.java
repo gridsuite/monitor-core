@@ -16,5 +16,6 @@ public enum ProcessType {
     SECURITY_ANALYSIS,
     LOADFLOW,
     SHORT_CIRCUIT,
+    PCC_MIN
 }
 

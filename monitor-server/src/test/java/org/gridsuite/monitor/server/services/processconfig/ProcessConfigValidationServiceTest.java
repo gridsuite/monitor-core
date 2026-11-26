@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.PccMinConfig;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.server.clients.LoadflowRestClient;
@@ -107,5 +108,10 @@ class ProcessConfigValidationServiceTest {
     @Test
     void validateSCProcessConfig() {
         assertDoesNotThrow(() -> processConfigValidator.validate(new ShortCircuitConfig(UUID.randomUUID(), List.of())));
+    }
+
+    @Test
+    void validatePccMinProcessConfig() {
+        assertDoesNotThrow(() -> processConfigValidator.validate(new PccMinConfig(UUID.randomUUID(), UUID.randomUUID(), List.of(), List.of())));
     }
 }

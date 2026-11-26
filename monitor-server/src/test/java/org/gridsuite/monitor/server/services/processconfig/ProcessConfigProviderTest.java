@@ -8,12 +8,15 @@ package org.gridsuite.monitor.server.services.processconfig;
 
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.mappers.processconfig.LoadFlowConfigMapper;
+import org.gridsuite.monitor.server.mappers.processconfig.PccMinConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.SecurityAnalysisConfigMapper;
 import org.gridsuite.monitor.server.mappers.processconfig.ShortCircuitConfigMapper;
 import org.gridsuite.monitor.server.repositories.processconfig.LoadFlowConfigRepository;
+import org.gridsuite.monitor.server.repositories.processconfig.PccMinConfigRepository;
 import org.gridsuite.monitor.server.repositories.processconfig.SecurityAnalysisConfigRepository;
 import org.gridsuite.monitor.server.repositories.processconfig.ShortCircuitConfigRepository;
 import org.gridsuite.monitor.server.services.processconfig.providers.LoadFlowConfigProvider;
+import org.gridsuite.monitor.server.services.processconfig.providers.PccMinConfigProvider;
 import org.gridsuite.monitor.server.services.processconfig.providers.SecurityAnalysisConfigProvider;
 import org.gridsuite.monitor.server.services.processconfig.providers.ShortCircuitConfigProvider;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,18 @@ class ProcessConfigProviderTest {
         ShortCircuitConfigProvider provider = new ShortCircuitConfigProvider(mapper, repository);
 
         assertThat(provider.getProcessType()).isEqualTo(ProcessType.SHORT_CIRCUIT);
+        assertThat(provider.getMapper()).isSameAs(mapper);
+        assertThat(provider.getRepository()).isSameAs(repository);
+    }
+
+    @Test
+    void pccMinProvider() {
+        PccMinConfigMapper mapper = mock(PccMinConfigMapper.class);
+        PccMinConfigRepository repository = mock(PccMinConfigRepository.class);
+
+        PccMinConfigProvider provider = new PccMinConfigProvider(mapper, repository);
+
+        assertThat(provider.getProcessType()).isEqualTo(ProcessType.PCC_MIN);
         assertThat(provider.getMapper()).isSameAs(mapper);
         assertThat(provider.getRepository()).isSameAs(repository);
     }

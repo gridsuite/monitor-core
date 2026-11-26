@@ -1,0 +1,29 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="lecuyerfra (generated)" id="1795614183800-1">
+        <createTable tableName="pcc_min_config">
+            <column name="pcc_min_parameters_uuid" type="UUID"/>
+            <column name="short_circuit_parameters_uuid" type="UUID"/>
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pcc_min_configPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="lecuyerfra (generated)" id="1795614183800-2">
+        <createTable tableName="watched_generators">
+            <column name="process_config_id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="watched_generatorsPK"/>
+            </column>
+            <column name="watched_generators" type="UUID"/>
+            <column name="pos_watched_generators" type="INT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="watched_generatorsPK"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="lecuyerfra (generated)" id="1795614183800-3">
+        <addForeignKeyConstraint baseColumnNames="process_config_id" baseTableName="watched_generators" constraintName="PccMinConfigEntity_watched_generators_fk1" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="pcc_min_config" validate="true"/>
+    </changeSet>
+    <changeSet author="lecuyerfra (generated)" id="1795614183800-4">
+        <addForeignKeyConstraint baseColumnNames="id" baseTableName="pcc_min_config" constraintName="pccMinConfig_id_fk_constraint" deferrable="false" initiallyDeferred="false" referencedColumnNames="id" referencedTableName="process_config" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

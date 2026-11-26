@@ -88,7 +88,21 @@ class NotificationServiceTest {
                         message.getPayload().equals("") &&
                             "PROCESS_EXECUTION_UPDATED".equals(message.getHeaders().get(UPDATE_TYPE)) &&
                             executionId.equals(message.getHeaders().get(PROCESS_EXECUTION_ID)) &&
-                            ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get("processType")))
+                            ProcessType.SECURITY_ANALYSIS.name().equals(message.getHeaders().get(PROCESS_TYPE)))
         );
+    }
+
+    @Test
+    void sendProcessCancelMessage() {
+        notificationService.sendProcessCancelMessage(executionId);
+
+        verify(publisher).send(PUBLISH_PROCESS_CANCEL_0, executionId);
+    }
+
+    @Test
+    void sendAutomaticExecutionMessage() {
+        notificationService.sendAutomaticExecutionMessage(caseUuid);
+
+        verify(publisher).send(PUBLISH_AUTOMATIC_EXECUTION_OUT_0, caseUuid.toString());
     }
 }

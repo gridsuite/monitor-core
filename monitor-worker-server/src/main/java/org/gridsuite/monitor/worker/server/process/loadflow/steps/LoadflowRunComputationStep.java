@@ -7,7 +7,6 @@
 package org.gridsuite.monitor.worker.server.process.loadflow.steps;
 
 import com.powsybl.commons.report.ReportNode;
-import com.powsybl.commons.report.TypedValue;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
 import com.powsybl.loadflow.LoadFlowResult;
@@ -19,6 +18,7 @@ import org.gridsuite.monitor.worker.server.clients.LoadFlowRestClient;
 import org.gridsuite.monitor.worker.server.core.context.ProcessStepExecutionContext;
 import org.gridsuite.monitor.worker.server.core.process.AbstractProcessStep;
 import org.gridsuite.monitor.worker.server.dto.parameters.loadflow.LoadFlowParametersInfos;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.gridsuite.monitor.worker.server.process.loadflow.LoadflowStepType;
 import org.gridsuite.monitor.worker.server.services.LoadFlowParametersService;
 import org.springframework.stereotype.Component;
@@ -33,10 +33,12 @@ import java.util.UUID;
 public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConfig> {
 
     private final LoadFlowRestClient loadflowRestClient;
+    private final TaskManager taskManager;
 
-    protected LoadflowRunComputationStep(LoadFlowRestClient loadflowRestClient) {
+    protected LoadflowRunComputationStep(LoadFlowRestClient loadflowRestClient, TaskManager taskManager) {
         super(LoadflowStepType.RUN_LF_COMPUTATION);
         this.loadflowRestClient = loadflowRestClient;
+        this.taskManager = taskManager;
     }
 
     @Override
@@ -45,24 +47,16 @@ public class LoadflowRunComputationStep extends AbstractProcessStep<LoadFlowConf
 
         ReportNode reportNode = context.getReportNode();
 
-        try {
-            LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
-            LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
-            LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
-                .setParameters(loadflowParameters)
-                .setReportNode(reportNode);
-            LoadFlowResult result = LoadFlow.find(parametersInfos.getProvider()).run(context.getNetwork(), runParameters);
+        LoadFlowParametersInfos parametersInfos = loadflowRestClient.getParameters(context.getConfig().loadflowParametersUuid());
+        LoadFlowParameters loadflowParameters = LoadFlowParametersService.buildParameters(parametersInfos);
+        LoadFlowRunParameters runParameters = new LoadFlowRunParameters()
+            .setParameters(loadflowParameters)
+            .setReportNode(reportNode);
+        LoadFlowResult result = taskManager.runComputation(context.getProcessExecutionId(),
+                () -> LoadFlow.find(parametersInfos.getProvider()).runAsync(context.getNetwork(), runParameters));
 
-            UUID resultUuid = loadflowRestClient.saveResult(result);
-            ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
-            context.setResultInfos(resultInfos);
-        } catch (Exception e) {
-            reportNode.newReportNode()
-                .withMessageTemplate("monitor.worker.server.loadflow.step.error")
-                .withUntypedValue("errorMessage", e.getMessage())
-                .withSeverity(TypedValue.ERROR_SEVERITY)
-                .add();
-            throw e;
-        }
+        UUID resultUuid = loadflowRestClient.saveResult(result);
+        ResultInfos resultInfos = new ResultInfos(resultUuid, ResultType.LOADFLOW);
+        context.setResultInfos(resultInfos);
     }
 }

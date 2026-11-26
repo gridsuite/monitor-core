@@ -16,7 +16,9 @@ import java.util.UUID;
 public interface ResultProvider {
     ResultType getType();
 
-    String getResult(UUID resultId);
+    String getResult(UUID resultId, ResultQueryParams queryParams);
+
+    byte[] exportResult(UUID resultId, ResultQueryParams queryParams, String csvTranslations);
 
     void deleteResult(UUID resultId);
 }

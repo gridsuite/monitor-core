@@ -35,7 +35,7 @@ public class MonitorServerExceptionHandler extends AbstractBusinessExceptionHand
     @Override
     protected HttpStatus mapStatus(MonitorServerBusinessErrorCode errorCode) {
         return switch (errorCode) {
-            case DIFFERENT_PROCESS_CONFIG_TYPE -> HttpStatus.BAD_REQUEST;
+            case DIFFERENT_PROCESS_CONFIG_TYPE, UNSUPPORTED_PROVIDER -> HttpStatus.BAD_REQUEST;
         };
     }
 

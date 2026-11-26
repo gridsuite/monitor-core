@@ -6,18 +6,28 @@
  */
 package org.gridsuite.monitor.server.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.server.dto.processexecution.CsvExportRequest;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,14 +42,12 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping(value = "/" + MonitorApi.API_VERSION + "/")
-@Tag(name = "Monitor server")
-public class MonitorController {
+@Tag(name = "Process execution")
+public class ProcessExecutionController {
 
     private final ProcessExecutionService processExecutionService;
 
-    public static final String HEADER_USER_ID = "userId";
-
-    public MonitorController(ProcessExecutionService processExecutionService) {
+    public ProcessExecutionController(ProcessExecutionService processExecutionService) {
         this.processExecutionService = processExecutionService;
     }
 
@@ -51,9 +59,27 @@ public class MonitorController {
             @Parameter(description = "Case uuid") @RequestParam(name = "caseUuid") UUID caseUuid,
             @Parameter(description = "Process config uuid") @RequestParam(name = "processConfigUuid") UUID processConfigUuid,
             @RequestParam(required = false, defaultValue = "false") boolean isDebug,
-            @RequestHeader(HEADER_USER_ID) String userId) {
-        Optional<UUID> executionId = processExecutionService.executeProcess(caseUuid, userId, processConfigUuid, isDebug);
+            @RequestHeader(MonitorApi.HEADER_USER_ID) String userId) {
+        Optional<UUID> executionId = processExecutionService.executeProcess(
+            caseUuid, userId, processConfigUuid, isDebug, ProcessExecutionTriggerType.MANUAL
+        );
         return executionId.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/executions/{executionId}/cancel")
+    @Operation(summary = "Cancel a process")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The process cancellation has been requested"),
+                           @ApiResponse(responseCode = "204", description = "Process is already canceled or canceling"),
+                           @ApiResponse(responseCode = "404", description = "Process execution was not found"),
+                           @ApiResponse(responseCode = "409", description = "Process execution is completed or failed")})
+    public ResponseEntity<Void> cancelProcess(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
+        return switch (processExecutionService.cancelProcess(executionId)) {
+            case CANCEL_REQUESTED -> ResponseEntity.ok().build();
+            case ALREADY_CANCELED, ALREADY_CANCELING -> ResponseEntity.noContent().build();
+            case NOT_FOUND -> ResponseEntity.notFound().build();
+            case NOT_CANCELLABLE -> ResponseEntity.status(HttpStatus.CONFLICT).build();
+        };
     }
 
     @GetMapping("/executions/{executionId}/logs")
@@ -103,13 +129,40 @@ public class MonitorController {
         return reports.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/executions/{executionId}/results")
+    @GetMapping(value = "/executions/{executionId}/results", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get results for an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The execution results"),
                            @ApiResponse(responseCode = "404", description = "execution id was not found")})
-    public ResponseEntity<List<String>> getExecutionResults(@Parameter(description = "Execution UUID") @PathVariable UUID executionId) {
-        Optional<List<String>> results = processExecutionService.getResults(executionId);
+    public ResponseEntity<String> getExecutionResults(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
+            @RequestParam(required = false) String resultType,
+            @ParameterObject Pageable pageable,
+            @RequestParam(required = false) String filters) {
+        ResultQueryParams queryParams = new ResultQueryParams(resultType, pageable, filters);
+        Optional<String> results = processExecutionService.getResults(executionId, queryParams);
         return results.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping(value = "/executions/{executionId}/results/csv",
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(summary = "Export execution results as CSV")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "CSV export",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                schema = @Schema(type = "string", format = "binary"))),
+        @ApiResponse(responseCode = "204", description = "No result found")})
+    public ResponseEntity<byte[]> exportExecutionResultsCsv(
+            @Parameter(description = "Execution UUID") @PathVariable UUID executionId,
+            @RequestParam String resultType,
+            @ParameterObject Pageable pageable,
+            @RequestParam(required = false) String filters,
+            @RequestBody CsvExportRequest csvTranslations) {
+        ResultQueryParams queryParams = new ResultQueryParams(resultType, pageable, filters);
+        return processExecutionService.exportResults(executionId, queryParams, new ObjectMapper().valueToTree(csvTranslations).toString())
+            .map(bytes -> ResponseEntity.ok().body(bytes))
+            .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     }
 
     @GetMapping("/executions")
@@ -157,8 +210,16 @@ public class MonitorController {
     @DeleteMapping("/executions/{executionId}")
     @Operation(summary = "Delete an execution")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Execution was deleted"),
-                           @ApiResponse(responseCode = "404", description = "execution id was not found")})
+                           @ApiResponse(responseCode = "404", description = "execution id was not found"),
+                           @ApiResponse(responseCode = "409", description = "Execution is not in a terminal state")})
     public ResponseEntity<Void> deleteExecution(@PathVariable UUID executionId) {
+        ProcessStatus status = processExecutionService.getExecutionStatus(executionId).orElse(null);
+        if (status == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (status != ProcessStatus.COMPLETED && status != ProcessStatus.FAILED && status != ProcessStatus.CANCELED) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         Optional<UUID> deletedExecutionId = processExecutionService.deleteExecution(executionId);
         return deletedExecutionId.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }

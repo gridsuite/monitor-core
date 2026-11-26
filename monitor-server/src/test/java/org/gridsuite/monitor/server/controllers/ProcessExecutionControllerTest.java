@@ -10,18 +10,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
+import org.gridsuite.monitor.server.services.processexecution.CancelProcessResult;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,8 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(controllers = {MonitorController.class, PropertyServerNameProvider.class})
-class MonitorControllerTest {
+@WebMvcTest(controllers = {ProcessExecutionController.class, PropertyServerNameProvider.class})
+class ProcessExecutionControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -87,7 +89,7 @@ class MonitorControllerTest {
         boolean expectedDebugValue = Boolean.TRUE.equals(isDebug);
 
         when(processConfigService.getProcessConfig(processConfigUuid)).thenReturn(Optional.of(persistedProcessConfig));
-        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue)))
+        when(processExecutionService.executeProcess(any(UUID.class), any(String.class), any(UUID.class), eq(expectedDebugValue), eq(ProcessExecutionTriggerType.MANUAL)))
                 .thenReturn(Optional.of(executionId));
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
@@ -104,7 +106,44 @@ class MonitorControllerTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$").value(executionId.toString()));
 
-        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue));
+        verify(processExecutionService).executeProcess(eq(caseUuid), any(String.class), any(UUID.class), eq(expectedDebugValue), eq(ProcessExecutionTriggerType.MANUAL));
+    }
+
+    @Test
+    void cancelExecutionReturnsOkWhenCancellationIsRequested() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.CANCEL_REQUESTED);
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ALREADY_CANCELED", "ALREADY_CANCELING"})
+    void cancelExecutionReturnsNoContentWhenCancellationWasAlreadyRequested(String result) throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.valueOf(result));
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void cancelExecutionReturnsNotFoundWhenExecutionDoesNotExist() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.NOT_FOUND);
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancelExecutionReturnsConflictWhenExecutionCannotBeCanceled() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(processExecutionService.cancelProcess(executionId)).thenReturn(CancelProcessResult.NOT_CANCELLABLE);
+
+        mockMvc.perform(post("/v1/executions/{executionId}/cancel", executionId))
+            .andExpect(status().isConflict());
     }
 
     @Test
@@ -112,7 +151,7 @@ class MonitorControllerTest {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
 
-        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false)).thenReturn(Optional.empty());
+        when(processExecutionService.executeProcess(caseUuid, "user1", processConfigUuid, false, ProcessExecutionTriggerType.MANUAL)).thenReturn(Optional.empty());
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
@@ -122,7 +161,7 @@ class MonitorControllerTest {
         mockMvc.perform(request)
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).executeProcess(caseUuid, "user1", processConfigUuid, false);
+        verify(processExecutionService).executeProcess(caseUuid, "user1", processConfigUuid, false, ProcessExecutionTriggerType.MANUAL);
     }
 
     @Test
@@ -209,43 +248,49 @@ class MonitorControllerTest {
     }
 
     @Test
-    void getExecutionResultsShouldReturnListOfResults() throws Exception {
+    void getExecutionResultsShouldReturnRawJson() throws Exception {
+        String payload = "{\"result\":\"data\"}";
         UUID executionId = UUID.randomUUID();
-        String result1 = "{\"result\": \"data1\"}";
-        String result2 = "{\"result\": \"data2\"}";
-        when(processExecutionService.getResults(executionId))
-                .thenReturn(Optional.of(List.of(result1, result2)));
+        when(processExecutionService.getResults(eq(executionId), any()))
+                .thenReturn(Optional.of(payload));
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0]").value(result1))
-                .andExpect(jsonPath("$[1]").value(result2));
+                .andExpect(content().string(payload));
 
-        verify(processExecutionService).getResults(executionId);
+        verify(processExecutionService).getResults(eq(executionId), any());
     }
 
     @Test
     void getExecutionResultsReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.getResults(executionId))
+        when(processExecutionService.getResults(eq(executionId), any()))
             .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/v1/executions/{executionId}/results", executionId))
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).getResults(executionId);
+        verify(processExecutionService).getResults(eq(executionId), any());
     }
 
     @Test
     void getProcessExecutions() throws Exception {
-        ProcessExecution processExecution1 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED, "env1",
-                Instant.now().minusSeconds(80), Instant.now().minusSeconds(60), Instant.now().minusSeconds(30), UUID.randomUUID(), "user1", "user1");
-        ProcessExecution processExecution2 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED, "env2",
-                Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null, UUID.randomUUID(), "user2", "user2");
-        ProcessExecution processExecution3 = new ProcessExecution(UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING, "env3",
-                Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null, UUID.randomUUID(), "user3", "user3");
+        ProcessExecution processExecution1 = new ProcessExecution(
+            UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.COMPLETED,
+            ProcessExecutionTriggerType.MANUAL, "env1", Instant.now().minusSeconds(80), Instant.now().minusSeconds(60),
+            Instant.now().minusSeconds(30), UUID.randomUUID(), "user1", "user1"
+        );
+        ProcessExecution processExecution2 = new ProcessExecution(
+            UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.FAILED,
+            ProcessExecutionTriggerType.MANUAL, "env2", Instant.now().minusSeconds(70), Instant.now().minusSeconds(50), null,
+            UUID.randomUUID(), "user2", "user2"
+        );
+        ProcessExecution processExecution3 = new ProcessExecution(
+            UUID.randomUUID(), ProcessType.SECURITY_ANALYSIS.name(), UUID.randomUUID(), UUID.randomUUID(), ProcessStatus.RUNNING,
+            ProcessExecutionTriggerType.MANUAL, "env3", Instant.now().minusSeconds(50), Instant.now().minusSeconds(40), null,
+            UUID.randomUUID(), "user3", "user3"
+        );
 
         List<ProcessExecution> processExecutionList = List.of(processExecution1, processExecution2, processExecution3);
 
@@ -255,6 +300,7 @@ class MonitorControllerTest {
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$", hasSize(3)))
+            .andExpect(jsonPath("$[0].triggerType").value(ProcessExecutionTriggerType.MANUAL.name()))
             .andExpect(content().json(objectMapper.writeValueAsString(processExecutionList)));
 
         verify(processExecutionService).getProcessExecutions();
@@ -317,28 +363,49 @@ class MonitorControllerTest {
         verify(processExecutionService).getStepsInfos(executionId);
     }
 
-    @Test
-    void deleteExecutionReturnsOK() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"COMPLETED", "FAILED", "CANCELED"})
+    void deleteExecutionReturnsOK(String statusStr) throws Exception {
         UUID executionId = UUID.randomUUID();
+        ProcessStatus status = ProcessStatus.valueOf(statusStr);
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.of(status));
         when(processExecutionService.deleteExecution(executionId))
             .thenReturn(Optional.of(executionId));
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isOk());
 
+        verify(processExecutionService).getExecutionStatus(executionId);
         verify(processExecutionService).deleteExecution(executionId);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SCHEDULED", "RUNNING", "CANCELING"})
+    void deleteExecutionReturnsConflictWhenNotTerminal(String statusStr) throws Exception {
+        UUID executionId = UUID.randomUUID();
+        ProcessStatus status = ProcessStatus.valueOf(statusStr);
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.of(status));
+
+        mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
+                .andExpect(status().isConflict());
+
+        verify(processExecutionService).getExecutionStatus(executionId);
+        verify(processExecutionService, never()).deleteExecution(executionId);
     }
 
     @Test
     void deleteExecutionReturnsNotFound() throws Exception {
         UUID executionId = UUID.randomUUID();
-        when(processExecutionService.deleteExecution(executionId))
-            .thenReturn(Optional.empty());
+        when(processExecutionService.getExecutionStatus(executionId))
+                .thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/v1/executions/{executionId}", executionId))
             .andExpect(status().isNotFound());
 
-        verify(processExecutionService).deleteExecution(executionId);
+        verify(processExecutionService).getExecutionStatus(executionId);
+        verify(processExecutionService, never()).deleteExecution(executionId);
     }
 
     @Test

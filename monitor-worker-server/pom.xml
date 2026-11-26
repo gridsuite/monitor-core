@@ -15,6 +15,8 @@
     <properties>
         <spring-cloud-aws-starter-s3>4.0.0</spring-cloud-aws-starter-s3>
         <aws-sdk.version>2.29.52</aws-sdk.version>
+        <!-- FIXME: to be removed at next gridsuite-dependencies upgrade  -->
+        <gridsuite-powsybl-extras.version>0.1.0</gridsuite-powsybl-extras.version>
     </properties>
 
     <build>
@@ -54,6 +56,12 @@
     <dependencyManagement>
         <dependencies>
             <!-- overrides of imports -->
+            <!-- FIXME: to be removed at next gridsuite-dependencies upgrade  -->
+            <dependency>
+                <groupId>org.gridsuite</groupId>
+                <artifactId>gridsuite-powsybl-extras</artifactId>
+                <version>${gridsuite-powsybl-extras.version}</version>
+            </dependency>
             <!-- imports -->
         </dependencies>
     </dependencyManagement>
@@ -100,6 +108,10 @@
             <artifactId>powsybl-shortcircuit-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.gridsuite</groupId>
+            <artifactId>gridsuite-powsybl-extras</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-open-loadflow</artifactId>
             <scope>runtime</scope>
@@ -120,6 +132,45 @@
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-action-api</artifactId>
        </dependency>
+        <dependency>
+            <groupId>org.gridsuite</groupId>
+            <artifactId>gridsuite-computation</artifactId>
+            <version>2.8.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-stream</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.awspring.cloud</groupId>
+                    <artifactId>spring-cloud-aws-starter-s3</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>s3</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-amqp</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.data</groupId>
+                    <artifactId>spring-data-jpa</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.persistence</groupId>
+                    <artifactId>jakarta.persistence-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.gridsuite</groupId>
+                    <artifactId>gridsuite-filter</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.validation</groupId>
+                    <artifactId>jakarta.validation-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -174,6 +225,12 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream-binder-rabbit</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- FIXME: remove this dependency when injected JARs include their required transitive dependencies -->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
             <scope>runtime</scope>
         </dependency>
 

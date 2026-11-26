@@ -6,10 +6,17 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -33,6 +40,7 @@ class SecurityAnalysisRestClientTest {
 
     private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final String RESULT_BODY = "{\"status\":\"OK\"}";
+    private static final UUID PARAMETERS_UUID = UUID.randomUUID();
 
     @Autowired
     private SecurityAnalysisRestClient securityAnalysisRestClient;
@@ -45,18 +53,59 @@ class SecurityAnalysisRestClientTest {
         server.verify();
     }
 
-    @Test
-    void getResult() {
+    @ParameterizedTest
+    @ValueSource(strings = {"NMK_CONTINGENCIES", "NMK_CUT_OFF_POWER", "NMK_LIMIT_VIOLATIONS"})
+    void getResult(String resultType) {
+        var path = getResultPath(resultType);
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result"
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + path + "/paged"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(
                 RESULT_BODY,
                 MediaType.APPLICATION_JSON
             ));
+        String result = securityAnalysisRestClient.getResult(RESULT_UUID, new ResultQueryParams(resultType, Pageable.unpaged(), null));
 
-        String result = securityAnalysisRestClient.getResult(RESULT_UUID);
+        assertThat(result).isEqualTo(RESULT_BODY);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"NMK_CONTINGENCIES", "NMK_CUT_OFF_POWER", "NMK_LIMIT_VIOLATIONS"})
+    void exportResult(String resultType) {
+        var path = getResultPath(resultType);
+        server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
+                .andExpect(MockRestRequestMatchers.requestTo(
+                        "http://security-analysis-server/v1/results/" + RESULT_UUID + path + "/csv"
+                ))
+                .andRespond(MockRestResponseCreators.withSuccess(
+                        RESULT_BODY.getBytes(),
+                        MediaType.APPLICATION_OCTET_STREAM
+                ));
+        byte[] result = securityAnalysisRestClient.exportResult(RESULT_UUID, new ResultQueryParams(resultType, Pageable.unpaged(), null), "");
+
+        assertThat(result).isEqualTo(RESULT_BODY.getBytes());
+    }
+
+    private static @NonNull String getResultPath(String resultType) {
+        return switch (resultType) {
+            case "NMK_CONTINGENCIES" -> "/nmk-contingencies-result";
+            case "NMK_CUT_OFF_POWER" -> "/nmk-cut-off-power-result";
+            case "NMK_LIMIT_VIOLATIONS" -> "/nmk-constraints-result";
+            default -> throw new IllegalArgumentException("Unknown result type: " + resultType);
+        };
+    }
+
+    @Test
+    void getResultPreservesPagedQueryParameters() {
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged?page=0&size=25&sort=contingencyId,asc&filters=%5B%5D"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(RESULT_BODY, MediaType.APPLICATION_JSON));
+
+        String result = securityAnalysisRestClient.getResult(RESULT_UUID,
+            new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.by(Sort.Direction.ASC, "contingencyId")), "[]"));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -65,12 +114,30 @@ class SecurityAnalysisRestClientTest {
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result"
+                "http://security-analysis-server/v1/results/" + RESULT_UUID + "/nmk-contingencies-result/paged"
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("NMK_CONTINGENCIES", Pageable.unpaged(), null);
+        assertThatThrownBy(() -> securityAnalysisRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void getParametersProvider() {
+        String securityAnalysisProvider = "OpenLoadFlow";
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://security-analysis-server/v1/parameters/" + PARAMETERS_UUID + "/provider"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(
+                securityAnalysisProvider,
+                MediaType.TEXT_PLAIN
+            ));
+
+        String result = securityAnalysisRestClient.getParameterProvider(PARAMETERS_UUID);
+
+        assertThat(result).isEqualTo(securityAnalysisProvider);
     }
 
     @Test

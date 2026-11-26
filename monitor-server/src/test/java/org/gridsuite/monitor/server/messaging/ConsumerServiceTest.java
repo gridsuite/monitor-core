@@ -12,12 +12,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processconfig.LoadFlowConfig;
+import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processconfig.ShortCircuitConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.services.processexecution.AutomaticProcessExecutionService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.Message;
@@ -32,9 +41,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -46,6 +55,8 @@ class ConsumerServiceTest {
 
     @Mock
     private ProcessExecutionService processExecutionService;
+    @Mock
+    private AutomaticProcessExecutionService automaticProcessExecutionService;
 
     private ObjectMapper objectMapper;
     private ConsumerService consumerService;
@@ -54,7 +65,58 @@ class ConsumerServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
-        consumerService = new ConsumerService(processExecutionService, objectMapper);
+        consumerService = new ConsumerService(processExecutionService, automaticProcessExecutionService, objectMapper);
+    }
+
+    @Test
+    void consumeAutomaticExecutionMessage() {
+        UUID caseUuid = UUID.randomUUID();
+
+        consumerService.consumeAutomaticExecution().accept(caseUuid.toString());
+
+        verify(automaticProcessExecutionService).executeAutomaticProcesses(caseUuid);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"Connection refused", "", "  "})
+    void consumeRunDeadLetterMessages(String exceptionMessage) {
+        UUID securityAnalysisExecutionId = UUID.randomUUID();
+        ProcessRunMessage<SecurityAnalysisConfig> securityAnalysisMessage = new ProcessRunMessage<>(
+            securityAnalysisExecutionId,
+            UUID.randomUUID(),
+            new SecurityAnalysisConfig(UUID.randomUUID(), List.of(), UUID.randomUUID()),
+            UUID.randomUUID(),
+            null
+        );
+        UUID loadFlowExecutionId = UUID.randomUUID();
+        ProcessRunMessage<LoadFlowConfig> loadFlowMessage = new ProcessRunMessage<>(
+            loadFlowExecutionId,
+            UUID.randomUUID(),
+            new LoadFlowConfig(UUID.randomUUID(), List.of()),
+            UUID.randomUUID(),
+            null
+        );
+        UUID shortCircuitExecutionId = UUID.randomUUID();
+        ProcessRunMessage<ShortCircuitConfig> shortCircuitMessage = new ProcessRunMessage<>(
+            shortCircuitExecutionId,
+            UUID.randomUUID(),
+            new ShortCircuitConfig(UUID.randomUUID(), List.of()),
+            UUID.randomUUID(),
+            null
+        );
+
+        Map<String, Object> headers = exceptionMessage == null ? Map.of() : Map.of("x-exception-message", exceptionMessage);
+        consumerService.consumeSecurityAnalysisRunDlq().accept(new GenericMessage<>(securityAnalysisMessage, headers));
+        consumerService.consumeLoadFlowRunDlq().accept(new GenericMessage<>(loadFlowMessage, headers));
+        consumerService.consumeShortCircuitRunDlq().accept(new GenericMessage<>(shortCircuitMessage, headers));
+
+        String expectedFailureMessage = exceptionMessage == null || exceptionMessage.isBlank()
+            ? "Process execution was dead-lettered. No exception details were provided."
+            : "Process execution was dead-lettered. Exception details: " + exceptionMessage;
+        verify(processExecutionService).failExecutionFromDeadLetter(securityAnalysisExecutionId, ProcessType.SECURITY_ANALYSIS, expectedFailureMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(loadFlowExecutionId, ProcessType.LOADFLOW, expectedFailureMessage);
+        verify(processExecutionService).failExecutionFromDeadLetter(shortCircuitExecutionId, ProcessType.SHORT_CIRCUIT, expectedFailureMessage);
     }
 
     @Test
@@ -71,16 +133,18 @@ class ConsumerServiceTest {
                 .build();
 
         String payload = objectMapper.writeValueAsString(statusUpdate);
+        assertThat(objectMapper.readTree(payload).has(ConsumerService.HEADER_PROCESS_TYPE)).isFalse();
         Message<String> message = MessageBuilder.withPayload(payload)
             .setHeader(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString())
             .setHeader(ConsumerService.HEADER_EXECUTION_ID, executionId.toString())
+            .setHeader(ConsumerService.HEADER_PROCESS_TYPE, ProcessType.SECURITY_ANALYSIS.name())
             .build();
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
         consumer.accept(message);
 
-        verify(processExecutionService).updateExecutionStatus(executionId, statusUpdate);
-        verify(processExecutionService, never()).updateStepStatus(any(), any());
+        verify(processExecutionService).updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, statusUpdate);
+        verify(processExecutionService, never()).updateStepStatus(any(), any(), any());
     }
 
     @Test
@@ -90,6 +154,7 @@ class ConsumerServiceTest {
         Map<String, Object> headers = new HashMap<>();
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.EXECUTION_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
+        headers.put(ConsumerService.HEADER_PROCESS_TYPE, ProcessType.SECURITY_ANALYSIS.name());
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
@@ -97,8 +162,8 @@ class ConsumerServiceTest {
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("Failed to parse payload as ProcessExecutionStatusUpdate");
 
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
-        verify(processExecutionService, never()).updateStepStatus(any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any());
+        verify(processExecutionService, never()).updateStepStatus(any(), any(), any());
     }
 
     @Test
@@ -108,6 +173,7 @@ class ConsumerServiceTest {
         Map<String, Object> headers = new HashMap<>();
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
+        headers.put(ConsumerService.HEADER_PROCESS_TYPE, ProcessType.SECURITY_ANALYSIS.name());
         Message<String> message = new GenericMessage<>(invalidPayload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
@@ -115,8 +181,8 @@ class ConsumerServiceTest {
             .isInstanceOf(UncheckedIOException.class)
             .hasMessageContaining("Failed to parse payload as " + new TypeReference<List<ProcessExecutionStep>>() { }.getType().getTypeName());
 
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
-        verify(processExecutionService, never()).updateStepsStatuses(any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any());
+        verify(processExecutionService, never()).updateStepsStatuses(any(), any(), any());
     }
 
     @Test
@@ -133,13 +199,14 @@ class ConsumerServiceTest {
         Map<String, Object> headers = new HashMap<>();
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEP_STATUS_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
+        headers.put(ConsumerService.HEADER_PROCESS_TYPE, ProcessType.LOADFLOW.name());
         Message<String> message = new GenericMessage<>(payload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
         consumer.accept(message);
 
-        verify(processExecutionService).updateStepStatus(eq(executionId), any(ProcessExecutionStep.class));
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
+        verify(processExecutionService).updateStepStatus(executionId, ProcessType.LOADFLOW, stepUpdate);
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any());
     }
 
     @Test
@@ -163,13 +230,14 @@ class ConsumerServiceTest {
         Map<String, Object> headers = new HashMap<>();
         headers.put(ConsumerService.HEADER_MESSAGE_TYPE, MessageType.STEPS_STATUSES_UPDATE.toString());
         headers.put(ConsumerService.HEADER_EXECUTION_ID, executionId.toString());
+        headers.put(ConsumerService.HEADER_PROCESS_TYPE, ProcessType.SECURITY_ANALYSIS.name());
         Message<String> message = new GenericMessage<>(payload, headers);
         Consumer<Message<String>> consumer = consumerService.consumeMonitorWorkerUpdate();
 
         consumer.accept(message);
 
-        verify(processExecutionService).updateStepsStatuses(eq(executionId), any(List.class));
-        verify(processExecutionService, never()).updateStepStatus(any(), any());
-        verify(processExecutionService, never()).updateExecutionStatus(any(), any());
+        verify(processExecutionService).updateStepsStatuses(executionId, ProcessType.SECURITY_ANALYSIS, List.of(stepUpdate1, stepUpdate2));
+        verify(processExecutionService, never()).updateStepStatus(any(), any(), any());
+        verify(processExecutionService, never()).updateExecutionStatus(any(), any(), any());
     }
 }

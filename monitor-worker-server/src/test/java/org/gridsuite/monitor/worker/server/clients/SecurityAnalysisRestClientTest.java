@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.clients;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.security.SecurityAnalysisResult;
+import org.gridsuite.computation.dto.securityanalysis.EnrichedSecurityAnalysisResultDTO;
 import org.gridsuite.monitor.worker.server.config.MonitorWorkerConfig;
 import org.gridsuite.monitor.worker.server.dto.parameters.securityanalysis.SecurityAnalysisParametersValues;
 import org.junit.jupiter.api.AfterEach;
@@ -24,6 +25,8 @@ import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -54,7 +57,11 @@ class SecurityAnalysisRestClientTest {
 
     @Test
     void saveResult() throws JsonProcessingException {
-        SecurityAnalysisResult result = SecurityAnalysisResult.empty();
+        EnrichedSecurityAnalysisResultDTO result = EnrichedSecurityAnalysisResultDTO.builder()
+            .result(SecurityAnalysisResult.empty())
+            .preContingencyEnrichment(List.of())
+            .postContingencyEnrichment(Map.of())
+            .build();
 
         server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results/" + RESULT_UUID))
@@ -67,7 +74,11 @@ class SecurityAnalysisRestClientTest {
 
     @Test
     void saveResultFailed() {
-        SecurityAnalysisResult result = SecurityAnalysisResult.empty();
+        EnrichedSecurityAnalysisResultDTO result = EnrichedSecurityAnalysisResultDTO.builder()
+            .result(SecurityAnalysisResult.empty())
+            .preContingencyEnrichment(List.of())
+            .postContingencyEnrichment(Map.of())
+            .build();
         server.expect(MockRestRequestMatchers.method(HttpMethod.POST))
             .andExpect(MockRestRequestMatchers.requestTo("http://security-analysis-server/v1/results/" + RESULT_UUID))
             .andRespond(MockRestResponseCreators.withServerError());

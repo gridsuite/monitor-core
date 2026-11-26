@@ -6,9 +6,12 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -32,6 +35,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 class LoadflowRestClientTest {
     private static final UUID RESULT_UUID = UUID.randomUUID();
     private static final String RESULT_BODY = "{\"status\":\"OK\"}";
+    private static final UUID PARAMETERS_UUID = UUID.randomUUID();
 
     @Autowired
     private LoadflowRestClient loadflowRestClient;
@@ -48,14 +52,14 @@ class LoadflowRestClientTest {
     void getResult() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://loadflow-server/v1/results/" + RESULT_UUID
+                "http://loadflow-server/v1/results/" + RESULT_UUID + "/limit-violations"
             ))
             .andRespond(MockRestResponseCreators.withSuccess(
                 RESULT_BODY,
                 MediaType.APPLICATION_JSON
             ));
 
-        String result = loadflowRestClient.getResult(RESULT_UUID);
+        String result = loadflowRestClient.getResult(RESULT_UUID, new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null));
 
         assertThat(result).isEqualTo(RESULT_BODY);
     }
@@ -64,12 +68,30 @@ class LoadflowRestClientTest {
     void getResultFailed() {
         server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
             .andExpect(MockRestRequestMatchers.requestTo(
-                "http://loadflow-server/v1/results/" + RESULT_UUID
+                "http://loadflow-server/v1/results/" + RESULT_UUID + "/limit-violations"
             ))
             .andRespond(MockRestResponseCreators.withServerError());
 
-        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("LOADFLOW", Pageable.unpaged(), null);
+        assertThatThrownBy(() -> loadflowRestClient.getResult(RESULT_UUID, resultQueryParams))
             .isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void getParametersProvider() {
+        String loadflowProvider = "OpenLoadFlow";
+        server.expect(MockRestRequestMatchers.method(HttpMethod.GET))
+            .andExpect(MockRestRequestMatchers.requestTo(
+                "http://loadflow-server/v1/parameters/" + PARAMETERS_UUID + "/provider"
+            ))
+            .andRespond(MockRestResponseCreators.withSuccess(
+                loadflowProvider,
+                MediaType.TEXT_PLAIN
+            ));
+
+        String result = loadflowRestClient.getParameterProvider(PARAMETERS_UUID);
+
+        assertThat(result).isEqualTo(loadflowProvider);
     }
 
     @Test

@@ -10,13 +10,14 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdat
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
@@ -27,6 +28,10 @@ import org.gridsuite.monitor.server.utils.S3PathResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -68,6 +73,7 @@ class ProcessExecutionTxServiceTest {
     private UUID caseUuid;
     private UUID executionId;
     private UUID reportId;
+    private String debugFileLocation;
     private String userId;
 
     @BeforeEach
@@ -75,6 +81,7 @@ class ProcessExecutionTxServiceTest {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         reportId = UUID.randomUUID();
+        debugFileLocation = "debug/file/location";
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
                 UUID.randomUUID(),
@@ -84,12 +91,13 @@ class ProcessExecutionTxServiceTest {
     }
 
     @Test
-    void executeProcessCreateExecution() {
-        String debugFileLocation = "debug/file/location";
+    void createExecutionPersistsTriggerType() {
         when(s3PathResolver.toDebugLocation(eq(ProcessType.SECURITY_ANALYSIS.name()), any(UUID.class))).thenReturn(debugFileLocation);
         when(processConfigService.getProcessConfig(any(UUID.class))).thenReturn(Optional.of(new PersistedProcessConfig(UUID.randomUUID(), securityAnalysisConfig)));
 
-        Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true);
+        Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(
+            caseUuid, userId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), true, ProcessExecutionTriggerType.AUTO
+        );
 
         assertThat(result).isNotEmpty();
         verify(processConfigService).getProcessConfig(any(UUID.class));
@@ -98,6 +106,7 @@ class ProcessExecutionTxServiceTest {
                         ProcessType.SECURITY_ANALYSIS.name().equals(execution.getType()) &&
                         caseUuid.equals(execution.getCaseUuid()) &&
                         userId.equals(execution.getUserId()) &&
+                        ProcessExecutionTriggerType.AUTO.equals(execution.getTriggerType()) &&
                         ProcessStatus.SCHEDULED.equals(execution.getStatus()) &&
                         execution.getScheduledAt() != null &&
                         execution.getStartedAt() == null
@@ -118,8 +127,9 @@ class ProcessExecutionTxServiceTest {
                 .build();
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.RUNNING, null, null, null));
+        boolean applied = processExecutionTxService.updateExecution(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.RUNNING, null, null, null));
 
+        assertThat(applied).isTrue();
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
         assertThat(execution.getExecutionEnvName()).isNull();
@@ -145,8 +155,9 @@ class ProcessExecutionTxServiceTest {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, envName, startedAt, completedAt));
+        boolean wasExecutionUpdated = processExecutionTxService.updateExecution(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, envName, startedAt, completedAt));
 
+        assertThat(wasExecutionUpdated).isTrue();
         verify(executionRepository).findById(executionId);
         assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
         assertThat(execution.getExecutionEnvName()).isEqualTo(envName);
@@ -160,7 +171,224 @@ class ProcessExecutionTxServiceTest {
     void updateExecutionStatusShouldHandleExecutionNotFound() {
         when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
 
-        processExecutionTxService.updateExecutionStatus(executionId, new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
+        boolean wasExecutionUpdated = processExecutionTxService.updateExecution(executionId, new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, "env", Instant.now(), Instant.now()));
+
+        assertThat(wasExecutionUpdated).isFalse();
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateExecutionStatusByStatusShouldHandleExecutionNotFound() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELING);
+
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateExecutionShouldAllowSameStatusEvenWhenFinal() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.COMPLETED)
+            .build();
+
+        when(executionRepository.findById(executionId))
+            .thenReturn(Optional.of(execution));
+
+        boolean applied = processExecutionTxService.updateExecution(
+            executionId,
+            new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, "other-env", null, null)
+        );
+
+        assertThat(applied).isTrue();
+        assertThat(execution.getExecutionEnvName()).isEqualTo("other-env");
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void updateExecutionShouldRejectTransitionFromFinalStatus() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.COMPLETED)
+            .build();
+
+        when(executionRepository.findById(executionId))
+            .thenReturn(Optional.of(execution));
+
+        boolean applied = processExecutionTxService.updateExecution(
+            executionId,
+            new ProcessExecutionStatusUpdate(ProcessStatus.RUNNING, "other-env", null, null)
+        );
+
+        assertThat(applied).isFalse();
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
+        assertThat(execution.getExecutionEnvName()).isNull();
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateExecutionStatusShouldAllowSameStatus() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.COMPLETED)
+            .build();
+
+        when(executionRepository.findById(executionId))
+            .thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.COMPLETED);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void updateExecutionStatusShouldRejectTransitionFromFinalStatus() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.COMPLETED)
+            .build();
+
+        when(executionRepository.findById(executionId))
+            .thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.RUNNING);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.COMPLETED);
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateExecutionShouldRejectForbiddenStatusUpdate() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.SCHEDULED)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        boolean applied = processExecutionTxService.updateExecution(executionId,
+            new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, null, null, Instant.now()));
+        assertThat(applied).isFalse();
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateExecutionStatusShouldNotRejectSameStatusUpdate() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.CANCELING)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELING);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.CANCELING);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void updateExecutionStatusShouldAllowRunningToCanceling() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.RUNNING)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELING);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.CANCELING);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void updateExecutionStatusShouldUpdateStatus() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.SCHEDULED)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.RUNNING);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.RUNNING);
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "Connection refused")
+    void failExecutionFromDeadLetterShouldFailExecutionAndIncompleteSteps(String failureMessage) {
+        Instant executionStartedAt = Instant.now().minusSeconds(30);
+        Instant runningStepStartedAt = Instant.now().minusSeconds(20);
+        Instant completedStepAt = Instant.now().minusSeconds(10);
+        ProcessExecutionStepEntity runningStep = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .status(StepStatus.RUNNING)
+            .startedAt(runningStepStartedAt)
+            .build();
+        ProcessExecutionStepEntity scheduledStep = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .status(StepStatus.SCHEDULED)
+            .build();
+        ProcessExecutionStepEntity completedStep = ProcessExecutionStepEntity.builder()
+            .id(UUID.randomUUID())
+            .status(StepStatus.COMPLETED)
+            .completedAt(completedStepAt)
+            .build();
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(ProcessStatus.RUNNING)
+            .startedAt(executionStartedAt)
+            .steps(new ArrayList<>(List.of(runningStep, scheduledStep, completedStep)))
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, failureMessage);
+
+        assertThat(execution.getStatus()).isEqualTo(ProcessStatus.FAILED);
+        assertThat(execution.getFailureMessage()).isEqualTo(failureMessage);
+        assertThat(execution.getStartedAt()).isEqualTo(executionStartedAt);
+        assertThat(execution.getCompletedAt()).isNotNull();
+        assertThat(runningStep.getStatus()).isEqualTo(StepStatus.FAILED);
+        assertThat(runningStep.getStartedAt()).isEqualTo(runningStepStartedAt);
+        assertThat(runningStep.getCompletedAt()).isEqualTo(execution.getCompletedAt());
+        assertThat(scheduledStep.getStatus()).isEqualTo(StepStatus.SKIPPED);
+        assertThat(scheduledStep.getStartedAt()).isEqualTo(execution.getCompletedAt());
+        assertThat(scheduledStep.getCompletedAt()).isEqualTo(execution.getCompletedAt());
+        assertThat(completedStep.getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(completedStep.getCompletedAt()).isEqualTo(completedStepAt);
+        verify(executionRepository).save(execution);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ProcessStatus.class, names = {"COMPLETED", "CANCELED", "FAILED"})
+    void failExecutionFromDeadLetterShouldPreserveTerminalExecution(ProcessStatus status) {
+        Instant completedAt = Instant.now().minusSeconds(5);
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(executionId)
+            .status(status)
+            .failureMessage("Original failure")
+            .completedAt(completedAt)
+            .steps(new ArrayList<>())
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, "Another failure");
+
+        assertThat(execution.getStatus()).isEqualTo(status);
+        assertThat(execution.getFailureMessage()).isEqualTo("Original failure");
+        assertThat(execution.getCompletedAt()).isEqualTo(completedAt);
+        verify(executionRepository, never()).save(any());
+    }
+
+    @Test
+    void failExecutionFromDeadLetterShouldHandleExecutionNotFound() {
+        when(executionRepository.findById(executionId)).thenReturn(Optional.empty());
+
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, "Connection refused");
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository, never()).save(any());
@@ -327,6 +555,139 @@ class ProcessExecutionTxServiceTest {
         verify(executionRepository).save(execution);
     }
 
+    private ProcessExecutionEntity buildExecutionWithSteps(ProcessExecutionStepEntity... steps) {
+        return ProcessExecutionEntity.builder()
+            .id(executionId)
+            .type(ProcessType.SECURITY_ANALYSIS.name())
+            .caseUuid(caseUuid)
+            .userId(userId)
+            .status(ProcessStatus.RUNNING)
+            .steps(new ArrayList<>(List.of(steps)))
+            .build();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StepStatus.class, names = {"COMPLETED", "FAILED", "SKIPPED", "CANCELED"})
+    void updateStepStatusShouldRejectAnyUpdateOfFinalStep(StepStatus finalStatus) {
+        UUID stepId = UUID.randomUUID();
+        Instant completedAt = Instant.now().minusSeconds(5);
+        ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
+            .id(stepId)
+            .stepType("LOAD_FLOW")
+            .status(finalStatus)
+            .completedAt(completedAt)
+            .build();
+        ProcessExecutionEntity execution = buildExecutionWithSteps(existingStep);
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        for (StepStatus requested : StepStatus.values()) {
+            if (requested == finalStatus) {
+                continue;
+            }
+            processExecutionTxService.updateStepStatus(executionId, ProcessExecutionStep.builder()
+                .id(stepId)
+                .stepType("OTHER_TYPE")
+                .status(requested)
+                .startedAt(Instant.now())
+                .build());
+
+            ProcessExecutionStepEntity step = execution.getSteps().getFirst();
+            assertThat(execution.getSteps()).as("%s -> %s", finalStatus, requested).hasSize(1);
+            assertThat(step.getStatus()).as("%s -> %s", finalStatus, requested).isEqualTo(finalStatus);
+            assertThat(step.getStepType()).isEqualTo("LOAD_FLOW");
+            assertThat(step.getStartedAt()).isNull();
+            assertThat(step.getCompletedAt()).isEqualTo(completedAt);
+        }
+    }
+
+    @Test
+    void updateStepStatusShouldApplyRunningToCompleted() {
+        UUID stepId = UUID.randomUUID();
+        ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.RUNNING).build();
+        ProcessExecutionEntity execution = buildExecutionWithSteps(existingStep);
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateStepStatus(executionId, ProcessExecutionStep.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.COMPLETED).completedAt(Instant.now()).build());
+
+        assertThat(execution.getSteps().getFirst().getStatus()).isEqualTo(StepStatus.COMPLETED);
+        verify(executionRepository).save(execution);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StepStatus.class, names = {"SCHEDULED", "RUNNING"})
+    void updateStepStatusShouldApplyCanceled(StepStatus initialStatus) {
+        UUID stepId = UUID.randomUUID();
+        ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(initialStatus).build();
+        ProcessExecutionEntity execution = buildExecutionWithSteps(existingStep);
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateStepStatus(executionId, ProcessExecutionStep.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.CANCELED).completedAt(Instant.now()).build());
+
+        assertThat(execution.getSteps().getFirst().getStatus()).isEqualTo(StepStatus.CANCELED);
+        assertThat(execution.getSteps().getFirst().getCompletedAt()).isNotNull();
+    }
+
+    @Test
+    void updateStepStatusShouldRejectSkippedToRunning() {
+        UUID stepId = UUID.randomUUID();
+        ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.SKIPPED).build();
+        ProcessExecutionEntity execution = buildExecutionWithSteps(existingStep);
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateStepStatus(executionId, ProcessExecutionStep.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.RUNNING).build());
+
+        assertThat(execution.getSteps().getFirst().getStatus()).isEqualTo(StepStatus.SKIPPED);
+    }
+
+    @Test
+    void updateStepStatusShouldApplySameStatusAndMergeOtherFields() {
+        UUID stepId = UUID.randomUUID();
+        UUID resultId = UUID.randomUUID();
+        ProcessExecutionStepEntity existingStep = ProcessExecutionStepEntity.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.RUNNING).build();
+        ProcessExecutionEntity execution = buildExecutionWithSteps(existingStep);
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateStepStatus(executionId, ProcessExecutionStep.builder()
+            .id(stepId).stepType("LOAD_FLOW").status(StepStatus.RUNNING).resultId(resultId).resultType(ResultType.SECURITY_ANALYSIS).build());
+
+        assertThat(execution.getSteps().getFirst().getStatus()).isEqualTo(StepStatus.RUNNING);
+        assertThat(execution.getSteps().getFirst().getResultId()).isEqualTo(resultId);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void updateStepsStatusesShouldSkipOnlyForbiddenStepsAndInsertNewOnes() {
+        UUID completedStepId = UUID.randomUUID();
+        UUID runningStepId = UUID.randomUUID();
+        UUID newStepId = UUID.randomUUID();
+        ProcessExecutionStepEntity completedStep = ProcessExecutionStepEntity.builder()
+            .id(completedStepId).stepType("LOAD_NETWORK").status(StepStatus.COMPLETED).build();
+        ProcessExecutionStepEntity runningStep = ProcessExecutionStepEntity.builder()
+            .id(runningStepId).stepType("LOAD_FLOW").status(StepStatus.RUNNING).build();
+        ProcessExecutionEntity execution = buildExecutionWithSteps(completedStep, runningStep);
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.updateStepsStatuses(executionId, List.of(
+            ProcessExecutionStep.builder().id(completedStepId).stepType("LOAD_NETWORK").status(StepStatus.RUNNING).build(),
+            ProcessExecutionStep.builder().id(runningStepId).stepType("LOAD_FLOW").status(StepStatus.COMPLETED).build(),
+            ProcessExecutionStep.builder().id(newStepId).stepType("SECURITY_ANALYSIS").status(StepStatus.SCHEDULED).build()
+        ));
+
+        assertThat(execution.getSteps()).hasSize(3);
+        assertThat(execution.getSteps().get(0).getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(execution.getSteps().get(1).getStatus()).isEqualTo(StepStatus.COMPLETED);
+        assertThat(execution.getSteps().get(2).getId()).isEqualTo(newStepId);
+        assertThat(execution.getSteps().get(2).getStatus()).isEqualTo(StepStatus.SCHEDULED);
+        verify(executionRepository).save(execution);
+    }
+
     @Test
     void getReportIdShouldReturnExecutionReportId() {
         ProcessExecutionStepEntity step0 = ProcessExecutionStepEntity.builder()
@@ -421,6 +782,7 @@ class ProcessExecutionTxServiceTest {
             .caseUuid(case1Uuid)
             .processConfigId(config1Uuid)
             .status(ProcessStatus.COMPLETED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env1")
             .scheduledAt(scheduledAt1)
             .startedAt(startedAt1)
@@ -441,6 +803,7 @@ class ProcessExecutionTxServiceTest {
             .caseUuid(case2Uuid)
             .processConfigId(config2Uuid)
             .status(ProcessStatus.RUNNING)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env2")
             .scheduledAt(scheduledAt2)
             .startedAt(startedAt2)
@@ -452,10 +815,14 @@ class ProcessExecutionTxServiceTest {
 
         List<ProcessExecution> result = processExecutionTxService.getProcessExecutions();
 
-        ProcessExecution processExecution1 = new ProcessExecution(execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED, "env1", scheduledAt1,
-            startedAt1, completedAt1, report1Uuid, "user1", null);
-        ProcessExecution processExecution2 = new ProcessExecution(execution2Uuid, ProcessType.LOADFLOW.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING, "env2", scheduledAt2,
-            startedAt2, null, report2Uuid, "user2", null);
+        ProcessExecution processExecution1 = new ProcessExecution(
+            execution1Uuid, ProcessType.SECURITY_ANALYSIS.name(), case1Uuid, config1Uuid, ProcessStatus.COMPLETED,
+            ProcessExecutionTriggerType.MANUAL, "env1", scheduledAt1, startedAt1, completedAt1, report1Uuid, "user1", null
+        );
+        ProcessExecution processExecution2 = new ProcessExecution(
+            execution2Uuid, ProcessType.LOADFLOW.name(), case2Uuid, config2Uuid, ProcessStatus.RUNNING,
+            ProcessExecutionTriggerType.MANUAL, "env2", scheduledAt2, startedAt2, null, report2Uuid, "user2", null
+        );
 
         assertThat(result).hasSize(2).containsExactly(processExecution2, processExecution1);
         verify(executionRepository).findAllByScheduledAtIsNotNullOrderByScheduledAtDesc();
@@ -475,6 +842,7 @@ class ProcessExecutionTxServiceTest {
             .caseUuid(caseUuid)
             .processConfigId(configUuid)
             .status(ProcessStatus.COMPLETED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env1")
             .scheduledAt(scheduledAt)
             .startedAt(startedAt)
@@ -482,8 +850,10 @@ class ProcessExecutionTxServiceTest {
             .reportId(reportUuid)
             .userId("user1")
             .build();
-        ProcessExecution processExecution = new ProcessExecution(executionUuid, ProcessType.SECURITY_ANALYSIS.name(), caseUuid, configUuid, ProcessStatus.COMPLETED, "env1", scheduledAt,
-            startedAt, completedAt, reportUuid, "user1", null);
+        ProcessExecution processExecution = new ProcessExecution(
+            executionUuid, ProcessType.SECURITY_ANALYSIS.name(), caseUuid, configUuid, ProcessStatus.COMPLETED,
+            ProcessExecutionTriggerType.MANUAL, "env1", scheduledAt, startedAt, completedAt, reportUuid, "user1", null
+        );
 
         when(executionRepository.findById(executionUuid)).thenReturn(Optional.of(processExecutionEntity));
 
@@ -576,6 +946,7 @@ class ProcessExecutionTxServiceTest {
             .id(executionId)
             .reportId(reportId)
             .steps(List.of(step0, step1))
+            .debugFileLocation(debugFileLocation)
             .build();
 
         when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
@@ -583,7 +954,7 @@ class ProcessExecutionTxServiceTest {
 
         Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.deleteExecution(executionId);
         assertThat(processDeletionInfos.get()).usingRecursiveComparison()
-            .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS))));
+            .isEqualTo(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)), debugFileLocation));
 
         verify(executionRepository).findById(executionId);
         verify(executionRepository).delete(execution);
@@ -602,7 +973,6 @@ class ProcessExecutionTxServiceTest {
 
     @Test
     void getExistingDebugInfo() {
-        String debugFileLocation = "debug/file/location";
         ProcessExecutionEntity execution = new ProcessExecutionEntity();
         execution.setDebugFileLocation(debugFileLocation);
 
@@ -638,5 +1008,50 @@ class ProcessExecutionTxServiceTest {
         assertThat(result).isEmpty();
 
         verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void getProcessDeletionInfos() {
+        ProcessExecutionEntity execution = new ProcessExecutionEntity();
+        execution.setSteps(new ArrayList<>());
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<ProcessDeletionInfos> processDeletionInfos = processExecutionTxService.getProcessDeletionInfos(executionId);
+        assertThat(processDeletionInfos).isPresent();
+        verify(executionRepository).findById(executionId);
+    }
+
+    @Test
+    void clearResourceReferences() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .reportId(reportId)
+            .debugFileLocation(debugFileLocation)
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        processExecutionTxService.clearResourceReferences(executionId);
+
+        assertThat(execution.getReportId()).isNull();
+        assertThat(execution.getDebugFileLocation()).isNull();
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
+    }
+
+    @Test
+    void deleteExecutionSteps() {
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .steps(new ArrayList<>(List.of(
+                ProcessExecutionStepEntity.builder().id(UUID.randomUUID()).build(),
+                ProcessExecutionStepEntity.builder().id(UUID.randomUUID()).build()
+            )))
+            .build();
+        when(executionRepository.findById(executionId)).thenReturn(Optional.of(execution));
+
+        Optional<UUID> result = processExecutionTxService.deleteExecutionSteps(executionId);
+
+        assertThat(result).contains(executionId);
+        assertThat(execution.getSteps()).isEmpty();
+        verify(executionRepository).findById(executionId);
+        verify(executionRepository).save(execution);
     }
 }

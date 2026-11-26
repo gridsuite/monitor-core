@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gridsuite.monitor.commons.types.messaging.MessageType;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.services.processexecution.AutomaticProcessExecutionService;
 import org.gridsuite.monitor.server.services.processexecution.ProcessExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +38,25 @@ public class ConsumerService {
 
     public static final String HEADER_MESSAGE_TYPE = "messageType";
     public static final String HEADER_EXECUTION_ID = "executionId";
+    public static final String HEADER_PROCESS_TYPE = "processType";
+    public static final String HEADER_EXCEPTION_MESSAGE = "x-exception-message";
+    private static final String DEAD_LETTER_FAILURE_MESSAGE = "Process execution was dead-lettered. No exception details were provided.";
+    private static final String DEAD_LETTER_FAILURE_MESSAGE_WITH_EXCEPTION = "Process execution was dead-lettered. Exception details: ";
 
     private final ProcessExecutionService processExecutionService;
+    private final AutomaticProcessExecutionService automaticProcessExecutionService;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public ConsumerService(ProcessExecutionService processExecutionService, ObjectMapper objectMapper) {
+    public ConsumerService(ProcessExecutionService processExecutionService, AutomaticProcessExecutionService automaticProcessExecutionService, ObjectMapper objectMapper) {
         this.processExecutionService = processExecutionService;
+        this.automaticProcessExecutionService = automaticProcessExecutionService;
         this.objectMapper = objectMapper;
+    }
+
+    @Bean
+    public Consumer<String> consumeAutomaticExecution() {
+        return payload -> automaticProcessExecutionService.executeAutomaticProcesses(UUID.fromString(payload));
     }
 
     @Bean
@@ -52,29 +66,56 @@ public class ConsumerService {
             MessageType messageType = MessageType.valueOf(messageTypeStr);
             String executionIdStr = message.getHeaders().get(HEADER_EXECUTION_ID, String.class);
             UUID executionId = UUID.fromString(executionIdStr);
+            String processTypeStr = message.getHeaders().get(HEADER_PROCESS_TYPE, String.class);
+            ProcessType processType = ProcessType.valueOf(processTypeStr);
 
             switch (messageType) {
-                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, message);
-                case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, message);
-                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, message);
+                case EXECUTION_STATUS_UPDATE -> handleExecutionStatusUpdate(executionId, processType, message);
+                case STEP_STATUS_UPDATE -> handleStepStatusUpdate(executionId, processType, message);
+                case STEPS_STATUSES_UPDATE -> handleStepsStatusesUpdate(executionId, processType, message);
                 default -> LOGGER.warn("Unknown message type: {}", messageType);
             }
         };
     }
 
-    private void handleExecutionStatusUpdate(UUID executionId, Message<String> message) {
+    @Bean
+    public Consumer<Message<ProcessRunMessage<?>>> consumeSecurityAnalysisRunDlq() {
+        return this::handleRunDeadLetter;
+    }
+
+    @Bean
+    public Consumer<Message<ProcessRunMessage<?>>> consumeLoadFlowRunDlq() {
+        return this::handleRunDeadLetter;
+    }
+
+    @Bean
+    public Consumer<Message<ProcessRunMessage<?>>> consumeShortCircuitRunDlq() {
+        return this::handleRunDeadLetter;
+    }
+
+    private void handleRunDeadLetter(Message<ProcessRunMessage<?>> message) {
+        ProcessRunMessage<?> runMessage = message.getPayload();
+        String exceptionMessage = message.getHeaders().get(HEADER_EXCEPTION_MESSAGE, String.class);
+        LOGGER.error("Process execution {} reached the dead-letter queue", runMessage.executionId());
+        String failureMessage = exceptionMessage == null || exceptionMessage.isBlank()
+            ? DEAD_LETTER_FAILURE_MESSAGE
+            : DEAD_LETTER_FAILURE_MESSAGE_WITH_EXCEPTION + exceptionMessage;
+        processExecutionService.failExecutionFromDeadLetter(runMessage.executionId(), runMessage.processType(), failureMessage);
+    }
+
+    private void handleExecutionStatusUpdate(UUID executionId, ProcessType processType, Message<String> message) {
         ProcessExecutionStatusUpdate payload = parsePayload(message.getPayload(), ProcessExecutionStatusUpdate.class);
-        processExecutionService.updateExecutionStatus(executionId, payload);
+        processExecutionService.updateExecutionStatus(executionId, processType, payload);
     }
 
-    private void handleStepStatusUpdate(UUID executionId, Message<String> message) {
+    private void handleStepStatusUpdate(UUID executionId, ProcessType processType, Message<String> message) {
         ProcessExecutionStep processExecutionStep = parsePayload(message.getPayload(), ProcessExecutionStep.class);
-        processExecutionService.updateStepStatus(executionId, processExecutionStep);
+        processExecutionService.updateStepStatus(executionId, processType, processExecutionStep);
     }
 
-    private void handleStepsStatusesUpdate(UUID executionId, Message<String> message) {
+    private void handleStepsStatusesUpdate(UUID executionId, ProcessType processType, Message<String> message) {
         List<ProcessExecutionStep> processExecutionSteps = parsePayload(message.getPayload(), new TypeReference<List<ProcessExecutionStep>>() { });
-        processExecutionService.updateStepsStatuses(executionId, processExecutionSteps);
+        processExecutionService.updateStepsStatuses(executionId, processType, processExecutionSteps);
     }
 
     private <T> T parsePayload(String payload, Class<T> clazz) {

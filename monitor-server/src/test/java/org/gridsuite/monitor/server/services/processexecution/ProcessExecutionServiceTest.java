@@ -11,6 +11,8 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdat
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -19,7 +21,6 @@ import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.clients.UserIdentityRestClient;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportLog;
@@ -28,6 +29,7 @@ import org.gridsuite.monitor.server.dto.report.Severity;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,15 +37,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,6 +80,7 @@ class ProcessExecutionServiceTest {
     private UUID caseUuid;
     private UUID executionId;
     private UUID reportId;
+    private String debugFileLocation;
     private String userId;
 
     @BeforeEach
@@ -88,6 +88,7 @@ class ProcessExecutionServiceTest {
         caseUuid = UUID.randomUUID();
         executionId = UUID.randomUUID();
         reportId = UUID.randomUUID();
+        debugFileLocation = "debug/file/location";
         userId = "user1";
         securityAnalysisConfig = new SecurityAnalysisConfig(
             UUID.randomUUID(),
@@ -98,12 +99,12 @@ class ProcessExecutionServiceTest {
 
     @Test
     void executeProcessCreateExecutionAndSendNotifications() {
-        String debugFileLocation = "debug/file/location";
-
         doReturn(Optional.of(new ProcessCreationResult(debugFileLocation, securityAnalysisConfig)))
-            .when(processExecutionTxService).createExecution(eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean());
+            .when(processExecutionTxService).createExecution(
+                eq(caseUuid), eq(userId), any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean(), eq(ProcessExecutionTriggerType.MANUAL)
+            );
 
-        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true);
+        Optional<UUID> result = processExecutionService.executeProcess(caseUuid, userId, UUID.randomUUID(), true, ProcessExecutionTriggerType.MANUAL);
 
         assertThat(result).isNotEmpty();
         verify(notificationService).sendProcessRunMessage(
@@ -117,16 +118,75 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
+    void failExecutionFromDeadLetterShouldForwardFailureMessageAndNotify() {
+        String failureMessage = "Process execution was dead-lettered. Exception details: Connection refused";
+
+        processExecutionService.failExecutionFromDeadLetter(executionId, ProcessType.SHORT_CIRCUIT, failureMessage);
+
+        verify(processExecutionTxService).failExecutionFromDeadLetter(executionId, failureMessage);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SHORT_CIRCUIT);
+    }
+
+    @Test
     void updateExecutionStatusShouldDelegateToTxService() {
         Instant startedAt = Instant.now().minusSeconds(60);
         Instant completedAt = Instant.now();
         String executionEnvName = "test-env";
 
-        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessType.SECURITY_ANALYSIS, ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
-        processExecutionService.updateExecutionStatus(executionId, update);
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.COMPLETED, executionEnvName, startedAt, completedAt);
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(true);
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
-        verify(processExecutionTxService).updateExecutionStatus(executionId, update);
+        verify(processExecutionTxService).updateExecution(executionId, update);
         verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+    }
+
+    @Test
+    void updateExecutionStatusOfCanceled() {
+        Instant startedAt = Instant.now().minusSeconds(60);
+        Instant completedAt = Instant.now();
+        String executionEnvName = "test-env";
+
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, executionEnvName, startedAt, completedAt);
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(true);
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
+
+        verify(processExecutionTxService).updateExecution(executionId, update);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(processExecutionTxService).deleteExecutionSteps(executionId);
+        verify(processExecutionTxService).clearResourceReferences(executionId);
+    }
+
+    @Test
+    void rejectedUpdateExecutionToCanceledStatusShouldNotCleanNorNotify() {
+        ProcessExecutionStatusUpdate update = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, Instant.now());
+        when(processExecutionTxService.updateExecution(executionId, update)).thenReturn(false);
+
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
+
+        verify(processExecutionTxService).updateExecution(executionId, update);
+        verify(processExecutionTxService, never()).getProcessDeletionInfos(any(UUID.class));
+        verify(processExecutionTxService, never()).deleteExecutionSteps(any(UUID.class));
+        verify(processExecutionTxService, never()).clearResourceReferences(any(UUID.class));
+        verify(notificationService, never()).sendProcessUpdatedMessage(any(UUID.class), any(ProcessType.class));
+    }
+
+    @Test
+    void deleteAfterCancelShouldNotCleanResourcesAgain() {
+        // Simulate cancel: resources are cleaned and references nulled
+        ProcessExecutionStatusUpdate cancelUpdate = new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, null);
+        when(processExecutionTxService.updateExecution(executionId, cancelUpdate)).thenReturn(true);
+        processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, cancelUpdate);
+        verify(processExecutionTxService).clearResourceReferences(executionId);
+
+        // Simulate delete: deleteExecution returns infos with null reportId and null debugFileLocation (already cleared)
+        ProcessDeletionInfos emptyInfos = new ProcessDeletionInfos(null, List.of(), null);
+        when(processExecutionTxService.deleteExecution(executionId)).thenReturn(Optional.of(emptyInfos));
+        processExecutionService.deleteExecution(executionId);
+
+        // No external cleanup should happen since references were nulled
+        verifyNoInteractions(reportRestClient);
+        verifyNoInteractions(s3RestClient);
     }
 
     @Test
@@ -141,10 +201,10 @@ class ProcessExecutionServiceTest {
             .startedAt(Instant.now())
             .build();
 
-        processExecutionService.updateStepStatus(executionId, step);
+        processExecutionService.updateStepStatus(executionId, ProcessType.SECURITY_ANALYSIS, step);
 
         verify(processExecutionTxService).updateStepStatus(executionId, step);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, null);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -164,10 +224,10 @@ class ProcessExecutionServiceTest {
                 .build()
         );
 
-        processExecutionService.updateStepsStatuses(executionId, steps);
+        processExecutionService.updateStepsStatuses(executionId, ProcessType.SECURITY_ANALYSIS, steps);
 
         verify(processExecutionTxService).updateStepsStatuses(executionId, steps);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, null);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -239,24 +299,48 @@ class ProcessExecutionServiceTest {
     }
 
     @Test
-    void getResultsShouldReturnResults() {
+    void getResultsShouldReturnOnlyFirstResult() {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         String result1 = "{\"result\": \"data1\"}";
-        String result2 = "{\"result\": \"data2\"}";
         List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS));
-        when(resultService.getResult(resultInfos.get(0)))
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
+        when(resultService.getResult(resultInfos.get(0), queryParams))
             .thenReturn(result1);
-        when(resultService.getResult(resultInfos.get(1)))
-            .thenReturn(result2);
         when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
 
-        Optional<List<String>> results = processExecutionService.getResults(executionId);
+        Optional<String> results = processExecutionService.getResults(executionId, queryParams);
+
+        assertThat(results).contains(result1);
+        verify(processExecutionTxService).getResultInfos(executionId);
+        verify(resultService).getResult(resultInfos.getFirst(), queryParams);
+        verifyNoMoreInteractions(resultService);
+    }
+
+    @Test
+    void getResultsShouldReturnEmptyWhenExecutionHasNoResults() {
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(List.of()));
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25), null);
+
+        assertThat(processExecutionService.getResults(executionId, queryParams)).isEmpty();
+        verifyNoInteractions(resultService);
+    }
+
+    @Test
+    void exportResultsShouldReturnResults() {
+        UUID resultId = UUID.randomUUID();
+        byte[] exportResult = "result".getBytes();
+        List<ResultInfos> resultInfos = List.of(new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS));
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", PageRequest.of(0, 25, Sort.unsorted()), null);
+        when(resultService.exportResult(resultInfos.getFirst(), queryParams, ""))
+                .thenReturn(exportResult);
+        when(processExecutionTxService.getResultInfos(executionId)).thenReturn(Optional.of(resultInfos));
+
+        Optional<byte[]> results = processExecutionService.exportResults(executionId, queryParams, "");
 
         assertThat(results).isPresent();
-        assertThat(results.get()).hasSize(2).containsExactly(result1, result2);
+        assertThat(results.get()).contains(exportResult);
         verify(processExecutionTxService).getResultInfos(executionId);
-        verify(resultService, times(2)).getResult(any(ResultInfos.class));
     }
 
     @Test
@@ -264,7 +348,9 @@ class ProcessExecutionServiceTest {
         UUID resultId1 = UUID.randomUUID();
         UUID resultId2 = UUID.randomUUID();
         when(processExecutionTxService.deleteExecution(executionId))
-            .thenReturn(Optional.of(new ProcessDeletionInfos(reportId, List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)))));
+            .thenReturn(Optional.of(new ProcessDeletionInfos(reportId,
+                    List.of(new ResultInfos(resultId1, ResultType.SECURITY_ANALYSIS), new ResultInfos(resultId2, ResultType.SECURITY_ANALYSIS)),
+                    debugFileLocation)));
 
         doNothing().when(reportRestClient).deleteReport(reportId);
         doNothing().when(resultService).deleteResult(any(ResultInfos.class));
@@ -290,7 +376,6 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getExistingDebugInfo() throws Exception {
-        String debugFileLocation = "debug/file/location";
         byte[] expectedBytes = "zip-content".getBytes();
 
         when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.of(debugFileLocation));
@@ -319,7 +404,6 @@ class ProcessExecutionServiceTest {
 
     @Test
     void getExistingDebugInfoError() throws Exception {
-        String debugFileLocation = "debug/file/location";
 
         when(processExecutionTxService.getDebugFileLocation(executionId)).thenReturn(Optional.of(debugFileLocation));
 
@@ -344,6 +428,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(ProcessStatus.RUNNING)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .userId(userId)
                 .build();
@@ -355,6 +440,7 @@ class ProcessExecutionServiceTest {
                 .caseUuid(caseUuid)
                 .processConfigId(UUID.randomUUID())
                 .status(ProcessStatus.SCHEDULED)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .userId(userId)
                 .build();
@@ -436,5 +522,101 @@ class ProcessExecutionServiceTest {
         assertThat(result).isEmpty();
 
         verifyNoInteractions(s3RestClient);
+    }
+
+    private ProcessExecution buildExecution(ProcessStatus status) {
+        return ProcessExecution.builder()
+                .id(executionId)
+                .type(ProcessType.SECURITY_ANALYSIS.name())
+                .caseUuid(caseUuid)
+                .processConfigId(UUID.randomUUID())
+                .status(status)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
+                .executionEnvName("test-env")
+                .userId(userId)
+                .build();
+    }
+
+    @Test
+    void cancelProcessShouldReturn404WhenExecutionNotFound() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.empty());
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.NOT_FOUND);
+        verifyNoInteractions(notificationService);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+    }
+
+    @Test
+    void cancelProcessShouldCancelImmediatelyWhenScheduled() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.SCHEDULED)));
+        when(processExecutionTxService.updateExecution(eq(executionId), any(ProcessExecutionStatusUpdate.class))).thenReturn(true);
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.CANCEL_REQUESTED);
+        verify(processExecutionTxService).updateExecution(eq(executionId), argThat(update ->
+            update.getStatus() == ProcessStatus.CANCELED && update.getCompletedAt() != null));
+        verify(processExecutionTxService).deleteExecutionSteps(executionId);
+        verify(processExecutionTxService).clearResourceReferences(executionId);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessCancelMessage(executionId);
+    }
+
+    @Test
+    void cancelProcessShouldSendCancelMessageWhenRunning() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.RUNNING)));
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.CANCEL_REQUESTED);
+        verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.CANCELING);
+        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessCancelMessage(executionId);
+    }
+
+    @Test
+    void cancelProcessShouldReturn204WhenAlreadyCancelled() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELED)));
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.ALREADY_CANCELED);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verify(notificationService).sendProcessCancelMessage(executionId);
+    }
+
+    @Test
+    void cancelProcessShouldReturn204WhenAlreadyCancelling() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.CANCELING)));
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.ALREADY_CANCELING);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verify(notificationService).sendProcessCancelMessage(executionId);
+    }
+
+    @Test
+    void cancelProcessShouldReturn409WhenCompleted() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.COMPLETED)));
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.NOT_CANCELLABLE);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void cancelProcessShouldReturn409WhenFailed() {
+        when(processExecutionTxService.getExecution(executionId)).thenReturn(Optional.of(buildExecution(ProcessStatus.FAILED)));
+
+        CancelProcessResult response = processExecutionService.cancelProcess(executionId);
+
+        assertThat(response).isEqualTo(CancelProcessResult.NOT_CANCELLABLE);
+        verify(processExecutionTxService, never()).updateExecutionStatus(any(UUID.class), any(ProcessStatus.class));
+        verifyNoInteractions(notificationService);
     }
 }

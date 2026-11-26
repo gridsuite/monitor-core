@@ -6,30 +6,30 @@
  */
 package org.gridsuite.monitor.worker.server.services;
 
-import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.test.EurostagTutorialExample1Factory;
 import org.gridsuite.monitor.worker.server.clients.S3RestClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.function.ThrowingConsumer;
-
-import java.io.InputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
@@ -38,77 +38,142 @@ import static org.mockito.Mockito.verify;
 class S3ServiceTest {
     @Mock
     S3RestClient s3RestClient;
+    @Spy
+    FileService fileService;
+    @Mock
+    ThrowingConsumer<Path> writer;
 
-    @InjectMocks
     S3Service s3Service;
 
     @TempDir
     Path testDir;
 
+    @BeforeEach
+    void setUp() {
+        s3Service = new S3Service(s3RestClient, fileService);
+    }
+
     @Test
-    void testPathIsCompressedBeforeUploading() throws Exception {
-        // --- Inputs ---
-        Network network = EurostagTutorialExample1Factory.create();
-        String s3Key = "s3Key";
-        String fileNamePrefix = "fileName";
-        String fileNameSuffix = ".xiidm";
-        ThrowingConsumer<Path> writer =
-            path -> network.write("XIIDM", null, path);
-
-        // write network directly in expectedFile.xiidm for later assertions
-        Path expectedFilePath = testDir.resolve("expectedFile.xiidm");
-        network.write("XIIDM", null, expectedFilePath);
-
-        // Since temp files are deleted after "uploadFile", make a copy of the compressed file to assert its content
-        Path capturedCopy = Files.createTempFile(testDir, "test-copy", ".gz");
+    void testExportWritesBeforeCompressingAndUploading() throws Exception {
         doAnswer(invocation -> {
-            Path uploaded = invocation.getArgument(0);
-            Files.copy(uploaded, capturedCopy, StandardCopyOption.REPLACE_EXISTING);
+            Path compressedFile = invocation.getArgument(0);
+            try (var input = new GZIPInputStream(Files.newInputStream(compressedFile))) {
+                assertEquals("network", new String(input.readAllBytes(), UTF_8));
+            }
             return null;
-        }).when(s3RestClient)
-            .uploadFile(any(Path.class), anyString(), anyString());
+        }).when(s3RestClient).uploadFile(any(), eq("s3Key"), eq("debug.xiidm.gz"));
 
-        // --- Method invocation ---
-        s3Service.exportCompressedToS3(s3Key, fileNamePrefix, fileNameSuffix, writer);
+        s3Service.exportCompressedToS3("s3Key", "debug", ".xiidm", path -> Files.writeString(path, "network"));
 
-        // --- Assertions ---
-        verify(s3RestClient).uploadFile(any(), eq(s3Key), eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz")));
-        try (InputStream in = new GZIPInputStream(Files.newInputStream(capturedCopy))) {
-            String uncompressedContent = new String(in.readAllBytes(), UTF_8);
-            assertThat(uncompressedContent).isNotNull();
-            assertThat(uncompressedContent).isEqualTo(Files.readString(expectedFilePath));
+        ArgumentCaptor<Path> source = ArgumentCaptor.captor();
+        ArgumentCaptor<Path> compressedFile = ArgumentCaptor.captor();
+        verify(fileService).compressFile(source.capture(), compressedFile.capture());
+        verify(s3RestClient).uploadFile(compressedFile.getValue(), "s3Key", "debug.xiidm.gz");
+        assertTemporaryFileDeleted(source.getValue());
+        assertTemporaryFileDeleted(compressedFile.getValue());
+    }
+
+    @Test
+    void testExportCleansUpWhenWriterFails() throws Exception {
+        RuntimeException failure = new RuntimeException("Export failed");
+        doThrow(failure).when(writer).accept(any());
+
+        assertSame(failure, assertThrows(RuntimeException.class,
+            () -> s3Service.exportCompressedToS3("s3Key", "debug", ".xiidm", writer)));
+
+        ArgumentCaptor<Path> source = ArgumentCaptor.captor();
+        verify(writer).accept(source.capture());
+        assertTemporaryFileDeleted(source.getValue());
+        verify(fileService, never()).compressFile(any(), any());
+        verifyNoInteractions(s3RestClient);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"compression", "upload"})
+    void testExportCleansUpAndPropagatesFailure(String failingStage) throws Exception {
+        IOException failure = new IOException("Export failed");
+        switch (failingStage) {
+            case "compression" -> doThrow(failure).when(fileService).compressFile(any(), any());
+            case "upload" -> doThrow(failure).when(s3RestClient).uploadFile(any(), eq("s3Key"), eq("debug.xiidm.gz"));
+            default -> throw new IllegalArgumentException(failingStage);
+        }
+
+        assertSame(failure, assertThrows(IOException.class,
+            () -> s3Service.exportCompressedToS3("s3Key", "debug", ".xiidm", writer)));
+
+        ArgumentCaptor<Path> source = ArgumentCaptor.captor();
+        ArgumentCaptor<Path> compressedFile = ArgumentCaptor.captor();
+        verify(fileService).compressFile(source.capture(), compressedFile.capture());
+        assertTemporaryFileDeleted(source.getValue());
+        assertTemporaryFileDeleted(compressedFile.getValue());
+        if ("compression".equals(failingStage)) {
+            verifyNoInteractions(s3RestClient);
         }
     }
 
     @Test
-    void testTempFilesAreDeletedAfterExecution() throws Exception {
+    void testFileIsCompressedBeforeUploading() throws Exception {
         // --- Inputs ---
-        AtomicReference<Path> debugFileToUplad = new AtomicReference<>();
-        AtomicReference<Path> debugTempDir = new AtomicReference<>();
         String s3Key = "s3Key";
-        String fileNamePrefix = "fileName";
-        String fileNameSuffix = ".test";
-
-        ThrowingConsumer<Path> writer = path -> {
-            debugFileToUplad.set(path);
-            debugTempDir.set(path.getParent());
-            Files.writeString(path, "hello");
-        };
+        String uploadedFileName = "debug.xiidm";
+        Path source = testDir.resolve(uploadedFileName);
+        Files.writeString(source, "hello");
 
         // --- Method invocation ---
-        s3Service.exportCompressedToS3(s3Key, fileNamePrefix, fileNameSuffix, writer);
+        s3Service.compressAndUploadToS3(source, s3Key, uploadedFileName);
 
         // --- Assertions ---
-        ArgumentCaptor<Path> compressedDebugFileToUploadCaptor = ArgumentCaptor.forClass(Path.class);
-        verify(s3RestClient).uploadFile(
-            compressedDebugFileToUploadCaptor.capture(),
-            eq(s3Key),
-            eq(String.join("", fileNamePrefix, fileNameSuffix, ".gz"))
-        );
-        Path compressedDebugFileToUpload = compressedDebugFileToUploadCaptor.getValue();
+        ArgumentCaptor<Path> compressedFile = ArgumentCaptor.captor();
+        verify(s3RestClient).uploadFile(compressedFile.capture(), eq(s3Key), eq(uploadedFileName));
+        verify(fileService).compressFile(source, compressedFile.getValue());
+        assertTemporaryFileDeleted(compressedFile.getValue());
+        assertTrue(Files.exists(source));
+    }
 
-        assertThat(Files.exists(compressedDebugFileToUpload)).isFalse();
-        assertThat(Files.exists(debugFileToUplad.get())).isFalse();
-        assertThat(Files.exists(debugTempDir.get())).isFalse();
+    @Test
+    void testDirectoryIsCompressedBeforeUploading() throws Exception {
+        // --- Inputs ---
+        String s3Key = "s3Key";
+        String uploadedFileName = "debug.zip";
+        Path source = testDir.resolve("debug");
+        Files.createDirectory(source);
+        Files.writeString(source.resolve("result.txt"), "hello");
+
+        // --- Method invocation ---
+        s3Service.compressAndUploadToS3(source, s3Key, uploadedFileName);
+
+        // --- Assertions ---
+        ArgumentCaptor<Path> compressedFile = ArgumentCaptor.captor();
+        verify(s3RestClient).uploadFile(compressedFile.capture(), eq(s3Key), eq(uploadedFileName));
+        verify(fileService).compressDirectory(source, compressedFile.getValue());
+        assertTemporaryFileDeleted(compressedFile.getValue());
+        assertTrue(Files.exists(source.resolve("result.txt")));
+    }
+
+    @Test
+    void testTempFileIsDeletedEvenIfUploadFails() throws Exception {
+        // --- Inputs ---
+        String s3Key = "s3Key";
+        String uploadedFileName = "debug.xiidm";
+        Path source = testDir.resolve(uploadedFileName);
+        Files.writeString(source, "hello");
+
+        doThrow(new RuntimeException("Upload failed")).when(s3RestClient)
+            .uploadFile(any(), anyString(), anyString());
+
+        // --- Method invocation & Assertion ---
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
+            () -> s3Service.compressAndUploadToS3(source, s3Key, uploadedFileName));
+
+        // --- Assertions ---
+        ArgumentCaptor<Path> compressedFile = ArgumentCaptor.captor();
+        verify(s3RestClient).uploadFile(compressedFile.capture(), eq(s3Key), eq(uploadedFileName));
+        assertTemporaryFileDeleted(compressedFile.getValue());
+        assertTrue(Files.exists(source));
+    }
+
+    private void assertTemporaryFileDeleted(Path path) {
+        assertFalse(Files.exists(path));
+        assertFalse(Files.exists(path.getParent()));
     }
 }

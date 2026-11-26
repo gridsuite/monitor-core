@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,15 +38,16 @@ class ResultServiceTest {
     void getResultShouldReturnResultFromCorrectProvider() {
         UUID resultId = UUID.randomUUID();
         String expectedResult = "{\"result\": \"security analysis data\"}";
-        when(resultProvider.getResult(resultId)).thenReturn(expectedResult);
+        ResultQueryParams queryParams = new ResultQueryParams("NMK_CONTINGENCIES", Pageable.unpaged(), null);
+        when(resultProvider.getResult(resultId, queryParams)).thenReturn(expectedResult);
         when(resultProvider.getType()).thenReturn(ResultType.SECURITY_ANALYSIS);
         resultService = new ResultService(List.of(resultProvider));
         ResultInfos resultInfos = new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS);
 
-        String result = resultService.getResult(resultInfos);
+        String result = resultService.getResult(resultInfos, queryParams);
 
         assertThat(result).isEqualTo(expectedResult);
-        verify(resultProvider).getResult(resultId);
+        verify(resultProvider).getResult(resultId, queryParams);
     }
 
     @Test
@@ -54,8 +56,8 @@ class ResultServiceTest {
         ResultInfos resultInfos = new ResultInfos(resultId, ResultType.SECURITY_ANALYSIS);
 
         ResultService emptyService = new ResultService(List.of());
-
-        assertThatThrownBy(() -> emptyService.getResult(resultInfos))
+        ResultQueryParams resultQueryParams = new ResultQueryParams("NMK_CONTINGENCIES", Pageable.unpaged(), null);
+        assertThatThrownBy(() -> emptyService.getResult(resultInfos, resultQueryParams))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported result type: " + ResultType.SECURITY_ANALYSIS);
     }

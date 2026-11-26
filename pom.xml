@@ -47,12 +47,33 @@
         <maven.jib.version>3.5.1</maven.jib.version>
         <jib.from.image>powsybl/java:4.0.0</jib.from.image>
         <gridsuite-dependencies.version>51.2.0-SNAPSHOT</gridsuite-dependencies.version>
+        <!-- FIXME remove this in the next gridsuite-dependencies update -->
+        <gridsuite-network-modification.version>2.7.0</gridsuite-network-modification.version>
+        <!-- FIXME remove this in the next gridsuite-dependencies update -->
+        <gridsuite-filter.version>2.0.0</gridsuite-filter.version>
+        <!-- FIXME remove this in the next gridsuite-dependencies update -->
+        <gridsuite-actions.version>0.11.0</gridsuite-actions.version>
         <sonar.organization>gridsuite</sonar.organization>
         <sonar.projectKey>org.gridsuite:monitor-core</sonar.projectKey>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.gridsuite</groupId>
+                <artifactId>gridsuite-network-modification</artifactId>
+                <version>${gridsuite-network-modification.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridsuite</groupId>
+                <artifactId>gridsuite-filter</artifactId>
+                <version>${gridsuite-filter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.gridsuite</groupId>
+                <artifactId>gridsuite-actions</artifactId>
+                <version>${gridsuite-actions.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.gridsuite</groupId>
                 <artifactId>gridsuite-dependencies</artifactId>
@@ -92,4 +113,16 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jacoco</id>
+            <modules>
+                <module>monitor-coverage</module>
+            </modules>
+            <properties>
+                <sonar.coverage.jacoco.xmlReportPaths>${maven.multiModuleProjectDirectory}/monitor-coverage/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+            </properties>
+        </profile>
+    </profiles>
 </project>

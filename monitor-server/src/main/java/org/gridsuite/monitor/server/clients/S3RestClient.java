@@ -6,6 +6,8 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
@@ -22,6 +24,8 @@ import java.util.zip.ZipOutputStream;
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
 public class S3RestClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3RestClient.class);
+
     private final S3Client s3Client;
 
     private final String bucketName;
@@ -85,5 +89,25 @@ public class S3RestClient {
         } while (Boolean.TRUE.equals(response.isTruncated())); // S3 pagination, this loop ends if this is the last page
 
         return filesS3Keys;
+    }
+
+    public void deleteDirectory(String directoryKey) {
+        List<ObjectIdentifier> objectsToDelete = getFilesKeysInDirectory(directoryKey)
+                .stream()
+                .map(key -> ObjectIdentifier.builder().key(key).build())
+                .toList();
+
+        if (!objectsToDelete.isEmpty()) {
+            DeleteObjectsResponse response = s3Client.deleteObjects(DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(delete -> delete.objects(objectsToDelete))
+                    .build());
+
+            if (!response.errors().isEmpty()) {
+                LOGGER.error("S3 partial deletion failure for directory '{}': {} object(s) could not be deleted: {}",
+                        directoryKey, response.errors().size(), response.errors());
+                throw S3Exception.builder().message("S3 deletion failed for " + response.errors().size() + " object(s) in directory: " + directoryKey).build();
+            }
+        }
     }
 }

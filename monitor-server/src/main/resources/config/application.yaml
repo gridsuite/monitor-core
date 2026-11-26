@@ -5,6 +5,8 @@ spring:
     converters:
       preferred-json-mapper: jackson2
   cloud:
+    function:
+      definition: consumeMonitorWorkerUpdate;consumeAutomaticExecution;consumeSecurityAnalysisRunDlq;consumeLoadFlowRunDlq;consumeShortCircuitRunDlq
     stream:
       bindings:
         publishRunSecurityAnalysis-out-0:
@@ -15,10 +17,31 @@ spring:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run
         publishMonitorUpdate-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.update
+        publishProcessCancel-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.cancel
+        publishAutomaticExecution-out-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.automatic-execution
         consumeMonitorWorkerUpdate-in-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.worker.update
           group: monitorWorkerUpdateGroup
-      output-bindings: publishRunSecurityAnalysis-out-0;publishRunLoadFlow-out-0;publishRunShortCircuit-out-0;publishMonitorUpdate-out-0
+        consumeAutomaticExecution-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.automatic-execution
+          group: monitorAutomaticExecutionGroup
+        consumeSecurityAnalysisRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.securityanalysis.run.dlx
+          group: dlq
+        consumeLoadFlowRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.loadflow.run.dlx
+          group: dlq
+        consumeShortCircuitRunDlq-in-0:
+          destination: ${powsybl-ws.rabbitmq.destination.prefix:}monitor.process.shortcircuit.run.dlx
+          group: dlq
+      output-bindings: publishRunSecurityAnalysis-out-0;publishRunLoadFlow-out-0;publishRunShortCircuit-out-0;publishMonitorUpdate-out-0;publishAutomaticExecution-out-0
+
+monitor:
+  automatic-execution:
+    interval: PT30M
+    case-uuid: 'f0d7fc6c-058d-4d77-b954-4b0f630eaa5b'
 
 powsybl-ws:
   database:

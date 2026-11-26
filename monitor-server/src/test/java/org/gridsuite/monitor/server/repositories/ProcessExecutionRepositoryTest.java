@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.repositories;
 
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
@@ -37,15 +38,35 @@ class ProcessExecutionRepositoryTest {
     private TestEntityManager entityManager;
 
     @Test
+    void shouldPersistLongFailureMessage() {
+        String failureMessage = "Connection refused: " + "details ".repeat(100);
+        ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
+            .id(UUID.randomUUID())
+            .status(ProcessStatus.FAILED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
+            .failureMessage(failureMessage)
+            .build();
+
+        executionRepository.save(execution);
+        entityManager.flush();
+        entityManager.clear();
+
+        ProcessExecutionEntity retrieved = executionRepository.findById(execution.getId()).orElseThrow();
+        assertThat(retrieved.getFailureMessage()).isEqualTo(failureMessage);
+    }
+
+    @Test
     void stepsShouldBeOrderedByStepOrder() {
         ProcessExecutionEntity execution = ProcessExecutionEntity.builder()
                 .id(UUID.randomUUID())
                 .type("SECURITY_ANALYSIS")
                 .caseUuid(UUID.randomUUID())
                 .status(ProcessStatus.RUNNING)
+                .triggerType(ProcessExecutionTriggerType.MANUAL)
                 .scheduledAt(Instant.now())
                 .steps(new ArrayList<>())
                 .build();
+        assertThat(execution.getTriggerType()).isEqualTo(ProcessExecutionTriggerType.MANUAL);
 
         // Add steps in non-sequential order (1 before 0)
         ProcessExecutionStepEntity step1 = ProcessExecutionStepEntity.builder()
@@ -92,6 +113,7 @@ class ProcessExecutionRepositoryTest {
             .type(ProcessType.SECURITY_ANALYSIS.name())
             .caseUuid(case1Uuid)
             .status(ProcessStatus.COMPLETED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env1")
             .scheduledAt(scheduledAt1)
             .startedAt(startedAt1)
@@ -109,6 +131,7 @@ class ProcessExecutionRepositoryTest {
             .type(ProcessType.LOADFLOW.name())
             .caseUuid(case2Uuid)
             .status(ProcessStatus.RUNNING)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env2")
             .scheduledAt(scheduledAt2)
             .startedAt(startedAt2)
@@ -124,6 +147,7 @@ class ProcessExecutionRepositoryTest {
             .type(ProcessType.SHORT_CIRCUIT.name())
             .caseUuid(case3Uuid)
             .status(ProcessStatus.SCHEDULED)
+            .triggerType(ProcessExecutionTriggerType.MANUAL)
             .executionEnvName("env3")
             .scheduledAt(scheduledAt3)
             .reportId(report3Uuid)

@@ -8,10 +8,12 @@ package org.gridsuite.monitor.server.services.processexecution;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionEntity;
 import org.gridsuite.monitor.server.entities.processexecution.ProcessExecutionStepEntity;
 import org.gridsuite.monitor.server.mappers.processexecution.ProcessExecutionMapper;
@@ -55,7 +57,15 @@ public class ProcessExecutionTxService {
     }
 
     @Transactional
-    public Optional<ProcessCreationResult> createExecution(UUID caseUuid, String userId, UUID processConfigId, UUID executionId, UUID reportId, boolean isDebug) {
+    public Optional<ProcessCreationResult> createExecution(
+        UUID caseUuid,
+        String userId,
+        UUID processConfigId,
+        UUID executionId,
+        UUID reportId,
+        boolean isDebug,
+        ProcessExecutionTriggerType triggerType
+    ) {
         Optional<PersistedProcessConfig> persistedProcessConfigOpt = processConfigService.getProcessConfig(processConfigId);
         if (persistedProcessConfigOpt.isPresent()) {
             PersistedProcessConfig persistedProcessConfig = persistedProcessConfigOpt.get();
@@ -70,6 +80,7 @@ public class ProcessExecutionTxService {
                 .caseUuid(caseUuid)
                 .processConfigId(persistedProcessConfig.id())
                 .status(ProcessStatus.SCHEDULED)
+                .triggerType(triggerType)
                 .scheduledAt(Instant.now())
                 .reportId(reportId)
                 .userId(userId)
@@ -84,9 +95,16 @@ public class ProcessExecutionTxService {
         return Optional.empty();
     }
 
+    /**
+     * @return true if the update was applied, false if it was rejected (forbidden transition) or the execution was not found
+     */
     @Transactional
-    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
-        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+    public boolean updateExecution(UUID executionId, ProcessExecutionStatusUpdate payload) {
+        return processExecutionRepository.findById(executionId).map(execution -> {
+            if (!isStatusUpdateAllowed(execution, payload.getStatus())) {
+                LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), payload.getStatus());
+                return false;
+            }
             execution.setStatus(payload.getStatus());
             if (payload.getExecutionEnvName() != null) {
                 execution.setExecutionEnvName(payload.getExecutionEnvName());
@@ -98,7 +116,66 @@ public class ProcessExecutionTxService {
                 execution.setCompletedAt(payload.getCompletedAt());
             }
             processExecutionRepository.save(execution);
-        }, () -> LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId));
+            return true;
+        }).orElseGet(() -> {
+            LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId);
+            return false;
+        });
+    }
+
+    /**
+     * @return true if the update was applied, false if it was rejected (forbidden transition) or the execution was not found
+     */
+    @Transactional
+    public void updateExecutionStatus(UUID executionId, ProcessStatus status) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> {
+            if (!isStatusUpdateAllowed(execution, status)) {
+                LOGGER.error("Forbidden status transition for execution {}: {} -> {}, update ignored", execution.getId(), execution.getStatus(), status);
+                return;
+            }
+            execution.setStatus(status);
+            processExecutionRepository.save(execution);
+        }, () -> {
+            LOGGER.warn("Execution {} not found in DB, ignoring status update", executionId);
+        });
+    }
+
+    private boolean isStatusUpdateAllowed(ProcessExecutionEntity execution, ProcessStatus requested) {
+        ProcessStatus current = execution.getStatus();
+        return current == null || current.canTransitionTo(requested);
+    }
+
+    @Transactional
+    public void failExecutionFromDeadLetter(UUID executionId, String failureMessage) {
+        processExecutionRepository.findById(executionId).ifPresentOrElse(execution -> markExecutionFailed(execution, failureMessage),
+            () -> LOGGER.warn("Execution {} not found in DB, ignoring dead-letter message", executionId));
+    }
+
+    private void markExecutionFailed(ProcessExecutionEntity execution, String failureMessage) {
+        if (execution.getStatus() == ProcessStatus.COMPLETED
+                || execution.getStatus() == ProcessStatus.CANCELED
+                || execution.getStatus() == ProcessStatus.FAILED) {
+            // A dead-letter message must not overwrite an execution in terminal state
+            // This can happen if an execution throws an exception that is then forwarded to the dead-letter queue,
+            // but the execution was already marked as FAILED or CANCELED by the worker
+            return;
+        }
+
+        Instant failedAt = Instant.now();
+        execution.setStatus(ProcessStatus.FAILED);
+        execution.setFailureMessage(failureMessage);
+        execution.setCompletedAt(failedAt);
+        Optional.ofNullable(execution.getSteps()).orElse(List.of()).forEach(step -> {
+            if (step.getStatus() == StepStatus.RUNNING) {
+                step.setStatus(StepStatus.FAILED);
+                step.setCompletedAt(failedAt);
+            } else if (step.getStatus() == StepStatus.SCHEDULED) {
+                step.setStatus(StepStatus.SKIPPED);
+                step.setStartedAt(failedAt);
+                step.setCompletedAt(failedAt);
+            }
+        });
+        processExecutionRepository.save(execution);
     }
 
     @Transactional
@@ -173,6 +250,21 @@ public class ProcessExecutionTxService {
         return Optional.of(infos);
     }
 
+    @Transactional
+    public void clearResourceReferences(UUID executionId) {
+        processExecutionRepository.findById(executionId).ifPresent(execution -> {
+            execution.setReportId(null);
+            execution.setDebugFileLocation(null);
+            processExecutionRepository.save(execution);
+        });
+    }
+
+    public Optional<ProcessDeletionInfos> getProcessDeletionInfos(UUID executionId) {
+        Optional<ProcessExecutionEntity> opt =
+            processExecutionRepository.findById(executionId);
+        return opt.map(ProcessDeletionInfos::fromProcessExecutionEntity);
+    }
+
     private void updateStep(ProcessExecutionEntity execution, ProcessExecutionStepEntity stepEntity) {
         List<ProcessExecutionStepEntity> steps = Optional.ofNullable(execution.getSteps()).orElseGet(() -> {
             List<ProcessExecutionStepEntity> newSteps = new ArrayList<>();
@@ -183,7 +275,32 @@ public class ProcessExecutionTxService {
             .filter(s -> s.getId().equals(stepEntity.getId()))
             .findFirst()
             .ifPresentOrElse(
-                existingStep -> processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep),
+                existingStep -> {
+                    if (isStatusUpdateAllowed(existingStep, stepEntity.getStatus())) {
+                        processExecutionStepMapper.updateEntityFromEntity(stepEntity, existingStep);
+                    } else {
+                        LOGGER.error("Forbidden status transition for step {}: {} -> {}, update ignored", existingStep.getId(), existingStep.getStatus(), stepEntity.getStatus());
+                    }
+                },
                 () -> steps.add(stepEntity));
+    }
+
+    private boolean isStatusUpdateAllowed(ProcessExecutionStepEntity existingStep, StepStatus requested) {
+        StepStatus current = existingStep.getStatus();
+        return current == null || current.canTransitionTo(requested);
+    }
+
+    @Transactional
+    public Optional<UUID> deleteExecutionSteps(UUID executionId) {
+        Optional<ProcessExecutionEntity> executionOpt =
+                processExecutionRepository.findById(executionId);
+
+        if (executionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        ProcessExecutionEntity execution = executionOpt.get();
+        execution.getSteps().clear();
+        processExecutionRepository.save(execution);
+        return Optional.of(executionId);
     }
 }

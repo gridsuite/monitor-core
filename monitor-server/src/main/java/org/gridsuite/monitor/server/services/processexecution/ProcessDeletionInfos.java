@@ -16,14 +16,15 @@ import java.util.UUID;
 /**
  * @author Kevin Le Saulnier <kevin.le-saulnier at rte-france.com>
  */
-public record ProcessDeletionInfos(UUID reportId, List<ResultInfos> resultInfos) {
+public record ProcessDeletionInfos(UUID reportId, List<ResultInfos> resultInfos, String debugLocationFile) {
     public static ProcessDeletionInfos fromProcessExecutionEntity(ProcessExecutionEntity entity) {
         return new ProcessDeletionInfos(
             entity.getReportId(),
             Optional.ofNullable(entity.getSteps()).orElse(List.of()).stream()
                 .filter(step -> step.getResultId() != null && step.getResultType() != null)
                 .map(step -> new ResultInfos(step.getResultId(), step.getResultType()))
-                .toList()
+                .toList(),
+                entity.getDebugFileLocation()
         );
     }
 }

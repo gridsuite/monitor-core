@@ -9,21 +9,26 @@ package org.gridsuite.monitor.server.services.processexecution;
 import com.powsybl.commons.PowsyblException;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
 import org.gridsuite.monitor.server.clients.S3RestClient;
 import org.gridsuite.monitor.server.clients.UserIdentityRestClient;
-import org.gridsuite.monitor.server.dto.processexecution.ProcessExecution;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
 import org.gridsuite.monitor.server.dto.report.Report;
 import org.gridsuite.monitor.server.dto.report.ReportPage;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentities;
 import org.gridsuite.monitor.server.dto.useridentity.UserIdentity;
 import org.gridsuite.monitor.server.messaging.NotificationService;
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.gridsuite.monitor.server.services.result.ResultService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -59,12 +64,18 @@ public class ProcessExecutionService {
         this.userIdentityRestClient = userIdentityRestClient;
     }
 
-    public Optional<UUID> executeProcess(UUID caseUuid, String userId, UUID processConfigId, boolean isDebug) {
+    public Optional<UUID> executeProcess(
+        UUID caseUuid,
+        String userId,
+        UUID processConfigId,
+        boolean isDebug,
+        ProcessExecutionTriggerType triggerType
+    ) {
         UUID executionId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
 
         Optional<ProcessCreationResult> result = processExecutionTxService.createExecution(
-            caseUuid, userId, processConfigId, executionId, reportId, isDebug
+            caseUuid, userId, processConfigId, executionId, reportId, isDebug, triggerType
         );
 
         if (result.isEmpty()) {
@@ -84,19 +95,32 @@ public class ProcessExecutionService {
         return Optional.of(executionId);
     }
 
-    public void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate payload) {
-        processExecutionTxService.updateExecutionStatus(executionId, payload);
-        notificationService.sendProcessUpdatedMessage(executionId, payload.getProcessType());
+    public void updateExecutionStatus(UUID executionId, ProcessType processType, ProcessExecutionStatusUpdate payload) {
+        boolean wasExecutionUpdated = processExecutionTxService.updateExecution(executionId, payload);
+        if (!wasExecutionUpdated) {
+            return;
+        }
+        if (payload.getStatus() == ProcessStatus.CANCELED) {
+            processExecutionTxService.getProcessDeletionInfos(executionId).ifPresent(this::cleanExecution);
+            processExecutionTxService.deleteExecutionSteps(executionId);
+            processExecutionTxService.clearResourceReferences(executionId);
+        }
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
-    public void updateStepStatus(UUID executionId, ProcessExecutionStep processExecutionStep) {
+    public void failExecutionFromDeadLetter(UUID executionId, ProcessType processType, String failureMessage) {
+        processExecutionTxService.failExecutionFromDeadLetter(executionId, failureMessage);
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
+    }
+
+    public void updateStepStatus(UUID executionId, ProcessType processType, ProcessExecutionStep processExecutionStep) {
         processExecutionTxService.updateStepStatus(executionId, processExecutionStep);
-        notificationService.sendProcessUpdatedMessage(executionId, null);
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
-    public void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> processExecutionSteps) {
+    public void updateStepsStatuses(UUID executionId, ProcessType processType, List<ProcessExecutionStep> processExecutionSteps) {
         processExecutionTxService.updateStepsStatuses(executionId, processExecutionSteps);
-        notificationService.sendProcessUpdatedMessage(executionId, null);
+        notificationService.sendProcessUpdatedMessage(executionId, processType);
     }
 
     public ReportPage getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {
@@ -117,11 +141,18 @@ public class ProcessExecutionService {
                 .map(reportRestClient::getReportSeverities);
     }
 
-    public Optional<List<String>> getResults(UUID executionId) {
+    public Optional<String> getResults(UUID executionId, ResultQueryParams queryParams) {
         Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
-        return resultInfos.map(results -> results.stream()
-            .map(resultService::getResult)
-            .toList());
+        // Return only the first result until multi-result support is implemented
+        return resultInfos.filter(results -> !results.isEmpty())
+            .map(results -> resultService.getResult(results.getFirst(), queryParams));
+    }
+
+    public Optional<byte[]> exportResults(UUID executionId, ResultQueryParams queryParams, String csvTranslations) {
+        Optional<List<ResultInfos>> resultInfos = processExecutionTxService.getResultInfos(executionId);
+        // Return only the first result until multi-result support is implemented
+        return resultInfos.filter(results -> !results.isEmpty())
+            .map(results -> resultService.exportResult(results.getFirst(), queryParams, csvTranslations));
     }
 
     public Optional<byte[]> getDebugInfos(UUID executionId) {
@@ -148,6 +179,10 @@ public class ProcessExecutionService {
         return processExecutions.stream().map(execution -> execution.withUserIdentity(getFullName(userIdentities, execution.userId()))).toList();
     }
 
+    public Optional<ProcessStatus> getExecutionStatus(UUID executionId) {
+        return processExecutionTxService.getExecution(executionId).map(ProcessExecution::status);
+    }
+
     public Optional<ProcessExecution> getExecution(UUID executionId) {
         Optional<ProcessExecution> processExecution = processExecutionTxService.getExecution(executionId);
         return processExecution.map(execution -> {
@@ -163,12 +198,55 @@ public class ProcessExecutionService {
     public Optional<UUID> deleteExecution(UUID executionId) {
         Optional<ProcessDeletionInfos> executionDeletionData = processExecutionTxService.deleteExecution(executionId);
         if (executionDeletionData.isPresent()) {
-            executionDeletionData.get().resultInfos().forEach(resultService::deleteResult);
-            if (executionDeletionData.get().reportId() != null) {
-                reportRestClient.deleteReport(executionDeletionData.get().reportId());
-            }
+            cleanExecution(executionDeletionData.get());
             return Optional.of(executionId);
         }
         return Optional.empty();
+    }
+
+    private void cleanExecution(ProcessDeletionInfos deletionInfos) {
+        deletionInfos.resultInfos().forEach(resultService::deleteResult);
+        if (deletionInfos.reportId() != null) {
+            reportRestClient.deleteReport(deletionInfos.reportId());
+        }
+        if (deletionInfos.debugLocationFile() != null) {
+            s3RestClient.deleteDirectory(deletionInfos.debugLocationFile());
+        }
+    }
+
+    public CancelProcessResult cancelProcess(UUID executionId) {
+        ProcessExecution execution = processExecutionTxService.getExecution(executionId).orElse(null);
+
+        if (execution == null) {
+            return CancelProcessResult.NOT_FOUND;
+        }
+
+        ProcessStatus currentStatus = execution.status();
+        return switch (currentStatus) {
+            case SCHEDULED -> {
+                ProcessType processType = ProcessType.valueOf(execution.type());
+                updateExecutionStatus(executionId, processType,
+                    new ProcessExecutionStatusUpdate(ProcessStatus.CANCELED, null, null, Instant.now()));
+                notificationService.sendProcessCancelMessage(executionId);
+                yield CancelProcessResult.CANCEL_REQUESTED;
+            }
+            case RUNNING -> {
+                processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELING);
+                notificationService.sendProcessCancelMessage(executionId);
+                notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
+                yield CancelProcessResult.CANCEL_REQUESTED;
+            }
+            case CANCELED -> {
+                // sanity check in case the status was updated but the worker is still running
+                notificationService.sendProcessCancelMessage(executionId);
+                yield CancelProcessResult.ALREADY_CANCELED;
+            }
+            case CANCELING -> {
+                // sanity check in case the status was updated but the worker is still running
+                notificationService.sendProcessCancelMessage(executionId);
+                yield CancelProcessResult.ALREADY_CANCELING;
+            }
+            case COMPLETED, FAILED -> CancelProcessResult.NOT_CANCELLABLE;
+        };
     }
 }

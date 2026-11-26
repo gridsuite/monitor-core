@@ -6,6 +6,7 @@
  */
 package org.gridsuite.monitor.server.clients;
 
+import org.gridsuite.monitor.server.services.result.ResultQueryParams;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -30,11 +31,35 @@ public class ShortCircuitRestClient {
             .build();
     }
 
-    public String getResult(UUID resultUuid) {
+    public String getResult(UUID resultUuid, ResultQueryParams queryParams) {
         return restClient.get()
-            .uri("/results/{resultUuid}", resultUuid)
-            .retrieve()
-            .body(String.class);
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        "/results/{resultUuid}/fault_results/paged",
+                        resultUuid,
+                        queryParams.shortCircuitResultType().name(),
+                        queryParams,
+                        true,
+                        true
+                ))
+                .retrieve()
+                .body(String.class);
+    }
+
+    public byte[] exportResult(UUID resultUuid, ResultQueryParams queryParams, String csvTranslations) {
+        return restClient.post()
+                .uri(uriBuilder -> ResultUriBuilder.build(
+                        uriBuilder,
+                        "/results/{resultUuid}/csv",
+                        resultUuid,
+                        queryParams.shortCircuitResultType().name(),
+                        queryParams,
+                        false,
+                        false
+                ))
+                .body(csvTranslations)
+                .retrieve()
+                .body(byte[].class);
     }
 
     public void deleteResult(UUID resultUuid) {

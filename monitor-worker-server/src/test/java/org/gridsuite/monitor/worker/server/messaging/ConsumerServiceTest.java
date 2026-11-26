@@ -9,6 +9,7 @@ package org.gridsuite.monitor.worker.server.messaging;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.worker.server.orchestrator.ProcessExecutionService;
+import org.gridsuite.monitor.worker.server.orchestrator.TaskManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ class ConsumerServiceTest {
     @Mock
     private ProcessConfig processConfig;
 
+    @Mock
+    private TaskManager taskManager;
+
     private ConsumerService consumerService;
 
     @BeforeEach
@@ -47,5 +51,15 @@ class ConsumerServiceTest {
         consumer.accept(message);
 
         verify(processExecutionService).executeProcess(runMessage);
+    }
+
+    @Test
+    void consumeCancel() {
+        UUID executionId = UUID.randomUUID();
+        Message<UUID> message = MessageBuilder.withPayload(executionId).build();
+
+        consumerService.consumeCancel(taskManager).accept(message);
+
+        verify(taskManager).cancelTask(executionId);
     }
 }

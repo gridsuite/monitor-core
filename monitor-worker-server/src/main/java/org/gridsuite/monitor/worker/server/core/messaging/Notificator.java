@@ -8,6 +8,7 @@ package org.gridsuite.monitor.worker.server.core.messaging;
 
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdate;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,24 +25,27 @@ public interface Notificator {
      * Publish an update about the overall process execution status.
      *
      * @param executionId the process execution identifier used to correlate all updates of the same run
+     * @param processType the type of process being executed
      * @param update the execution status update payload (status, timestamps, environment, etc.)
      */
-    void updateExecutionStatus(UUID executionId, ProcessExecutionStatusUpdate update);
+    void updateExecutionStatus(UUID executionId, ProcessType processType, ProcessExecutionStatusUpdate update);
 
     /**
      * Publish a batch update containing the current statuses of all steps for an execution.
      *
      * @param executionId the process execution identifier used to correlate all updates of the same run
+     * @param processType the type of process being executed
      * @param steps the ordered list of step status snapshots to publish
      */
-    void updateStepsStatuses(UUID executionId, List<ProcessExecutionStep> steps);
+    void updateStepsStatuses(UUID executionId, ProcessType processType, List<ProcessExecutionStep> steps);
 
     /**
      * Publish an update for a single step status change (e.g. {@code RUNNING}, {@code COMPLETED},
      * {@code FAILED}, {@code SKIPPED}).
      *
      * @param executionId the process execution identifier used to correlate all updates of the same run
+     * @param processType the type of process being executed
      * @param step the step status snapshot to publish
      */
-    void updateStepStatus(UUID executionId, ProcessExecutionStep step);
+    void updateStepStatus(UUID executionId, ProcessType processType, ProcessExecutionStep step);
 }

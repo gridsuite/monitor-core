@@ -11,11 +11,7 @@ import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStatusUpdat
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecution;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTriggerType;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
-import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
-import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.commons.types.processexecution.*;
 import org.gridsuite.monitor.commons.types.result.ResultInfos;
 import org.gridsuite.monitor.commons.types.result.ResultType;
 import org.gridsuite.monitor.server.clients.ReportRestClient;
@@ -45,6 +41,8 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.gridsuite.monitor.commons.types.processexecution.UpdateProcessType.PROCESS_EXECUTION_UPDATED;
+import static org.gridsuite.monitor.commons.types.processexecution.UpdateProcessType.PROCESS_EXECUTION_STEPS_UPDATED;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -114,7 +112,7 @@ class ProcessExecutionServiceTest {
             any(UUID.class),
             eq(debugFileLocation)
         );
-        verify(notificationService).sendProcessUpdatedMessage(any(UUID.class), any(ProcessType.class));
+        verify(notificationService).sendProcessUpdatedMessage(any(UpdateProcessType.class), any(UUID.class), any(ProcessType.class));
     }
 
     @Test
@@ -124,7 +122,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.failExecutionFromDeadLetter(executionId, ProcessType.SHORT_CIRCUIT, failureMessage);
 
         verify(processExecutionTxService).failExecutionFromDeadLetter(executionId, failureMessage);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SHORT_CIRCUIT);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, ProcessType.SHORT_CIRCUIT);
     }
 
     @Test
@@ -138,7 +136,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecution(executionId, update);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -152,7 +150,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.updateExecutionStatus(executionId, ProcessType.SECURITY_ANALYSIS, update);
 
         verify(processExecutionTxService).updateExecution(executionId, update);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, ProcessType.SECURITY_ANALYSIS);
         verify(processExecutionTxService).deleteExecutionSteps(executionId);
         verify(processExecutionTxService).clearResourceReferences(executionId);
     }
@@ -168,7 +166,7 @@ class ProcessExecutionServiceTest {
         verify(processExecutionTxService, never()).getProcessDeletionInfos(any(UUID.class));
         verify(processExecutionTxService, never()).deleteExecutionSteps(any(UUID.class));
         verify(processExecutionTxService, never()).clearResourceReferences(any(UUID.class));
-        verify(notificationService, never()).sendProcessUpdatedMessage(any(UUID.class), any(ProcessType.class));
+        verify(notificationService, never()).sendProcessUpdatedMessage(any(UpdateProcessType.class), any(UUID.class), any(ProcessType.class));
     }
 
     @Test
@@ -204,7 +202,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.updateStepStatus(executionId, ProcessType.SECURITY_ANALYSIS, step);
 
         verify(processExecutionTxService).updateStepStatus(executionId, step);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_STEPS_UPDATED, executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -227,7 +225,7 @@ class ProcessExecutionServiceTest {
         processExecutionService.updateStepsStatuses(executionId, ProcessType.SECURITY_ANALYSIS, steps);
 
         verify(processExecutionTxService).updateStepsStatuses(executionId, steps);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_STEPS_UPDATED, executionId, ProcessType.SECURITY_ANALYSIS);
     }
 
     @Test
@@ -560,7 +558,7 @@ class ProcessExecutionServiceTest {
             update.getStatus() == ProcessStatus.CANCELED && update.getCompletedAt() != null));
         verify(processExecutionTxService).deleteExecutionSteps(executionId);
         verify(processExecutionTxService).clearResourceReferences(executionId);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, ProcessType.SECURITY_ANALYSIS);
         verify(notificationService).sendProcessCancelMessage(executionId);
     }
 
@@ -572,7 +570,7 @@ class ProcessExecutionServiceTest {
 
         assertThat(response).isEqualTo(CancelProcessResult.CANCEL_REQUESTED);
         verify(processExecutionTxService).updateExecutionStatus(executionId, ProcessStatus.CANCELING);
-        verify(notificationService).sendProcessUpdatedMessage(executionId, ProcessType.SECURITY_ANALYSIS);
+        verify(notificationService).sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, ProcessType.SECURITY_ANALYSIS);
         verify(notificationService).sendProcessCancelMessage(executionId);
     }
 

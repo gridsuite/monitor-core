@@ -37,6 +37,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.gridsuite.monitor.commons.types.processexecution.UpdateProcessType.PROCESS_EXECUTION_UPDATED;
+import static org.gridsuite.monitor.commons.types.processexecution.UpdateProcessType.PROCESS_EXECUTION_STEPS_UPDATED;
+
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
@@ -90,7 +93,7 @@ public class ProcessExecutionService {
             result.get().debugLocationFile()
         );
 
-        notificationService.sendProcessUpdatedMessage(executionId, result.get().processConfig().processType());
+        notificationService.sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, result.get().processConfig().processType());
 
         return Optional.of(executionId);
     }
@@ -105,22 +108,22 @@ public class ProcessExecutionService {
             processExecutionTxService.deleteExecutionSteps(executionId);
             processExecutionTxService.clearResourceReferences(executionId);
         }
-        notificationService.sendProcessUpdatedMessage(executionId, processType);
+        notificationService.sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, processType);
     }
 
     public void failExecutionFromDeadLetter(UUID executionId, ProcessType processType, String failureMessage) {
         processExecutionTxService.failExecutionFromDeadLetter(executionId, failureMessage);
-        notificationService.sendProcessUpdatedMessage(executionId, processType);
+        notificationService.sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, processType);
     }
 
     public void updateStepStatus(UUID executionId, ProcessType processType, ProcessExecutionStep processExecutionStep) {
         processExecutionTxService.updateStepStatus(executionId, processExecutionStep);
-        notificationService.sendProcessUpdatedMessage(executionId, processType);
+        notificationService.sendProcessUpdatedMessage(PROCESS_EXECUTION_STEPS_UPDATED, executionId, processType);
     }
 
     public void updateStepsStatuses(UUID executionId, ProcessType processType, List<ProcessExecutionStep> processExecutionSteps) {
         processExecutionTxService.updateStepsStatuses(executionId, processExecutionSteps);
-        notificationService.sendProcessUpdatedMessage(executionId, processType);
+        notificationService.sendProcessUpdatedMessage(PROCESS_EXECUTION_STEPS_UPDATED, executionId, processType);
     }
 
     public ReportPage getLogs(UUID reportId, String messageFilter, Set<String> severityLevelsFilter, int page, int size) {
@@ -233,7 +236,7 @@ public class ProcessExecutionService {
             case RUNNING -> {
                 processExecutionTxService.updateExecutionStatus(executionId, ProcessStatus.CANCELING);
                 notificationService.sendProcessCancelMessage(executionId);
-                notificationService.sendProcessUpdatedMessage(executionId, ProcessType.valueOf(execution.type()));
+                notificationService.sendProcessUpdatedMessage(PROCESS_EXECUTION_UPDATED, executionId, ProcessType.valueOf(execution.type()));
                 yield CancelProcessResult.CANCEL_REQUESTED;
             }
             case CANCELED -> {

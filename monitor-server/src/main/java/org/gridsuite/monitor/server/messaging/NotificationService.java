@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.gridsuite.monitor.commons.types.messaging.ProcessRunMessage;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.commons.types.processexecution.UpdateProcessType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.stream.function.StreamBridge;
@@ -54,9 +55,9 @@ public class NotificationService {
         publisher.send(PUBLISH_AUTOMATIC_EXECUTION_OUT_0, caseUuid.toString());
     }
 
-    public void sendProcessUpdatedMessage(UUID executionId, ProcessType processType) {
+    public void sendProcessUpdatedMessage(UpdateProcessType updateProcessType, UUID executionId, ProcessType processType) {
         Message<?> message = MessageBuilder.withPayload("")
-            .setHeader(UPDATE_TYPE, "PROCESS_EXECUTION_UPDATED")
+            .setHeader(UPDATE_TYPE, updateProcessType.name())
             .setHeader(PROCESS_EXECUTION_ID, executionId)
             .setHeader(PROCESS_TYPE, processType.name())
             .build();

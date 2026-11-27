@@ -63,4 +63,11 @@ public class NotificationService {
 
         publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
     }
+
+    public void sendAutomaticProcessConfigUpdateMessage() {
+        Message<?> message = MessageBuilder.withPayload("")
+            .setHeader(UPDATE_TYPE, "AUTOMATIC_PROCESS_CONFIG_UPDATED")
+            .build();
+        publisher.send(PUBLISH_MONITOR_UPDATE_OUT_0, message);
+    }
 }

@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package org.gridsuite.monitor.server.dto.processconfig;
+
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
+ */
+public record AutomaticProcessConfigInfos(
+    UUID processConfigUuid,
+    String processConfigName,
+    ProcessType processType,
+    Instant changedAt,
+    String changedBy
+) {
+    public AutomaticProcessConfigInfos withProcessConfigName(String name) {
+        return new AutomaticProcessConfigInfos(processConfigUuid, name, processType, changedAt, changedBy);
+    }
+}

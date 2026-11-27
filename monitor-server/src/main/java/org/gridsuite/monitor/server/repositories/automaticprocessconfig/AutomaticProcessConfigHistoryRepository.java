@@ -6,13 +6,19 @@
  */
 package org.gridsuite.monitor.server.repositories.automaticprocessconfig;
 
+import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.server.entities.automaticprocessconfig.AutomaticProcessConfigHistoryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * @author Radouane Khouadri <redouane.khouadri_externe at rte-france.com>
  */
 public interface AutomaticProcessConfigHistoryRepository extends JpaRepository<AutomaticProcessConfigHistoryEntity, UUID> {
+    List<AutomaticProcessConfigHistoryEntity> findAllByOrderByChangedAtDesc();
+
+    Optional<AutomaticProcessConfigHistoryEntity> findFirstByProcessTypeOrderByChangedAtDesc(ProcessType processType);
 }

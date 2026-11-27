@@ -12,11 +12,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.dto.processconfig.AutomaticProcessConfigInfos;
 import org.gridsuite.monitor.server.services.automaticprocessconfig.AutomaticProcessConfigService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,7 +35,7 @@ public class AutomaticProcessConfigController {
         this.automaticProcessConfigService = automaticProcessConfigService;
     }
 
-    @PutMapping(path = "/{processType}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(path = "/{processType}", consumes = MediaType.TEXT_PLAIN_VALUE)
     @Operation(summary = "Set the process config used by automatic executions")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Automatic process config was updated"),
@@ -41,23 +43,26 @@ public class AutomaticProcessConfigController {
         @ApiResponse(responseCode = "404", description = "Process config was not found")})
     public ResponseEntity<Void> updateAutomaticProcessConfig(
             @PathVariable @Parameter(description = "process type") ProcessType processType,
-            @RequestBody UUID configUuid,
+            @RequestBody String configUuid,
             @RequestHeader(MonitorApi.HEADER_USER_ID) String userId
     ) {
-        Optional<UUID> updated = automaticProcessConfigService.update(configUuid, processType, userId);
+        Optional<UUID> updated = automaticProcessConfigService.update(UUID.fromString(configUuid), processType, userId);
         return updated.isPresent() ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get the process config used by automatic executions")
+    @Operation(summary = "Get the process configs currently used by automatic executions")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Automatic process config"),
-        @ApiResponse(responseCode = "404", description = "Automatic process config was not found")})
-    public ResponseEntity<UUID> getAutomaticProcessConfig(
-        @Parameter(description = "Process type") @RequestParam(name = "processType") ProcessType processType
-    ) {
-        return automaticProcessConfigService.get(processType)
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
+        @ApiResponse(responseCode = "200", description = "Current automatic process configs")})
+    public ResponseEntity<List<AutomaticProcessConfigInfos>> getAutomaticProcessConfigs() {
+        return ResponseEntity.ok(automaticProcessConfigService.getActives());
+    }
+
+    @GetMapping(path = "/history", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get the history of automatic process configs changes")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Automatic process configs history")})
+    public ResponseEntity<List<AutomaticProcessConfigInfos>> getAutomaticProcessConfigsHistory() {
+        return ResponseEntity.ok(automaticProcessConfigService.getHistory());
     }
 }

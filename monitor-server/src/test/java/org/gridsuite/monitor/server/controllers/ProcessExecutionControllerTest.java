@@ -7,6 +7,7 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.ws.commons.security.AllowAllAuthTestConfiguration;
 import org.gridsuite.monitor.commons.types.messaging.ProcessExecutionStep;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
@@ -15,6 +16,7 @@ import org.gridsuite.monitor.commons.types.processexecution.ProcessExecutionTrig
 import org.gridsuite.monitor.commons.types.processexecution.ProcessStatus;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
 import org.gridsuite.monitor.commons.types.processexecution.StepStatus;
+import org.gridsuite.monitor.server.DisableCsrfTestConfiguration;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
 import org.gridsuite.monitor.server.dto.report.MatchPosition;
@@ -31,8 +33,10 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -53,7 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Antoine Bouhours <antoine.bouhours at rte-france.com>
  */
-@WebMvcTest(controllers = {ProcessExecutionController.class, PropertyServerNameProvider.class})
+@WebMvcTest(controllers = { ProcessExecutionController.class, PropertyServerNameProvider.class })
+@Import({AllowAllAuthTestConfiguration.class, DisableCsrfTestConfiguration.class})
 class ProcessExecutionControllerTest {
 
     @Autowired
@@ -94,8 +99,7 @@ class ProcessExecutionControllerTest {
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
-            .param("processConfigUuid", processConfigUuid.toString())
-            .header("userId", "user1");
+            .param("processConfigUuid", processConfigUuid.toString());
 
         if (isDebug != null) {
             request.param("isDebug", isDebug.toString());
@@ -147,6 +151,7 @@ class ProcessExecutionControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void executeProcessWithConfigNotFoundShouldReturnError() throws Exception {
         UUID caseUuid = UUID.randomUUID();
         UUID processConfigUuid = UUID.randomUUID();
@@ -155,8 +160,7 @@ class ProcessExecutionControllerTest {
 
         MockHttpServletRequestBuilder request = post("/v1/execute")
             .param("caseUuid", caseUuid.toString())
-            .param("processConfigUuid", processConfigUuid.toString())
-            .header("userId", "user1");
+            .param("processConfigUuid", processConfigUuid.toString());
 
         mockMvc.perform(request)
             .andExpect(status().isNotFound());
@@ -296,7 +300,7 @@ class ProcessExecutionControllerTest {
 
         when(processExecutionService.getProcessExecutions()).thenReturn(processExecutionList);
 
-        mockMvc.perform(get("/v1/executions").accept(MediaType.APPLICATION_JSON_VALUE).header("userId", "user1,user2,user3"))
+        mockMvc.perform(get("/v1/executions").accept(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$", hasSize(3)))

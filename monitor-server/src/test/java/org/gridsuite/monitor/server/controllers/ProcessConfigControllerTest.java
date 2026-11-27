@@ -7,11 +7,13 @@
 package org.gridsuite.monitor.server.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.ws.commons.security.AllowAllAuthTestConfiguration;
 import org.gridsuite.monitor.commons.types.processconfig.ModificationInfo;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfig;
 import org.gridsuite.monitor.commons.types.processconfig.ProcessConfigFieldComparison;
 import org.gridsuite.monitor.commons.types.processconfig.SecurityAnalysisConfig;
 import org.gridsuite.monitor.commons.types.processexecution.ProcessType;
+import org.gridsuite.monitor.server.DisableCsrfTestConfiguration;
 import org.gridsuite.monitor.server.PropertyServerNameProvider;
 import org.gridsuite.monitor.server.dto.processconfig.MetadataInfos;
 import org.gridsuite.monitor.server.dto.processconfig.PersistedProcessConfig;
@@ -21,7 +23,9 @@ import org.gridsuite.monitor.server.services.processconfig.ProcessConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -45,8 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @WebMvcTest(controllers = { ProcessConfigController.class, PropertyServerNameProvider.class })
+@Import({AllowAllAuthTestConfiguration.class, DisableCsrfTestConfiguration.class})
+@WithMockUser
 class ProcessConfigControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -149,7 +154,7 @@ class ProcessConfigControllerTest {
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(config)))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
     }
@@ -167,7 +172,7 @@ class ProcessConfigControllerTest {
         mockMvc.perform(put("/v1/process-configs/{uuid}", processConfigId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(config)))
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
 
         verify(processConfigService).updateProcessConfig(any(UUID.class), any(ProcessConfig.class));
     }
